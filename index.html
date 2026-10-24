@@ -1915,7 +1915,7 @@ saveAdmin() {
       }
 
       // --- CREACIÓN / MODIFICACIÓN DE ÓRDENES (ADMIN) ---
-   openNewTaskModal() {
+openNewTaskModal() {
       if (this.currentUser.role !== 'ADMIN') return;
       document.getElementById('form-modal-title').textContent = 'Asignar Nueva Orden de Trabajo';
       document.getElementById('task-id').value = '';
@@ -1929,33 +1929,34 @@ saveAdmin() {
       document.getElementById('modal-task-form').classList.remove('hidden');
     },
 
-      openEditTaskModal(id) {
-        if (this.currentUser.role !== 'ADMIN') return;
-        const t = this.tasks.find(x => x.id === id);
-        if (!t) return;
+    openEditTaskModal(id) {
+      if (this.currentUser.role !== 'ADMIN') return;
+      const t = this.tasks.find(x => x.id === id);
+      if (!t) return;
 
-        document.getElementById('form-modal-title').textContent = `Editar Orden ${t.id}`;
-        document.getElementById('task-id').value = t.id;
-        document.getElementById('task-client').value = t.client;
-        document.getElementById('task-phone').value = t.phone;
-        document.getElementById('task-address').value = t.address;
-        document.getElementById('task-service-type').value = t.serviceType;
-        document.getElementById('task-equipment').value = t.equipment;
-        document.getElementById('task-assigned-to').value = t.assignedTo;
-        document.getElementById('task-priority').value = t.priority;
-        document.getElementById('task-date').value = t.date;
-        document.getElementById('task-instructions').value = t.instructions || '';
-        // Cargar el checklist existente o los puntos por defecto
+      document.getElementById('form-modal-title').textContent = `Editar Orden ${t.id}`;
+      document.getElementById('task-id').value = t.id;
+      document.getElementById('task-client').value = t.client;
+      document.getElementById('task-phone').value = t.phone;
+      document.getElementById('task-address').value = t.address;
+      document.getElementById('task-service-type').value = t.serviceType;
+      document.getElementById('task-equipment').value = t.equipment;
+      document.getElementById('task-assigned-to').value = t.assignedTo;
+      document.getElementById('task-priority').value = t.priority;
+      document.getElementById('task-date').value = t.date;
+      document.getElementById('task-instructions').value = t.instructions || '';
+
+      // Cargar el checklist existente o los puntos por defecto
       this.currentTaskModalChecklist = Array.isArray(t.checklist) && t.checklist.length > 0 
         ? JSON.parse(JSON.stringify(t.checklist)) 
         : this.getDefaultChecklistItems();
       this.renderTaskModalChecklist();
-        document.getElementById('modal-task-form').classList.remove('hidden');
-      }
 
+      document.getElementById('modal-task-form').classList.remove('hidden');
+    },
       closeTaskModal() {
         document.getElementById('modal-task-form').classList.add('hidden');
-      }
+      },
       renderTaskModalChecklist() {
         const container = document.getElementById('task-modal-checklist-container');
         if (!container) return;
