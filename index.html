@@ -51,6 +51,24 @@
       }
     }
   </style>
+  <!-- SDKs de Firebase compatibles con navegador directo -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBGvZGWiLOZ1-KkncFreip4t4oqc01TjyE",
+      authDomain: "serviportonez.firebaseapp.com",
+      projectId: "serviportonez",
+      storageBucket: "serviportonez.firebasestorage.app",
+      messagingSenderId: "148615531792",
+      appId: "1:148615531792:web:99062c41ac5f9c1ca92995"
+    };
+
+    // Inicializar Firebase y la base de datos
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+  </script>
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen font-sans flex flex-col antialiased selection:bg-brand-lime selection:text-white">
 
