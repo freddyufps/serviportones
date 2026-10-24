@@ -1039,17 +1039,26 @@
         if (window.lucide) lucide.createIcons();
       }
 
-      saveAdmin() {
-        localStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
-      }
+saveAdmin() {
+    localStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
+    if (window.db) {
+      db.collection('config').doc('adminProfile').set(this.adminProfile).catch(e => console.error("Error guardando admin:", e));
+    }
+  }
 
-      saveUsers() {
-        localStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
-      }
+  saveUsers() {
+    localStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
+    if (window.db) {
+      db.collection('config').doc('users').set({ list: this.users }).catch(e => console.error("Error guardando usuarios:", e));
+    }
+  }
 
-      saveTasks() {
-        localStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
-      }
+  saveTasks() {
+    localStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
+    if (window.db) {
+      db.collection('ordenes').doc('todas').set({ tasks: this.tasks }).catch(e => console.error("Error guardando tareas:", e));
+    }
+  }
 
       showToast(message, type = 'info') {
         const toast = document.getElementById('toast');
