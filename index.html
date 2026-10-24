@@ -1915,14 +1915,19 @@ saveAdmin() {
       }
 
       // --- CREACIÓN / MODIFICACIÓN DE ÓRDENES (ADMIN) ---
-      openNewTaskModal() {
-        if (this.currentUser.role !== 'ADMIN') return;
-        document.getElementById('form-modal-title').textContent = 'Asignar Nueva Orden de Trabajo';
-        document.getElementById('task-id').value = '';
-        document.getElementById('task-form').reset();
-        document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
-        document.getElementById('modal-task-form').classList.remove('hidden');
-      }
+   openNewTaskModal() {
+      if (this.currentUser.role !== 'ADMIN') return;
+      document.getElementById('form-modal-title').textContent = 'Asignar Nueva Orden de Trabajo';
+      document.getElementById('task-id').value = '';
+      document.getElementById('task-form').reset();
+      document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
+
+      // Inicializar y renderizar checklist para la nueva orden
+      this.currentTaskModalChecklist = this.getDefaultChecklistItems();
+      this.renderTaskModalChecklist();
+
+      document.getElementById('modal-task-form').classList.remove('hidden');
+    },
 
       openEditTaskModal(id) {
         if (this.currentUser.role !== 'ADMIN') return;
@@ -1940,14 +1945,83 @@ saveAdmin() {
         document.getElementById('task-priority').value = t.priority;
         document.getElementById('task-date').value = t.date;
         document.getElementById('task-instructions').value = t.instructions || '';
-
+        // Cargar el checklist existente o los puntos por defecto
+      this.currentTaskModalChecklist = Array.isArray(t.checklist) && t.checklist.length > 0 
+        ? JSON.parse(JSON.stringify(t.checklist)) 
+        : this.getDefaultChecklistItems();
+      this.renderTaskModalChecklist();
         document.getElementById('modal-task-form').classList.remove('hidden');
       }
 
       closeTaskModal() {
         document.getElementById('modal-task-form').classList.add('hidden');
       }
+      renderTaskModalChecklist() {
+        const container = document.getElementById('task-modal-checklist-container');
+        if (!container) return;
 
+        if (!this.currentTaskModalChecklist || this.currentTaskModalChecklist.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-3 text-slate-400 italic text-xs">
+              No hay puntos en la lista. Escribe uno abajo para agregarlo.
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = this.currentTaskModalChecklist.map((item) => `
+          <div class="flex items-center justify-between gap-2 p-2 bg-white rounded-lg border border-slate-200 shadow-sm" id="tm-check-${item.id}">
+            <span class="text-xs font-medium text-slate-700 flex-1 truncate">${item.label}</span>
+            <div class="flex items-center gap-1 shrink-0">
+              <button type="button" onclick="app.editTaskModalChecklistItem('${item.id}')" title="Modificar texto" class="px-1.5 py-1 text-blue-600 hover:bg-blue-50 rounded text-xs font-bold">
+                ✏️
+              </button>
+              <button type="button" onclick="app.deleteTaskModalChecklistItem('${item.id}')" title="Eliminar ítem" class="px-1.5 py-1 text-rose-600 hover:bg-rose-50 rounded text-xs font-bold">
+                ✕
+              </button>
+            </div>
+          </div>
+        `).join('');
+      },
+
+      addTaskModalChecklistItem() {
+        const input = document.getElementById('task-modal-new-item-input');
+        const text = input ? input.value.trim() : '';
+        if (!text) {
+          this.showToast('Ingresa un texto para el punto', 'error');
+          return;
+        }
+
+        if (!Array.isArray(this.currentTaskModalChecklist)) {
+          this.currentTaskModalChecklist = [];
+        }
+
+        this.currentTaskModalChecklist.push({
+          id: 'c_' + Date.now() + Math.random().toString(36).substring(2, 6),
+          label: text,
+          checked: false
+        });
+
+        input.value = '';
+        this.renderTaskModalChecklist();
+        this.showToast('Punto añadido a la orden', 'info');
+      },
+
+      editTaskModalChecklistItem(id) {
+        const item = this.currentTaskModalChecklist.find(c => c.id === id);
+        if (!item) return;
+
+        const newLabel = prompt('Modificar descripción del punto de chequeo:', item.label);
+        if (newLabel !== null && newLabel.trim() !== '') {
+          item.label = newLabel.trim();
+          this.renderTaskModalChecklist();
+        }
+      },
+
+      deleteTaskModalChecklistItem(id) {
+        this.currentTaskModalChecklist = this.currentTaskModalChecklist.filter(c => c.id !== id);
+        this.renderTaskModalChecklist();
+      },
       handleSaveTask(e) {
         e.preventDefault();
         if (this.currentUser.role !== 'ADMIN') return;
@@ -1966,6 +2040,7 @@ saveAdmin() {
             this.tasks[index].priority = document.getElementById('task-priority').value;
             this.tasks[index].date = document.getElementById('task-date').value;
             this.tasks[index].instructions = document.getElementById('task-instructions').value;
+            this.tasks[index].checklist = JSON.parse(JSON.stringify(this.currentTaskModalChecklist || this.getDefaultChecklistItems()));
             this.showToast('Orden modificada correctamente', 'success');
           }
         } else {
@@ -1982,7 +2057,7 @@ saveAdmin() {
             date: document.getElementById('task-date').value,
             instructions: document.getElementById('task-instructions').value,
             status: 'PENDIENTE',
-            checklist: this.getDefaultChecklistItems(),
+            checklist: JSON.parse(JSON.stringify(this.currentTaskModalChecklist || this.getDefaultChecklistItems())),
             observations: '',
             materialsUsed: '',
             completedAt: null
