@@ -155,16 +155,16 @@
           <span id="header-role-badge" class="hidden sm:inline-block text-[10px] uppercase font-extrabold px-2.5 py-0.5 rounded-full bg-brand-lime/20 text-brand-lime border border-brand-lime/40">Admin</span>
         </div>
 
-        <!-- Botones exteriores limpios: ÚNICAMENTE Nueva Orden, Engranaje de Ajustes y Cerrar Sesión -->
+        <!-- Botones exteriores limpios -->
         <div class="flex items-center space-x-2 sm:space-x-3">
           
-          <!-- Botón Nueva Orden (Solo Admin, visible en la barra exterior porque sí es operativo de trabajo) -->
+          <!-- Botón Nueva Orden (Solo Admin) -->
           <button id="btn-nav-new-order" onclick="app.openNewTaskModal()" class="hidden bg-brand-lime hover:bg-brand-limeHover text-white text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md shadow-brand-lime/20 transition active:scale-95">
             <i data-lucide="plus-circle" class="w-4 h-4"></i>
             <span>Nueva Orden</span>
           </button>
 
-          <!-- ENGRANAJE DE CONFIGURACIONES (AQUÍ ESTÁ TODO: claves, usuarios, fotos de perfil) -->
+          <!-- ENGRANAJE DE CONFIGURACIONES -->
           <button id="btn-nav-settings" onclick="app.openSettingsModal()" class="p-2 sm:px-3 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl transition flex items-center gap-1.5 shadow-sm" title="Ajustes y Personal">
             <i data-lucide="settings" class="w-4 h-4 text-brand-lime"></i>
             <span class="hidden md:inline text-xs font-semibold">Configuración</span>
@@ -183,7 +183,7 @@
             </div>
           </div>
 
-          <!-- Botón Cerrar Sesión (Registra hora de desconexión exacta) -->
+          <!-- Botón Cerrar Sesión -->
           <button onclick="app.logout()" class="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition" title="Cerrar Sesión">
             <i data-lucide="log-out" class="w-5 h-5"></i>
           </button>
@@ -213,14 +213,14 @@
             </div>
           </div>
 
-          <!-- Cards de Técnicos con Foto, Estado En Línea, Primer Logueo y Último Logueo -->
+          <!-- Cards de Técnicos -->
           <div id="technicians-status-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             <!-- Inyectado dinámicamente -->
           </div>
         </div>
       </section>
 
-      <!-- Banner de bienvenida limpio (Sin botones repetidos) -->
+      <!-- Banner de bienvenida -->
       <div id="dashboard-banner" class="mb-6 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm">
         <!-- Inyectado dinámicamente según rol -->
       </div>
@@ -284,7 +284,7 @@
             <option value="NO_REALIZADA">❌ No Realizadas</option>
           </select>
 
-          <!-- Filtro por Técnico (Visible solo al Administrador) -->
+          <!-- Filtro por Técnico (Solo Admin) -->
           <select id="filter-tech" onchange="app.renderTasks()" class="text-xs sm:text-sm border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:ring-2 focus:ring-brand-lime focus:outline-none font-medium">
             <option value="ALL">Todos los Técnicos</option>
           </select>
@@ -344,7 +344,6 @@
   <!-- ========================================================================= -->
   <div id="modal-settings" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-slate-100 overflow-hidden my-8">
-      <!-- Header Configuraciones -->
       <div class="bg-brand-dark text-white px-6 py-4 flex items-center justify-between border-b-2 border-brand-lime">
         <div class="flex items-center gap-2.5">
           <div class="w-8 h-8 rounded-lg bg-brand-lime text-brand-dark flex items-center justify-center font-bold">
@@ -362,7 +361,7 @@
 
       <div class="p-6 space-y-6 max-h-[80vh] overflow-y-auto text-xs sm:text-sm">
 
-        <!-- 1. FOTO DE PERFIL PROPIA (DISPONIBLE PARA ADMIN Y EMPLEADOS) -->
+        <!-- 1. FOTO DE PERFIL PROPIA -->
         <div class="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200">
           <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 mb-3 flex items-center gap-2">
             <i data-lucide="camera" class="w-4 h-4 text-brand-limeHover"></i>
@@ -388,7 +387,7 @@
           </div>
         </div>
 
-        <!-- 2. CAMBIO DE CONTRASEÑA PROPIA (ADMIN O TÉCNICO) -->
+        <!-- 2. CAMBIO DE CONTRASEÑA PROPIA -->
         <div class="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200">
           <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 mb-3 flex items-center gap-2">
             <i data-lucide="key" class="w-4 h-4 text-brand-limeHover"></i>
@@ -417,7 +416,7 @@
           </form>
         </div>
 
-        <!-- 3. GESTIÓN COMPLETA DE TRABAJADORES (SOLO ADMINISTRADOR) -->
+        <!-- 3. GESTIÓN COMPLETA DE TRABAJADORES (ADMIN) -->
         <div id="settings-admin-users-section" class="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-5 hidden">
           <div class="flex items-center justify-between border-b border-slate-200 pb-2">
             <div>
@@ -430,7 +429,7 @@
             <span id="settings-users-count-badge" class="text-xs font-bold px-2 py-0.5 rounded bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder">0 Técnicos</span>
           </div>
 
-          <!-- Formulario para Crear / Editar Técnico -->
+          <!-- Formulario Crear/Editar Técnico -->
           <form id="manage-user-form" onsubmit="app.handleSaveUser(event)" class="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
             <input type="hidden" id="manage-user-id" value="">
             <input type="hidden" id="manage-user-photo" value="">
@@ -483,7 +482,7 @@
             </div>
           </form>
 
-          <!-- Tabla de Trabajadores dentro de Configuración -->
+          <!-- Tabla de Trabajadores -->
           <div class="overflow-x-auto border border-slate-200 rounded-2xl bg-white">
             <table class="w-full text-left text-xs">
               <thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200">
@@ -588,12 +587,13 @@
           </div>
         </div>
 
-        <!-- Instrucciones para el técnico -->
+        <!-- Instrucciones -->
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">Instrucciones / Falla reportada</label>
           <textarea id="task-instructions" rows="3" placeholder="Ej: El portón se frena a mitad de recorrido. Revisar cremallera y lubricación..." class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none"></textarea>
         </div>
-<!-- SECCIÓN DE CHECKLIST PERSONALIZABLE EN CREAR/EDITAR ORDEN -->
+
+        <!-- SECCIÓN DE CHECKLIST PERSONALIZABLE EN CREAR/EDITAR ORDEN -->
         <div class="mt-4 border-t border-slate-200 pt-3">
           <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
             Puntos de Inspección / Checklist de la Orden
@@ -610,11 +610,11 @@
             </button>
           </div>
         </div>
+
         <div class="pt-4 border-t flex justify-end gap-2">
           <button type="button" onclick="app.closeTaskModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-xs">Cancelar</button>
           <button type="submit" class="px-5 py-2 bg-brand-dark hover:bg-black text-white rounded-xl font-bold flex items-center gap-1.5 shadow-md text-xs">
             <i data-lucide="save" class="w-4 h-4 text-brand-lime"></i> Asignar Orden
-            
           </button>
         </div>
       </form>
@@ -676,12 +676,10 @@
             <span class="text-[11px] text-slate-400 font-medium">Usa ✏️ para editar o ✕ para quitar</span>
           </div>
 
-          <!-- Contenedor de ítems del checklist -->
           <div id="checklist-items-container" class="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs">
             <!-- Inyectado dinámicamente -->
           </div>
 
-          <!-- Agregar nuevo ítem al checklist -->
           <div class="flex items-center gap-2 pt-1">
             <input type="text" id="new-checklist-item-input" placeholder="Ej: Revisar sensor de fotocelda, capacitor..." class="flex-1 px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none shadow-sm" onkeydown="if(event.key==='Enter'){event.preventDefault(); app.addChecklistItem();}">
             <button type="button" onclick="app.addChecklistItem()" class="px-3.5 py-2 bg-brand-dark hover:bg-black text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow transition active:scale-95 shrink-0">
@@ -978,6 +976,7 @@
         this.activeReportStatus = 'REALIZADA';
         this.heartbeatTimer = null;
         this.currentModalChecklist = [];
+        this.currentTaskModalChecklist = [];
 
         this.init();
       }
@@ -1003,7 +1002,75 @@
         return `${day} ${time}`;
       }
 
+      // --- AMBIENTE NAVIDEÑO (NIEVE Y TRINEO VOLADOR) ---
+      initChristmasTheme() {
+        if (document.getElementById('christmas-container')) return;
+
+        const style = document.createElement('style');
+        style.id = 'christmas-theme-styles';
+        style.innerHTML = `
+          .snow-flake {
+            position: fixed;
+            top: -10px;
+            color: #cbd5e1;
+            user-select: none;
+            pointer-events: none;
+            z-index: 9998;
+            animation-name: fallAnimation;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+          }
+          @keyframes fallAnimation {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0.9; }
+            100% { transform: translateY(105vh) rotate(360deg); opacity: 0.2; }
+          }
+          .flying-sleigh {
+            position: fixed;
+            bottom: 85%;
+            left: -180px;
+            font-size: 26px;
+            user-select: none;
+            pointer-events: none;
+            z-index: 9999;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));
+            animation: flyAcross 26s linear infinite;
+          }
+          @keyframes flyAcross {
+            0% { left: -180px; transform: translateY(0px) scaleX(1); }
+            48% { left: 110vw; transform: translateY(-20px) scaleX(1); }
+            50% { left: 110vw; transform: translateY(-20px) scaleX(-1); }
+            98% { left: -180px; transform: translateY(15px) scaleX(-1); }
+            100% { left: -180px; transform: translateY(0px) scaleX(1); }
+          }
+        `;
+        document.head.appendChild(style);
+
+        const container = document.createElement('div');
+        container.id = 'christmas-container';
+        container.style.pointerEvents = 'none';
+        document.body.appendChild(container);
+
+        const sleigh = document.createElement('div');
+        sleigh.className = 'flying-sleigh';
+        sleigh.innerHTML = '🦌🛷✨';
+        container.appendChild(sleigh);
+
+        const chars = ['❄', '❅', '•', '✻'];
+        for (let i = 0; i < 30; i++) {
+          const flake = document.createElement('div');
+          flake.className = 'snow-flake';
+          flake.textContent = chars[Math.floor(Math.random() * chars.length)];
+          flake.style.left = Math.random() * 100 + 'vw';
+          flake.style.animationDuration = (Math.random() * 6 + 6) + 's';
+          flake.style.animationDelay = (Math.random() * 5) + 's';
+          flake.style.fontSize = (Math.random() * 10 + 10) + 'px';
+          container.appendChild(flake);
+        }
+      }
+
       init() {
+        this.initChristmasTheme();
+
         // Cargar Admin
         const savedAdmin = localStorage.getItem('portonpro_admin_v4');
         if (savedAdmin) {
@@ -1022,7 +1089,7 @@
           this.saveUsers();
         }
 
-// Cargar Tareas
+        // Cargar Tareas
         const savedTasks = localStorage.getItem('portonpro_tasks_v4');
         if (savedTasks) {
           try {
@@ -1076,26 +1143,26 @@
         if (window.lucide) lucide.createIcons();
       }
 
-saveAdmin() {
-    localStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
-    if (window.db) {
-      db.collection('config').doc('adminProfile').set(this.adminProfile).catch(e => console.error("Error guardando admin:", e));
-    }
-  }
+      saveAdmin() {
+        localStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
+        if (window.db) {
+          db.collection('config').doc('adminProfile').set(this.adminProfile).catch(e => console.error("Error guardando admin:", e));
+        }
+      }
 
-  saveUsers() {
-    localStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
-    if (window.db) {
-      db.collection('config').doc('users').set({ list: this.users }).catch(e => console.error("Error guardando usuarios:", e));
-    }
-  }
+      saveUsers() {
+        localStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
+        if (window.db) {
+          db.collection('config').doc('users').set({ list: this.users }).catch(e => console.error("Error guardando usuarios:", e));
+        }
+      }
 
-  saveTasks() {
-    localStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
-    if (window.db) {
-      db.collection('ordenes').doc('todas').set({ tasks: this.tasks }).catch(e => console.error("Error guardando tareas:", e));
-    }
-  }
+      saveTasks() {
+        localStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
+        if (window.db) {
+          db.collection('ordenes').doc('todas').set({ tasks: this.tasks }).catch(e => console.error("Error guardando tareas:", e));
+        }
+      }
 
       showToast(message, type = 'info') {
         const toast = document.getElementById('toast');
@@ -1154,7 +1221,6 @@ saveAdmin() {
           }
           errorAlert.classList.add('hidden');
 
-          // Registrar primer logueo y último logueo
           if (!foundTech.firstLoginToday || foundTech.firstLoginToday.includes('Sin registro')) {
             foundTech.firstLoginToday = formattedTime;
           }
@@ -1186,7 +1252,6 @@ saveAdmin() {
         document.getElementById('view-login').classList.add('hidden');
         document.getElementById('view-dashboard').classList.remove('hidden');
 
-        // Heartbeat para técnicos online
         this.sendHeartbeat();
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
         this.heartbeatTimer = setInterval(() => this.sendHeartbeat(), 15000);
@@ -1250,14 +1315,12 @@ saveAdmin() {
         input.type = input.type === 'password' ? 'text' : 'password';
       }
 
-      // Configuración de interfaz según rol (Interfaz limpia exterior)
       setupDashboardUI() {
         const isAdmin = this.currentUser.role === 'ADMIN';
 
         document.getElementById('header-user-name').textContent = this.currentUser.fullName;
         document.getElementById('header-role-badge').textContent = isAdmin ? 'Administrador' : 'Técnico';
 
-        // Renderizar Foto de Perfil en la barra superior
         const headerPhoto = document.getElementById('header-user-photo');
         const headerInit = document.getElementById('header-avatar-initial');
         if (this.currentUser.photo) {
@@ -1289,7 +1352,6 @@ saveAdmin() {
           roleHint.textContent = 'Tus órdenes asignadas: diligencia el informe de visita o checklist';
         }
 
-        // Banner limpio: Sin botones duplicados
         const banner = document.getElementById('dashboard-banner');
         if (isAdmin) {
           banner.className = 'mb-6 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm bg-gradient-to-r from-slate-950 via-brand-dark to-slate-900 text-white border-brand-lime/40';
@@ -1332,14 +1394,11 @@ saveAdmin() {
         if (window.lucide) lucide.createIcons();
       }
 
-      // --- CONFIGURACIÓN CENTRALIZADA: AJUSTES, FOTOS Y PERSONAL ---
       openSettingsModal() {
         const isAdmin = this.currentUser.role === 'ADMIN';
 
-        // Previsualizar foto propia en ajustes
         this.renderMySettingsPhotoPreview();
 
-        // Limpiar campos de contraseña
         document.getElementById('set-own-current-pass').value = '';
         document.getElementById('set-own-new-pass').value = '';
         document.getElementById('set-own-confirm-pass').value = '';
@@ -1379,7 +1438,6 @@ saveAdmin() {
         }
       }
 
-      // Subir foto propia
       handleUploadOwnPhoto(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -1441,7 +1499,6 @@ saveAdmin() {
         this.showToast('Foto de perfil eliminada', 'info');
       }
 
-      // Subir foto a un técnico desde el formulario administrativo
       handleUploadTechPhoto(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -1465,7 +1522,6 @@ saveAdmin() {
         reader.readAsDataURL(file);
       }
 
-      // Cambiar contraseña propia
       handleChangeOwnPassword(e) {
         e.preventDefault();
         const currentPass = document.getElementById('set-own-current-pass').value.trim();
@@ -1503,7 +1559,6 @@ saveAdmin() {
         }
       }
 
-      // --- MONITOR DE PERSONAL CON HORARIOS DE PRIMER Y ÚLTIMO LOGUEO ---
       renderTechniciansMonitor() {
         const grid = document.getElementById('technicians-status-grid');
         const counter = document.getElementById('techs-online-counter');
@@ -1539,7 +1594,6 @@ saveAdmin() {
                 </span>
               </div>
 
-              <!-- Registro de Horas de Conexión y Desconexión -->
               <div class="bg-white/80 rounded-xl p-2.5 border border-slate-200/70 text-[11px] space-y-1">
                 <div class="flex items-center justify-between">
                   <span class="text-slate-500 flex items-center gap-1 font-medium">
@@ -1562,7 +1616,6 @@ saveAdmin() {
         if (window.lucide) lucide.createIcons();
       }
 
-      // --- GESTIÓN DE USUARIOS EN EL MODAL DE CONFIGURACIÓN ---
       resetUserForm() {
         document.getElementById('manage-user-id').value = '';
         document.getElementById('manage-user-photo').value = '';
@@ -1758,7 +1811,7 @@ saveAdmin() {
         this.renderTasks();
       }
 
-      // --- RENDERIZADO DE ÓRDENES CON FOTO DEL TÉCNICO ---
+      // --- RENDERIZADO DE ÓRDENES ---
       renderTasks() {
         const search = document.getElementById('filter-search').value.toLowerCase();
         const statusFilter = document.getElementById('filter-status').value;
@@ -1896,7 +1949,6 @@ saveAdmin() {
                     ${t.status === 'REALIZADA' || t.status === 'NO_REALIZADA' ? 'Editar Informe' : 'Registrar Informe'}
                   </button>
 
-                  <!-- Modificar y Borrar Orden: SOLO PARA EL ADMINISTRADOR -->
                   ${isAdmin ? `
                     <button onclick="app.openEditTaskModal('${t.id}')" class="p-1.5 text-slate-400 hover:text-brand-dark hover:bg-slate-100 rounded-lg" title="Modificar datos de la orden">
                       <i data-lucide="file-edit" class="w-3.5 h-3.5"></i>
@@ -1915,48 +1967,48 @@ saveAdmin() {
       }
 
       // --- CREACIÓN / MODIFICACIÓN DE ÓRDENES (ADMIN) ---
-openNewTaskModal() {
-      if (this.currentUser.role !== 'ADMIN') return;
-      document.getElementById('form-modal-title').textContent = 'Asignar Nueva Orden de Trabajo';
-      document.getElementById('task-id').value = '';
-      document.getElementById('task-form').reset();
-      document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
+      openNewTaskModal() {
+        if (this.currentUser.role !== 'ADMIN') return;
+        document.getElementById('form-modal-title').textContent = 'Asignar Nueva Orden de Trabajo';
+        document.getElementById('task-id').value = '';
+        document.getElementById('task-form').reset();
+        document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
 
-      // Inicializar y renderizar checklist para la nueva orden
-      this.currentTaskModalChecklist = this.getDefaultChecklistItems();
-      this.renderTaskModalChecklist();
+        this.currentTaskModalChecklist = this.getDefaultChecklistItems();
+        this.renderTaskModalChecklist();
 
-      document.getElementById('modal-task-form').classList.remove('hidden');
-    }
+        document.getElementById('modal-task-form').classList.remove('hidden');
+      }
 
-    openEditTaskModal(id) {
-      if (this.currentUser.role !== 'ADMIN') return;
-      const t = this.tasks.find(x => x.id === id);
-      if (!t) return;
+      openEditTaskModal(id) {
+        if (this.currentUser.role !== 'ADMIN') return;
+        const t = this.tasks.find(x => x.id === id);
+        if (!t) return;
 
-      document.getElementById('form-modal-title').textContent = `Editar Orden ${t.id}`;
-      document.getElementById('task-id').value = t.id;
-      document.getElementById('task-client').value = t.client;
-      document.getElementById('task-phone').value = t.phone;
-      document.getElementById('task-address').value = t.address;
-      document.getElementById('task-service-type').value = t.serviceType;
-      document.getElementById('task-equipment').value = t.equipment;
-      document.getElementById('task-assigned-to').value = t.assignedTo;
-      document.getElementById('task-priority').value = t.priority;
-      document.getElementById('task-date').value = t.date;
-      document.getElementById('task-instructions').value = t.instructions || '';
+        document.getElementById('form-modal-title').textContent = `Editar Orden ${t.id}`;
+        document.getElementById('task-id').value = t.id;
+        document.getElementById('task-client').value = t.client;
+        document.getElementById('task-phone').value = t.phone;
+        document.getElementById('task-address').value = t.address;
+        document.getElementById('task-service-type').value = t.serviceType;
+        document.getElementById('task-equipment').value = t.equipment;
+        document.getElementById('task-assigned-to').value = t.assignedTo;
+        document.getElementById('task-priority').value = t.priority;
+        document.getElementById('task-date').value = t.date;
+        document.getElementById('task-instructions').value = t.instructions || '';
 
-      // Cargar el checklist existente o los puntos por defecto
-      this.currentTaskModalChecklist = Array.isArray(t.checklist) && t.checklist.length > 0 
-        ? JSON.parse(JSON.stringify(t.checklist)) 
-        : this.getDefaultChecklistItems();
-      this.renderTaskModalChecklist();
+        this.currentTaskModalChecklist = Array.isArray(t.checklist) && t.checklist.length > 0 
+          ? JSON.parse(JSON.stringify(t.checklist)) 
+          : this.getDefaultChecklistItems();
+        this.renderTaskModalChecklist();
 
-      document.getElementById('modal-task-form').classList.remove('hidden');
-    }
+        document.getElementById('modal-task-form').classList.remove('hidden');
+      }
+
       closeTaskModal() {
         document.getElementById('modal-task-form').classList.add('hidden');
       }
+
       renderTaskModalChecklist() {
         const container = document.getElementById('task-modal-checklist-container');
         if (!container) return;
@@ -1983,7 +2035,7 @@ openNewTaskModal() {
             </div>
           </div>
         `).join('');
-      },
+      }
 
       addTaskModalChecklistItem() {
         const input = document.getElementById('task-modal-new-item-input');
@@ -2023,6 +2075,7 @@ openNewTaskModal() {
         this.currentTaskModalChecklist = this.currentTaskModalChecklist.filter(c => c.id !== id);
         this.renderTaskModalChecklist();
       }
+
       handleSaveTask(e) {
         e.preventDefault();
         if (this.currentUser.role !== 'ADMIN') return;
@@ -2083,7 +2136,7 @@ openNewTaskModal() {
         this.showToast(`Orden ${id} eliminada`, 'info');
       }
 
-      // --- REPORTE TÉCNICO (CHECKLIST, REALIZADA / NO REALIZADA) ---
+      // --- REPORTE TÉCNICO ---
       openReportModal(id) {
         const t = this.tasks.find(x => x.id === id);
         if (!t) return;
