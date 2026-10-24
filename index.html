@@ -30,25 +30,13 @@
   </script>
   <style>
     @media print {
-      body * {
-        visibility: hidden;
-      }
-      #printable-order-modal, #printable-order-modal * {
-        visibility: visible;
-      }
+      body * { visibility: hidden; }
+      #printable-order-modal, #printable-order-modal * { visibility: visible; }
       #printable-order-modal {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-        box-shadow: none !important;
-        background: white !important;
+        position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0;
+        box-shadow: none !important; background: white !important;
       }
-      .no-print {
-        display: none !important;
-      }
+      .no-print { display: none !important; }
     }
   </style>
   <!-- SDKs de Firebase -->
@@ -64,7 +52,6 @@
       messagingSenderId: "148615531792",
       appId: "1:148615531792:web:99062c41ac5f9c1ca92995"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
   </script>
@@ -180,13 +167,11 @@
       </div>
     </header>
 
-    <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
+    <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-5">
 
-      <!-- ============================================================== -->
-      <!-- MONITOR DE PERSONAL ONLINE / OFFLINE (ADMIN)                   -->
-      <!-- ============================================================== -->
-      <section id="section-technicians-monitor" class="mb-6 hidden">
-        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 sm:p-5">
+      <!-- MONITOR DE PERSONAL (ADMIN) -->
+      <section id="section-technicians-monitor" class="mb-5 hidden">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
           <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2.5">
             <div class="flex items-center gap-2">
               <div class="w-2.5 h-2.5 rounded-full bg-brand-lime animate-ping"></div>
@@ -194,148 +179,137 @@
                 Monitor del Personal: Conexión y Horarios de Trabajo
               </h2>
             </div>
-            <div class="flex items-center gap-2">
-              <span id="techs-online-counter" class="text-xs font-bold px-2.5 py-1 bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder rounded-lg">
-                0 En Línea
-              </span>
-            </div>
+            <span id="techs-online-counter" class="text-xs font-bold px-2.5 py-1 bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder rounded-lg">
+              0 En Línea
+            </span>
           </div>
           <div id="technicians-status-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
         </div>
       </section>
 
       <!-- Banner de bienvenida -->
-      <div id="dashboard-banner" class="mb-6 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm"></div>
+      <div id="dashboard-banner" class="mb-5 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm"></div>
 
       <!-- Tarjetas de Estadísticas -->
-      <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
-            <p class="text-[11px] font-bold uppercase text-slate-500 tracking-wider">Total Órdenes</p>
-            <p id="stat-total" class="text-2xl font-black text-slate-800 mt-0.5">0</p>
+            <p class="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Total Órdenes</p>
+            <p id="stat-total" class="text-xl font-black text-slate-800">0</p>
           </div>
-          <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-700">
-            <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+          <div class="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-700">
+            <i data-lucide="clipboard-list" class="w-4 h-4"></i>
           </div>
         </div>
-
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
-            <p class="text-[11px] font-bold uppercase text-amber-600 tracking-wider">Pendientes / En Curso</p>
-            <p id="stat-pending" class="text-2xl font-black text-amber-600 mt-0.5">0</p>
+            <p class="text-[10px] font-bold uppercase text-amber-600 tracking-wider">Pendientes / En Curso</p>
+            <p id="stat-pending" class="text-xl font-black text-amber-600">0</p>
           </div>
-          <div class="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
-            <i data-lucide="clock" class="w-5 h-5"></i>
+          <div class="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
+            <i data-lucide="clock" class="w-4 h-4"></i>
           </div>
         </div>
-
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
-            <p class="text-[11px] font-bold uppercase text-brand-limeHover tracking-wider">Realizadas</p>
-            <p id="stat-done" class="text-2xl font-black text-brand-limeHover mt-0.5">0</p>
+            <p class="text-[10px] font-bold uppercase text-brand-limeHover tracking-wider">Realizadas</p>
+            <p id="stat-done" class="text-xl font-black text-brand-limeHover">0</p>
           </div>
-          <div class="w-10 h-10 bg-brand-limeLight rounded-xl flex items-center justify-center text-brand-limeHover">
-            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+          <div class="w-9 h-9 bg-brand-limeLight rounded-xl flex items-center justify-center text-brand-limeHover">
+            <i data-lucide="check-circle-2" class="w-4 h-4"></i>
           </div>
         </div>
-
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
-            <p class="text-[11px] font-bold uppercase text-rose-600 tracking-wider">No Realizadas</p>
-            <p id="stat-failed" class="text-2xl font-black text-rose-600 mt-0.5">0</p>
+            <p class="text-[10px] font-bold uppercase text-rose-600 tracking-wider">No Realizadas</p>
+            <p id="stat-failed" class="text-xl font-black text-rose-600">0</p>
           </div>
-          <div class="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600">
-            <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+          <div class="w-9 h-9 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600">
+            <i data-lucide="alert-triangle" class="w-4 h-4"></i>
           </div>
         </div>
       </section>
 
       <!-- Filtros y Búsqueda -->
-      <section class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+      <section class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm mb-5 flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
         <div class="relative flex-1">
-          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
-          <input type="text" id="filter-search" oninput="app.renderTasks()" placeholder="Buscar cliente, dirección o motor (BFT, LiftMaster, Beninca)..." class="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+          <input type="text" id="filter-search" oninput="app.renderTasks()" placeholder="Buscar cliente, dirección o motor..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none">
         </div>
-
         <div class="flex flex-wrap gap-2 items-center">
-          <select id="filter-status" onchange="app.renderTasks()" class="text-xs sm:text-sm border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:ring-2 focus:ring-brand-lime focus:outline-none font-medium">
+          <select id="filter-status" onchange="app.renderTasks()" class="text-xs border border-slate-200 rounded-xl px-2.5 py-1.5 bg-slate-50 font-medium">
             <option value="ALL">Todos los Estados</option>
             <option value="PENDIENTE">⏳ Pendientes</option>
             <option value="EN_PROCESO">⚙️ En Proceso</option>
             <option value="REALIZADA">✅ Realizadas</option>
             <option value="NO_REALIZADA">❌ No Realizadas</option>
           </select>
-
-          <select id="filter-tech" onchange="app.renderTasks()" class="text-xs sm:text-sm border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:ring-2 focus:ring-brand-lime focus:outline-none font-medium">
+          <select id="filter-tech" onchange="app.renderTasks()" class="text-xs border border-slate-200 rounded-xl px-2.5 py-1.5 bg-slate-50 font-medium">
             <option value="ALL">Todos los Técnicos</option>
           </select>
-
-          <select id="filter-priority" onchange="app.renderTasks()" class="text-xs sm:text-sm border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:ring-2 focus:ring-brand-lime focus:outline-none font-medium">
-            <option value="ALL">Todas las Prioridades</option>
+          <select id="filter-priority" onchange="app.renderTasks()" class="text-xs border border-slate-200 rounded-xl px-2.5 py-1.5 bg-slate-50 font-medium">
+            <option value="ALL">Prioridades</option>
             <option value="ALTA">Alta</option>
             <option value="MEDIA">Media</option>
             <option value="BAJA">Baja</option>
           </select>
-
-          <button onclick="app.resetFilters()" class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl" title="Restablecer filtros">
+          <button onclick="app.resetFilters()" class="p-1.5 text-slate-500 hover:bg-slate-100 rounded-xl" title="Restablecer">
             <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
           </button>
         </div>
       </section>
 
       <!-- Cuadrícula de Órdenes -->
-      <section class="mb-10">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="font-extrabold text-slate-800 text-lg flex items-center gap-2">
-            <span>Órdenes de Trabajo</span>
-            <span id="filtered-count" class="text-xs bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-full font-bold">0</span>
-          </h2>
-          <span class="text-xs text-slate-500 hidden sm:inline" id="role-hint-text">
-            Selecciona una orden para registrar el informe o verificar la ficha
-          </span>
+      <section class="mb-8">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2.5">
+            <h2 class="font-extrabold text-slate-800 text-base flex items-center gap-1.5">
+              <span>Órdenes de Trabajo</span>
+              <span id="filtered-count" class="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-bold">0</span>
+            </h2>
+            <button id="btn-reset-all-completed" onclick="app.resetAllCompletedTasks()" class="hidden text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 px-3 py-1 rounded-xl font-bold flex items-center gap-1 transition shadow-sm">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-amber-600"></i>
+              <span>Reiniciar Realizadas</span>
+            </button>
+          </div>
+          <span class="text-xs text-slate-500 hidden sm:inline" id="role-hint-text"></span>
         </div>
 
-        <div id="tasks-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5"></div>
+        <div id="tasks-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
 
-        <div id="empty-state" class="hidden bg-white border-2 border-dashed border-slate-200 rounded-3xl p-10 text-center my-6">
-          <div class="w-16 h-16 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
-            <i data-lucide="inbox" class="w-8 h-8"></i>
+        <div id="empty-state" class="hidden bg-white border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center my-4">
+          <div class="w-12 h-12 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center mx-auto mb-2">
+            <i data-lucide="inbox" class="w-6 h-6"></i>
           </div>
-          <h3 class="text-base font-bold text-slate-800">No hay tareas para mostrar</h3>
-          <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">No hay órdenes asignadas con los filtros actuales o no tienes servicios programados hoy.</p>
-          <button onclick="app.resetFilters()" class="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">
-            Limpiar filtros
-          </button>
+          <h3 class="text-sm font-bold text-slate-800">No hay tareas para mostrar</h3>
+          <p class="text-xs text-slate-500 mt-0.5">No hay órdenes con los filtros actuales.</p>
         </div>
       </section>
 
-      <!-- ============================================================== -->
-      <!-- REGISTRO Y BITÁCORA DETALLADA DE TRABAJOS (SOLO ADMINISTRADOR) -->
-      <!-- ============================================================== -->
-      <section id="section-admin-audit-log" class="hidden bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-sm mb-10">
-        <div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
-          <div class="flex items-center gap-2.5">
-            <div class="p-2 bg-brand-limeLight rounded-xl text-brand-limeHover border border-brand-limeBorder">
-              <i data-lucide="history" class="w-5 h-5"></i>
+      <!-- BITÁCORA DETALLADA PARA EL ADMINISTRADOR -->
+      <section id="section-admin-audit-log" class="hidden bg-white rounded-2xl border border-slate-200 p-4 shadow-sm mb-8">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-2.5 mb-3">
+          <div class="flex items-center gap-2">
+            <div class="p-1.5 bg-brand-limeLight rounded-lg text-brand-limeHover border border-brand-limeBorder">
+              <i data-lucide="history" class="w-4 h-4"></i>
             </div>
             <div>
-              <h3 class="font-extrabold text-sm sm:text-base text-slate-900">Bitácora Operativa: Registro de Informes de Empleados</h3>
-              <p class="text-xs text-slate-500">Historial completo con fecha, hora, lugar, detalles y evidencias fotográficas/video.</p>
+              <h3 class="font-extrabold text-sm text-slate-900">Bitácora Operativa: Registro de Informes de Empleados</h3>
+              <p class="text-[11px] text-slate-500">Historial con fecha, hora, lugar, detalles y evidencias multimedia.</p>
             </div>
           </div>
-          <span id="audit-log-counter" class="text-xs font-black px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg">0 Informes</span>
+          <span id="audit-log-counter" class="text-xs font-black px-2 py-0.5 bg-slate-100 text-slate-700 rounded-lg">0 Informes</span>
         </div>
-
         <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs border border-slate-100 rounded-xl">
+          <table class="w-full text-left text-xs">
             <thead class="bg-slate-50 text-slate-600 uppercase font-bold border-b">
               <tr>
-                <th class="p-3">Fecha y Hora</th>
-                <th class="p-3">Técnico</th>
-                <th class="p-3">Cliente / Ubicación</th>
-                <th class="p-3">Resultado</th>
-                <th class="p-3">Detalle del Informe</th>
-                <th class="p-3">Evidencias</th>
+                <th class="p-2.5">Fecha y Hora</th>
+                <th class="p-2.5">Técnico</th>
+                <th class="p-2.5">Cliente / Lugar</th>
+                <th class="p-2.5">Estado</th>
+                <th class="p-2.5">Detalle</th>
+                <th class="p-2.5">Evidencias</th>
               </tr>
             </thead>
             <tbody id="audit-log-tbody" class="divide-y divide-slate-100"></tbody>
@@ -345,24 +319,22 @@
 
     </main>
 
-    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 mt-auto">
-      <p><b class="text-slate-800">SERVIPORTONES ELÉCTRICOS MARTÍNEZ</b> &bull; Sistema de Gestión Técnica de Automatismos &bull; 2026</p>
+    <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500 mt-auto">
+      <p><b class="text-slate-800">SERVIPORTONES ELÉCTRICOS MARTÍNEZ</b> &bull; Sistema Operativo Técnico &bull; 2026</p>
     </footer>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: AJUSTES, FOTOS Y PERSONAL                                          -->
+  <!-- MODAL: AJUSTES, FOTOS Y PERSONAL (PROPORCIONES REDUCIDAS)                  -->
   <!-- ========================================================================= -->
-  <div id="modal-settings" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-slate-100 overflow-hidden my-8">
-      <div class="bg-brand-dark text-white px-6 py-4 flex items-center justify-between border-b-2 border-brand-lime">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-brand-lime text-brand-dark flex items-center justify-center font-bold">
-            <i data-lucide="settings" class="w-5 h-5"></i>
-          </div>
+  <div id="modal-settings" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
+      <div class="bg-brand-dark text-white px-5 py-3.5 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
+        <div class="flex items-center gap-2">
+          <i data-lucide="settings" class="w-5 h-5 text-brand-lime"></i>
           <div>
-            <h3 class="text-base font-bold">Configuración y Seguridad</h3>
-            <p id="settings-modal-subtitle" class="text-xs text-slate-300">Administración de credenciales, perfil y personal</p>
+            <h3 class="text-sm font-bold">Configuración y Seguridad</h3>
+            <p id="settings-modal-subtitle" class="text-[11px] text-slate-300">Administración de credenciales, perfil y personal</p>
           </div>
         </div>
         <button onclick="app.closeSettingsModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
@@ -370,136 +342,95 @@
         </button>
       </div>
 
-      <div class="p-6 space-y-6 max-h-[80vh] overflow-y-auto text-xs sm:text-sm">
-        <!-- Foto de perfil propia -->
-        <div class="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200">
-          <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 mb-3 flex items-center gap-2">
+      <div class="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1 text-xs sm:text-sm">
+        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 mb-2 flex items-center gap-1.5">
             <i data-lucide="camera" class="w-4 h-4 text-brand-limeHover"></i>
             <span>Mi Foto de Perfil</span>
           </h4>
-          <div class="flex flex-col sm:flex-row items-center gap-4">
-            <div class="relative w-20 h-20 rounded-full border-4 border-brand-lime overflow-hidden bg-slate-200 shadow-md shrink-0 flex items-center justify-center">
-              <img id="settings-my-photo-preview" src="" alt="Vista previa" class="w-full h-full object-cover hidden">
-              <span id="settings-my-initial-preview" class="text-2xl font-black text-slate-600">A</span>
+          <div class="flex items-center gap-3">
+            <div class="relative w-14 h-14 rounded-full border-2 border-brand-lime overflow-hidden bg-slate-200 shadow shrink-0 flex items-center justify-center">
+              <img id="settings-my-photo-preview" src="" alt="Foto" class="w-full h-full object-cover hidden">
+              <span id="settings-my-initial-preview" class="text-xl font-black text-slate-600">A</span>
             </div>
-            <div class="flex-1 space-y-2 text-center sm:text-left">
-              <p class="text-xs text-slate-600">Sube una foto de tu rostro para que aparezca en el sistema y fichas técnicas.</p>
-              <div class="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
-                <label class="cursor-pointer px-3 py-1.5 bg-brand-dark hover:bg-black text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow transition">
+            <div class="flex-1 space-y-1.5">
+              <p class="text-xs text-slate-600">Se sincronizará en tiempo real con el panel del Administrador.</p>
+              <div class="flex items-center gap-2">
+                <label class="cursor-pointer px-3 py-1 bg-brand-dark hover:bg-black text-white text-xs font-bold rounded-lg inline-flex items-center gap-1 shadow">
                   <i data-lucide="upload" class="w-3.5 h-3.5 text-brand-lime"></i> Subir Foto
                   <input type="file" accept="image/*" class="hidden" onchange="app.handleUploadOwnPhoto(event)">
                 </label>
-                <button type="button" onclick="app.removeOwnPhoto()" class="px-3 py-1.5 border border-slate-300 text-slate-600 hover:bg-white text-xs font-semibold rounded-xl">
-                  Quitar Foto
+                <button type="button" onclick="app.removeOwnPhoto()" class="px-2.5 py-1 border border-slate-300 text-slate-600 hover:bg-white text-xs font-semibold rounded-lg">
+                  Quitar
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Cambio de contraseña propia -->
-        <div class="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200">
-          <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 mb-3 flex items-center gap-2">
+        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 mb-2 flex items-center gap-1.5">
             <i data-lucide="key" class="w-4 h-4 text-brand-limeHover"></i>
             <span>Cambiar Mi Contraseña Actual</span>
           </h4>
-          <form onsubmit="app.handleChangeOwnPassword(event)" class="space-y-3">
+          <form onsubmit="app.handleChangeOwnPassword(event)" class="space-y-2.5">
             <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">Contraseña Actual *</label>
-              <input type="password" id="set-own-current-pass" required placeholder="Ingresa tu contraseña actual" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none">
+              <label class="block text-xs font-semibold text-slate-600 mb-0.5">Contraseña Actual *</label>
+              <input type="password" id="set-own-current-pass" required placeholder="Clave actual" class="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg">
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Nueva Contraseña *</label>
-                <input type="password" id="set-own-new-pass" required minlength="3" placeholder="Mínimo 3 caracteres" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none">
+                <label class="block text-xs font-semibold text-slate-600 mb-0.5">Nueva Contraseña *</label>
+                <input type="password" id="set-own-new-pass" required minlength="3" placeholder="Nueva clave" class="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg">
               </div>
               <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Confirmar Nueva Contraseña *</label>
-                <input type="password" id="set-own-confirm-pass" required minlength="3" placeholder="Repite la nueva clave" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none">
+                <label class="block text-xs font-semibold text-slate-600 mb-0.5">Confirmar *</label>
+                <input type="password" id="set-own-confirm-pass" required minlength="3" placeholder="Repite la clave" class="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg">
               </div>
             </div>
             <div class="flex justify-end pt-1">
-              <button type="submit" class="px-4 py-2 bg-brand-dark hover:bg-black text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow">
-                <i data-lucide="check" class="w-3.5 h-3.5 text-brand-lime"></i> Guardar Nueva Clave
+              <button type="submit" class="px-3.5 py-1.5 bg-brand-dark hover:bg-black text-white text-xs font-bold rounded-lg flex items-center gap-1 shadow">
+                <i data-lucide="check" class="w-3.5 h-3.5 text-brand-lime"></i> Guardar Clave
               </button>
             </div>
           </form>
         </div>
 
-        <!-- Gestión de Técnicos (Admin) -->
-        <div id="settings-admin-users-section" class="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-5 hidden">
-          <div class="flex items-center justify-between border-b border-slate-200 pb-2">
-            <div>
-              <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-2">
-                <i data-lucide="users" class="w-4 h-4 text-brand-limeHover"></i>
-                <span>Gestión de Técnicos y Accesos</span>
-              </h4>
-              <p class="text-[11px] text-slate-500">Crea trabajadores, cámbiales la clave o actualiza sus fotos de perfil.</p>
-            </div>
-            <span id="settings-users-count-badge" class="text-xs font-bold px-2 py-0.5 rounded bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder">0 Técnicos</span>
+        <div id="settings-admin-users-section" class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3 hidden">
+          <div class="flex items-center justify-between border-b border-slate-200 pb-1.5">
+            <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+              <i data-lucide="users" class="w-4 h-4 text-brand-limeHover"></i>
+              <span>Gestión de Técnicos</span>
+            </h4>
+            <span id="settings-users-count-badge" class="text-[11px] font-bold px-2 py-0.5 rounded bg-brand-limeLight text-brand-limeHover">0 Técnicos</span>
           </div>
 
-          <form id="manage-user-form" onsubmit="app.handleSaveUser(event)" class="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
+          <form id="manage-user-form" onsubmit="app.handleSaveUser(event)" class="bg-white p-3 rounded-xl border border-slate-200 space-y-2">
             <input type="hidden" id="manage-user-id" value="">
             <input type="hidden" id="manage-user-photo" value="">
-
-            <div class="flex flex-col sm:flex-row items-center gap-4 pb-2 border-b border-slate-100">
-              <div class="relative w-16 h-16 rounded-full border-2 border-brand-lime overflow-hidden bg-slate-100 shrink-0 flex items-center justify-center">
-                <img id="manage-user-photo-preview" src="" alt="Foto técnico" class="w-full h-full object-cover hidden">
-                <span id="manage-user-initial-preview" class="text-lg font-bold text-slate-500">?</span>
-              </div>
-              <div class="flex-1 text-center sm:text-left">
-                <label class="cursor-pointer px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg inline-flex items-center gap-1 border border-slate-300">
-                  <i data-lucide="image" class="w-3.5 h-3.5 text-brand-limeHover"></i> Asignar Foto al Trabajador
-                  <input type="file" accept="image/*" class="hidden" onchange="app.handleUploadTechPhoto(event)">
-                </label>
-                <p class="text-[10px] text-slate-400 mt-1">Opcional. Si no se sube, se asignará un avatar por defecto.</p>
-              </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <input type="text" id="manage-fullname" required placeholder="Nombre Completo" class="w-full px-2.5 py-1.5 text-xs bg-slate-50 border rounded-lg">
+              <input type="text" id="manage-username" required placeholder="Usuario (sin espacios)" class="w-full px-2.5 py-1.5 text-xs bg-slate-50 border rounded-lg">
             </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre Completo del Técnico *</label>
-                <input type="text" id="manage-fullname" required placeholder="Ej: Pedro González" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none">
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Usuario de Login *</label>
-                <input type="text" id="manage-username" required placeholder="Ej: pedro (sin espacios)" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none">
-              </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <input type="text" id="manage-password" required placeholder="Contraseña" class="w-full px-2.5 py-1.5 text-xs bg-slate-50 border rounded-lg font-mono">
+              <input type="tel" id="manage-phone" required placeholder="WhatsApp" class="w-full px-2.5 py-1.5 text-xs bg-slate-50 border rounded-lg">
+              <input type="text" id="manage-specialty" placeholder="Especialidad" class="w-full px-2.5 py-1.5 text-xs bg-slate-50 border rounded-lg">
             </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Contraseña *</label>
-                <input type="text" id="manage-password" required placeholder="Clave para el técnico" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none font-mono">
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Teléfono / WhatsApp *</label>
-                <input type="tel" id="manage-phone" required placeholder="Ej: 312 345 6789" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none">
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Especialidad</label>
-                <input type="text" id="manage-specialty" placeholder="Ej: Corredizos BFT" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none">
-              </div>
-            </div>
-
-            <div class="flex justify-end gap-2 pt-1">
-              <button type="button" onclick="app.resetUserForm()" class="px-3 py-1.5 border border-slate-300 rounded-xl text-slate-600 text-xs font-semibold hover:bg-slate-50">Cancelar</button>
-              <button type="submit" id="btn-save-user" class="px-4 py-1.5 bg-brand-dark hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow">
-                <i data-lucide="check" class="w-3.5 h-3.5 text-brand-lime"></i> Guardar Trabajador
-              </button>
+            <div class="flex justify-end gap-1.5 pt-1">
+              <button type="button" onclick="app.resetUserForm()" class="px-2.5 py-1 text-xs border rounded-lg">Cancelar</button>
+              <button type="submit" id="btn-save-user" class="px-3.5 py-1 bg-brand-dark text-white rounded-lg text-xs font-bold">Guardar Trabajador</button>
             </div>
           </form>
 
-          <div class="overflow-x-auto border border-slate-200 rounded-2xl bg-white">
+          <div class="overflow-x-auto border border-slate-200 rounded-xl bg-white max-h-48 overflow-y-auto">
             <table class="w-full text-left text-xs">
-              <thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200">
+              <thead class="bg-slate-100 text-slate-700 uppercase font-bold sticky top-0">
                 <tr>
-                  <th class="p-3">Personal</th>
-                  <th class="p-3">Usuario & Clave</th>
-                  <th class="p-3">Horario Registro Hoy</th>
-                  <th class="p-3">Estado</th>
-                  <th class="p-3 text-right">Acciones</th>
+                  <th class="p-2">Personal</th>
+                  <th class="p-2">Usuario & Clave</th>
+                  <th class="p-2">Estado</th>
+                  <th class="p-2 text-right">Acción</th>
                 </tr>
               </thead>
               <tbody id="table-users-body" class="divide-y divide-slate-100"></tbody>
@@ -507,108 +438,101 @@
           </div>
         </div>
       </div>
+      <div class="p-3 border-t bg-slate-50 flex justify-end shrink-0">
+        <button onclick="app.closeSettingsModal()" class="px-4 py-1.5 border border-slate-300 rounded-xl text-slate-700 text-xs font-bold hover:bg-slate-100">Cerrar</button>
+      </div>
     </div>
   </div>
 
   <!-- ======================================================== -->
-  <!-- MODAL: CREAR / EDITAR ORDEN (ADMIN)                      -->
+  <!-- MODAL: ASIGNAR / EDITAR ORDEN (ADMIN)                    -->
   <!-- ======================================================== -->
-  <div id="modal-task-form" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-xl w-full shadow-2xl border border-slate-100 overflow-hidden my-8">
-      <div class="bg-brand-dark text-white px-6 py-4 flex items-center justify-between border-b-2 border-brand-lime">
+  <div id="modal-task-form" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
+      <div class="bg-brand-dark text-white px-5 py-3.5 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
         <div class="flex items-center gap-2">
           <i data-lucide="clipboard-pen" class="w-5 h-5 text-brand-lime"></i>
-          <h3 id="form-modal-title" class="text-base font-bold">Asignar Orden de Trabajo</h3>
+          <h3 id="form-modal-title" class="text-sm font-bold">Asignar Orden de Trabajo</h3>
         </div>
-        <button onclick="app.closeTaskModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+        <button onclick="app.closeTaskModal()" class="text-slate-400 hover:text-white p-1">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <form id="task-form" onsubmit="app.handleSaveTask(event)" class="p-6 space-y-4 text-xs sm:text-sm">
+      <form id="task-form" onsubmit="app.handleSaveTask(event)" class="p-4 space-y-3 text-xs sm:text-sm overflow-y-auto flex-1">
         <input type="hidden" id="task-id" value="">
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre del Cliente / Predio *</label>
-            <input type="text" id="task-client" required placeholder="Ej: Condominio Las Palmas o Juan Pérez" class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none">
+            <label class="block text-xs font-semibold text-slate-700 mb-0.5">Cliente / Predio *</label>
+            <input type="text" id="task-client" required placeholder="Nombre del cliente" class="w-full px-2.5 py-1.5 border rounded-lg">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Teléfono Cliente *</label>
-            <input type="tel" id="task-phone" required placeholder="Ej: 310 123 4567" class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none">
+            <label class="block text-xs font-semibold text-slate-700 mb-0.5">Teléfono *</label>
+            <input type="tel" id="task-phone" required placeholder="Teléfono" class="w-full px-2.5 py-1.5 border rounded-lg">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Dirección del Inmueble *</label>
-          <div class="relative">
-            <i data-lucide="map-pin" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
-            <input type="text" id="task-address" required placeholder="Ej: Cra 14 # 50-20, Barrio La Floresta" class="w-full pl-9 pr-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none">
-          </div>
+          <label class="block text-xs font-semibold text-slate-700 mb-0.5">Dirección del Inmueble *</label>
+          <input type="text" id="task-address" required placeholder="Dirección completa" class="w-full px-2.5 py-1.5 border rounded-lg">
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Tipo de Servicio *</label>
-            <select id="task-service-type" required class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none bg-white">
+            <label class="block text-xs font-semibold text-slate-700 mb-0.5">Tipo de Servicio *</label>
+            <select id="task-service-type" required class="w-full px-2.5 py-1.5 border rounded-lg bg-white">
               <option value="Mantenimiento Preventivo General">Mantenimiento Preventivo General</option>
               <option value="Instalación de Motor Nuevo">Instalación de Motor Nuevo</option>
               <option value="Reparación de Emergencia / Fallo">Reparación de Emergencia / No Abre</option>
               <option value="Cambio de Cremallera o Engranajes">Cambio de Cremallera / Engranajes</option>
-              <option value="Programación de Mandos / Receptora">Programación de Controles Remotos</option>
-              <option value="Reemplazo de Tarjeta Electrónica">Cambio de Tarjeta / Tarjeta Quemada</option>
-              <option value="Calibración de Brazos Batientes">Calibración de Brazos Batientes</option>
-              <option value="Ajuste de Puerta Enrollable o Levadiza">Ajuste de Puerta Enrollable / Levadiza</option>
+              <option value="Programación de Mandos / Receptora">Programación de Controles</option>
+              <option value="Reemplazo de Tarjeta Electrónica">Cambio de Tarjeta</option>
+              <option value="Calibración de Brazos Batientes">Calibración de Brazos</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Tipo y Marca de Motor *</label>
-            <input type="text" id="task-equipment" required placeholder="Ej: Corredizo BFT Deimos / LiftMaster 800" class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none">
+            <label class="block text-xs font-semibold text-slate-700 mb-0.5">Tipo y Marca de Motor *</label>
+            <input type="text" id="task-equipment" required placeholder="Ej: BFT Deimos / LiftMaster" class="w-full px-2.5 py-1.5 border rounded-lg">
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Técnico Asignado *</label>
-            <select id="task-assigned-to" required class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none bg-white font-semibold"></select>
+            <label class="block text-xs font-semibold text-slate-700 mb-0.5">Técnico Asignado *</label>
+            <select id="task-assigned-to" required class="w-full px-2.5 py-1.5 border rounded-lg bg-white font-semibold"></select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Prioridad *</label>
-            <select id="task-priority" required class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none bg-white">
+            <label class="block text-xs font-semibold text-slate-700 mb-0.5">Prioridad *</label>
+            <select id="task-priority" required class="w-full px-2.5 py-1.5 border rounded-lg bg-white">
               <option value="MEDIA">🟡 Media</option>
-              <option value="ALTA">🔴 Alta (Urgente)</option>
+              <option value="ALTA">🔴 Alta</option>
               <option value="BAJA">🟢 Baja</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Fecha Programada *</label>
-            <input type="date" id="task-date" required class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none bg-white">
+            <label class="block text-xs font-semibold text-slate-700 mb-0.5">Fecha *</label>
+            <input type="date" id="task-date" required class="w-full px-2.5 py-1.5 border rounded-lg bg-white">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Instrucciones / Falla reportada</label>
-          <textarea id="task-instructions" rows="3" placeholder="Ej: El portón se frena a mitad de recorrido. Revisar cremallera y lubricación..." class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none"></textarea>
+          <label class="block text-xs font-semibold text-slate-700 mb-0.5">Instrucciones</label>
+          <textarea id="task-instructions" rows="2" placeholder="Indicaciones para el técnico..." class="w-full px-2.5 py-1.5 border rounded-lg"></textarea>
         </div>
 
-        <div class="mt-4 border-t border-slate-200 pt-3">
-          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-            Puntos de Inspección / Checklist de la Orden
-          </label>
-          <div id="task-modal-checklist-container" class="space-y-1.5 max-h-48 overflow-y-auto p-1 bg-slate-50 rounded-xl border border-slate-200"></div>
-
+        <div class="border-t pt-2.5">
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Checklist de la Orden</label>
+          <div id="task-modal-checklist-container" class="space-y-1 max-h-36 overflow-y-auto p-1 bg-slate-50 rounded-xl border"></div>
           <div class="flex items-center gap-2 mt-2">
-            <input type="text" id="task-modal-new-item-input" placeholder="Nuevo punto para esta orden..." class="flex-1 px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-lime">
-            <button type="button" onclick="app.addTaskModalChecklistItem()" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-lg transition shrink-0">
-              + Agregar Ítem
-            </button>
+            <input type="text" id="task-modal-new-item-input" placeholder="Nuevo punto para esta orden..." class="flex-1 px-2.5 py-1 text-xs border rounded-lg">
+            <button type="button" onclick="app.addTaskModalChecklistItem()" class="px-3 py-1 text-xs bg-slate-800 text-white font-semibold rounded-lg shrink-0">+ Agregar</button>
           </div>
         </div>
 
-        <div class="pt-4 border-t flex justify-end gap-2">
-          <button type="button" onclick="app.closeTaskModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-xs">Cancelar</button>
-          <button type="submit" class="px-5 py-2 bg-brand-dark hover:bg-black text-white rounded-xl font-bold flex items-center gap-1.5 shadow-md text-xs">
-            <i data-lucide="save" class="w-4 h-4 text-brand-lime"></i> Asignar Orden
+        <div class="pt-3 border-t flex justify-end gap-2 sticky bottom-0 bg-white">
+          <button type="button" onclick="app.closeTaskModal()" class="px-3.5 py-1.5 border border-slate-300 rounded-xl text-slate-700 font-semibold text-xs">Cancelar</button>
+          <button type="submit" class="px-4 py-1.5 bg-brand-dark hover:bg-black text-white rounded-xl font-bold flex items-center gap-1 shadow text-xs">
+            <i data-lucide="save" class="w-3.5 h-3.5 text-brand-lime"></i> Asignar Orden
           </button>
         </div>
       </form>
@@ -616,152 +540,145 @@
   </div>
 
   <!-- ======================================================== -->
-  <!-- MODAL: REPORTE TÉCNICO (CON FOTOS Y VIDEOS)              -->
+  <!-- MODAL: REPORTE TÉCNICO (CON FOTOS, VIDEOS Y ESTADOS)     -->
   <!-- ======================================================== -->
-  <div id="modal-report" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden my-8">
-      <div id="report-modal-header" class="bg-brand-dark text-white px-6 py-4 flex items-center justify-between border-b-2 border-brand-lime">
+  <div id="modal-report" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
+      <div id="report-modal-header" class="bg-brand-dark text-white px-5 py-3.5 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
         <div>
           <div class="flex items-center gap-2">
             <i data-lucide="wrench" class="w-5 h-5 text-brand-lime"></i>
-            <h3 class="text-base font-bold">Reporte de Servicio Técnico</h3>
+            <h3 class="text-sm font-bold">Reporte de Servicio Técnico</h3>
           </div>
-          <p id="report-order-subtitle" class="text-xs text-slate-300 mt-0.5">Orden #... - Cliente</p>
+          <p id="report-order-subtitle" class="text-[11px] text-slate-300">Orden #... - Cliente</p>
         </div>
-        <button onclick="app.closeReportModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+        <button onclick="app.closeReportModal()" class="text-slate-400 hover:text-white p-1">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <div class="p-6 space-y-5 text-xs sm:text-sm max-h-[80vh] overflow-y-auto">
-        <!-- Resumen del trabajo -->
-        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+      <div class="p-4 space-y-4 text-xs sm:text-sm overflow-y-auto flex-1">
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             <div><span class="text-slate-500 font-medium">Servicio:</span> <span id="rep-service" class="font-bold text-slate-800"></span></div>
             <div><span class="text-slate-500 font-medium">Equipo:</span> <span id="rep-equipment" class="font-bold text-slate-800"></span></div>
             <div class="sm:col-span-2"><span class="text-slate-500 font-medium">Dirección:</span> <span id="rep-address" class="font-semibold text-slate-800"></span></div>
-            <div class="sm:col-span-2"><span class="text-slate-500 font-medium">Indicaciones:</span> <span id="rep-instruction" class="text-slate-700 italic"></span></div>
           </div>
         </div>
 
-        <!-- Botones de Navegación Rápida -->
-        <div class="p-3 bg-cyan-50/70 border border-cyan-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-2.5">
-          <span class="text-xs font-bold text-cyan-900 flex items-center gap-1.5">
-            <i data-lucide="navigation" class="w-4 h-4 text-cyan-600"></i> ¿Cómo llegar al predio?
+        <!-- Botones de GPS en el modal -->
+        <div class="p-2.5 bg-cyan-50/70 border border-cyan-200 rounded-xl flex items-center justify-between gap-2">
+          <span class="text-xs font-bold text-cyan-900 flex items-center gap-1">
+            <i data-lucide="navigation" class="w-3.5 h-3.5 text-cyan-600"></i> Iniciar Ruta GPS:
           </span>
-          <div class="flex items-center gap-2 w-full sm:w-auto">
-            <button type="button" id="rep-btn-waze" class="flex-1 sm:flex-none px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1 shadow-sm transition">
-              🚙 Abrir Waze
+          <div class="flex items-center gap-2">
+            <button type="button" id="rep-btn-waze" class="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg text-xs shadow-sm">
+              🚙 Waze
             </button>
-            <button type="button" id="rep-btn-maps" class="flex-1 sm:flex-none px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1 shadow-sm transition">
-              📍 Google Maps
+            <button type="button" id="rep-btn-maps" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-sm">
+              📍 Maps
             </button>
           </div>
         </div>
 
-        <!-- Selector: REALIZADA / NO REALIZADA -->
+        <!-- Selector de Resultado -->
         <div>
-          <label class="block text-xs font-black uppercase tracking-wider text-slate-800 mb-2">
+          <label class="block text-xs font-black uppercase tracking-wider text-slate-800 mb-1.5">
             Resultado de la Visita *
           </label>
-          <div class="grid grid-cols-2 gap-3">
-            <button type="button" id="btn-choice-done" onclick="app.setReportStatus('REALIZADA')" class="py-3 px-4 rounded-2xl border-2 flex items-center justify-center gap-2 font-bold transition text-slate-700 border-slate-200 hover:border-brand-lime">
-              <i data-lucide="check-circle" class="w-5 h-5 text-brand-limeHover"></i>
+          <div class="grid grid-cols-2 gap-2.5">
+            <button type="button" id="btn-choice-done" onclick="app.setReportStatus('REALIZADA')" class="py-2.5 px-3 rounded-xl border-2 flex items-center justify-center gap-1.5 font-bold transition text-slate-700 border-slate-200">
+              <i data-lucide="check-circle" class="w-4 h-4 text-brand-limeHover"></i>
               <span>✅ Sí, Realizada</span>
             </button>
-            <button type="button" id="btn-choice-failed" onclick="app.setReportStatus('NO_REALIZADA')" class="py-3 px-4 rounded-2xl border-2 flex items-center justify-center gap-2 font-bold transition text-slate-700 border-slate-200 hover:border-rose-500">
-              <i data-lucide="x-circle" class="w-5 h-5 text-rose-600"></i>
+            <button type="button" id="btn-choice-failed" onclick="app.setReportStatus('NO_REALIZADA')" class="py-2.5 px-3 rounded-xl border-2 flex items-center justify-center gap-1.5 font-bold transition text-slate-700 border-slate-200">
+              <i data-lucide="x-circle" class="w-4 h-4 text-rose-600"></i>
               <span>❌ No Realizada</span>
             </button>
           </div>
         </div>
 
-        <!-- Checklist Dinámico -->
-        <div id="section-checklist" class="space-y-3 border-t pt-4">
+        <!-- Checklist -->
+        <div id="section-checklist" class="space-y-2 border-t pt-3">
           <div class="flex items-center justify-between">
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-              Checklist Técnico de la Visita
-            </label>
-            <span class="text-[11px] text-slate-400 font-medium">Usa ✏️ para editar o ✕ para quitar</span>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Checklist Técnico</label>
+            <span class="text-[10px] text-slate-400">✏️ Editar / ✕ Quitar</span>
           </div>
-          <div id="checklist-items-container" class="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs"></div>
-
+          <div id="checklist-items-container" class="space-y-1.5 bg-slate-50 p-2.5 rounded-xl border text-xs max-h-40 overflow-y-auto"></div>
           <div class="flex items-center gap-2 pt-1">
-            <input type="text" id="new-checklist-item-input" placeholder="Ej: Revisar condensador, lubricación..." class="flex-1 px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none shadow-sm" onkeydown="if(event.key==='Enter'){event.preventDefault(); app.addChecklistItem();}">
-            <button type="button" onclick="app.addChecklistItem()" class="px-3.5 py-2 bg-brand-dark hover:bg-black text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow transition active:scale-95 shrink-0">
-              <i data-lucide="plus-circle" class="w-4 h-4 text-brand-lime"></i>
-              <span>Agregar Ítem</span>
-            </button>
+            <input type="text" id="new-checklist-item-input" placeholder="Nuevo punto de verificación..." class="flex-1 px-2.5 py-1 text-xs bg-white border border-slate-300 rounded-lg">
+            <button type="button" onclick="app.addChecklistItem()" class="px-3 py-1 bg-brand-dark text-white text-xs font-bold rounded-lg shrink-0">+ Añadir</button>
           </div>
         </div>
 
         <!-- Observaciones / Detalles -->
-        <div class="space-y-2 border-t pt-4">
+        <div class="space-y-1.5 border-t pt-3">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-              Detalles / Observaciones del Técnico <span id="obs-required-badge" class="text-rose-600 font-bold">*</span>
+              Detalles / Observaciones <span id="obs-required-badge" class="text-rose-600 font-bold">*</span>
             </label>
             <div id="quick-reasons-wrap" class="hidden">
-              <select onchange="app.insertQuickReason(this.value)" class="text-[11px] text-slate-700 bg-slate-100 border border-slate-300 rounded-lg px-2 py-1">
+              <select onchange="app.insertQuickReason(this.value)" class="text-[11px] bg-slate-100 border border-slate-300 rounded-lg px-2 py-0.5">
                 <option value="">⚡ Motivo rápido...</option>
-                <option value="Cliente ausente tras 30 min de espera y llamadas telefónicas.">Cliente ausente</option>
-                <option value="Inmueble sin suministro eléctrico en el tablero general.">Sin energía eléctrica</option>
-                <option value="Tarjeta electrónica quemada por descarga. Requiere cotización.">Tarjeta quemada</option>
-                <option value="Piñón o cremallera rota por impacto vehicular. Requiere repuesto.">Corona o piñón averiado</option>
-                <option value="Portón descuadrado o soldado que traba el carril. Requiere cerrajería previa.">Daño mecánico estructural</option>
-                <option value="Lluvia torrencial en área abierta que impide manipular cables de 110V/220V.">Clima adverso/Seguridad</option>
+                <option value="Cliente ausente tras 30 min de espera.">Cliente ausente</option>
+                <option value="Sin suministro eléctrico en el tablero general.">Sin energía eléctrica</option>
+                <option value="Tarjeta electrónica averiada por descarga.">Tarjeta quemada</option>
+                <option value="Cremallera o piñón partido por golpe.">Piñón/Cremallera rota</option>
+                <option value="Portón trabado por deformación estructural.">Daño mecánico portón</option>
+                <option value="Lluvia torrencial que impide manipular corriente.">Clima adverso</option>
               </select>
             </div>
           </div>
-          <textarea id="rep-observations" rows="4" placeholder="Describe detalladamente el estado del portón, labores realizadas o justificación exacta..." class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none text-xs sm:text-sm"></textarea>
+          <textarea id="rep-observations" rows="3" placeholder="Describe detalladamente el trabajo realizado o el motivo si no se completó..." class="w-full px-2.5 py-1.5 border rounded-xl text-xs"></textarea>
         </div>
 
-        <!-- Evidencias Multimedia (Fotos y Videos) -->
-        <div class="space-y-2 border-t pt-4">
+        <!-- Evidencias Multimedia -->
+        <div class="space-y-2 border-t pt-3">
           <div class="flex items-center justify-between">
             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
               <i data-lucide="camera" class="w-4 h-4 text-brand-limeHover"></i>
-              <span>Evidencias Fotográficas y de Video</span>
+              <span>Fotos y Videos de Evidencia</span>
             </label>
-            <span class="text-[11px] text-slate-400">Máx. 5 archivos</span>
+            <span class="text-[10px] text-slate-400">Máx. 5 archivos</span>
           </div>
-
           <div class="flex items-center gap-2">
-            <label class="cursor-pointer px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow transition">
-              <i data-lucide="upload-cloud" class="w-4 h-4 text-brand-lime"></i> Subir Foto o Video
+            <label class="cursor-pointer px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow">
+              <i data-lucide="upload-cloud" class="w-3.5 h-3.5 text-brand-lime"></i> Subir Foto/Video
               <input type="file" id="rep-media-input" accept="image/*,video/*" multiple class="hidden" onchange="app.handleUploadEvidence(event)">
             </label>
-            <span class="text-[10px] text-slate-500">Puedes tomar fotos o grabar videos desde tu celular.</span>
+            <span class="text-[10px] text-slate-500">Toma fotos o sube videos del portón.</span>
           </div>
-
-          <div id="rep-evidence-gallery" class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2"></div>
+          <div id="rep-evidence-gallery" class="grid grid-cols-3 sm:grid-cols-4 gap-2 pt-1"></div>
         </div>
+      </div>
 
-        <!-- Acciones del Reporte -->
-        <div class="pt-4 border-t flex flex-col sm:flex-row justify-between items-center gap-3">
-          <button type="button" onclick="app.setTaskInProgress()" class="w-full sm:w-auto text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-4 py-2.5 rounded-xl font-bold">
+      <!-- Barra de Acciones y Estados fija en la base -->
+      <div class="p-3 border-t bg-slate-50 flex flex-wrap items-center justify-between gap-2 shrink-0">
+        <div class="flex items-center gap-1.5">
+          <button type="button" onclick="app.setTaskInProgress()" class="text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-3 py-1.5 rounded-xl font-bold">
             Dejar "En Proceso"
           </button>
-          <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <button type="button" onclick="app.closeReportModal()" class="px-4 py-2.5 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 text-xs font-bold">
-              Cancelar
-            </button>
-            <button type="button" onclick="app.submitReport()" class="px-5 py-2.5 bg-brand-dark hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow">
-              <i data-lucide="check" class="w-4 h-4 text-brand-lime"></i> Guardar Informe
-            </button>
-          </div>
+          <button type="button" onclick="app.setTaskPendingFromReport()" class="text-xs text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded-xl font-bold">
+            Regresar a Pendiente
+          </button>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="app.closeReportModal()" class="px-3 py-1.5 border border-slate-300 rounded-xl text-slate-600 text-xs font-bold">Cancelar</button>
+          <button type="button" onclick="app.submitReport()" class="px-4 py-1.5 bg-brand-dark hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow">
+            <i data-lucide="check" class="w-3.5 h-3.5 text-brand-lime"></i> Guardar Informe
+          </button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- ======================================================== -->
-  <!-- MODAL: FICHA DE ORDEN / IMPRIMIR                         -->
+  <!-- MODAL: FICHA DE ORDEN / IMPRIMIR (PROPORCIONES AJUSTADAS) -->
   <!-- ======================================================== -->
-  <div id="modal-view-order" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
-    <div id="printable-order-modal" class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 p-6 sm:p-8">
-      <div class="border-b-2 border-slate-200 pb-4 flex justify-between items-start">
-        <div class="max-w-[280px]">
+  <div id="modal-view-order" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div id="printable-order-modal" class="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 flex flex-col max-h-[92vh] overflow-hidden my-auto">
+      <div class="border-b-2 border-slate-200 p-4 sm:p-5 flex justify-between items-start shrink-0">
+        <div class="max-w-[240px]">
           <svg viewBox="0 0 420 170" class="w-full h-auto drop-shadow-sm select-none" xmlns="http://www.w3.org/2000/svg">
             <g stroke-linecap="round" stroke-linejoin="round">
               <path d="M 22 80 L 135 34 L 135 22 L 148 22 L 148 40 L 222 79" fill="none" stroke="#111827" stroke-width="12" />
@@ -771,86 +688,87 @@
               <text x="144" y="152" font-family="system-ui, -apple-system, sans-serif" font-size="19" font-weight="900" fill="#71A832" letter-spacing="3">ELECTRICOS MARTINEZ</text>
             </g>
           </svg>
-          <p class="text-[11px] text-slate-500 font-bold mt-1">Automatismos, Motores & Soluciones Electrónicas</p>
+          <p class="text-[10px] text-slate-500 font-bold mt-0.5">Automatismos, Motores & Soluciones Electrónicas</p>
         </div>
         <div class="text-right">
-          <span id="view-order-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase inline-block">ESTADO</span>
-          <p id="view-order-number" class="text-sm font-mono font-black text-slate-800 mt-2">ORD-000</p>
-          <p id="view-order-date" class="text-xs text-slate-500">2026-10-24</p>
+          <span id="view-order-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase inline-block">ESTADO</span>
+          <p id="view-order-number" class="text-xs font-mono font-black text-slate-800 mt-1">ORD-000</p>
+          <p id="view-order-date" class="text-[11px] text-slate-500">2026-10-24</p>
         </div>
       </div>
 
-      <div class="py-4 space-y-4 text-xs sm:text-sm">
-        <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+      <div class="p-4 sm:p-5 space-y-3 text-xs sm:text-sm overflow-y-auto flex-1">
+        <div class="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
           <div>
-            <span class="text-slate-400 block text-[10px] font-bold uppercase">Cliente / Predio</span>
+            <span class="text-slate-400 block text-[9px] font-bold uppercase">Cliente / Predio</span>
             <span id="view-client" class="font-bold text-slate-900"></span>
           </div>
           <div>
-            <span class="text-slate-400 block text-[10px] font-bold uppercase">Teléfono Contacto</span>
+            <span class="text-slate-400 block text-[9px] font-bold uppercase">Teléfono Contacto</span>
             <span id="view-phone" class="font-bold text-slate-900"></span>
           </div>
-          <div class="col-span-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div class="col-span-2 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pt-1 border-t border-slate-100">
             <div>
-              <span class="text-slate-400 block text-[10px] font-bold uppercase">Dirección</span>
+              <span class="text-slate-400 block text-[9px] font-bold uppercase">Dirección</span>
               <span id="view-address" class="font-semibold text-slate-800"></span>
             </div>
-            <div class="flex items-center gap-2 no-print shrink-0">
-              <button type="button" id="view-btn-waze" class="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-700 text-white text-[11px] font-bold rounded-lg flex items-center gap-1 shadow-sm transition">
+            <div class="flex items-center gap-1.5 no-print shrink-0">
+              <button type="button" id="view-btn-waze" class="px-2 py-0.5 bg-cyan-600 hover:bg-cyan-700 text-white text-[10px] font-bold rounded-lg flex items-center gap-1 shadow-sm">
                 🚙 Waze
               </button>
-              <button type="button" id="view-btn-maps" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg flex items-center gap-1 shadow-sm transition">
+              <button type="button" id="view-btn-maps" class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold rounded-lg flex items-center gap-1 shadow-sm">
                 📍 Maps
               </button>
             </div>
           </div>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <div>
-            <span class="text-slate-400 block text-[10px] font-bold uppercase">Tipo de Trabajo</span>
+            <span class="text-slate-400 block text-[9px] font-bold uppercase">Servicio</span>
             <span id="view-service" class="font-semibold text-slate-800"></span>
           </div>
           <div>
-            <span class="text-slate-400 block text-[10px] font-bold uppercase">Equipo / Motor</span>
+            <span class="text-slate-400 block text-[9px] font-bold uppercase">Equipo / Motor</span>
             <span id="view-equipment" class="font-semibold text-slate-800"></span>
           </div>
           <div>
-            <span class="text-slate-400 block text-[10px] font-bold uppercase">Técnico Responsable</span>
-            <div class="flex items-center gap-1.5 mt-0.5">
-              <img id="view-technician-photo" src="" alt="" class="w-5 h-5 rounded-full object-cover hidden">
+            <span class="text-slate-400 block text-[9px] font-bold uppercase">Técnico Responsable</span>
+            <div class="flex items-center gap-1 mt-0.5">
+              <img id="view-technician-photo" src="" alt="" class="w-4 h-4 rounded-full object-cover hidden">
               <span id="view-technician" class="font-bold text-slate-900"></span>
             </div>
           </div>
         </div>
 
         <div>
-          <span class="text-slate-400 block text-[10px] font-bold uppercase">Instrucciones Iniciales</span>
-          <p id="view-instructions" class="text-slate-700 bg-white p-2.5 rounded-xl border border-slate-200 mt-1"></p>
+          <span class="text-slate-400 block text-[9px] font-bold uppercase">Instrucciones Iniciales</span>
+          <p id="view-instructions" class="text-slate-700 bg-white p-2 rounded-xl border border-slate-200 mt-0.5"></p>
         </div>
 
         <div>
-          <span class="text-slate-400 block text-[10px] font-bold uppercase">Informe Técnico de Campo & Observaciones</span>
-          <div id="view-observations" class="p-3 rounded-xl border mt-1 whitespace-pre-line font-medium"></div>
+          <span class="text-slate-400 block text-[9px] font-bold uppercase">Informe Técnico de Campo & Observaciones</span>
+          <div id="view-observations" class="p-2.5 rounded-xl border mt-0.5 whitespace-pre-line font-medium text-xs"></div>
         </div>
 
         <div id="view-evidence-section" class="hidden">
-          <span class="text-slate-400 block text-[10px] font-bold uppercase mb-1.5">Evidencias Adjuntas</span>
-          <div id="view-evidence-gallery" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+          <span class="text-slate-400 block text-[9px] font-bold uppercase mb-1">Evidencias Adjuntas</span>
+          <div id="view-evidence-gallery" class="grid grid-cols-3 sm:grid-cols-4 gap-2"></div>
         </div>
       </div>
 
-      <div class="mt-6 pt-4 border-t flex justify-end gap-2 no-print">
-        <button onclick="app.closeViewModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 text-xs font-bold hover:bg-slate-100">Cerrar</button>
-        <button onclick="window.print()" class="px-4 py-2 bg-brand-dark hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow">
-          <i data-lucide="printer" class="w-4 h-4 text-brand-lime"></i> Imprimir / PDF
+      <!-- Barra de botones fija abajo para que nunca se tape -->
+      <div class="p-3 border-t bg-slate-50 flex justify-end gap-2 shrink-0 no-print">
+        <button onclick="app.closeViewModal()" class="px-4 py-1.5 border border-slate-300 rounded-xl text-slate-700 text-xs font-bold hover:bg-slate-100">Cerrar</button>
+        <button onclick="window.print()" class="px-4 py-1.5 bg-brand-dark hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow">
+          <i data-lucide="printer" class="w-3.5 h-3.5 text-brand-lime"></i> Imprimir / PDF
         </button>
       </div>
     </div>
   </div>
 
   <!-- Notificación Toast -->
-  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-950 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-800 text-xs sm:text-sm max-w-sm">
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-950 text-white px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2.5 border border-slate-800 text-xs sm:text-sm max-w-sm">
     <div id="toast-icon"></div>
     <span id="toast-message" class="font-semibold"></span>
   </div>
@@ -977,14 +895,12 @@
         return `${day} ${time}`;
       }
 
-      // --- NAVEGACIÓN GPS (WAZE Y GOOGLE MAPS) ---
       openWazeNavigation(address) {
         if (!address) {
           this.showToast('No hay una dirección registrada', 'error');
           return;
         }
-        const wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(address)}&navigate=yes`;
-        window.open(wazeUrl, '_blank');
+        window.open(`https://waze.com/ul?q=${encodeURIComponent(address)}&navigate=yes`, '_blank');
       }
 
       openGoogleMapsNavigation(address) {
@@ -992,11 +908,9 @@
           this.showToast('No hay una dirección registrada', 'error');
           return;
         }
-        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-        window.open(mapsUrl, '_blank');
+        window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
       }
 
-      // --- ANIMACIÓN NAVIDEÑA MEJORADA (RENO AL FRENTE CABALGANDO) ---
       initChristmasTheme() {
         if (document.getElementById('christmas-container')) return;
 
@@ -1010,9 +924,7 @@
             user-select: none;
             pointer-events: none;
             z-index: 9998;
-            animation-name: fallAnimation;
-            animation-timing-function: linear;
-            animation-iteration-count: infinite;
+            animation: fallAnimation linear infinite;
           }
           @keyframes fallAnimation {
             0% { transform: translateY(0) rotate(0deg); opacity: 0.9; }
@@ -1030,18 +942,18 @@
           .flying-sleigh-inner {
             display: flex;
             align-items: center;
-            font-size: 28px;
+            font-size: 26px;
             animation: galloping 1.2s ease-in-out infinite alternate;
             filter: drop-shadow(0 4px 6px rgba(0,0,0,0.25));
           }
           @keyframes flyForward {
             0% { left: -220px; transform: translateY(0); }
-            50% { transform: translateY(-30px); }
+            50% { transform: translateY(-25px); }
             100% { left: 110vw; transform: translateY(10px); }
           }
           @keyframes galloping {
-            0% { transform: rotate(-4deg) translateY(0); }
-            100% { transform: rotate(6deg) translateY(-8px); }
+            0% { transform: rotate(-3deg) translateY(0); }
+            100% { transform: rotate(5deg) translateY(-6px); }
           }
         `;
         document.head.appendChild(style);
@@ -1051,14 +963,13 @@
         container.style.pointerEvents = 'none';
         document.body.appendChild(container);
 
-        // Contenedor del trineo volando hacia adelante con el reno adelante
         const sleighWrapper = document.createElement('div');
         sleighWrapper.className = 'flying-sleigh-container';
         sleighWrapper.innerHTML = `<div class="flying-sleigh-inner">🛷✨🦌</div>`;
         container.appendChild(sleighWrapper);
 
         const chars = ['❄', '❅', '•', '✻'];
-        for (let i = 0; i < 30; i++) {
+        for (let i = 0; i < 28; i++) {
           const flake = document.createElement('div');
           flake.className = 'snow-flake';
           flake.textContent = chars[Math.floor(Math.random() * chars.length)];
@@ -1104,7 +1015,7 @@
           this.tasks = INITIAL_TASKS;
         }
 
-        // Sincronización en vivo con Firestore
+        // Sincronización en vivo con Firestore (Órdenes)
         if (window.db) {
           db.collection('ordenes').doc('todas').onSnapshot((doc) => {
             if (doc.exists) {
@@ -1127,9 +1038,30 @@
                 }
               }
             }
-          }, (error) => {
-            console.error("Error en sincronización en vivo:", error);
-          });
+          }, (error) => console.error(error));
+
+          // Sincronización en vivo de usuarios (Fotos y Estado en Línea)
+          db.collection('config').doc('users').onSnapshot((doc) => {
+            if (doc.exists) {
+              const data = doc.data();
+              if (Array.isArray(data.list) && data.list.length > 0) {
+                this.users = data.list;
+                localStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
+
+                if (this.currentUser && this.currentUser.role === 'ADMIN') {
+                  this.renderTechniciansMonitor();
+                  this.renderTasks();
+                } else if (this.currentUser && this.currentUser.role === 'TECNICO') {
+                  const myUpdated = this.users.find(u => u.username.toLowerCase() === this.currentUser.username.toLowerCase());
+                  if (myUpdated && myUpdated.photo !== this.currentUser.photo) {
+                    this.currentUser.photo = myUpdated.photo;
+                    localStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
+                    this.setupDashboardUI();
+                  }
+                }
+              }
+            }
+          }, (error) => console.error(error));
         }
 
         const savedSession = localStorage.getItem('portonpro_session_v4');
@@ -1252,9 +1184,10 @@
         document.getElementById('view-login').classList.add('hidden');
         document.getElementById('view-dashboard').classList.remove('hidden');
 
+        // Latido de conexión inmediata cada 10 segundos para actualizar estado en vivo
         this.sendHeartbeat();
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
-        this.heartbeatTimer = setInterval(() => this.sendHeartbeat(), 15000);
+        this.heartbeatTimer = setInterval(() => this.sendHeartbeat(), 10000);
 
         this.setupDashboardUI();
         this.renderTechOptionsInSelects();
@@ -1338,6 +1271,7 @@
         const monitorSection = document.getElementById('section-technicians-monitor');
         const filterTech = document.getElementById('filter-tech');
         const auditLogSection = document.getElementById('section-admin-audit-log');
+        const btnResetAll = document.getElementById('btn-reset-all-completed');
         const roleHint = document.getElementById('role-hint-text');
 
         if (isAdmin) {
@@ -1346,49 +1280,51 @@
           filterTech.classList.remove('hidden');
           filterTech.disabled = false;
           auditLogSection.classList.remove('hidden');
-          roleHint.textContent = 'Control de órdenes, asignación de técnicos, GPS y auditoría en vivo';
+          if (btnResetAll) btnResetAll.classList.remove('hidden');
+          roleHint.textContent = 'Control de órdenes, seguimiento GPS y personal en vivo';
         } else {
           btnNewOrder.classList.add('hidden');
           monitorSection.classList.add('hidden');
           filterTech.classList.add('hidden');
           filterTech.disabled = true;
           auditLogSection.classList.add('hidden');
-          roleHint.textContent = 'Tus órdenes asignadas: pulsa Waze/Maps para llegar y registra evidencias';
+          if (btnResetAll) btnResetAll.classList.add('hidden');
+          roleHint.textContent = 'Usa Waze/Maps para dirigirte al lugar y registra evidencias';
         }
 
         const banner = document.getElementById('dashboard-banner');
         if (isAdmin) {
-          banner.className = 'mb-6 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm bg-gradient-to-r from-slate-950 via-brand-dark to-slate-900 text-white border-brand-lime/40';
+          banner.className = 'mb-5 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm bg-gradient-to-r from-slate-950 via-brand-dark to-slate-900 text-white border-brand-lime/40';
           banner.innerHTML = `
             <div class="flex items-center gap-3">
-              <div class="p-2.5 bg-brand-lime/20 rounded-xl border border-brand-lime/40 text-brand-lime shrink-0">
-                <i data-lucide="shield-check" class="w-6 h-6"></i>
+              <div class="p-2 bg-brand-lime/20 rounded-xl border border-brand-lime/40 text-brand-lime shrink-0">
+                <i data-lucide="shield-check" class="w-5 h-5"></i>
               </div>
               <div>
-                <h3 class="font-extrabold text-sm sm:text-base text-white">Panel Central de Operaciones</h3>
+                <h3 class="font-extrabold text-sm text-white">Panel Central de Operaciones</h3>
                 <p class="text-xs text-slate-300 mt-0.5">Asigna órdenes, revisa rutas de navegación y audita los informes técnicos.</p>
               </div>
             </div>
-            <div class="flex items-center gap-2 mt-3 sm:mt-0">
-              <button onclick="app.openNewTaskModal()" class="text-xs font-bold bg-brand-lime hover:bg-brand-limeHover text-white px-4 py-2 rounded-xl flex items-center gap-1.5 shadow transition active:scale-95">
+            <div class="flex items-center gap-2 mt-2.5 sm:mt-0">
+              <button onclick="app.openNewTaskModal()" class="text-xs font-bold bg-brand-lime hover:bg-brand-limeHover text-white px-3.5 py-1.5 rounded-xl flex items-center gap-1 shadow transition active:scale-95">
                 <i data-lucide="plus-circle" class="w-4 h-4"></i> Asignar Orden de Trabajo
               </button>
             </div>
           `;
         } else {
-          banner.className = 'mb-6 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm bg-gradient-to-r from-slate-900 via-brand-dark to-slate-950 text-white border-brand-lime/40';
+          banner.className = 'mb-5 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm bg-gradient-to-r from-slate-900 via-brand-dark to-slate-950 text-white border-brand-lime/40';
           banner.innerHTML = `
             <div class="flex items-center gap-3">
-              <div class="p-2.5 bg-brand-lime/20 rounded-xl border border-brand-lime/40 text-brand-lime shrink-0">
-                <i data-lucide="wrench" class="w-6 h-6"></i>
+              <div class="p-2 bg-brand-lime/20 rounded-xl border border-brand-lime/40 text-brand-lime shrink-0">
+                <i data-lucide="wrench" class="w-5 h-5"></i>
               </div>
               <div>
-                <h3 class="font-extrabold text-sm sm:text-base text-white">Bienvenido, ${this.currentUser.fullName}</h3>
-                <p class="text-xs text-slate-300 mt-0.5">Usa Waze o Maps para dirigirte al lugar y sube tus fotos o videos de prueba.</p>
+                <h3 class="font-extrabold text-sm text-white">Bienvenido, ${this.currentUser.fullName}</h3>
+                <p class="text-xs text-slate-300 mt-0.5">Usa Waze o Maps para llegar y registra las fotos de evidencia.</p>
               </div>
             </div>
-            <div class="mt-3 sm:mt-0 flex items-center gap-2">
-              <span class="inline-flex items-center gap-1.5 text-xs font-bold bg-brand-lime/20 text-brand-lime border border-brand-lime/40 px-3 py-1.5 rounded-full">
+            <div class="mt-2.5 sm:mt-0 flex items-center gap-2">
+              <span class="inline-flex items-center gap-1.5 text-xs font-bold bg-brand-lime/20 text-brand-lime border border-brand-lime/40 px-3 py-1 rounded-full">
                 <span class="w-2 h-2 rounded-full bg-brand-lime animate-pulse"></span> Conectado
               </span>
             </div>
@@ -1463,7 +1399,7 @@
             const tech = this.users.find(u => u.username.toLowerCase() === this.currentUser.username.toLowerCase());
             if (tech) {
               tech.photo = base64Data;
-              this.saveUsers();
+              this.saveUsers(); // Sincroniza a Firestore inmediatamente
             }
           }
 
@@ -1473,7 +1409,7 @@
           if (this.currentUser.role === 'ADMIN') {
             this.renderTechniciansMonitor();
           }
-          this.showToast('Foto de perfil actualizada', 'success');
+          this.showToast('Foto de perfil actualizada y sincronizada', 'success');
         };
         reader.readAsDataURL(file);
       }
@@ -1500,29 +1436,6 @@
           this.renderTechniciansMonitor();
         }
         this.showToast('Foto de perfil eliminada', 'info');
-      }
-
-      handleUploadTechPhoto(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        if (file.size > 2 * 1024 * 1024) {
-          this.showToast('La imagen debe pesar menos de 2MB', 'error');
-          return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const base64 = event.target.result;
-          document.getElementById('manage-user-photo').value = base64;
-          const img = document.getElementById('manage-user-photo-preview');
-          const init = document.getElementById('manage-user-initial-preview');
-          img.src = base64;
-          img.classList.remove('hidden');
-          init.classList.add('hidden');
-          this.showToast('Foto asignada al técnico', 'info');
-        };
-        reader.readAsDataURL(file);
       }
 
       handleChangeOwnPassword(e) {
@@ -1562,12 +1475,13 @@
         }
       }
 
+      // Renderiza el monitor con umbral de 40 segundos para reflejar 'En Línea' exacto
       renderTechniciansMonitor() {
         const grid = document.getElementById('technicians-status-grid');
         const counter = document.getElementById('techs-online-counter');
         if (!grid) return;
 
-        const ONLINE_THRESHOLD_MS = 45 * 1000;
+        const ONLINE_THRESHOLD_MS = 40 * 1000;
         const now = Date.now();
         let onlineCount = 0;
 
@@ -1578,15 +1492,15 @@
           const assignedPending = this.tasks.filter(t => t.assignedTo === u.fullName && (t.status === 'PENDIENTE' || t.status === 'EN_PROCESO')).length;
 
           return `
-            <div class="p-3.5 rounded-2xl border ${isOnline ? 'bg-brand-limeLight border-brand-limeBorder shadow-sm' : 'bg-slate-50 border-slate-200'} flex flex-col justify-between">
-              <div class="flex items-center justify-between mb-2.5">
-                <div class="flex items-center gap-3 min-w-0">
-                  <div class="relative w-11 h-11 rounded-full overflow-hidden border-2 ${isOnline ? 'border-brand-lime' : 'border-slate-300'} bg-slate-200 shrink-0 flex items-center justify-center">
-                    ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<span class="font-bold text-sm text-slate-700">${u.fullName.charAt(0)}</span>`}
-                    <span class="w-3 h-3 rounded-full ${isOnline ? 'bg-brand-lime ring-2 ring-white animate-pulse' : 'bg-slate-400'} absolute top-0 right-0"></span>
+            <div class="p-3 rounded-2xl border ${isOnline ? 'bg-brand-limeLight border-brand-limeBorder shadow-sm' : 'bg-slate-50 border-slate-200'} flex flex-col justify-between">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="relative w-10 h-10 rounded-full overflow-hidden border-2 ${isOnline ? 'border-brand-lime' : 'border-slate-300'} bg-slate-200 shrink-0 flex items-center justify-center">
+                    ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<span class="font-bold text-xs text-slate-700">${u.fullName.charAt(0)}</span>`}
+                    <span class="w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-brand-lime ring-2 ring-white animate-pulse' : 'bg-slate-400'} absolute top-0 right-0"></span>
                   </div>
                   <div class="min-w-0">
-                    <h4 class="text-xs font-black text-slate-900 truncate leading-snug">${u.fullName}</h4>
+                    <h4 class="text-xs font-black text-slate-900 truncate">${u.fullName}</h4>
                     <p class="text-[11px] font-semibold ${isOnline ? 'text-brand-limeHover' : 'text-slate-500'}">
                       ${isOnline ? '🟢 En línea ahora' : '⚪ Desconectado'}
                     </p>
@@ -1597,17 +1511,13 @@
                 </span>
               </div>
 
-              <div class="bg-white/80 rounded-xl p-2.5 border border-slate-200/70 text-[11px] space-y-1">
+              <div class="bg-white/80 rounded-xl p-2 border border-slate-200/70 text-[10px] space-y-0.5">
                 <div class="flex items-center justify-between">
-                  <span class="text-slate-500 flex items-center gap-1 font-medium">
-                    <i data-lucide="sunrise" class="w-3.5 h-3.5 text-amber-500"></i> Primer Logueo:
-                  </span>
+                  <span class="text-slate-500">Primer Logueo:</span>
                   <span class="font-bold text-slate-800">${u.firstLoginToday || 'Sin registro'}</span>
                 </div>
                 <div class="flex items-center justify-between">
-                  <span class="text-slate-500 flex items-center gap-1 font-medium">
-                    <i data-lucide="log-in" class="w-3.5 h-3.5 text-brand-limeHover"></i> Último Logueo:
-                  </span>
+                  <span class="text-slate-500">Último Logueo:</span>
                   <span class="font-bold ${isOnline ? 'text-brand-limeHover' : 'text-slate-700'}">${u.lastLogin || 'No registrado'}</span>
                 </div>
               </div>
@@ -1623,10 +1533,6 @@
         document.getElementById('manage-user-id').value = '';
         document.getElementById('manage-user-photo').value = '';
         document.getElementById('manage-user-form').reset();
-        document.getElementById('manage-user-photo-preview').classList.add('hidden');
-        const init = document.getElementById('manage-user-initial-preview');
-        init.classList.remove('hidden');
-        init.textContent = '?';
         document.getElementById('btn-save-user').textContent = 'Guardar Trabajador';
         if (window.lucide) lucide.createIcons();
       }
@@ -1641,7 +1547,6 @@
         const password = document.getElementById('manage-password').value.trim();
         const phone = document.getElementById('manage-phone').value.trim();
         const specialty = document.getElementById('manage-specialty').value.trim();
-        const photo = document.getElementById('manage-user-photo').value;
 
         if (username === this.adminProfile.username.toLowerCase()) {
           this.showToast('El usuario no puede llamarse igual al administrador', 'error');
@@ -1656,7 +1561,6 @@
             tech.password = password;
             tech.phone = phone;
             tech.specialty = specialty;
-            if (photo) tech.photo = photo;
             this.showToast(`Datos de ${fullName} actualizados`, 'success');
           }
         } else {
@@ -1672,7 +1576,7 @@
             password,
             phone,
             specialty: specialty || 'Técnico de Portones',
-            photo: photo || '',
+            photo: '',
             active: true,
             lastHeartbeat: 0,
             firstLoginToday: 'Sin registro hoy',
@@ -1696,37 +1600,26 @@
         tbody.innerHTML = this.users.map(u => {
           return `
             <tr class="hover:bg-slate-50 transition">
-              <td class="p-3">
-                <div class="flex items-center gap-2">
-                  <div class="w-8 h-8 rounded-full border border-brand-lime overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center">
-                    ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<span class="font-bold text-xs">${u.fullName.charAt(0)}</span>`}
+              <td class="p-2">
+                <div class="flex items-center gap-1.5">
+                  <div class="w-6 h-6 rounded-full border border-brand-lime overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center">
+                    ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<span class="font-bold text-[10px]">${u.fullName.charAt(0)}</span>`}
                   </div>
-                  <div>
-                    <span class="font-bold text-slate-800 block">${u.fullName}</span>
-                    <span class="text-[10px] text-slate-500">${u.specialty || 'General'}</span>
-                  </div>
+                  <span class="font-bold text-slate-800">${u.fullName}</span>
                 </div>
               </td>
-              <td class="p-3">
-                <div class="font-mono text-xs text-brand-dark font-bold">@${u.username}</div>
-                <div class="text-[11px] font-mono text-slate-500">Clave: <b class="text-slate-800">${u.password}</b></div>
+              <td class="p-2">
+                <span class="font-mono text-xs text-brand-dark font-bold">@${u.username}</span>
+                <span class="text-[10px] text-slate-500 block">Clave: ${u.password}</span>
               </td>
-              <td class="p-3">
-                <div class="text-[10px] text-slate-600">1°: <b class="text-slate-800">${u.firstLoginToday || 'Sin registro'}</b></div>
-                <div class="text-[10px] text-slate-600">Últ: <b class="text-slate-800">${u.lastLogin || 'No registrado'}</b></div>
-              </td>
-              <td class="p-3">
-                <button onclick="app.toggleUserStatus('${u.id}')" class="px-2 py-0.5 rounded text-[10px] font-bold ${u.active ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}">
+              <td class="p-2">
+                <button onclick="app.toggleUserStatus('${u.id}')" class="px-1.5 py-0.5 rounded text-[9px] font-bold ${u.active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}">
                   ${u.active ? 'ACTIVO' : 'INACTIVO'}
                 </button>
               </td>
-              <td class="p-3 text-right space-x-1">
-                <button onclick="app.editUser('${u.id}')" class="p-1 text-slate-600 hover:text-brand-limeHover hover:bg-brand-limeLight rounded" title="Editar datos">
-                  <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
-                </button>
-                <button onclick="app.deleteUser('${u.id}')" class="p-1 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded" title="Eliminar">
-                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                </button>
+              <td class="p-2 text-right space-x-1">
+                <button onclick="app.editUser('${u.id}')" class="p-1 text-slate-600 hover:text-brand-limeHover" title="Editar"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
+                <button onclick="app.deleteUser('${u.id}')" class="p-1 text-slate-600 hover:text-rose-600" title="Eliminar"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
               </td>
             </tr>
           `;
@@ -1738,27 +1631,12 @@
       editUser(id) {
         const u = this.users.find(x => x.id === id);
         if (!u) return;
-
         document.getElementById('manage-user-id').value = u.id;
         document.getElementById('manage-fullname').value = u.fullName;
         document.getElementById('manage-username').value = u.username;
         document.getElementById('manage-password').value = u.password;
         document.getElementById('manage-phone').value = u.phone;
         document.getElementById('manage-specialty').value = u.specialty || '';
-        document.getElementById('manage-user-photo').value = u.photo || '';
-
-        const img = document.getElementById('manage-user-photo-preview');
-        const init = document.getElementById('manage-user-initial-preview');
-        if (u.photo) {
-          img.src = u.photo;
-          img.classList.remove('hidden');
-          init.classList.add('hidden');
-        } else {
-          img.classList.add('hidden');
-          init.classList.remove('hidden');
-          init.textContent = u.fullName.charAt(0);
-        }
-
         document.getElementById('btn-save-user').textContent = 'Actualizar Datos';
         if (window.lucide) lucide.createIcons();
       }
@@ -1769,7 +1647,7 @@
           u.active = !u.active;
           this.saveUsers();
           this.renderUsersTable();
-          this.showToast(`Estado de ${u.fullName} modificado`, 'info');
+          this.showToast(`Estado modificado`, 'info');
         }
       }
 
@@ -1781,13 +1659,12 @@
         this.renderUsersTable();
         this.renderTechOptionsInSelects();
         this.renderTechniciansMonitor();
-        this.showToast(`Técnico ${u.fullName} eliminado`, 'info');
+        this.showToast(`Técnico eliminado`, 'info');
       }
 
       renderTechOptionsInSelects() {
         const taskAssignedSelect = document.getElementById('task-assigned-to');
         const filterTechSelect = document.getElementById('filter-tech');
-
         const options = this.users.map(u => `<option value="${u.fullName}">${u.fullName}</option>`).join('');
         taskAssignedSelect.innerHTML = options;
         filterTechSelect.innerHTML = `<option value="ALL">Todos los Técnicos</option>` + options;
@@ -1796,7 +1673,6 @@
       updateStats() {
         const isAdmin = this.currentUser.role === 'ADMIN';
         const relevantTasks = isAdmin ? this.tasks : this.tasks.filter(t => t.assignedTo === this.currentUser.fullName);
-
         document.getElementById('stat-total').textContent = relevantTasks.length;
         document.getElementById('stat-pending').textContent = relevantTasks.filter(t => t.status === 'PENDIENTE' || t.status === 'EN_PROCESO').length;
         document.getElementById('stat-done').textContent = relevantTasks.filter(t => t.status === 'REALIZADA').length;
@@ -1807,13 +1683,65 @@
         document.getElementById('filter-search').value = '';
         document.getElementById('filter-status').value = 'ALL';
         document.getElementById('filter-priority').value = 'ALL';
-        if (this.currentUser.role === 'ADMIN') {
-          document.getElementById('filter-tech').value = 'ALL';
-        }
+        if (this.currentUser.role === 'ADMIN') document.getElementById('filter-tech').value = 'ALL';
         this.renderTasks();
       }
 
-      // --- RENDERIZADO DE ÓRDENES (CON BOTÓN DUAL WAZE / GOOGLE MAPS) ---
+      // Reinicio de una sola orden a PENDIENTE
+      async resetSingleTask(id) {
+        if (this.currentUser.role !== 'ADMIN') return;
+        if (!confirm(`¿Deseas reiniciar la orden ${id} a estado PENDIENTE? Se borrará el informe y las evidencias.`)) return;
+
+        const taskIndex = this.tasks.findIndex(t => t.id === id);
+        if (taskIndex !== -1) {
+          this.tasks[taskIndex].status = 'PENDIENTE';
+          this.tasks[taskIndex].observations = '';
+          this.tasks[taskIndex].evidence = [];
+          this.tasks[taskIndex].completedAt = null;
+
+          if (Array.isArray(this.tasks[taskIndex].checklist)) {
+            this.tasks[taskIndex].checklist.forEach(c => c.checked = false);
+          }
+
+          this.saveTasks();
+          this.updateStats();
+          this.renderTasks();
+          if (this.currentUser.role === 'ADMIN') this.renderAdminAuditLog();
+          this.showToast(`Orden ${id} reiniciada a Pendiente`, 'info');
+        }
+      }
+
+      // Reinicio de TODAS las órdenes realizadas
+      async resetAllCompletedTasks() {
+        if (this.currentUser.role !== 'ADMIN') return;
+
+        const completedCount = this.tasks.filter(t => t.status === 'REALIZADA').length;
+        if (completedCount === 0) {
+          this.showToast('No hay órdenes realizadas para reiniciar', 'info');
+          return;
+        }
+
+        if (!confirm(`¿Estás seguro de reiniciar las ${completedCount} orden(es) realizadas? Volverán a estar pendientes para una nueva visita.`)) return;
+
+        this.tasks.forEach(t => {
+          if (t.status === 'REALIZADA') {
+            t.status = 'PENDIENTE';
+            t.observations = '';
+            t.evidence = [];
+            t.completedAt = null;
+            if (Array.isArray(t.checklist)) {
+              t.checklist.forEach(c => c.checked = false);
+            }
+          }
+        });
+
+        this.saveTasks();
+        this.updateStats();
+        this.renderTasks();
+        if (this.currentUser.role === 'ADMIN') this.renderAdminAuditLog();
+        this.showToast(`${completedCount} órdenes reiniciadas con éxito`, 'success');
+      }
+
       renderTasks() {
         const search = document.getElementById('filter-search').value.toLowerCase();
         const statusFilter = document.getElementById('filter-status').value;
@@ -1823,13 +1751,10 @@
         const container = document.getElementById('tasks-container');
         const emptyState = document.getElementById('empty-state');
         const countTag = document.getElementById('filtered-count');
-
         const isAdmin = this.currentUser.role === 'ADMIN';
 
         let filtered = this.tasks.filter(t => {
-          if (!isAdmin && t.assignedTo !== this.currentUser.fullName) {
-            return false;
-          }
+          if (!isAdmin && t.assignedTo !== this.currentUser.fullName) return false;
 
           const matchText = !search ||
             t.client.toLowerCase().includes(search) ||
@@ -1860,44 +1785,44 @@
           let borderClass = 'border-slate-200';
 
           if (t.status === 'PENDIENTE') {
-            statusBadge = '<span class="bg-amber-100 text-amber-800 text-[11px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> Pendiente</span>';
+            statusBadge = '<span class="bg-amber-100 text-amber-800 text-[11px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> Pendiente</span>';
             borderClass = 'border-amber-200 hover:border-amber-400';
           } else if (t.status === 'EN_PROCESO') {
-            statusBadge = '<span class="bg-blue-100 text-blue-800 text-[11px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1"><i data-lucide="loader" class="w-3 h-3 animate-spin"></i> En Proceso</span>';
+            statusBadge = '<span class="bg-blue-100 text-blue-800 text-[11px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1"><i data-lucide="loader" class="w-3 h-3 animate-spin"></i> En Proceso</span>';
             borderClass = 'border-blue-300 hover:border-blue-500';
           } else if (t.status === 'REALIZADA') {
-            statusBadge = '<span class="bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder text-[11px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3 h-3"></i> Realizada</span>';
+            statusBadge = '<span class="bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder text-[11px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3 h-3"></i> Realizada</span>';
             borderClass = 'border-brand-lime/40 hover:border-brand-lime';
           } else if (t.status === 'NO_REALIZADA') {
-            statusBadge = '<span class="bg-rose-100 text-rose-800 text-[11px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i> No Realizada</span>';
+            statusBadge = '<span class="bg-rose-100 text-rose-800 text-[11px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i> No Realizada</span>';
             borderClass = 'border-rose-200 hover:border-rose-400';
           }
 
           let prioTag = '';
-          if (t.priority === 'ALTA') prioTag = '<span class="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">ALTA</span>';
-          if (t.priority === 'MEDIA') prioTag = '<span class="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">MEDIA</span>';
-          if (t.priority === 'BAJA') prioTag = '<span class="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">BAJA</span>';
+          if (t.priority === 'ALTA') prioTag = '<span class="text-[9px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">ALTA</span>';
+          if (t.priority === 'MEDIA') prioTag = '<span class="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">MEDIA</span>';
+          if (t.priority === 'BAJA') prioTag = '<span class="text-[9px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">BAJA</span>';
 
           const techObj = this.users.find(u => u.fullName === t.assignedTo);
           const techPhoto = techObj && techObj.photo ? techObj.photo : '';
 
           return `
-            <div class="bg-white rounded-2xl p-4 sm:p-5 border ${borderClass} shadow-sm hover:shadow-md transition flex flex-col justify-between">
+            <div class="bg-white rounded-2xl p-4 border ${borderClass} shadow-sm hover:shadow transition flex flex-col justify-between">
               <div>
-                <div class="flex items-center justify-between mb-2">
-                  <div class="flex items-center gap-2">
+                <div class="flex items-center justify-between mb-1.5">
+                  <div class="flex items-center gap-1.5">
                     <span class="text-xs font-mono font-black text-slate-500">${t.id}</span>
                     ${prioTag}
                   </div>
                   <div>${statusBadge}</div>
                 </div>
 
-                <h3 class="font-extrabold text-slate-900 text-base leading-snug">${t.serviceType}</h3>
+                <h3 class="font-extrabold text-slate-900 text-sm leading-snug">${t.serviceType}</h3>
                 <p class="text-xs font-bold text-brand-limeHover flex items-center gap-1 mt-0.5">
                   <i data-lucide="cpu" class="w-3.5 h-3.5"></i> ${t.equipment}
                 </p>
 
-                <div class="mt-3 space-y-1 text-xs text-slate-600">
+                <div class="mt-2.5 space-y-1 text-xs text-slate-600">
                   <div class="flex items-center gap-1.5 font-bold text-slate-800">
                     <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
                     <span class="truncate">${t.client}</span>
@@ -1911,26 +1836,26 @@
                   </div>
                 </div>
 
-                <!-- CONTENEDOR DE DIRECCIÓN + ACCESO RÁPIDO WAZE / MAPS -->
-                <div class="mt-3 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-                  <div class="flex items-start gap-1.5 mb-2">
+                <!-- CONTENEDOR DE DIRECCIÓN + BOTONES GPS -->
+                <div class="mt-2.5 p-2 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div class="flex items-start gap-1.5 mb-1.5">
                     <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5"></i>
                     <span class="text-xs font-semibold text-slate-800 leading-tight">${t.address}</span>
                   </div>
                   <div class="flex items-center gap-1.5">
-                    <button type="button" onclick="app.openWazeNavigation('${t.address.replace(/'/g, "\\'")}')" class="flex-1 py-1.5 px-2 bg-cyan-600 hover:bg-cyan-700 active:scale-95 text-white text-[11px] font-bold rounded-lg flex items-center justify-center gap-1 shadow-sm transition">
+                    <button type="button" onclick="app.openWazeNavigation('${t.address.replace(/'/g, "\\'")}')" class="flex-1 py-1 px-2 bg-cyan-600 hover:bg-cyan-700 active:scale-95 text-white text-[10px] font-bold rounded-lg flex items-center justify-center gap-1 shadow-sm transition">
                       🚙 Waze
                     </button>
-                    <button type="button" onclick="app.openGoogleMapsNavigation('${t.address.replace(/'/g, "\\'")}')" class="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[11px] font-bold rounded-lg flex items-center justify-center gap-1 shadow-sm transition">
+                    <button type="button" onclick="app.openGoogleMapsNavigation('${t.address.replace(/'/g, "\\'")}')" class="flex-1 py-1 px-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[10px] font-bold rounded-lg flex items-center justify-center gap-1 shadow-sm transition">
                       📍 Maps
                     </button>
                   </div>
                 </div>
 
-                <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
                   <span class="text-slate-500">Técnico:</span>
                   <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-lg">
-                    <div class="w-5 h-5 rounded-full overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center border border-brand-lime">
+                    <div class="w-4 h-4 rounded-full overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center border border-brand-lime">
                       ${techPhoto ? `<img src="${techPhoto}" class="w-full h-full object-cover">` : `<span class="text-[9px] font-bold">${t.assignedTo.charAt(0)}</span>`}
                     </div>
                     <span class="font-bold text-slate-800">${t.assignedTo}</span>
@@ -1938,27 +1863,27 @@
                 </div>
 
                 ${t.observations ? `
-                  <div class="mt-3 p-2.5 rounded-xl text-xs ${t.status === 'NO_REALIZADA' ? 'bg-rose-50 text-rose-900 border border-rose-200' : 'bg-slate-50 text-slate-700 border border-slate-200'}">
-                    <p class="font-bold text-[10px] uppercase text-slate-500 mb-0.5">Detalles del técnico:</p>
-                    <p class="line-clamp-2 italic">"${t.observations}"</p>
+                  <div class="mt-2.5 p-2 rounded-xl text-xs ${t.status === 'NO_REALIZADA' ? 'bg-rose-50 text-rose-900 border border-rose-200' : 'bg-slate-50 text-slate-700 border border-slate-200'}">
+                    <p class="font-bold text-[9px] uppercase text-slate-500 mb-0.5">Detalles del técnico:</p>
+                    <p class="line-clamp-2 italic text-[11px]">"${t.observations}"</p>
                   </div>
                 ` : ''}
 
                 ${Array.isArray(t.evidence) && t.evidence.length > 0 ? `
-                  <div class="mt-2.5 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                  <div class="mt-2 flex items-center gap-1 text-[11px] font-semibold text-slate-500">
                     <i data-lucide="paperclip" class="w-3.5 h-3.5 text-brand-limeHover"></i>
                     <span>${t.evidence.length} evidencia(s) adjunta(s)</span>
                   </div>
                 ` : ''}
               </div>
 
-              <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                <button onclick="app.viewOrderDetails('${t.id}')" class="text-xs text-slate-600 hover:text-slate-900 font-bold flex items-center gap-1 py-1.5 px-2.5 rounded-lg hover:bg-slate-100">
+              <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-1.5">
+                <button onclick="app.viewOrderDetails('${t.id}')" class="text-xs text-slate-600 hover:text-slate-900 font-bold flex items-center gap-1 py-1 px-2 rounded-lg hover:bg-slate-100">
                   <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Ficha
                 </button>
 
                 <div class="flex items-center gap-1.5">
-                  <button onclick="app.openReportModal('${t.id}')" class="text-xs font-bold py-1.5 px-3 rounded-xl flex items-center gap-1 shadow-sm transition active:scale-95 ${
+                  <button onclick="app.openReportModal('${t.id}')" class="text-xs font-bold py-1 px-2.5 rounded-xl flex items-center gap-1 shadow-sm transition active:scale-95 ${
                     t.status === 'REALIZADA'
                       ? 'bg-brand-lime hover:bg-brand-limeHover text-white'
                       : t.status === 'NO_REALIZADA'
@@ -1969,13 +1894,15 @@
                     ${t.status === 'REALIZADA' || t.status === 'NO_REALIZADA' ? 'Editar Informe' : 'Registrar Informe'}
                   </button>
 
+                  ${t.status === 'REALIZADA' && isAdmin ? `
+                    <button onclick="app.resetSingleTask('${t.id}')" class="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition" title="Reiniciar a Pendiente">
+                      <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                    </button>
+                  ` : ''}
+
                   ${isAdmin ? `
-                    <button onclick="app.openEditTaskModal('${t.id}')" class="p-1.5 text-slate-400 hover:text-brand-dark hover:bg-slate-100 rounded-lg" title="Modificar datos">
-                      <i data-lucide="file-edit" class="w-3.5 h-3.5"></i>
-                    </button>
-                    <button onclick="app.deleteTask('${t.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg" title="Eliminar orden">
-                      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                    </button>
+                    <button onclick="app.openEditTaskModal('${t.id}')" class="p-1 text-slate-400 hover:text-brand-dark rounded-lg" title="Editar"><i data-lucide="file-edit" class="w-3.5 h-3.5"></i></button>
+                    <button onclick="app.deleteTask('${t.id}')" class="p-1 text-slate-400 hover:text-rose-600 rounded-lg" title="Eliminar"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                   ` : ''}
                 </div>
               </div>
@@ -1986,7 +1913,6 @@
         if (window.lucide) lucide.createIcons();
       }
 
-      // --- BITÁCORA Y REGISTRO OPERATIVO PARA EL ADMINISTRADOR ---
       renderAdminAuditLog() {
         const tbody = document.getElementById('audit-log-tbody');
         const counter = document.getElementById('audit-log-counter');
@@ -1996,13 +1922,7 @@
         counter.textContent = `${reportedTasks.length} Informes`;
 
         if (reportedTasks.length === 0) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="6" class="p-4 text-center text-slate-400 italic">
-                Aún no hay informes de servicio técnico registrados por los trabajadores.
-              </td>
-            </tr>
-          `;
+          tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400 italic">Aún no hay informes de técnicos registrados.</td></tr>`;
           return;
         }
 
@@ -2010,26 +1930,22 @@
           const evidenceCount = Array.isArray(t.evidence) ? t.evidence.length : 0;
           return `
             <tr class="hover:bg-slate-50 transition">
-              <td class="p-3 font-semibold text-slate-700 whitespace-nowrap">
-                ${t.completedAt || 'En proceso'}
-              </td>
-              <td class="p-3">
+              <td class="p-2 font-semibold text-slate-700 whitespace-nowrap">${t.completedAt || 'En proceso'}</td>
+              <td class="p-2">
                 <span class="font-bold text-slate-900 block">${t.assignedTo}</span>
-                <span class="text-[10px] font-mono text-slate-400">${t.id}</span>
+                <span class="text-[9px] font-mono text-slate-400">${t.id}</span>
               </td>
-              <td class="p-3">
+              <td class="p-2">
                 <span class="font-bold text-slate-800 block">${t.client}</span>
-                <span class="text-[11px] text-slate-500 block truncate max-w-xs">${t.address}</span>
+                <span class="text-[10px] text-slate-500 block truncate max-w-xs">${t.address}</span>
               </td>
-              <td class="p-3">
-                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold ${t.status === 'REALIZADA' ? 'bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder' : t.status === 'NO_REALIZADA' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}">
+              <td class="p-2">
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold ${t.status === 'REALIZADA' ? 'bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder' : t.status === 'NO_REALIZADA' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}">
                   ${t.status}
                 </span>
               </td>
-              <td class="p-3 max-w-sm">
-                <p class="text-xs text-slate-700 line-clamp-2">${t.observations || 'Sin detalle adicional'}</p>
-              </td>
-              <td class="p-3 whitespace-nowrap">
+              <td class="p-2 max-w-sm"><p class="text-xs text-slate-700 line-clamp-2">${t.observations || 'Sin detalle'}</p></td>
+              <td class="p-2 whitespace-nowrap">
                 ${evidenceCount > 0 ? `
                   <button onclick="app.viewOrderDetails('${t.id}')" class="text-brand-limeHover font-bold flex items-center gap-1 hover:underline">
                     <i data-lucide="eye" class="w-3.5 h-3.5"></i> Ver (${evidenceCount})
@@ -2043,7 +1959,6 @@
         if (window.lucide) lucide.createIcons();
       }
 
-      // --- CREACIÓN / MODIFICACIÓN DE ÓRDENES (ADMIN) ---
       openNewTaskModal() {
         if (this.currentUser.role !== 'ADMIN') return;
         document.getElementById('form-modal-title').textContent = 'Asignar Nueva Orden de Trabajo';
@@ -2091,24 +2006,16 @@
         if (!container) return;
 
         if (!this.currentTaskModalChecklist || this.currentTaskModalChecklist.length === 0) {
-          container.innerHTML = `
-            <div class="text-center py-3 text-slate-400 italic text-xs">
-              No hay puntos en la lista. Escribe uno abajo para agregarlo.
-            </div>
-          `;
+          container.innerHTML = `<div class="text-center py-2 text-slate-400 italic text-xs">No hay puntos. Escribe uno abajo.</div>`;
           return;
         }
 
         container.innerHTML = this.currentTaskModalChecklist.map((item) => `
-          <div class="flex items-center justify-between gap-2 p-2 bg-white rounded-lg border border-slate-200 shadow-sm" id="tm-check-${item.id}">
-            <span class="text-xs font-medium text-slate-700 flex-1 truncate">${item.label}</span>
+          <div class="flex items-center justify-between gap-2 p-1.5 bg-white rounded-lg border shadow-sm">
+            <span class="text-xs text-slate-700 flex-1 truncate">${item.label}</span>
             <div class="flex items-center gap-1 shrink-0">
-              <button type="button" onclick="app.editTaskModalChecklistItem('${item.id}')" title="Modificar texto" class="px-1.5 py-1 text-blue-600 hover:bg-blue-50 rounded text-xs font-bold">
-                ✏️
-              </button>
-              <button type="button" onclick="app.deleteTaskModalChecklistItem('${item.id}')" title="Eliminar ítem" class="px-1.5 py-1 text-rose-600 hover:bg-rose-50 rounded text-xs font-bold">
-                ✕
-              </button>
+              <button type="button" onclick="app.editTaskModalChecklistItem('${item.id}')" class="px-1 text-blue-600 text-xs font-bold">✏️</button>
+              <button type="button" onclick="app.deleteTaskModalChecklistItem('${item.id}')" class="px-1 text-rose-600 text-xs font-bold">✕</button>
             </div>
           </div>
         `).join('');
@@ -2122,10 +2029,7 @@
           return;
         }
 
-        if (!Array.isArray(this.currentTaskModalChecklist)) {
-          this.currentTaskModalChecklist = [];
-        }
-
+        if (!Array.isArray(this.currentTaskModalChecklist)) this.currentTaskModalChecklist = [];
         this.currentTaskModalChecklist.push({
           id: 'c_' + Date.now() + Math.random().toString(36).substring(2, 6),
           label: text,
@@ -2134,14 +2038,13 @@
 
         input.value = '';
         this.renderTaskModalChecklist();
-        this.showToast('Punto añadido a la orden', 'info');
       }
 
       editTaskModalChecklistItem(id) {
         const item = this.currentTaskModalChecklist.find(c => c.id === id);
         if (!item) return;
 
-        const newLabel = prompt('Modificar descripción del punto de chequeo:', item.label);
+        const newLabel = prompt('Modificar descripción:', item.label);
         if (newLabel !== null && newLabel.trim() !== '') {
           item.label = newLabel.trim();
           this.renderTaskModalChecklist();
@@ -2194,7 +2097,7 @@
             completedAt: null
           };
           this.tasks.unshift(newTask);
-          this.showToast(`Nueva orden ${newTask.id} asignada a ${newTask.assignedTo}`, 'success');
+          this.showToast(`Nueva orden ${newTask.id} asignada`, 'success');
         }
 
         this.saveTasks();
@@ -2211,10 +2114,9 @@
         this.updateStats();
         this.renderTasks();
         this.renderAdminAuditLog();
-        this.showToast(`Orden ${id} eliminada`, 'info');
+        this.showToast(`Orden eliminada`, 'info');
       }
 
-      // --- REPORTE TÉCNICO (DETALLES Y EVIDENCIAS FOTO/VIDEO) ---
       openReportModal(id) {
         const t = this.tasks.find(x => x.id === id);
         if (!t) return;
@@ -2227,7 +2129,6 @@
         document.getElementById('rep-instruction').textContent = t.instructions || 'Sin observaciones iniciales';
         document.getElementById('rep-observations').value = t.observations || '';
 
-        // Botones Waze y Maps en el modal
         document.getElementById('rep-btn-waze').onclick = () => this.openWazeNavigation(t.address);
         document.getElementById('rep-btn-maps').onclick = () => this.openGoogleMapsNavigation(t.address);
 
@@ -2252,29 +2153,20 @@
         if (!container) return;
 
         if (this.currentModalChecklist.length === 0) {
-          container.innerHTML = `
-            <div class="text-center py-4 text-slate-400 italic">
-              No hay ítems en la lista de chequeo. Agrega uno con el campo inferior.
-            </div>
-          `;
+          container.innerHTML = `<div class="text-center py-2 text-slate-400 italic text-xs">No hay ítems en la lista.</div>`;
           return;
         }
 
         container.innerHTML = this.currentModalChecklist.map((item) => {
           return `
-            <div class="flex items-center justify-between gap-2 p-2 bg-white rounded-xl border border-slate-200 hover:border-slate-300 transition group" id="checklist-row-${item.id}">
-              <label class="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer select-none">
-                <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="app.toggleChecklistItem('${item.id}', this.checked)" class="w-4 h-4 rounded text-brand-lime focus:ring-brand-lime border-slate-300 transition">
+            <div class="flex items-center justify-between gap-2 p-1.5 bg-white rounded-lg border">
+              <label class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer select-none">
+                <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="app.toggleChecklistItem('${item.id}', this.checked)" class="w-4 h-4 rounded text-brand-lime">
                 <span id="checklist-text-${item.id}" class="text-xs ${item.checked ? 'line-through text-slate-400' : 'text-slate-700'} font-medium truncate">${item.label}</span>
               </label>
-
               <div class="flex items-center gap-1 shrink-0">
-                <button type="button" onclick="app.editChecklistItemPrompt('${item.id}')" title="Editar descripción" class="p-1.5 text-slate-400 hover:text-brand-limeHover hover:bg-brand-limeLight rounded-lg transition">
-                  <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
-                </button>
-                <button type="button" onclick="app.deleteChecklistItem('${item.id}')" title="Eliminar ítem" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition">
-                  <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                </button>
+                <button type="button" onclick="app.editChecklistItemPrompt('${item.id}')" class="p-1 text-slate-400 hover:text-brand-limeHover"><i data-lucide="edit-2" class="w-3 h-3"></i></button>
+                <button type="button" onclick="app.deleteChecklistItem('${item.id}')" class="p-1 text-slate-400 hover:text-rose-600"><i data-lucide="x" class="w-3 h-3"></i></button>
               </div>
             </div>
           `;
@@ -2304,11 +2196,10 @@
         const item = this.currentModalChecklist.find(c => c.id === id);
         if (!item) return;
 
-        const newLabel = prompt('Modificar descripción del punto de chequeo:', item.label);
+        const newLabel = prompt('Modificar descripción:', item.label);
         if (newLabel !== null && newLabel.trim() !== '') {
           item.label = newLabel.trim();
           this.renderDynamicChecklist();
-          this.showToast('Ítem actualizado', 'info');
         }
       }
 
@@ -2321,35 +2212,32 @@
         const input = document.getElementById('new-checklist-item-input');
         const text = input.value.trim();
         if (!text) {
-          this.showToast('Escribe una descripción para el ítem', 'error');
+          this.showToast('Escribe una descripción', 'error');
           return;
         }
 
-        const newItem = {
+        this.currentModalChecklist.push({
           id: 'c_' + Date.now() + Math.random().toString(36).substring(2, 6),
           label: text,
           checked: false
-        };
+        });
 
-        this.currentModalChecklist.push(newItem);
         input.value = '';
         this.renderDynamicChecklist();
-        this.showToast('Nuevo punto agregado al checklist', 'success');
       }
 
-      // Manejo de Fotos y Videos de Evidencia
       handleUploadEvidence(e) {
         const files = Array.from(e.target.files);
         if (!files.length) return;
 
         if (this.currentReportEvidence.length + files.length > 5) {
-          this.showToast('Máximo 5 archivos de evidencia por informe', 'error');
+          this.showToast('Máximo 5 archivos por informe', 'error');
           return;
         }
 
         files.forEach(file => {
           if (file.size > 8 * 1024 * 1024) {
-            this.showToast(`El archivo ${file.name} supera los 8MB permitidos`, 'error');
+            this.showToast(`Archivo supera los 8MB permitidos`, 'error');
             return;
           }
 
@@ -2378,7 +2266,7 @@
         if (!container) return;
 
         if (this.currentReportEvidence.length === 0) {
-          container.innerHTML = `<p class="col-span-full text-slate-400 italic text-[11px]">No hay fotos o videos adjuntos todavía.</p>`;
+          container.innerHTML = `<p class="col-span-full text-slate-400 italic text-[11px]">No hay evidencias adjuntas.</p>`;
           return;
         }
 
@@ -2389,7 +2277,7 @@
             ` : `
               <img src="${item.src}" class="w-full h-full object-cover">
             `}
-            <button type="button" onclick="app.removeEvidenceItem('${item.id}')" class="absolute top-1 right-1 p-1 bg-rose-600 hover:bg-rose-700 text-white rounded-full text-xs shadow transition">
+            <button type="button" onclick="app.removeEvidenceItem('${item.id}')" class="absolute top-1 right-1 p-0.5 bg-rose-600 text-white rounded-full text-[10px] shadow">
               ✕
             </button>
           </div>
@@ -2407,7 +2295,7 @@
         const observations = document.getElementById('rep-observations').value.trim();
 
         if (this.activeReportStatus === 'NO_REALIZADA' && !observations) {
-          this.showToast('Debes indicar obligatoriamente el motivo de no realización', 'error');
+          this.showToast('Debes indicar obligatoriamente el motivo', 'error');
           document.getElementById('rep-observations').focus();
           return;
         }
@@ -2429,7 +2317,7 @@
           }
 
           this.closeReportModal();
-          this.showToast(`Informe de la orden ${this.selectedTask.id} guardado con éxito`, 'success');
+          this.showToast(`Informe guardado con éxito`, 'success');
         }
       }
 
@@ -2446,12 +2334,30 @@
           this.saveTasks();
           this.updateStats();
           this.renderTasks();
-          if (this.currentUser.role === 'ADMIN') {
-            this.renderAdminAuditLog();
-          }
+          if (this.currentUser.role === 'ADMIN') this.renderAdminAuditLog();
 
           this.closeReportModal();
-          this.showToast(`Orden ${this.selectedTask.id} guardada en proceso`, 'info');
+          this.showToast(`Orden guardada en proceso`, 'info');
+        }
+      }
+
+      setTaskPendingFromReport() {
+        if (!this.selectedTask) return;
+        const taskIndex = this.tasks.findIndex(t => t.id === this.selectedTask.id);
+        if (taskIndex !== -1) {
+          this.tasks[taskIndex].status = 'PENDIENTE';
+          this.tasks[taskIndex].checklist = JSON.parse(JSON.stringify(this.currentModalChecklist));
+          this.tasks[taskIndex].observations = document.getElementById('rep-observations').value.trim();
+          this.tasks[taskIndex].evidence = JSON.parse(JSON.stringify(this.currentReportEvidence));
+          this.tasks[taskIndex].completedAt = null;
+
+          this.saveTasks();
+          this.updateStats();
+          this.renderTasks();
+          if (this.currentUser.role === 'ADMIN') this.renderAdminAuditLog();
+
+          this.closeReportModal();
+          this.showToast(`Orden regresada a PENDIENTE`, 'info');
         }
       }
 
@@ -2461,11 +2367,10 @@
         if (obsElem.value.trim() === '') {
           obsElem.value = reason;
         } else {
-          obsElem.value += ` | Motivo: ${reason}`;
+          obsElem.value += ` | ${reason}`;
         }
       }
 
-      // --- FICHA DE ORDEN FORMAL ---
       viewOrderDetails(id) {
         const t = this.tasks.find(x => x.id === id);
         if (!t) return;
@@ -2481,7 +2386,6 @@
         document.getElementById('view-technician').textContent = t.assignedTo;
         document.getElementById('view-instructions').textContent = t.instructions || 'Sin observaciones iniciales.';
 
-        // Asignar botones Waze / Maps en la ficha
         document.getElementById('view-btn-waze').onclick = () => this.openWazeNavigation(t.address);
         document.getElementById('view-btn-maps').onclick = () => this.openGoogleMapsNavigation(t.address);
 
@@ -2506,22 +2410,21 @@
 
         if (t.status === 'REALIZADA') {
           badge.textContent = 'REALIZADA';
-          badge.className = 'px-3 py-1 rounded-full text-xs font-bold uppercase inline-block bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder';
-          obsBox.className = 'p-3 rounded-xl border mt-1 whitespace-pre-line font-medium bg-emerald-50/60 border-emerald-200 text-emerald-950 text-xs';
+          badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold uppercase inline-block bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder';
+          obsBox.className = 'p-2.5 rounded-xl border mt-0.5 whitespace-pre-line font-medium bg-emerald-50/60 border-emerald-200 text-emerald-950 text-xs';
           obsBox.textContent = (t.observations ? t.observations : 'Servicio ejecutado a conformidad según especificaciones técnicas.') + checkSummary;
         } else if (t.status === 'NO_REALIZADA') {
           badge.textContent = 'NO REALIZADA';
-          badge.className = 'px-3 py-1 rounded-full text-xs font-bold uppercase inline-block bg-rose-100 text-rose-800 border border-rose-300';
-          obsBox.className = 'p-3 rounded-xl border mt-1 whitespace-pre-line font-medium bg-rose-50 border-rose-200 text-rose-900 text-xs';
+          badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold uppercase inline-block bg-rose-100 text-rose-800 border border-rose-300';
+          obsBox.className = 'p-2.5 rounded-xl border mt-0.5 whitespace-pre-line font-medium bg-rose-50 border-rose-200 text-rose-900 text-xs';
           obsBox.textContent = `CAUSA DE NO REALIZACIÓN:\n${t.observations || 'Sin motivo detallado'}` + checkSummary;
         } else {
           badge.textContent = t.status === 'EN_PROCESO' ? 'EN PROCESO' : 'PENDIENTE';
-          badge.className = 'px-3 py-1 rounded-full text-xs font-bold uppercase inline-block bg-amber-100 text-amber-800 border border-amber-300';
-          obsBox.className = 'p-3 rounded-xl border mt-1 whitespace-pre-line font-medium bg-slate-50 border-slate-200 text-slate-700 text-xs';
+          badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold uppercase inline-block bg-amber-100 text-amber-800 border border-amber-300';
+          obsBox.className = 'p-2.5 rounded-xl border mt-0.5 whitespace-pre-line font-medium bg-slate-50 border-slate-200 text-slate-700 text-xs';
           obsBox.textContent = (t.observations ? t.observations : 'Visita sin informe final todavía.') + checkSummary;
         }
 
-        // Renderizar Galería en Ficha
         const evSection = document.getElementById('view-evidence-section');
         const evGallery = document.getElementById('view-evidence-gallery');
         if (Array.isArray(t.evidence) && t.evidence.length > 0) {
@@ -2558,21 +2461,21 @@
         const header = document.getElementById('report-modal-header');
 
         if (status === 'REALIZADA') {
-          btnDone.className = 'py-3 px-4 rounded-2xl border-2 flex items-center justify-center gap-2 font-bold transition bg-brand-limeLight text-brand-limeHover border-brand-lime shadow-sm';
-          btnFailed.className = 'py-3 px-4 rounded-2xl border-2 flex items-center justify-center gap-2 font-bold transition text-slate-600 border-slate-200 hover:border-rose-400';
+          btnDone.className = 'py-2.5 px-3 rounded-xl border-2 flex items-center justify-center gap-1.5 font-bold transition bg-brand-limeLight text-brand-limeHover border-brand-lime shadow-sm';
+          btnFailed.className = 'py-2.5 px-3 rounded-xl border-2 flex items-center justify-center gap-1.5 font-bold transition text-slate-600 border-slate-200 hover:border-rose-400';
           quickReasons.classList.add('hidden');
           checklistSec.classList.remove('opacity-40', 'pointer-events-none');
           obsBadge.textContent = '(Opcional)';
           obsBadge.className = 'text-slate-400 font-normal';
-          header.className = 'bg-brand-dark text-white px-6 py-4 flex items-center justify-between border-b-2 border-brand-lime';
+          header.className = 'bg-brand-dark text-white px-5 py-3.5 flex items-center justify-between border-b-2 border-brand-lime shrink-0';
         } else {
-          btnFailed.className = 'py-3 px-4 rounded-2xl border-2 flex items-center justify-center gap-2 font-bold transition bg-rose-50 text-rose-800 border-rose-500 shadow-sm';
-          btnDone.className = 'py-3 px-4 rounded-2xl border-2 flex items-center justify-center gap-2 font-bold transition text-slate-600 border-slate-200 hover:border-brand-lime';
+          btnFailed.className = 'py-2.5 px-3 rounded-xl border-2 flex items-center justify-center gap-1.5 font-bold transition bg-rose-50 text-rose-800 border-rose-500 shadow-sm';
+          btnDone.className = 'py-2.5 px-3 rounded-xl border-2 flex items-center justify-center gap-1.5 font-bold transition text-slate-600 border-slate-200 hover:border-brand-lime';
           quickReasons.classList.remove('hidden');
           checklistSec.classList.add('opacity-40', 'pointer-events-none');
-          obsBadge.textContent = '(OBLIGATORIO indicar causa)';
+          obsBadge.textContent = '(OBLIGATORIO)';
           obsBadge.className = 'text-rose-600 font-bold';
-          header.className = 'bg-rose-950 text-white px-6 py-4 flex items-center justify-between border-b-2 border-rose-500';
+          header.className = 'bg-rose-950 text-white px-5 py-3.5 flex items-center justify-between border-b-2 border-rose-500 shrink-0';
         }
       }
     }
