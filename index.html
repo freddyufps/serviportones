@@ -15,11 +15,11 @@
         extend: {
           colors: {
             brand: {
-              lime: '#71A832',      /* Verde corporativo oficial */
+              lime: '#71A832',
               limeHover: '#5d8c27',
               limeLight: '#f1f8eb',
               limeBorder: '#b3d88b',
-              dark: '#111827',       /* Negro carbón mate */
+              dark: '#111827',
               darkSurface: '#18202F',
               graphite: '#1f2937'
             }
@@ -51,7 +51,7 @@
       }
     }
   </style>
-  <!-- SDKs de Firebase compatibles con navegador directo -->
+  <!-- SDKs de Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
@@ -65,7 +65,6 @@
       appId: "1:148615531792:web:99062c41ac5f9c1ca92995"
     };
 
-    // Inicializar Firebase y la base de datos
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
   </script>
@@ -77,7 +76,6 @@
   <!-- ========================================== -->
   <div id="view-login" class="flex-1 flex items-center justify-center p-4 sm:p-6 min-h-screen bg-gradient-to-br from-slate-950 via-brand-dark to-slate-900">
     <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
-      <!-- Encabezado con Logo Oficial Vectorial -->
       <div class="bg-white p-6 sm:p-7 text-center border-b border-slate-100 flex flex-col items-center">
         <div class="w-full max-w-[280px] py-1">
           <svg viewBox="0 0 420 170" class="w-full h-auto drop-shadow-sm select-none" xmlns="http://www.w3.org/2000/svg">
@@ -93,7 +91,6 @@
         <p class="text-[11px] text-slate-500 uppercase tracking-widest font-extrabold mt-1">Plataforma Operativa de Automatismos</p>
       </div>
 
-      <!-- Formulario de acceso -->
       <form onsubmit="app.handleLogin(event)" class="p-6 sm:p-8 space-y-4">
         <div id="login-error-alert" class="hidden p-3.5 rounded-xl text-xs font-semibold bg-rose-50 border border-rose-200 text-rose-700 flex items-center gap-2">
           <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
@@ -135,11 +132,9 @@
   <!-- 2. VISTA PRINCIPAL (USUARIO CONECTADO)     -->
   <!-- ========================================== -->
   <div id="view-dashboard" class="hidden flex-1 flex flex-col">
-    <!-- Barra Superior Limpia y Sin Duplicados -->
     <header class="bg-brand-dark text-white sticky top-0 z-40 shadow-md border-b-2 border-brand-lime">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         
-        <!-- Logotipo Oficial Vectorial -->
         <div class="flex items-center space-x-3">
           <div class="h-10 bg-white px-2 py-1 rounded-xl flex items-center shadow-sm">
             <svg viewBox="0 0 420 170" class="h-8 w-auto" xmlns="http://www.w3.org/2000/svg">
@@ -155,22 +150,17 @@
           <span id="header-role-badge" class="hidden sm:inline-block text-[10px] uppercase font-extrabold px-2.5 py-0.5 rounded-full bg-brand-lime/20 text-brand-lime border border-brand-lime/40">Admin</span>
         </div>
 
-        <!-- Botones exteriores limpios -->
         <div class="flex items-center space-x-2 sm:space-x-3">
-          
-          <!-- Botón Nueva Orden (Solo Admin) -->
           <button id="btn-nav-new-order" onclick="app.openNewTaskModal()" class="hidden bg-brand-lime hover:bg-brand-limeHover text-white text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md shadow-brand-lime/20 transition active:scale-95">
             <i data-lucide="plus-circle" class="w-4 h-4"></i>
             <span>Nueva Orden</span>
           </button>
 
-          <!-- ENGRANAJE DE CONFIGURACIONES -->
           <button id="btn-nav-settings" onclick="app.openSettingsModal()" class="p-2 sm:px-3 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl transition flex items-center gap-1.5 shadow-sm" title="Ajustes y Personal">
             <i data-lucide="settings" class="w-4 h-4 text-brand-lime"></i>
             <span class="hidden md:inline text-xs font-semibold">Configuración</span>
           </button>
 
-          <!-- Badge de usuario conectado con Foto de Perfil Redondeada -->
           <div class="flex items-center gap-2 bg-slate-800/90 pl-1.5 pr-2.5 sm:pr-3 py-1 rounded-xl border border-slate-700">
             <div class="relative w-8 h-8 rounded-full overflow-hidden border-2 border-brand-lime bg-slate-700 flex items-center justify-center shrink-0">
               <img id="header-user-photo" src="" alt="Foto" class="w-full h-full object-cover hidden">
@@ -183,7 +173,6 @@
             </div>
           </div>
 
-          <!-- Botón Cerrar Sesión -->
           <button onclick="app.logout()" class="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition" title="Cerrar Sesión">
             <i data-lucide="log-out" class="w-5 h-5"></i>
           </button>
@@ -191,11 +180,10 @@
       </div>
     </header>
 
-    <!-- Contenedor Principal -->
     <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
 
       <!-- ============================================================== -->
-      <!-- MONITOR DE PERSONAL ONLINE / OFFLINE CON HORAS DE LOGUEO (ADMIN) -->
+      <!-- MONITOR DE PERSONAL ONLINE / OFFLINE (ADMIN)                   -->
       <!-- ============================================================== -->
       <section id="section-technicians-monitor" class="mb-6 hidden">
         <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 sm:p-5">
@@ -212,18 +200,12 @@
               </span>
             </div>
           </div>
-
-          <!-- Cards de Técnicos -->
-          <div id="technicians-status-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            <!-- Inyectado dinámicamente -->
-          </div>
+          <div id="technicians-status-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
         </div>
       </section>
 
       <!-- Banner de bienvenida -->
-      <div id="dashboard-banner" class="mb-6 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm">
-        <!-- Inyectado dinámicamente según rol -->
-      </div>
+      <div id="dashboard-banner" class="mb-6 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm"></div>
 
       <!-- Tarjetas de Estadísticas -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
@@ -284,7 +266,6 @@
             <option value="NO_REALIZADA">❌ No Realizadas</option>
           </select>
 
-          <!-- Filtro por Técnico (Solo Admin) -->
           <select id="filter-tech" onchange="app.renderTasks()" class="text-xs sm:text-sm border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:ring-2 focus:ring-brand-lime focus:outline-none font-medium">
             <option value="ALL">Todos los Técnicos</option>
           </select>
@@ -303,7 +284,7 @@
       </section>
 
       <!-- Cuadrícula de Órdenes -->
-      <section>
+      <section class="mb-10">
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-extrabold text-slate-800 text-lg flex items-center gap-2">
             <span>Órdenes de Trabajo</span>
@@ -314,11 +295,8 @@
           </span>
         </div>
 
-        <div id="tasks-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-          <!-- Tarjetas inyectadas dinámicamente -->
-        </div>
+        <div id="tasks-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5"></div>
 
-        <!-- Mensaje si no hay órdenes -->
         <div id="empty-state" class="hidden bg-white border-2 border-dashed border-slate-200 rounded-3xl p-10 text-center my-6">
           <div class="w-16 h-16 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
             <i data-lucide="inbox" class="w-8 h-8"></i>
@@ -331,16 +309,49 @@
         </div>
       </section>
 
+      <!-- ============================================================== -->
+      <!-- REGISTRO Y BITÁCORA DETALLADA DE TRABAJOS (SOLO ADMINISTRADOR) -->
+      <!-- ============================================================== -->
+      <section id="section-admin-audit-log" class="hidden bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-sm mb-10">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+          <div class="flex items-center gap-2.5">
+            <div class="p-2 bg-brand-limeLight rounded-xl text-brand-limeHover border border-brand-limeBorder">
+              <i data-lucide="history" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="font-extrabold text-sm sm:text-base text-slate-900">Bitácora Operativa: Registro de Informes de Empleados</h3>
+              <p class="text-xs text-slate-500">Historial completo con fecha, hora, lugar, detalles y evidencias fotográficas/video.</p>
+            </div>
+          </div>
+          <span id="audit-log-counter" class="text-xs font-black px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg">0 Informes</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border border-slate-100 rounded-xl">
+            <thead class="bg-slate-50 text-slate-600 uppercase font-bold border-b">
+              <tr>
+                <th class="p-3">Fecha y Hora</th>
+                <th class="p-3">Técnico</th>
+                <th class="p-3">Cliente / Ubicación</th>
+                <th class="p-3">Resultado</th>
+                <th class="p-3">Detalle del Informe</th>
+                <th class="p-3">Evidencias</th>
+              </tr>
+            </thead>
+            <tbody id="audit-log-tbody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </section>
+
     </main>
 
-    <!-- Pie de página -->
     <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 mt-auto">
       <p><b class="text-slate-800">SERVIPORTONES ELÉCTRICOS MARTÍNEZ</b> &bull; Sistema de Gestión Técnica de Automatismos &bull; 2026</p>
     </footer>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MODAL CENTRALIZADO: ENGRANAJE DE CONFIGURACIONES (CLAVES, USUARIOS, FOTOS)-->
+  <!-- MODAL: AJUSTES, FOTOS Y PERSONAL                                          -->
   <!-- ========================================================================= -->
   <div id="modal-settings" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-slate-100 overflow-hidden my-8">
@@ -360,8 +371,7 @@
       </div>
 
       <div class="p-6 space-y-6 max-h-[80vh] overflow-y-auto text-xs sm:text-sm">
-
-        <!-- 1. FOTO DE PERFIL PROPIA -->
+        <!-- Foto de perfil propia -->
         <div class="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200">
           <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 mb-3 flex items-center gap-2">
             <i data-lucide="camera" class="w-4 h-4 text-brand-limeHover"></i>
@@ -373,7 +383,7 @@
               <span id="settings-my-initial-preview" class="text-2xl font-black text-slate-600">A</span>
             </div>
             <div class="flex-1 space-y-2 text-center sm:text-left">
-              <p class="text-xs text-slate-600">Sube una foto clara de tu rostro para que aparezca en el sistema y en las fichas técnicas.</p>
+              <p class="text-xs text-slate-600">Sube una foto de tu rostro para que aparezca en el sistema y fichas técnicas.</p>
               <div class="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
                 <label class="cursor-pointer px-3 py-1.5 bg-brand-dark hover:bg-black text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow transition">
                   <i data-lucide="upload" class="w-3.5 h-3.5 text-brand-lime"></i> Subir Foto
@@ -387,7 +397,7 @@
           </div>
         </div>
 
-        <!-- 2. CAMBIO DE CONTRASEÑA PROPIA -->
+        <!-- Cambio de contraseña propia -->
         <div class="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200">
           <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 mb-3 flex items-center gap-2">
             <i data-lucide="key" class="w-4 h-4 text-brand-limeHover"></i>
@@ -416,7 +426,7 @@
           </form>
         </div>
 
-        <!-- 3. GESTIÓN COMPLETA DE TRABAJADORES (ADMIN) -->
+        <!-- Gestión de Técnicos (Admin) -->
         <div id="settings-admin-users-section" class="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-5 hidden">
           <div class="flex items-center justify-between border-b border-slate-200 pb-2">
             <div>
@@ -429,7 +439,6 @@
             <span id="settings-users-count-badge" class="text-xs font-bold px-2 py-0.5 rounded bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder">0 Técnicos</span>
           </div>
 
-          <!-- Formulario Crear/Editar Técnico -->
           <form id="manage-user-form" onsubmit="app.handleSaveUser(event)" class="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
             <input type="hidden" id="manage-user-id" value="">
             <input type="hidden" id="manage-user-photo" value="">
@@ -482,7 +491,6 @@
             </div>
           </form>
 
-          <!-- Tabla de Trabajadores -->
           <div class="overflow-x-auto border border-slate-200 rounded-2xl bg-white">
             <table class="w-full text-left text-xs">
               <thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200">
@@ -494,19 +502,16 @@
                   <th class="p-3 text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody id="table-users-body" class="divide-y divide-slate-100">
-                <!-- Inyectado dinámicamente -->
-              </tbody>
+              <tbody id="table-users-body" class="divide-y divide-slate-100"></tbody>
             </table>
           </div>
         </div>
-
       </div>
     </div>
   </div>
 
   <!-- ======================================================== -->
-  <!-- MODAL: ASIGNAR / EDITAR ORDEN (SOLO ADMINISTRADOR)       -->
+  <!-- MODAL: CREAR / EDITAR ORDEN (ADMIN)                      -->
   <!-- ======================================================== -->
   <div id="modal-task-form" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-3xl max-w-xl w-full shadow-2xl border border-slate-100 overflow-hidden my-8">
@@ -523,7 +528,6 @@
       <form id="task-form" onsubmit="app.handleSaveTask(event)" class="p-6 space-y-4 text-xs sm:text-sm">
         <input type="hidden" id="task-id" value="">
 
-        <!-- Cliente & Teléfono -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre del Cliente / Predio *</label>
@@ -535,7 +539,6 @@
           </div>
         </div>
 
-        <!-- Dirección -->
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">Dirección del Inmueble *</label>
           <div class="relative">
@@ -544,7 +547,6 @@
           </div>
         </div>
 
-        <!-- Tipo de Servicio & Motor -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">Tipo de Servicio *</label>
@@ -565,13 +567,10 @@
           </div>
         </div>
 
-        <!-- Asignación Técnico, Prioridad y Fecha -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">Técnico Asignado *</label>
-            <select id="task-assigned-to" required class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none bg-white font-semibold">
-              <!-- Inyectado dinámicamente -->
-            </select>
+            <select id="task-assigned-to" required class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none bg-white font-semibold"></select>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">Prioridad *</label>
@@ -587,21 +586,16 @@
           </div>
         </div>
 
-        <!-- Instrucciones -->
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">Instrucciones / Falla reportada</label>
           <textarea id="task-instructions" rows="3" placeholder="Ej: El portón se frena a mitad de recorrido. Revisar cremallera y lubricación..." class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none"></textarea>
         </div>
 
-        <!-- SECCIÓN DE CHECKLIST PERSONALIZABLE EN CREAR/EDITAR ORDEN -->
         <div class="mt-4 border-t border-slate-200 pt-3">
           <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
             Puntos de Inspección / Checklist de la Orden
           </label>
-          
-          <div id="task-modal-checklist-container" class="space-y-1.5 max-h-48 overflow-y-auto p-1 bg-slate-50 rounded-xl border border-slate-200">
-            <!-- Los puntos se cargan dinámicamente -->
-          </div>
+          <div id="task-modal-checklist-container" class="space-y-1.5 max-h-48 overflow-y-auto p-1 bg-slate-50 rounded-xl border border-slate-200"></div>
 
           <div class="flex items-center gap-2 mt-2">
             <input type="text" id="task-modal-new-item-input" placeholder="Nuevo punto para esta orden..." class="flex-1 px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-lime">
@@ -622,7 +616,7 @@
   </div>
 
   <!-- ======================================================== -->
-  <!-- MODAL: REPORTE TÉCNICO (REALIZADA / NO REALIZADA)        -->
+  <!-- MODAL: REPORTE TÉCNICO (CON FOTOS Y VIDEOS)              -->
   <!-- ======================================================== -->
   <div id="modal-report" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden my-8">
@@ -646,11 +640,26 @@
             <div><span class="text-slate-500 font-medium">Servicio:</span> <span id="rep-service" class="font-bold text-slate-800"></span></div>
             <div><span class="text-slate-500 font-medium">Equipo:</span> <span id="rep-equipment" class="font-bold text-slate-800"></span></div>
             <div class="sm:col-span-2"><span class="text-slate-500 font-medium">Dirección:</span> <span id="rep-address" class="font-semibold text-slate-800"></span></div>
-            <div class="sm:col-span-2"><span class="text-slate-500 font-medium">Indicaciones del Administrador:</span> <span id="rep-instruction" class="text-slate-700 italic"></span></div>
+            <div class="sm:col-span-2"><span class="text-slate-500 font-medium">Indicaciones:</span> <span id="rep-instruction" class="text-slate-700 italic"></span></div>
           </div>
         </div>
 
-        <!-- SELECTOR CRÍTICO: ¿SE REALIZÓ O NO SE REALIZÓ? -->
+        <!-- Botones de Navegación Rápida -->
+        <div class="p-3 bg-cyan-50/70 border border-cyan-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-2.5">
+          <span class="text-xs font-bold text-cyan-900 flex items-center gap-1.5">
+            <i data-lucide="navigation" class="w-4 h-4 text-cyan-600"></i> ¿Cómo llegar al predio?
+          </span>
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <button type="button" id="rep-btn-waze" class="flex-1 sm:flex-none px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1 shadow-sm transition">
+              🚙 Abrir Waze
+            </button>
+            <button type="button" id="rep-btn-maps" class="flex-1 sm:flex-none px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1 shadow-sm transition">
+              📍 Google Maps
+            </button>
+          </div>
+        </div>
+
+        <!-- Selector: REALIZADA / NO REALIZADA -->
         <div>
           <label class="block text-xs font-black uppercase tracking-wider text-slate-800 mb-2">
             Resultado de la Visita *
@@ -667,21 +676,18 @@
           </div>
         </div>
 
-        <!-- Checklist Dinámico y Editable -->
+        <!-- Checklist Dinámico -->
         <div id="section-checklist" class="space-y-3 border-t pt-4">
           <div class="flex items-center justify-between">
             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-              Checklist Técnico del Portón (Personalizable)
+              Checklist Técnico de la Visita
             </label>
             <span class="text-[11px] text-slate-400 font-medium">Usa ✏️ para editar o ✕ para quitar</span>
           </div>
-
-          <div id="checklist-items-container" class="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs">
-            <!-- Inyectado dinámicamente -->
-          </div>
+          <div id="checklist-items-container" class="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs"></div>
 
           <div class="flex items-center gap-2 pt-1">
-            <input type="text" id="new-checklist-item-input" placeholder="Ej: Revisar sensor de fotocelda, capacitor..." class="flex-1 px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none shadow-sm" onkeydown="if(event.key==='Enter'){event.preventDefault(); app.addChecklistItem();}">
+            <input type="text" id="new-checklist-item-input" placeholder="Ej: Revisar condensador, lubricación..." class="flex-1 px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none shadow-sm" onkeydown="if(event.key==='Enter'){event.preventDefault(); app.addChecklistItem();}">
             <button type="button" onclick="app.addChecklistItem()" class="px-3.5 py-2 bg-brand-dark hover:bg-black text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow transition active:scale-95 shrink-0">
               <i data-lucide="plus-circle" class="w-4 h-4 text-brand-lime"></i>
               <span>Agregar Ítem</span>
@@ -689,15 +695,15 @@
           </div>
         </div>
 
-        <!-- Observaciones del Técnico -->
+        <!-- Observaciones / Detalles -->
         <div class="space-y-2 border-t pt-4">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-              Observaciones del Técnico <span id="obs-required-badge" class="text-rose-600 font-bold">*</span>
+              Detalles / Observaciones del Técnico <span id="obs-required-badge" class="text-rose-600 font-bold">*</span>
             </label>
             <div id="quick-reasons-wrap" class="hidden">
               <select onchange="app.insertQuickReason(this.value)" class="text-[11px] text-slate-700 bg-slate-100 border border-slate-300 rounded-lg px-2 py-1">
-                <option value="">⚡ Motivo rápido de no realización...</option>
+                <option value="">⚡ Motivo rápido...</option>
                 <option value="Cliente ausente tras 30 min de espera y llamadas telefónicas.">Cliente ausente</option>
                 <option value="Inmueble sin suministro eléctrico en el tablero general.">Sin energía eléctrica</option>
                 <option value="Tarjeta electrónica quemada por descarga. Requiere cotización.">Tarjeta quemada</option>
@@ -707,25 +713,40 @@
               </select>
             </div>
           </div>
-          <textarea id="rep-observations" rows="3" placeholder="Describe detalladamente el estado del portón o la justificación exacta si no se completó..." class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none text-xs sm:text-sm"></textarea>
+          <textarea id="rep-observations" rows="4" placeholder="Describe detalladamente el estado del portón, labores realizadas o justificación exacta..." class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none text-xs sm:text-sm"></textarea>
         </div>
 
-        <!-- Materiales utilizados -->
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Repuestos o Insumos Utilizados</label>
-          <input type="text" id="rep-materials" placeholder="Ej: 2 Controles 433Mhz, grasa blanca, fusible 5A, capacitor 16uF" class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none text-xs">
+        <!-- Evidencias Multimedia (Fotos y Videos) -->
+        <div class="space-y-2 border-t pt-4">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <i data-lucide="camera" class="w-4 h-4 text-brand-limeHover"></i>
+              <span>Evidencias Fotográficas y de Video</span>
+            </label>
+            <span class="text-[11px] text-slate-400">Máx. 5 archivos</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <label class="cursor-pointer px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow transition">
+              <i data-lucide="upload-cloud" class="w-4 h-4 text-brand-lime"></i> Subir Foto o Video
+              <input type="file" id="rep-media-input" accept="image/*,video/*" multiple class="hidden" onchange="app.handleUploadEvidence(event)">
+            </label>
+            <span class="text-[10px] text-slate-500">Puedes tomar fotos o grabar videos desde tu celular.</span>
+          </div>
+
+          <div id="rep-evidence-gallery" class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2"></div>
         </div>
 
         <!-- Acciones del Reporte -->
         <div class="pt-4 border-t flex flex-col sm:flex-row justify-between items-center gap-3">
-          <button type="button" onclick="app.setTaskInProgress()" class="w-full sm:w-auto text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-3.5 py-2.5 rounded-xl font-bold">
+          <button type="button" onclick="app.setTaskInProgress()" class="w-full sm:w-auto text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-4 py-2.5 rounded-xl font-bold">
             Dejar "En Proceso"
           </button>
           <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <button type="button" onclick="app.sendWhatsAppReport()" class="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow">
-              <i data-lucide="phone-call" class="w-4 h-4"></i> Enviar a WhatsApp
+            <button type="button" onclick="app.closeReportModal()" class="px-4 py-2.5 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 text-xs font-bold">
+              Cancelar
             </button>
-            <button type="button" onclick="app.submitReport()" class="px-4 py-2.5 bg-brand-dark hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow">
+            <button type="button" onclick="app.submitReport()" class="px-5 py-2.5 bg-brand-dark hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow">
               <i data-lucide="check" class="w-4 h-4 text-brand-lime"></i> Guardar Informe
             </button>
           </div>
@@ -735,11 +756,10 @@
   </div>
 
   <!-- ======================================================== -->
-  <!-- MODAL: FICHA DE ORDEN / IMPRIMIR (FORMATO FORMAL)        -->
+  <!-- MODAL: FICHA DE ORDEN / IMPRIMIR                         -->
   <!-- ======================================================== -->
   <div id="modal-view-order" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
     <div id="printable-order-modal" class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 p-6 sm:p-8">
-      <!-- Membrete con Logo Oficial -->
       <div class="border-b-2 border-slate-200 pb-4 flex justify-between items-start">
         <div class="max-w-[280px]">
           <svg viewBox="0 0 420 170" class="w-full h-auto drop-shadow-sm select-none" xmlns="http://www.w3.org/2000/svg">
@@ -752,7 +772,6 @@
             </g>
           </svg>
           <p class="text-[11px] text-slate-500 font-bold mt-1">Automatismos, Motores & Soluciones Electrónicas</p>
-          <p class="text-[10px] text-slate-400">Servicio Técnico, Mantenimientos y Garantías</p>
         </div>
         <div class="text-right">
           <span id="view-order-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase inline-block">ESTADO</span>
@@ -761,7 +780,6 @@
         </div>
       </div>
 
-      <!-- Datos de la orden -->
       <div class="py-4 space-y-4 text-xs sm:text-sm">
         <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
           <div>
@@ -772,9 +790,19 @@
             <span class="text-slate-400 block text-[10px] font-bold uppercase">Teléfono Contacto</span>
             <span id="view-phone" class="font-bold text-slate-900"></span>
           </div>
-          <div class="col-span-2">
-            <span class="text-slate-400 block text-[10px] font-bold uppercase">Dirección</span>
-            <span id="view-address" class="font-semibold text-slate-800"></span>
+          <div class="col-span-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <span class="text-slate-400 block text-[10px] font-bold uppercase">Dirección</span>
+              <span id="view-address" class="font-semibold text-slate-800"></span>
+            </div>
+            <div class="flex items-center gap-2 no-print shrink-0">
+              <button type="button" id="view-btn-waze" class="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-700 text-white text-[11px] font-bold rounded-lg flex items-center gap-1 shadow-sm transition">
+                🚙 Waze
+              </button>
+              <button type="button" id="view-btn-maps" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg flex items-center gap-1 shadow-sm transition">
+                📍 Maps
+              </button>
+            </div>
           </div>
         </div>
 
@@ -806,23 +834,17 @@
           <div id="view-observations" class="p-3 rounded-xl border mt-1 whitespace-pre-line font-medium"></div>
         </div>
 
-        <div>
-          <span class="text-slate-400 block text-[10px] font-bold uppercase">Materiales / Repuestos Suministrados</span>
-          <p id="view-materials" class="text-slate-800 font-semibold mt-0.5"></p>
+        <div id="view-evidence-section" class="hidden">
+          <span class="text-slate-400 block text-[10px] font-bold uppercase mb-1.5">Evidencias Adjuntas</span>
+          <div id="view-evidence-gallery" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
         </div>
       </div>
 
-      <!-- Acciones de visualización -->
-      <div class="mt-6 pt-4 border-t flex justify-between items-center no-print">
-        <button onclick="app.shareOrderViaWhatsApp()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow">
-          <i data-lucide="share-2" class="w-4 h-4"></i> Enviar por WhatsApp
+      <div class="mt-6 pt-4 border-t flex justify-end gap-2 no-print">
+        <button onclick="app.closeViewModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 text-xs font-bold hover:bg-slate-100">Cerrar</button>
+        <button onclick="window.print()" class="px-4 py-2 bg-brand-dark hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow">
+          <i data-lucide="printer" class="w-4 h-4 text-brand-lime"></i> Imprimir / PDF
         </button>
-        <div class="flex gap-2">
-          <button onclick="app.closeViewModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 text-xs font-bold hover:bg-slate-100">Cerrar</button>
-          <button onclick="window.print()" class="px-4 py-2 bg-brand-dark hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow">
-            <i data-lucide="printer" class="w-4 h-4 text-brand-lime"></i> Imprimir / PDF
-          </button>
-        </div>
       </div>
     </div>
   </div>
@@ -834,7 +856,7 @@
   </div>
 
   <!-- ======================================================== -->
-  <!-- JAVASCRIPT: LÓGICA DE CONTROL, HORARIOS, FOTOS Y SEGURIDAD -->
+  <!-- JAVASCRIPT: LÓGICA COMPLETA DE LA APLICACIÓN             -->
   <!-- ======================================================== -->
   <script>
     const DEFAULT_ADMIN = {
@@ -913,56 +935,8 @@
           { id: 'c6', label: 'Prueba de mandos y alcance de receptor', checked: false }
         ],
         observations: '',
-        materialsUsed: '',
+        evidence: [],
         completedAt: null
-      },
-      {
-        id: 'ORD-102',
-        client: 'Bodegas TransOriente Ltda',
-        phone: '310 442 1290',
-        address: 'Zona Industrial Calle 19 # 45-80',
-        serviceType: 'Reparación de Emergencia / Fallo',
-        equipment: 'Portón Batiente Doble LiftMaster LA500',
-        assignedTo: 'Carlos Rivera',
-        priority: 'ALTA',
-        date: '2026-10-24',
-        instructions: 'Camión rozó el brazo izquierdo. Portón bloqueado.',
-        status: 'EN_PROCESO',
-        checklist: [
-          { id: 'c1', label: 'Engrase/limpieza de cremallera y rodamientos', checked: true },
-          { id: 'c2', label: 'Calibración de finales de carrera (imán/micros)', checked: false },
-          { id: 'c3', label: 'Fotocélulas y sistema anti-aplastamiento', checked: true },
-          { id: 'c4', label: 'Prueba de destrabe manual / llave de paso', checked: true },
-          { id: 'c5', label: 'Voltaje de alimentación y torque de embrague', checked: true },
-          { id: 'c6', label: 'Prueba de mandos y alcance de receptor', checked: false }
-        ],
-        observations: 'Brazo desmontado para enderezar anclaje de poste.',
-        materialsUsed: 'Pernos de acero 1/2, arandelas',
-        completedAt: null
-      },
-      {
-        id: 'ORD-103',
-        client: 'Edificio San Jerónimo',
-        phone: '312 990 1122',
-        address: 'Carrera 15 # 85-20',
-        serviceType: 'Programación de Mandos / Receptora',
-        equipment: 'Receptora Multicódigo Beninca One',
-        assignedTo: 'Andrés Soler',
-        priority: 'MEDIA',
-        date: '2026-10-23',
-        instructions: 'Codificar 20 mandos a distancia para nuevos residentes.',
-        status: 'NO_REALIZADA',
-        checklist: [
-          { id: 'c1', label: 'Engrase/limpieza de cremallera y rodamientos', checked: false },
-          { id: 'c2', label: 'Calibración de finales de carrera (imán/micros)', checked: false },
-          { id: 'c3', label: 'Fotocélulas y sistema anti-aplastamiento', checked: false },
-          { id: 'c4', label: 'Prueba de destrabe manual / llave de paso', checked: false },
-          { id: 'c5', label: 'Voltaje de alimentación y torque de embrague', checked: false },
-          { id: 'c6', label: 'Prueba de mandos y alcance de receptor', checked: false }
-        ],
-        observations: 'NO REALIZADO: El vigilante no tenía la llave del tablero de control y el administrador no contestó el teléfono tras 40 minutos de espera.',
-        materialsUsed: 'Ninguno',
-        completedAt: '2026-10-23 11:30'
       }
     ];
 
@@ -977,6 +951,7 @@
         this.heartbeatTimer = null;
         this.currentModalChecklist = [];
         this.currentTaskModalChecklist = [];
+        this.currentReportEvidence = [];
 
         this.init();
       }
@@ -998,11 +973,30 @@
 
       formatFullDateTime(dateObj = new Date()) {
         const time = this.formatTime(dateObj);
-        const day = dateObj.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' });
+        const day = dateObj.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
         return `${day} ${time}`;
       }
 
-      // --- AMBIENTE NAVIDEÑO (NIEVE Y TRINEO VOLADOR) ---
+      // --- NAVEGACIÓN GPS (WAZE Y GOOGLE MAPS) ---
+      openWazeNavigation(address) {
+        if (!address) {
+          this.showToast('No hay una dirección registrada', 'error');
+          return;
+        }
+        const wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(address)}&navigate=yes`;
+        window.open(wazeUrl, '_blank');
+      }
+
+      openGoogleMapsNavigation(address) {
+        if (!address) {
+          this.showToast('No hay una dirección registrada', 'error');
+          return;
+        }
+        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+        window.open(mapsUrl, '_blank');
+      }
+
+      // --- ANIMACIÓN NAVIDEÑA MEJORADA (RENO AL FRENTE CABALGANDO) ---
       initChristmasTheme() {
         if (document.getElementById('christmas-container')) return;
 
@@ -1024,23 +1018,30 @@
             0% { transform: translateY(0) rotate(0deg); opacity: 0.9; }
             100% { transform: translateY(105vh) rotate(360deg); opacity: 0.2; }
           }
-          .flying-sleigh {
+          .flying-sleigh-container {
             position: fixed;
             bottom: 85%;
-            left: -180px;
-            font-size: 26px;
-            user-select: none;
-            pointer-events: none;
+            left: -220px;
             z-index: 9999;
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));
-            animation: flyAcross 26s linear infinite;
+            pointer-events: none;
+            user-select: none;
+            animation: flyForward 24s linear infinite;
           }
-          @keyframes flyAcross {
-            0% { left: -180px; transform: translateY(0px) scaleX(1); }
-            48% { left: 110vw; transform: translateY(-20px) scaleX(1); }
-            50% { left: 110vw; transform: translateY(-20px) scaleX(-1); }
-            98% { left: -180px; transform: translateY(15px) scaleX(-1); }
-            100% { left: -180px; transform: translateY(0px) scaleX(1); }
+          .flying-sleigh-inner {
+            display: flex;
+            align-items: center;
+            font-size: 28px;
+            animation: galloping 1.2s ease-in-out infinite alternate;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.25));
+          }
+          @keyframes flyForward {
+            0% { left: -220px; transform: translateY(0); }
+            50% { transform: translateY(-30px); }
+            100% { left: 110vw; transform: translateY(10px); }
+          }
+          @keyframes galloping {
+            0% { transform: rotate(-4deg) translateY(0); }
+            100% { transform: rotate(6deg) translateY(-8px); }
           }
         `;
         document.head.appendChild(style);
@@ -1050,10 +1051,11 @@
         container.style.pointerEvents = 'none';
         document.body.appendChild(container);
 
-        const sleigh = document.createElement('div');
-        sleigh.className = 'flying-sleigh';
-        sleigh.innerHTML = '🦌🛷✨';
-        container.appendChild(sleigh);
+        // Contenedor del trineo volando hacia adelante con el reno adelante
+        const sleighWrapper = document.createElement('div');
+        sleighWrapper.className = 'flying-sleigh-container';
+        sleighWrapper.innerHTML = `<div class="flying-sleigh-inner">🛷✨🦌</div>`;
+        container.appendChild(sleighWrapper);
 
         const chars = ['❄', '❅', '•', '✻'];
         for (let i = 0; i < 30; i++) {
@@ -1071,7 +1073,6 @@
       init() {
         this.initChristmasTheme();
 
-        // Cargar Admin
         const savedAdmin = localStorage.getItem('portonpro_admin_v4');
         if (savedAdmin) {
           try { this.adminProfile = JSON.parse(savedAdmin); } catch(e) { this.adminProfile = DEFAULT_ADMIN; }
@@ -1080,7 +1081,6 @@
           this.saveAdmin();
         }
 
-        // Cargar Técnicos
         const savedUsers = localStorage.getItem('portonpro_users_v4');
         if (savedUsers) {
           try { this.users = JSON.parse(savedUsers); } catch(e) { this.users = INITIAL_TECHNICIANS; }
@@ -1089,15 +1089,13 @@
           this.saveUsers();
         }
 
-        // Cargar Tareas
         const savedTasks = localStorage.getItem('portonpro_tasks_v4');
         if (savedTasks) {
           try {
             this.tasks = JSON.parse(savedTasks);
             this.tasks.forEach(t => {
-              if (!Array.isArray(t.checklist)) {
-                t.checklist = this.getDefaultChecklistItems();
-              }
+              if (!Array.isArray(t.checklist)) t.checklist = this.getDefaultChecklistItems();
+              if (!Array.isArray(t.evidence)) t.evidence = [];
             });
           } catch(e) {
             this.tasks = INITIAL_TASKS;
@@ -1106,7 +1104,7 @@
           this.tasks = INITIAL_TASKS;
         }
 
-        // Sincronización en vivo con Firebase Firestore
+        // Sincronización en vivo con Firestore
         if (window.db) {
           db.collection('ordenes').doc('todas').onSnapshot((doc) => {
             if (doc.exists) {
@@ -1114,20 +1112,26 @@
               if (Array.isArray(data.tasks)) {
                 this.tasks = data.tasks;
                 this.tasks.forEach(t => {
-                  if (!Array.isArray(t.checklist)) {
-                    t.checklist = this.getDefaultChecklistItems();
-                  }
+                  if (!Array.isArray(t.checklist)) t.checklist = this.getDefaultChecklistItems();
+                  if (!Array.isArray(t.evidence)) t.evidence = [];
                 });
                 localStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
-                if (typeof this.renderTasks === 'function') this.renderTasks();
-                if (typeof this.renderDashboard === 'function') this.renderDashboard();
-                if (typeof this.renderSchedule === 'function') this.renderSchedule();
+                
+                if (this.currentUser) {
+                  this.updateStats();
+                  this.renderTasks();
+                  if (this.currentUser.role === 'ADMIN') {
+                    this.renderTechniciansMonitor();
+                    this.renderAdminAuditLog();
+                  }
+                }
               }
             }
+          }, (error) => {
+            console.error("Error en sincronización en vivo:", error);
           });
         }
 
-        // Sesión activa
         const savedSession = localStorage.getItem('portonpro_session_v4');
         if (savedSession) {
           try {
@@ -1146,21 +1150,21 @@
       saveAdmin() {
         localStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
         if (window.db) {
-          db.collection('config').doc('adminProfile').set(this.adminProfile).catch(e => console.error("Error guardando admin:", e));
+          db.collection('config').doc('adminProfile').set(this.adminProfile).catch(e => console.error(e));
         }
       }
 
       saveUsers() {
         localStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
         if (window.db) {
-          db.collection('config').doc('users').set({ list: this.users }).catch(e => console.error("Error guardando usuarios:", e));
+          db.collection('config').doc('users').set({ list: this.users }).catch(e => console.error(e));
         }
       }
 
       saveTasks() {
         localStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
         if (window.db) {
-          db.collection('ordenes').doc('todas').set({ tasks: this.tasks }).catch(e => console.error("Error guardando tareas:", e));
+          db.collection('ordenes').doc('todas').set({ tasks: this.tasks }).catch(e => console.error(e));
         }
       }
 
@@ -1181,7 +1185,6 @@
         setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
       }
 
-      // --- AUTENTICACIÓN Y REGISTRO DE CONEXIÓN ---
       showLoginView() {
         document.getElementById('view-login').classList.remove('hidden');
         document.getElementById('view-dashboard').classList.add('hidden');
@@ -1197,7 +1200,6 @@
         const now = new Date();
         const formattedTime = this.formatTime(now);
 
-        // 1. Administrador
         if (userVal === this.adminProfile.username.toLowerCase() && passVal === this.adminProfile.password) {
           errorAlert.classList.add('hidden');
           if (!this.adminProfile.firstLoginToday) {
@@ -1205,12 +1207,10 @@
           }
           this.adminProfile.lastLogin = `${formattedTime} (En línea)`;
           this.saveAdmin();
-
           this.loginSuccess(this.adminProfile, true);
           return;
         }
 
-        // 2. Técnico
         const techIndex = this.users.findIndex(u => u.username.toLowerCase() === userVal && u.password === passVal);
         if (techIndex !== -1) {
           const foundTech = this.users[techIndex];
@@ -1263,6 +1263,7 @@
 
         if (this.currentUser.role === 'ADMIN') {
           this.renderTechniciansMonitor();
+          this.renderAdminAuditLog();
         }
 
         if (notify) {
@@ -1292,7 +1293,7 @@
         localStorage.removeItem('portonpro_session_v4');
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
         this.showLoginView();
-        this.showToast('Sesión cerrada y horario de salida registrado', 'info');
+        this.showToast('Sesión cerrada correctamente', 'info');
       }
 
       sendHeartbeat() {
@@ -1336,6 +1337,7 @@
         const btnNewOrder = document.getElementById('btn-nav-new-order');
         const monitorSection = document.getElementById('section-technicians-monitor');
         const filterTech = document.getElementById('filter-tech');
+        const auditLogSection = document.getElementById('section-admin-audit-log');
         const roleHint = document.getElementById('role-hint-text');
 
         if (isAdmin) {
@@ -1343,13 +1345,15 @@
           monitorSection.classList.remove('hidden');
           filterTech.classList.remove('hidden');
           filterTech.disabled = false;
-          roleHint.textContent = 'Control de órdenes, asignación de técnicos y seguimiento de horario';
+          auditLogSection.classList.remove('hidden');
+          roleHint.textContent = 'Control de órdenes, asignación de técnicos, GPS y auditoría en vivo';
         } else {
           btnNewOrder.classList.add('hidden');
           monitorSection.classList.add('hidden');
           filterTech.classList.add('hidden');
           filterTech.disabled = true;
-          roleHint.textContent = 'Tus órdenes asignadas: diligencia el informe de visita o checklist';
+          auditLogSection.classList.add('hidden');
+          roleHint.textContent = 'Tus órdenes asignadas: pulsa Waze/Maps para llegar y registra evidencias';
         }
 
         const banner = document.getElementById('dashboard-banner');
@@ -1362,7 +1366,7 @@
               </div>
               <div>
                 <h3 class="font-extrabold text-sm sm:text-base text-white">Panel Central de Operaciones</h3>
-                <p class="text-xs text-slate-300 mt-0.5">Asigna las órdenes del día y consulta el estado de conexión del personal.</p>
+                <p class="text-xs text-slate-300 mt-0.5">Asigna órdenes, revisa rutas de navegación y audita los informes técnicos.</p>
               </div>
             </div>
             <div class="flex items-center gap-2 mt-3 sm:mt-0">
@@ -1380,7 +1384,7 @@
               </div>
               <div>
                 <h3 class="font-extrabold text-sm sm:text-base text-white">Bienvenido, ${this.currentUser.fullName}</h3>
-                <p class="text-xs text-slate-300 mt-0.5">Revisa tus trabajos pendientes, marca qué se realizó y deja observaciones técnicas.</p>
+                <p class="text-xs text-slate-300 mt-0.5">Usa Waze o Maps para dirigirte al lugar y sube tus fotos o videos de prueba.</p>
               </div>
             </div>
             <div class="mt-3 sm:mt-0 flex items-center gap-2">
@@ -1396,7 +1400,6 @@
 
       openSettingsModal() {
         const isAdmin = this.currentUser.role === 'ADMIN';
-
         this.renderMySettingsPhotoPreview();
 
         document.getElementById('set-own-current-pass').value = '';
@@ -1470,7 +1473,7 @@
           if (this.currentUser.role === 'ADMIN') {
             this.renderTechniciansMonitor();
           }
-          this.showToast('Foto de perfil actualizada con éxito', 'success');
+          this.showToast('Foto de perfil actualizada', 'success');
         };
         reader.readAsDataURL(file);
       }
@@ -1517,7 +1520,7 @@
           img.src = base64;
           img.classList.remove('hidden');
           init.classList.add('hidden');
-          this.showToast('Foto cargada para el técnico', 'info');
+          this.showToast('Foto asignada al técnico', 'info');
         };
         reader.readAsDataURL(file);
       }
@@ -1529,32 +1532,32 @@
         const confirmPass = document.getElementById('set-own-confirm-pass').value.trim();
 
         if (newPass !== confirmPass) {
-          this.showToast('La nueva contraseña y la confirmación no coinciden', 'error');
+          this.showToast('Las contraseñas no coinciden', 'error');
           return;
         }
 
         if (this.currentUser.role === 'ADMIN') {
           if (currentPass !== this.adminProfile.password) {
-            this.showToast('Tu contraseña actual de administrador es incorrecta', 'error');
+            this.showToast('Contraseña actual incorrecta', 'error');
             return;
           }
           this.adminProfile.password = newPass;
           this.saveAdmin();
           this.currentUser.password = newPass;
           localStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
-          this.showToast('¡Contraseña de Administrador actualizada!', 'success');
+          this.showToast('Contraseña actualizada con éxito', 'success');
           this.closeSettingsModal();
         } else {
           const techIndex = this.users.findIndex(u => u.username.toLowerCase() === this.currentUser.username.toLowerCase());
           if (techIndex === -1 || this.users[techIndex].password !== currentPass) {
-            this.showToast('Tu contraseña actual es incorrecta', 'error');
+            this.showToast('Contraseña actual incorrecta', 'error');
             return;
           }
           this.users[techIndex].password = newPass;
           this.saveUsers();
           this.currentUser.password = newPass;
           localStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
-          this.showToast('¡Tu contraseña ha sido actualizada!', 'success');
+          this.showToast('Contraseña actualizada con éxito', 'success');
           this.closeSettingsModal();
         }
       }
@@ -1597,13 +1600,13 @@
               <div class="bg-white/80 rounded-xl p-2.5 border border-slate-200/70 text-[11px] space-y-1">
                 <div class="flex items-center justify-between">
                   <span class="text-slate-500 flex items-center gap-1 font-medium">
-                    <i data-lucide="sunrise" class="w-3.5 h-3.5 text-amber-500"></i> Primer Logueo hoy:
+                    <i data-lucide="sunrise" class="w-3.5 h-3.5 text-amber-500"></i> Primer Logueo:
                   </span>
                   <span class="font-bold text-slate-800">${u.firstLoginToday || 'Sin registro'}</span>
                 </div>
                 <div class="flex items-center justify-between">
                   <span class="text-slate-500 flex items-center gap-1 font-medium">
-                    <i data-lucide="log-in" class="w-3.5 h-3.5 text-brand-limeHover"></i> Último Logueo / Salida:
+                    <i data-lucide="log-in" class="w-3.5 h-3.5 text-brand-limeHover"></i> Último Logueo:
                   </span>
                   <span class="font-bold ${isOnline ? 'text-brand-limeHover' : 'text-slate-700'}">${u.lastLogin || 'No registrado'}</span>
                 </div>
@@ -1718,7 +1721,7 @@
                 </button>
               </td>
               <td class="p-3 text-right space-x-1">
-                <button onclick="app.editUser('${u.id}')" class="p-1 text-slate-600 hover:text-brand-limeHover hover:bg-brand-limeLight rounded" title="Editar datos o clave">
+                <button onclick="app.editUser('${u.id}')" class="p-1 text-slate-600 hover:text-brand-limeHover hover:bg-brand-limeLight rounded" title="Editar datos">
                   <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
                 </button>
                 <button onclick="app.deleteUser('${u.id}')" class="p-1 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded" title="Eliminar">
@@ -1790,7 +1793,6 @@
         filterTechSelect.innerHTML = `<option value="ALL">Todos los Técnicos</option>` + options;
       }
 
-      // --- FILTROS Y CONTADORES ---
       updateStats() {
         const isAdmin = this.currentUser.role === 'ADMIN';
         const relevantTasks = isAdmin ? this.tasks : this.tasks.filter(t => t.assignedTo === this.currentUser.fullName);
@@ -1811,7 +1813,7 @@
         this.renderTasks();
       }
 
-      // --- RENDERIZADO DE ÓRDENES ---
+      // --- RENDERIZADO DE ÓRDENES (CON BOTÓN DUAL WAZE / GOOGLE MAPS) ---
       renderTasks() {
         const search = document.getElementById('filter-search').value.toLowerCase();
         const statusFilter = document.getElementById('filter-status').value;
@@ -1900,16 +1902,28 @@
                     <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
                     <span class="truncate">${t.client}</span>
                   </div>
-                  <div class="flex items-start gap-1.5">
-                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5"></i>
-                    <span class="truncate">${t.address}</span>
-                  </div>
                   <div class="flex items-center gap-1.5">
                     <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
                     <span>${t.date}</span>
                     <span class="text-slate-300">•</span>
                     <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
                     <span>${t.phone}</span>
+                  </div>
+                </div>
+
+                <!-- CONTENEDOR DE DIRECCIÓN + ACCESO RÁPIDO WAZE / MAPS -->
+                <div class="mt-3 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div class="flex items-start gap-1.5 mb-2">
+                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5"></i>
+                    <span class="text-xs font-semibold text-slate-800 leading-tight">${t.address}</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <button type="button" onclick="app.openWazeNavigation('${t.address.replace(/'/g, "\\'")}')" class="flex-1 py-1.5 px-2 bg-cyan-600 hover:bg-cyan-700 active:scale-95 text-white text-[11px] font-bold rounded-lg flex items-center justify-center gap-1 shadow-sm transition">
+                      🚙 Waze
+                    </button>
+                    <button type="button" onclick="app.openGoogleMapsNavigation('${t.address.replace(/'/g, "\\'")}')" class="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[11px] font-bold rounded-lg flex items-center justify-center gap-1 shadow-sm transition">
+                      📍 Maps
+                    </button>
                   </div>
                 </div>
 
@@ -1925,13 +1939,19 @@
 
                 ${t.observations ? `
                   <div class="mt-3 p-2.5 rounded-xl text-xs ${t.status === 'NO_REALIZADA' ? 'bg-rose-50 text-rose-900 border border-rose-200' : 'bg-slate-50 text-slate-700 border border-slate-200'}">
-                    <p class="font-bold text-[10px] uppercase text-slate-500 mb-0.5">Observación del técnico:</p>
+                    <p class="font-bold text-[10px] uppercase text-slate-500 mb-0.5">Detalles del técnico:</p>
                     <p class="line-clamp-2 italic">"${t.observations}"</p>
+                  </div>
+                ` : ''}
+
+                ${Array.isArray(t.evidence) && t.evidence.length > 0 ? `
+                  <div class="mt-2.5 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                    <i data-lucide="paperclip" class="w-3.5 h-3.5 text-brand-limeHover"></i>
+                    <span>${t.evidence.length} evidencia(s) adjunta(s)</span>
                   </div>
                 ` : ''}
               </div>
 
-              <!-- Botones de Acción -->
               <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                 <button onclick="app.viewOrderDetails('${t.id}')" class="text-xs text-slate-600 hover:text-slate-900 font-bold flex items-center gap-1 py-1.5 px-2.5 rounded-lg hover:bg-slate-100">
                   <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Ficha
@@ -1950,7 +1970,7 @@
                   </button>
 
                   ${isAdmin ? `
-                    <button onclick="app.openEditTaskModal('${t.id}')" class="p-1.5 text-slate-400 hover:text-brand-dark hover:bg-slate-100 rounded-lg" title="Modificar datos de la orden">
+                    <button onclick="app.openEditTaskModal('${t.id}')" class="p-1.5 text-slate-400 hover:text-brand-dark hover:bg-slate-100 rounded-lg" title="Modificar datos">
                       <i data-lucide="file-edit" class="w-3.5 h-3.5"></i>
                     </button>
                     <button onclick="app.deleteTask('${t.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg" title="Eliminar orden">
@@ -1960,6 +1980,63 @@
                 </div>
               </div>
             </div>
+          `;
+        }).join('');
+
+        if (window.lucide) lucide.createIcons();
+      }
+
+      // --- BITÁCORA Y REGISTRO OPERATIVO PARA EL ADMINISTRADOR ---
+      renderAdminAuditLog() {
+        const tbody = document.getElementById('audit-log-tbody');
+        const counter = document.getElementById('audit-log-counter');
+        if (!tbody) return;
+
+        const reportedTasks = this.tasks.filter(t => t.completedAt || t.observations);
+        counter.textContent = `${reportedTasks.length} Informes`;
+
+        if (reportedTasks.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" class="p-4 text-center text-slate-400 italic">
+                Aún no hay informes de servicio técnico registrados por los trabajadores.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = reportedTasks.map(t => {
+          const evidenceCount = Array.isArray(t.evidence) ? t.evidence.length : 0;
+          return `
+            <tr class="hover:bg-slate-50 transition">
+              <td class="p-3 font-semibold text-slate-700 whitespace-nowrap">
+                ${t.completedAt || 'En proceso'}
+              </td>
+              <td class="p-3">
+                <span class="font-bold text-slate-900 block">${t.assignedTo}</span>
+                <span class="text-[10px] font-mono text-slate-400">${t.id}</span>
+              </td>
+              <td class="p-3">
+                <span class="font-bold text-slate-800 block">${t.client}</span>
+                <span class="text-[11px] text-slate-500 block truncate max-w-xs">${t.address}</span>
+              </td>
+              <td class="p-3">
+                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold ${t.status === 'REALIZADA' ? 'bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder' : t.status === 'NO_REALIZADA' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}">
+                  ${t.status}
+                </span>
+              </td>
+              <td class="p-3 max-w-sm">
+                <p class="text-xs text-slate-700 line-clamp-2">${t.observations || 'Sin detalle adicional'}</p>
+              </td>
+              <td class="p-3 whitespace-nowrap">
+                ${evidenceCount > 0 ? `
+                  <button onclick="app.viewOrderDetails('${t.id}')" class="text-brand-limeHover font-bold flex items-center gap-1 hover:underline">
+                    <i data-lucide="eye" class="w-3.5 h-3.5"></i> Ver (${evidenceCount})
+                  </button>
+                ` : `<span class="text-slate-400">Sin archivos</span>`}
+              </td>
+            </tr>
           `;
         }).join('');
 
@@ -2113,7 +2190,7 @@
             status: 'PENDIENTE',
             checklist: JSON.parse(JSON.stringify(this.currentTaskModalChecklist || this.getDefaultChecklistItems())),
             observations: '',
-            materialsUsed: '',
+            evidence: [],
             completedAt: null
           };
           this.tasks.unshift(newTask);
@@ -2133,10 +2210,11 @@
         this.saveTasks();
         this.updateStats();
         this.renderTasks();
+        this.renderAdminAuditLog();
         this.showToast(`Orden ${id} eliminada`, 'info');
       }
 
-      // --- REPORTE TÉCNICO ---
+      // --- REPORTE TÉCNICO (DETALLES Y EVIDENCIAS FOTO/VIDEO) ---
       openReportModal(id) {
         const t = this.tasks.find(x => x.id === id);
         if (!t) return;
@@ -2147,15 +2225,20 @@
         document.getElementById('rep-equipment').textContent = t.equipment;
         document.getElementById('rep-address').textContent = t.address;
         document.getElementById('rep-instruction').textContent = t.instructions || 'Sin observaciones iniciales';
-
         document.getElementById('rep-observations').value = t.observations || '';
-        document.getElementById('rep-materials').value = t.materialsUsed || '';
+
+        // Botones Waze y Maps en el modal
+        document.getElementById('rep-btn-waze').onclick = () => this.openWazeNavigation(t.address);
+        document.getElementById('rep-btn-maps').onclick = () => this.openGoogleMapsNavigation(t.address);
 
         if (Array.isArray(t.checklist) && t.checklist.length > 0) {
           this.currentModalChecklist = JSON.parse(JSON.stringify(t.checklist));
         } else {
           this.currentModalChecklist = this.getDefaultChecklistItems();
         }
+
+        this.currentReportEvidence = Array.isArray(t.evidence) ? JSON.parse(JSON.stringify(t.evidence)) : [];
+        this.renderEvidenceGallery();
 
         this.renderDynamicChecklist();
         document.getElementById('new-checklist-item-input').value = '';
@@ -2254,18 +2337,77 @@
         this.showToast('Nuevo punto agregado al checklist', 'success');
       }
 
+      // Manejo de Fotos y Videos de Evidencia
+      handleUploadEvidence(e) {
+        const files = Array.from(e.target.files);
+        if (!files.length) return;
+
+        if (this.currentReportEvidence.length + files.length > 5) {
+          this.showToast('Máximo 5 archivos de evidencia por informe', 'error');
+          return;
+        }
+
+        files.forEach(file => {
+          if (file.size > 8 * 1024 * 1024) {
+            this.showToast(`El archivo ${file.name} supera los 8MB permitidos`, 'error');
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const isVideo = file.type.startsWith('video/');
+            this.currentReportEvidence.push({
+              id: 'ev_' + Date.now() + Math.random().toString(36).substring(2, 6),
+              type: isVideo ? 'video' : 'image',
+              src: event.target.result,
+              name: file.name
+            });
+            this.renderEvidenceGallery();
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      removeEvidenceItem(id) {
+        this.currentReportEvidence = this.currentReportEvidence.filter(e => e.id !== id);
+        this.renderEvidenceGallery();
+      }
+
+      renderEvidenceGallery() {
+        const container = document.getElementById('rep-evidence-gallery');
+        if (!container) return;
+
+        if (this.currentReportEvidence.length === 0) {
+          container.innerHTML = `<p class="col-span-full text-slate-400 italic text-[11px]">No hay fotos o videos adjuntos todavía.</p>`;
+          return;
+        }
+
+        container.innerHTML = this.currentReportEvidence.map(item => `
+          <div class="relative group rounded-xl overflow-hidden border border-slate-200 bg-slate-900 aspect-video flex items-center justify-center">
+            ${item.type === 'video' ? `
+              <video src="${item.src}" class="w-full h-full object-cover" controls></video>
+            ` : `
+              <img src="${item.src}" class="w-full h-full object-cover">
+            `}
+            <button type="button" onclick="app.removeEvidenceItem('${item.id}')" class="absolute top-1 right-1 p-1 bg-rose-600 hover:bg-rose-700 text-white rounded-full text-xs shadow transition">
+              ✕
+            </button>
+          </div>
+        `).join('');
+      }
+
       closeReportModal() {
         document.getElementById('modal-report').classList.add('hidden');
         this.selectedTask = null;
+        this.currentReportEvidence = [];
       }
 
       submitReport() {
         if (!this.selectedTask) return;
         const observations = document.getElementById('rep-observations').value.trim();
-        const materials = document.getElementById('rep-materials').value.trim();
 
         if (this.activeReportStatus === 'NO_REALIZADA' && !observations) {
-          this.showToast('Debes indicar obligatoriamente el motivo por el cual no se realizó el servicio', 'error');
+          this.showToast('Debes indicar obligatoriamente el motivo de no realización', 'error');
           document.getElementById('rep-observations').focus();
           return;
         }
@@ -2274,15 +2416,16 @@
         if (taskIndex !== -1) {
           this.tasks[taskIndex].status = this.activeReportStatus;
           this.tasks[taskIndex].observations = observations;
-          this.tasks[taskIndex].materialsUsed = materials;
           this.tasks[taskIndex].checklist = JSON.parse(JSON.stringify(this.currentModalChecklist));
-          this.tasks[taskIndex].completedAt = new Date().toLocaleString('es-CO');
+          this.tasks[taskIndex].evidence = JSON.parse(JSON.stringify(this.currentReportEvidence));
+          this.tasks[taskIndex].completedAt = this.formatFullDateTime(new Date());
 
           this.saveTasks();
           this.updateStats();
           this.renderTasks();
           if (this.currentUser.role === 'ADMIN') {
             this.renderTechniciansMonitor();
+            this.renderAdminAuditLog();
           }
 
           this.closeReportModal();
@@ -2297,10 +2440,16 @@
           this.tasks[taskIndex].status = 'EN_PROCESO';
           this.tasks[taskIndex].checklist = JSON.parse(JSON.stringify(this.currentModalChecklist));
           this.tasks[taskIndex].observations = document.getElementById('rep-observations').value.trim();
-          this.tasks[taskIndex].materialsUsed = document.getElementById('rep-materials').value.trim();
+          this.tasks[taskIndex].evidence = JSON.parse(JSON.stringify(this.currentReportEvidence));
+          this.tasks[taskIndex].completedAt = this.formatFullDateTime(new Date());
+
           this.saveTasks();
           this.updateStats();
           this.renderTasks();
+          if (this.currentUser.role === 'ADMIN') {
+            this.renderAdminAuditLog();
+          }
+
           this.closeReportModal();
           this.showToast(`Orden ${this.selectedTask.id} guardada en proceso`, 'info');
         }
@@ -2316,7 +2465,7 @@
         }
       }
 
-      // --- FICHA DE ORDEN FORMAL IMPRIMIBLE ---
+      // --- FICHA DE ORDEN FORMAL ---
       viewOrderDetails(id) {
         const t = this.tasks.find(x => x.id === id);
         if (!t) return;
@@ -2331,7 +2480,10 @@
         document.getElementById('view-equipment').textContent = t.equipment;
         document.getElementById('view-technician').textContent = t.assignedTo;
         document.getElementById('view-instructions').textContent = t.instructions || 'Sin observaciones iniciales.';
-        document.getElementById('view-materials').textContent = t.materialsUsed || 'Ninguno reportado';
+
+        // Asignar botones Waze / Maps en la ficha
+        document.getElementById('view-btn-waze').onclick = () => this.openWazeNavigation(t.address);
+        document.getElementById('view-btn-maps').onclick = () => this.openGoogleMapsNavigation(t.address);
 
         const techObj = this.users.find(u => u.fullName === t.assignedTo);
         const photoElem = document.getElementById('view-technician-photo');
@@ -2369,6 +2521,26 @@
           obsBox.textContent = (t.observations ? t.observations : 'Visita sin informe final todavía.') + checkSummary;
         }
 
+        // Renderizar Galería en Ficha
+        const evSection = document.getElementById('view-evidence-section');
+        const evGallery = document.getElementById('view-evidence-gallery');
+        if (Array.isArray(t.evidence) && t.evidence.length > 0) {
+          evSection.classList.remove('hidden');
+          evGallery.innerHTML = t.evidence.map(item => `
+            <div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-900 aspect-video flex items-center justify-center">
+              ${item.type === 'video' ? `
+                <video src="${item.src}" class="w-full h-full object-cover" controls></video>
+              ` : `
+                <a href="${item.src}" target="_blank" class="w-full h-full block">
+                  <img src="${item.src}" class="w-full h-full object-cover hover:opacity-90">
+                </a>
+              `}
+            </div>
+          `).join('');
+        } else {
+          evSection.classList.add('hidden');
+        }
+
         document.getElementById('modal-view-order').classList.remove('hidden');
       }
 
@@ -2402,38 +2574,6 @@
           obsBadge.className = 'text-rose-600 font-bold';
           header.className = 'bg-rose-950 text-white px-6 py-4 flex items-center justify-between border-b-2 border-rose-500';
         }
-      }
-
-      sendWhatsAppReport() {
-        if (!this.selectedTask) return;
-        const observations = document.getElementById('rep-observations').value.trim();
-        const materials = document.getElementById('rep-materials').value.trim();
-        const statusText = this.activeReportStatus === 'REALIZADA' ? '✅ REALIZADO' : '❌ NO REALIZADO';
-
-        const text = `*SERVIPORTONES ELÉCTRICOS MARTÍNEZ - INFORME TÉCNICO*%0A` +
-          `*Orden:* ${this.selectedTask.id}%0A` +
-          `*Cliente:* ${this.selectedTask.client}%0A` +
-          `*Dirección:* ${this.selectedTask.address}%0A` +
-          `*Motor:* ${this.selectedTask.equipment}%0A` +
-          `*Técnico:* ${this.currentUser.fullName}%0A` +
-          `*Resultado:* ${statusText}%0A` +
-          `*Observaciones:* ${encodeURIComponent(observations || 'Sin novedad')}%0A` +
-          `*Materiales:* ${encodeURIComponent(materials || 'Ninguno')}`;
-
-        window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
-      }
-
-      shareOrderViaWhatsApp() {
-        if (!this.selectedTask) return;
-        const t = this.selectedTask;
-        const msg = `*SERVIPORTONES ELÉCTRICOS MARTÍNEZ - FICHA DE ORDEN ${t.id}*%0A` +
-          `*Cliente:* ${t.client}%0A` +
-          `*Dirección:* ${t.address}%0A` +
-          `*Estado:* ${t.status}%0A` +
-          `*Técnico:* ${t.assignedTo}%0A` +
-          `*Observaciones:* ${encodeURIComponent(t.observations || 'Sin observaciones')}`;
-
-        window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
       }
     }
 
