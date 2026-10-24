@@ -145,10 +145,33 @@
         </div>
 
         <div class="flex items-center space-x-2 sm:space-x-3">
+          <!-- Botón de Nueva Orden (Sólo visible para Administrador) -->
           <button id="btn-nav-new-order" onclick="app.openNewTaskModal()" class="hidden bg-brand-lime hover:bg-brand-limeHover text-white text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md shadow-brand-lime/20 transition active:scale-95">
             <i data-lucide="plus-circle" class="w-4 h-4"></i>
             <span>Nueva Orden</span>
           </button>
+
+          <!-- CAMPANA DE NOTIFICACIONES (TIEMPO REAL) -->
+          <div class="relative" id="notifications-wrapper">
+            <button id="btn-notifications-toggle" onclick="app.toggleNotificationsPanel()" class="p-2 sm:px-2.5 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl transition flex items-center relative" title="Notificaciones de actividad">
+              <i data-lucide="bell" class="w-4 h-4 text-brand-lime"></i>
+              <span id="notif-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-pulse">0</span>
+            </button>
+
+            <!-- Menú Desplegable de Notificaciones -->
+            <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden text-slate-800">
+              <div class="p-3 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="bell" class="w-4 h-4 text-brand-lime"></i>
+                  <span class="text-xs font-bold uppercase tracking-wider">Actividad en Tiempo Real</span>
+                </div>
+                <button onclick="app.clearNotifications()" class="text-[10px] text-slate-400 hover:text-white underline">Limpiar</button>
+              </div>
+              <div id="notifications-list" class="max-h-72 overflow-y-auto divide-y divide-slate-100 text-xs">
+                <div class="p-4 text-center text-slate-400 italic">No hay novedades recientes</div>
+              </div>
+            </div>
+          </div>
 
           <button id="btn-nav-settings" onclick="app.openSettingsModal()" class="p-2 sm:px-3 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl transition flex items-center gap-1.5 shadow-sm" title="Ajustes y Personal">
             <i data-lucide="settings" class="w-4 h-4 text-brand-lime"></i>
@@ -214,7 +237,7 @@
           <div>
             <div class="flex items-center gap-1.5">
               <p class="text-[10px] font-bold uppercase text-amber-600 tracking-wider">Pendientes / En Curso</p>
-              <button onclick="app.resetCategoryTasks('PENDIENTE_GRUPO')" class="text-slate-400 hover:text-amber-600 transition" title="Reiniciar órdenes en proceso a pendientes limpias">
+              <button id="btn-reset-pending" onclick="app.resetCategoryTasks('PENDIENTE_GRUPO')" class="text-slate-400 hover:text-amber-600 transition hidden" title="Reiniciar órdenes en proceso a pendientes limpias">
                 <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
               </button>
             </div>
@@ -230,7 +253,7 @@
           <div>
             <div class="flex items-center gap-1.5">
               <p class="text-[10px] font-bold uppercase text-brand-limeHover tracking-wider">Realizadas</p>
-              <button onclick="app.resetCategoryTasks('REALIZADA')" class="text-slate-400 hover:text-brand-limeHover transition" title="Reiniciar todas las realizadas a pendientes">
+              <button id="btn-reset-done" onclick="app.resetCategoryTasks('REALIZADA')" class="text-slate-400 hover:text-brand-limeHover transition hidden" title="Reiniciar todas las realizadas a pendientes">
                 <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
               </button>
             </div>
@@ -246,7 +269,7 @@
           <div>
             <div class="flex items-center gap-1.5">
               <p class="text-[10px] font-bold uppercase text-rose-600 tracking-wider">No Realizadas</p>
-              <button onclick="app.resetCategoryTasks('NO_REALIZADA')" class="text-slate-400 hover:text-rose-600 transition" title="Reiniciar todas las no realizadas a pendientes">
+              <button id="btn-reset-failed" onclick="app.resetCategoryTasks('NO_REALIZADA')" class="text-slate-400 hover:text-rose-600 transition hidden" title="Reiniciar todas las no realizadas a pendientes">
                 <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
               </button>
             </div>
@@ -469,7 +492,7 @@
   </div>
 
   <!-- ======================================================== -->
-  <!-- MODAL: ASIGNAR / EDITAR ORDEN (ADMIN Y TÉCNICO)          -->
+  <!-- MODAL: ASIGNAR / EDITAR ORDEN (SÓLO ADMINISTRADOR)       -->
   <!-- ======================================================== -->
   <div id="modal-task-form" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
@@ -587,6 +610,7 @@
             <div><span class="text-slate-500 font-medium">Servicio:</span> <span id="rep-service" class="font-bold text-slate-800"></span></div>
             <div><span class="text-slate-500 font-medium">Equipo:</span> <span id="rep-equipment" class="font-bold text-slate-800"></span></div>
             <div class="sm:col-span-2"><span class="text-slate-500 font-medium">Dirección:</span> <span id="rep-address" class="font-semibold text-slate-800"></span></div>
+            <div class="sm:col-span-2"><span class="text-slate-500 font-medium">Instrucción:</span> <span id="rep-instruction" class="font-semibold text-slate-700"></span></div>
           </div>
         </div>
 
@@ -887,6 +911,7 @@
         this.adminProfile = DEFAULT_ADMIN;
         this.users = [];
         this.tasks = [];
+        this.notifications = [];
         this.selectedTask = null;
         this.activeReportStatus = 'REALIZADA';
         this.heartbeatTimer = null;
@@ -934,79 +959,7 @@
         window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
       }
 
-      initChristmasTheme() {
-        if (document.getElementById('christmas-container')) return;
-
-        const style = document.createElement('style');
-        style.id = 'christmas-theme-styles';
-        style.innerHTML = `
-          .snow-flake {
-            position: fixed;
-            top: -10px;
-            color: #cbd5e1;
-            user-select: none;
-            pointer-events: none;
-            z-index: 9998;
-            animation: fallAnimation linear infinite;
-          }
-          @keyframes fallAnimation {
-            0% { transform: translateY(0) rotate(0deg); opacity: 0.9; }
-            100% { transform: translateY(105vh) rotate(360deg); opacity: 0.2; }
-          }
-          .flying-sleigh-container {
-            position: fixed;
-            bottom: 85%;
-            left: -220px;
-            z-index: 9999;
-            pointer-events: none;
-            user-select: none;
-            animation: flyForward 24s linear infinite;
-          }
-          .flying-sleigh-inner {
-            display: flex;
-            align-items: center;
-            font-size: 26px;
-            animation: galloping 1.2s ease-in-out infinite alternate;
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.25));
-          }
-          @keyframes flyForward {
-            0% { left: -220px; transform: translateY(0); }
-            50% { transform: translateY(-25px); }
-            100% { left: 110vw; transform: translateY(10px); }
-          }
-          @keyframes galloping {
-            0% { transform: rotate(-3deg) translateY(0); }
-            100% { transform: rotate(5deg) translateY(-6px); }
-          }
-        `;
-        document.head.appendChild(style);
-
-        const container = document.createElement('div');
-        container.id = 'christmas-container';
-        container.style.pointerEvents = 'none';
-        document.body.appendChild(container);
-
-        const sleighWrapper = document.createElement('div');
-        sleighWrapper.className = 'flying-sleigh-container';
-        sleighWrapper.innerHTML = `<div class="flying-sleigh-inner">🛷✨🦌</div>`;
-        container.appendChild(sleighWrapper);
-
-        const chars = ['❄', '❅', '•', '✻'];
-        for (let i = 0; i < 28; i++) {
-          const flake = document.createElement('div');
-          flake.className = 'snow-flake';
-          flake.textContent = chars[Math.floor(Math.random() * chars.length)];
-          flake.style.left = Math.random() * 100 + 'vw';
-          flake.style.animationDuration = (Math.random() * 6 + 6) + 's';
-          flake.style.animationDelay = (Math.random() * 5) + 's';
-          flake.style.fontSize = (Math.random() * 10 + 10) + 'px';
-          container.appendChild(flake);
-        }
-      }
-
       init() {
-        this.initChristmasTheme();
-
         const savedAdmin = localStorage.getItem('portonpro_admin_v4');
         if (savedAdmin) {
           try { this.adminProfile = JSON.parse(savedAdmin); } catch(e) { this.adminProfile = DEFAULT_ADMIN; }
@@ -1049,7 +1002,7 @@
           } catch(e) {}
         }
 
-        // 1. Sincronización en vivo con Firestore (Órdenes)
+        // 1. Sincronización en vivo con Firestore (Órdenes de Trabajo)
         if (window.db) {
           db.collection('ordenes').doc('todas').onSnapshot((doc) => {
             if (doc.exists) {
@@ -1072,14 +1025,13 @@
                 }
               }
             }
-          }, (error) => console.error(error));
+          }, (error) => console.error("Error sincronizando órdenes:", error));
 
-          // 2. Sincronización en vivo de Usuarios (Fotos y Modificaciones)
+          // 2. Sincronización en vivo de Usuarios
           db.collection('config').doc('users').onSnapshot((doc) => {
             if (doc.exists) {
               const data = doc.data();
               if (Array.isArray(data.list) && data.list.length > 0) {
-                // Conservar heartbeats recientes
                 data.list.forEach(remoteUser => {
                   const local = this.users.find(u => u.username.toLowerCase() === remoteUser.username.toLowerCase());
                   if (local && local.lastHeartbeat > (remoteUser.lastHeartbeat || 0)) {
@@ -1103,16 +1055,15 @@
                 }
               }
             }
-          }, (error) => console.error(error));
+          }, (error) => console.error("Error en config users:", error));
 
-          // 3. Monitor de presencia global en Firestore (Actualiza "En Línea" de forma garantizada)
+          // 3. Monitor de presencia global en Firestore (Actualiza Estados y Online en tiempo real)
           db.collection('presencia').onSnapshot((snapshot) => {
-            const now = Date.now();
             snapshot.forEach(doc => {
               const data = doc.data();
               const u = this.users.find(x => x.username.toLowerCase() === doc.id.toLowerCase());
-              if (u && data.lastHeartbeat) {
-                u.lastHeartbeat = data.lastHeartbeat;
+              if (u) {
+                if (data.lastHeartbeat !== undefined) u.lastHeartbeat = data.lastHeartbeat;
                 if (data.photo) u.photo = data.photo;
                 if (data.firstLoginToday) u.firstLoginToday = data.firstLoginToday;
                 if (data.lastLogin) u.lastLogin = data.lastLogin;
@@ -1121,7 +1072,17 @@
             if (this.currentUser && this.currentUser.role === 'ADMIN') {
               this.renderTechniciansMonitor();
             }
-          }, (error) => console.error(error));
+          }, (error) => console.error("Error en presencia:", error));
+
+          // 4. Sincronización en vivo de Notificaciones de Técnicos
+          db.collection('notificaciones').orderBy('timestamp', 'desc').limit(25).onSnapshot((snapshot) => {
+            const list = [];
+            snapshot.forEach(doc => {
+              list.push({ id: doc.id, ...doc.data() });
+            });
+            this.notifications = list;
+            this.updateNotificationsUI();
+          }, (error) => console.error("Error en notificaciones:", error));
         }
 
         const savedSession = localStorage.getItem('portonpro_session_v4');
@@ -1160,6 +1121,82 @@
         }
       }
 
+      // Enviar notificación a Firestore cuando un trabajador interactúa
+      async addActivityNotification(techName, taskId, actionType, details) {
+        const notifData = {
+          techName: techName,
+          taskId: taskId,
+          actionType: actionType, // 'REALIZADA', 'NO_REALIZADA', 'EN_PROCESO', 'PENDIENTE'
+          details: details || '',
+          time: this.formatTime(new Date()),
+          timestamp: Date.now()
+        };
+
+        if (window.db) {
+          db.collection('notificaciones').add(notifData).catch(e => console.error("Error al registrar notificación:", e));
+        } else {
+          this.notifications.unshift({ id: 'local_' + Date.now(), ...notifData });
+          this.updateNotificationsUI();
+        }
+      }
+
+      toggleNotificationsPanel() {
+        const dd = document.getElementById('notifications-dropdown');
+        if (dd) dd.classList.toggle('hidden');
+      }
+
+      clearNotifications() {
+        if (window.db) {
+          db.collection('notificaciones').get().then(snapshot => {
+            snapshot.forEach(doc => doc.ref.delete());
+          });
+        }
+        this.notifications = [];
+        this.updateNotificationsUI();
+      }
+
+      updateNotificationsUI() {
+        const badge = document.getElementById('notif-badge');
+        const listContainer = document.getElementById('notifications-list');
+        if (!badge || !listContainer) return;
+
+        if (this.notifications.length > 0) {
+          badge.textContent = this.notifications.length > 9 ? '+9' : this.notifications.length;
+          badge.classList.remove('hidden');
+
+          listContainer.innerHTML = this.notifications.map(n => {
+            let statusColor = 'text-blue-600 bg-blue-50 border-blue-200';
+            if (n.actionType === 'REALIZADA') {
+              statusColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
+            } else if (n.actionType === 'NO_REALIZADA') {
+              statusColor = 'text-rose-700 bg-rose-50 border-rose-200';
+            } else if (n.actionType === 'EN_PROCESO') {
+              statusColor = 'text-amber-700 bg-amber-50 border-amber-200';
+            }
+
+            return `
+              <div class="p-2.5 hover:bg-slate-50 transition">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="font-bold text-slate-800 text-[11px]">${n.techName}</span>
+                  <span class="text-[10px] text-slate-400 font-mono">${n.time}</span>
+                </div>
+                <div class="flex items-center gap-1.5 mb-1">
+                  <span class="font-mono text-[10px] font-extrabold text-slate-600 bg-slate-100 px-1 py-0.5 rounded">${n.taskId}</span>
+                  <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded border ${statusColor}">
+                    ${n.actionType}
+                  </span>
+                </div>
+                ${n.details ? `<p class="text-[10px] text-slate-600 truncate italic">"${n.details}"</p>` : ''}
+              </div>
+            `;
+          }).join('');
+        } else {
+          badge.classList.add('hidden');
+          listContainer.innerHTML = `<div class="p-4 text-center text-slate-400 italic">No hay novedades recientes</div>`;
+        }
+        if (window.lucide) lucide.createIcons();
+      }
+
       showToast(message, type = 'info') {
         const toast = document.getElementById('toast');
         const msgElem = document.getElementById('toast-message');
@@ -1190,7 +1227,6 @@
         const rememberChecked = document.getElementById('login-remember').checked;
         const errorAlert = document.getElementById('login-error-alert');
 
-        // Manejar opción "Recordar credenciales"
         if (rememberChecked) {
           localStorage.setItem('portonpro_remembered', JSON.stringify({ u: userVal, p: passVal }));
         } else {
@@ -1230,7 +1266,6 @@
           foundTech.lastHeartbeat = Date.now();
           this.saveUsers();
 
-          // Reportar presencia inmediata a Firestore
           if (window.db) {
             db.collection('presencia').doc(foundTech.username.toLowerCase()).set({
               username: foundTech.username,
@@ -1239,7 +1274,7 @@
               photo: foundTech.photo || '',
               firstLoginToday: foundTech.firstLoginToday,
               lastLogin: foundTech.lastLogin
-            }).catch(e => console.error(e));
+            }, { merge: true }).catch(e => console.error(e));
           }
 
           const techSessionUser = {
@@ -1266,7 +1301,6 @@
         document.getElementById('view-login').classList.add('hidden');
         document.getElementById('view-dashboard').classList.remove('hidden');
 
-        // Latido cada 8 segundos para conexión en vivo
         this.sendHeartbeat();
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
         this.heartbeatTimer = setInterval(() => this.sendHeartbeat(), 8000);
@@ -1369,6 +1403,11 @@
         const auditLogSection = document.getElementById('section-admin-audit-log');
         const roleHint = document.getElementById('role-hint-text');
 
+        // Botones de reinicio en contadores (Solo Admin)
+        const btnResetPending = document.getElementById('btn-reset-pending');
+        const btnResetDone = document.getElementById('btn-reset-done');
+        const btnResetFailed = document.getElementById('btn-reset-failed');
+
         if (isAdmin) {
           btnNewOrder.classList.remove('hidden');
           monitorSection.classList.remove('hidden');
@@ -1376,13 +1415,21 @@
           filterTech.disabled = false;
           auditLogSection.classList.remove('hidden');
           roleHint.textContent = 'Control de órdenes, seguimiento GPS y personal en vivo';
+
+          if (btnResetPending) btnResetPending.classList.remove('hidden');
+          if (btnResetDone) btnResetDone.classList.remove('hidden');
+          if (btnResetFailed) btnResetFailed.classList.remove('hidden');
         } else {
-          btnNewOrder.classList.remove('hidden'); // Permitir al técnico registrar órdenes si lo requiere
+          btnNewOrder.classList.add('hidden'); // Sólo el administrador crea órdenes
           monitorSection.classList.add('hidden');
           filterTech.classList.add('hidden');
           filterTech.disabled = true;
           auditLogSection.classList.add('hidden');
-          roleHint.textContent = 'Usa Waze/Maps para dirigirte al lugar, edita y gestiona tus órdenes';
+          roleHint.textContent = 'Usa Waze/Maps para dirigirte al lugar y registra tus informes';
+
+          if (btnResetPending) btnResetPending.classList.add('hidden');
+          if (btnResetDone) btnResetDone.classList.add('hidden');
+          if (btnResetFailed) btnResetFailed.classList.add('hidden');
         }
 
         const banner = document.getElementById('dashboard-banner');
@@ -1578,7 +1625,7 @@
         }
       }
 
-      // MONITOR DE TÉCNICOS: Umbral ajustado a 45 segundos para que la conexión permanezca activa
+      // MONITOR DE TÉCNICOS: Umbral de 45 segundos para punto verde de online y gris para offline
       renderTechniciansMonitor() {
         const grid = document.getElementById('technicians-status-grid');
         const counter = document.getElementById('techs-online-counter');
@@ -1600,12 +1647,13 @@
                 <div class="flex items-center gap-2.5 min-w-0">
                   <div class="relative w-10 h-10 rounded-full overflow-hidden border-2 ${isOnline ? 'border-brand-lime' : 'border-slate-300'} bg-slate-200 shrink-0 flex items-center justify-center">
                     ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<span class="font-bold text-xs text-slate-700">${u.fullName.charAt(0)}</span>`}
-                    <span class="w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-brand-lime ring-2 ring-white animate-pulse' : 'bg-slate-400'} absolute top-0 right-0"></span>
+                    <span class="w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-500 ring-2 ring-white animate-pulse' : 'bg-slate-400'} absolute top-0 right-0"></span>
                   </div>
                   <div class="min-w-0">
                     <h4 class="text-xs font-black text-slate-900 truncate">${u.fullName}</h4>
-                    <p class="text-[11px] font-semibold ${isOnline ? 'text-brand-limeHover' : 'text-slate-500'}">
-                      ${isOnline ? '🟢 En línea ahora' : '⚪ Desconectado'}
+                    <p class="text-[11px] font-semibold flex items-center gap-1 ${isOnline ? 'text-emerald-600' : 'text-slate-500'}">
+                      <span class="w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-slate-400'}"></span>
+                      ${isOnline ? 'En línea ahora' : 'Desconectado'}
                     </p>
                   </div>
                 </div>
@@ -1616,12 +1664,12 @@
 
               <div class="bg-white/80 rounded-xl p-2 border border-slate-200/70 text-[10px] space-y-0.5">
                 <div class="flex items-center justify-between">
-                  <span class="text-slate-500">Primer Logueo:</span>
+                  <span class="text-slate-500">Primer Ingreso:</span>
                   <span class="font-bold text-slate-800">${u.firstLoginToday || 'Sin registro'}</span>
                 </div>
                 <div class="flex items-center justify-between">
-                  <span class="text-slate-500">Último Logueo:</span>
-                  <span class="font-bold ${isOnline ? 'text-brand-limeHover' : 'text-slate-700'}">${u.lastLogin || 'No registrado'}</span>
+                  <span class="text-slate-500">Última Actividad:</span>
+                  <span class="font-bold ${isOnline ? 'text-emerald-600' : 'text-slate-700'}">${u.lastLogin || 'No registrado'}</span>
                 </div>
               </div>
             </div>
@@ -1790,8 +1838,13 @@
         this.renderTasks();
       }
 
-      // REINICIO DESDE LAS TARJETAS DE CONTADORES
+      // REINICIO DE ÓRDENES (SÓLO ADMIN)
       async resetCategoryTasks(category) {
+        if (this.currentUser.role !== 'ADMIN') {
+          this.showToast('Acción reservada exclusivamente para el Administrador', 'error');
+          return;
+        }
+
         let targets = [];
         let label = '';
 
@@ -1972,6 +2025,7 @@
                 </button>
 
                 <div class="flex items-center gap-1.5">
+                  <!-- BOTÓN REGISTRAR / EDITAR INFORME (TOTALMENTE HABILITADO) -->
                   <button onclick="app.openReportModal('${t.id}')" class="text-xs font-bold py-1 px-2.5 rounded-xl flex items-center gap-1 shadow-sm transition active:scale-95 ${
                     t.status === 'REALIZADA'
                       ? 'bg-brand-lime hover:bg-brand-limeHover text-white'
@@ -1980,16 +2034,18 @@
                       : 'bg-brand-dark hover:bg-black text-white'
                   }">
                     <i data-lucide="${t.status === 'REALIZADA' || t.status === 'NO_REALIZADA' ? 'edit-3' : 'check-square'}" class="w-3.5 h-3.5"></i>
-                    ${t.status === 'REALIZADA' || t.status === 'NO_REALIZADA' ? 'Editar Informe' : 'Registrar Informe'}
+                    <span>${t.status === 'REALIZADA' || t.status === 'NO_REALIZADA' ? 'Editar Informe' : 'Registrar Informe'}</span>
                   </button>
 
-                  <!-- BOTONES EDITAR Y ELIMINAR PARA ADMIN Y TÉCNICO ASIGNADO -->
-                  <button onclick="app.openEditTaskModal('${t.id}')" class="p-1 text-slate-400 hover:text-brand-dark hover:bg-slate-100 rounded-lg transition" title="Modificar datos de la orden">
-                    <i data-lucide="file-edit" class="w-3.5 h-3.5"></i>
-                  </button>
-                  <button onclick="app.deleteTask('${t.id}')" class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Eliminar orden">
-                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                  </button>
+                  <!-- BOTONES EDITAR Y ELIMINAR ORDEN: VISIBLES SÓLO PARA EL ADMINISTRADOR -->
+                  ${isAdmin ? `
+                    <button onclick="app.openEditTaskModal('${t.id}')" class="p-1 text-slate-400 hover:text-brand-dark hover:bg-slate-100 rounded-lg transition" title="Modificar datos de la orden">
+                      <i data-lucide="file-edit" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button onclick="app.deleteTask('${t.id}')" class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Eliminar orden">
+                      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                  ` : ''}
                 </div>
               </div>
             </div>
@@ -2046,15 +2102,15 @@
       }
 
       openNewTaskModal() {
+        if (this.currentUser.role !== 'ADMIN') {
+          this.showToast('Sólo el Administrador puede crear órdenes', 'error');
+          return;
+        }
+
         document.getElementById('form-modal-title').textContent = 'Asignar Nueva Orden de Trabajo';
         document.getElementById('task-id').value = '';
         document.getElementById('task-form').reset();
         document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
-
-        // Seleccionar automáticamente al técnico logueado si no es ADMIN
-        if (this.currentUser.role !== 'ADMIN') {
-          document.getElementById('task-assigned-to').value = this.currentUser.fullName;
-        }
 
         this.currentTaskModalChecklist = this.getDefaultChecklistItems();
         this.renderTaskModalChecklist();
@@ -2063,14 +2119,13 @@
       }
 
       openEditTaskModal(id) {
-        const t = this.tasks.find(x => x.id === id);
-        if (!t) return;
-
-        // Comprobar permisos
-        if (this.currentUser.role !== 'ADMIN' && t.assignedTo !== this.currentUser.fullName) {
-          this.showToast('No tienes permisos para modificar esta orden', 'error');
+        if (this.currentUser.role !== 'ADMIN') {
+          this.showToast('Solo el Administrador puede modificar datos base de las órdenes', 'error');
           return;
         }
+
+        const t = this.tasks.find(x => x.id === id);
+        if (!t) return;
 
         document.getElementById('form-modal-title').textContent = `Editar Orden ${t.id}`;
         document.getElementById('task-id').value = t.id;
@@ -2153,17 +2208,16 @@
 
       handleSaveTask(e) {
         e.preventDefault();
+        if (this.currentUser.role !== 'ADMIN') {
+          this.showToast('Operación no autorizada', 'error');
+          return;
+        }
+
         const id = document.getElementById('task-id').value;
 
         if (id) {
           const index = this.tasks.findIndex(t => t.id === id);
           if (index !== -1) {
-            // Validar permiso
-            if (this.currentUser.role !== 'ADMIN' && this.tasks[index].assignedTo !== this.currentUser.fullName) {
-              this.showToast('No puedes editar esta orden', 'error');
-              return;
-            }
-
             this.tasks[index].client = document.getElementById('task-client').value;
             this.tasks[index].phone = document.getElementById('task-phone').value;
             this.tasks[index].address = document.getElementById('task-address').value;
@@ -2196,7 +2250,7 @@
             completedAt: null
           };
           this.tasks.unshift(newTask);
-          this.showToast(`Nueva orden ${newTask.id} asignada`, 'success');
+          this.showToast(`Nueva orden ${newTask.id} asignada a ${newTask.assignedTo}`, 'success');
         }
 
         this.saveTasks();
@@ -2207,14 +2261,13 @@
       }
 
       deleteTask(id) {
-        const t = this.tasks.find(x => x.id === id);
-        if (!t) return;
-
-        // Comprobar permisos
-        if (this.currentUser.role !== 'ADMIN' && t.assignedTo !== this.currentUser.fullName) {
-          this.showToast('No tienes permisos para eliminar esta orden', 'error');
+        if (this.currentUser.role !== 'ADMIN') {
+          this.showToast('Solo el Administrador puede eliminar órdenes', 'error');
           return;
         }
+
+        const t = this.tasks.find(x => x.id === id);
+        if (!t) return;
 
         if (!confirm(`¿Eliminar la orden ${id}?`)) return;
 
@@ -2228,14 +2281,20 @@
 
       openReportModal(id) {
         const t = this.tasks.find(x => x.id === id);
-        if (!t) return;
+        if (!t) {
+          this.showToast('Orden no encontrada', 'error');
+          return;
+        }
         this.selectedTask = t;
 
         document.getElementById('report-order-subtitle').textContent = `Orden #${t.id} • ${t.client}`;
         document.getElementById('rep-service').textContent = t.serviceType;
         document.getElementById('rep-equipment').textContent = t.equipment;
         document.getElementById('rep-address').textContent = t.address;
-        document.getElementById('rep-instruction').textContent = t.instructions || 'Sin observaciones iniciales';
+        
+        const repInst = document.getElementById('rep-instruction');
+        if (repInst) repInst.textContent = t.instructions || 'Sin observaciones iniciales';
+        
         document.getElementById('rep-observations').value = t.observations || '';
 
         document.getElementById('rep-btn-waze').onclick = () => this.openWazeNavigation(t.address);
@@ -2255,6 +2314,7 @@
 
         this.setReportStatus(t.status === 'NO_REALIZADA' ? 'NO_REALIZADA' : 'REALIZADA');
         document.getElementById('modal-report').classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
       }
 
       renderDynamicChecklist() {
@@ -2274,8 +2334,8 @@
                 <span id="checklist-text-${item.id}" class="text-xs ${item.checked ? 'line-through text-slate-400' : 'text-slate-700'} font-medium truncate">${item.label}</span>
               </label>
               <div class="flex items-center gap-1 shrink-0">
-                <button type="button" onclick="app.editChecklistItemPrompt('${item.id}')" class="p-1 text-slate-400 hover:text-brand-limeHover"><i data-lucide="edit-2" class="w-3 h-3"></i></button>
-                <button type="button" onclick="app.deleteChecklistItem('${item.id}')" class="p-1 text-slate-400 hover:text-rose-600"><i data-lucide="x" class="w-3 h-3"></i></button>
+                <button type="button" onclick="app.editChecklistItemPrompt('${item.id}')" class="p-1 text-slate-400 hover:text-brand-limeHover"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
+                <button type="button" onclick="app.deleteChecklistItem('${item.id}')" class="p-1 text-slate-400 hover:text-rose-600"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
               </div>
             </div>
           `;
@@ -2417,6 +2477,9 @@
           this.tasks[taskIndex].evidence = JSON.parse(JSON.stringify(this.currentReportEvidence));
           this.tasks[taskIndex].completedAt = this.formatFullDateTime(new Date());
 
+          // Notificar en tiempo real al administrador
+          this.addActivityNotification(this.currentUser.fullName, this.selectedTask.id, this.activeReportStatus, observations);
+
           this.saveTasks();
           this.updateStats();
           this.renderTasks();
@@ -2434,11 +2497,14 @@
         if (!this.selectedTask) return;
         const taskIndex = this.tasks.findIndex(t => t.id === this.selectedTask.id);
         if (taskIndex !== -1) {
+          const obs = document.getElementById('rep-observations').value.trim();
           this.tasks[taskIndex].status = 'EN_PROCESO';
           this.tasks[taskIndex].checklist = JSON.parse(JSON.stringify(this.currentModalChecklist));
-          this.tasks[taskIndex].observations = document.getElementById('rep-observations').value.trim();
+          this.tasks[taskIndex].observations = obs;
           this.tasks[taskIndex].evidence = JSON.parse(JSON.stringify(this.currentReportEvidence));
           this.tasks[taskIndex].completedAt = this.formatFullDateTime(new Date());
+
+          this.addActivityNotification(this.currentUser.fullName, this.selectedTask.id, 'EN_PROCESO', obs || 'Trabajo iniciado');
 
           this.saveTasks();
           this.updateStats();
@@ -2459,6 +2525,8 @@
           this.tasks[taskIndex].observations = document.getElementById('rep-observations').value.trim();
           this.tasks[taskIndex].evidence = JSON.parse(JSON.stringify(this.currentReportEvidence));
           this.tasks[taskIndex].completedAt = null;
+
+          this.addActivityNotification(this.currentUser.fullName, this.selectedTask.id, 'PENDIENTE', 'Regresada a pendiente');
 
           this.saveTasks();
           this.updateStats();
