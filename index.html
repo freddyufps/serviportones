@@ -1005,7 +1005,7 @@
           this.saveUsers();
         }
 
-        // Cargar Tareas
+// Cargar Tareas
         const savedTasks = localStorage.getItem('portonpro_tasks_v4');
         if (savedTasks) {
           try {
@@ -1020,7 +1020,27 @@
           }
         } else {
           this.tasks = INITIAL_TASKS;
-          this.saveTasks();
+        }
+
+        // Sincronización en vivo con Firebase Firestore
+        if (window.db) {
+          db.collection('ordenes').doc('todas').onSnapshot((doc) => {
+            if (doc.exists) {
+              const data = doc.data();
+              if (Array.isArray(data.tasks)) {
+                this.tasks = data.tasks;
+                this.tasks.forEach(t => {
+                  if (!Array.isArray(t.checklist)) {
+                    t.checklist = this.getDefaultChecklistItems();
+                  }
+                });
+                localStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
+                if (typeof this.renderTasks === 'function') this.renderTasks();
+                if (typeof this.renderDashboard === 'function') this.renderDashboard();
+                if (typeof this.renderSchedule === 'function') this.renderSchedule();
+              }
+            }
+          });
         }
 
         // Sesión activa
