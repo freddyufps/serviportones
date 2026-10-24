@@ -1927,7 +1927,7 @@ openNewTaskModal() {
       this.renderTaskModalChecklist();
 
       document.getElementById('modal-task-form').classList.remove('hidden');
-    },
+    }
 
     openEditTaskModal(id) {
       if (this.currentUser.role !== 'ADMIN') return;
@@ -1953,10 +1953,10 @@ openNewTaskModal() {
       this.renderTaskModalChecklist();
 
       document.getElementById('modal-task-form').classList.remove('hidden');
-    },
+    }
       closeTaskModal() {
         document.getElementById('modal-task-form').classList.add('hidden');
-      },
+      }
       renderTaskModalChecklist() {
         const container = document.getElementById('task-modal-checklist-container');
         if (!container) return;
@@ -2006,7 +2006,7 @@ openNewTaskModal() {
         input.value = '';
         this.renderTaskModalChecklist();
         this.showToast('Punto añadido a la orden', 'info');
-      },
+      }
 
       editTaskModalChecklistItem(id) {
         const item = this.currentTaskModalChecklist.find(c => c.id === id);
@@ -2017,12 +2017,12 @@ openNewTaskModal() {
           item.label = newLabel.trim();
           this.renderTaskModalChecklist();
         }
-      },
+      }
 
       deleteTaskModalChecklistItem(id) {
         this.currentTaskModalChecklist = this.currentTaskModalChecklist.filter(c => c.id !== id);
         this.renderTaskModalChecklist();
-      },
+      }
       handleSaveTask(e) {
         e.preventDefault();
         if (this.currentUser.role !== 'ADMIN') return;
