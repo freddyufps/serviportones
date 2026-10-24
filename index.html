@@ -593,11 +593,28 @@
           <label class="block text-xs font-semibold text-slate-700 mb-1">Instrucciones / Falla reportada</label>
           <textarea id="task-instructions" rows="3" placeholder="Ej: El portón se frena a mitad de recorrido. Revisar cremallera y lubricación..." class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none"></textarea>
         </div>
+<!-- SECCIÓN DE CHECKLIST PERSONALIZABLE EN CREAR/EDITAR ORDEN -->
+        <div class="mt-4 border-t border-slate-200 pt-3">
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            Puntos de Inspección / Checklist de la Orden
+          </label>
+          
+          <div id="task-modal-checklist-container" class="space-y-1.5 max-h-48 overflow-y-auto p-1 bg-slate-50 rounded-xl border border-slate-200">
+            <!-- Los puntos se cargan dinámicamente -->
+          </div>
 
+          <div class="flex items-center gap-2 mt-2">
+            <input type="text" id="task-modal-new-item-input" placeholder="Nuevo punto para esta orden..." class="flex-1 px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-lime">
+            <button type="button" onclick="app.addTaskModalChecklistItem()" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-lg transition shrink-0">
+              + Agregar Ítem
+            </button>
+          </div>
+        </div>
         <div class="pt-4 border-t flex justify-end gap-2">
           <button type="button" onclick="app.closeTaskModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-xs">Cancelar</button>
           <button type="submit" class="px-5 py-2 bg-brand-dark hover:bg-black text-white rounded-xl font-bold flex items-center gap-1.5 shadow-md text-xs">
             <i data-lucide="save" class="w-4 h-4 text-brand-lime"></i> Asignar Orden
+            
           </button>
         </div>
       </form>
