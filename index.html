@@ -1,0 +1,2253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ServiPortones Eléctricos Martínez - Gestión Operativa y Control de Personal</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              lime: '#71A832',      /* Verde corporativo oficial */
+              limeHover: '#5d8c27',
+              limeLight: '#f1f8eb',
+              limeBorder: '#b3d88b',
+              dark: '#111827',       /* Negro carbón mate */
+              darkSurface: '#18202F',
+              graphite: '#1f2937'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printable-order-modal, #printable-order-modal * {
+        visibility: visible;
+      }
+      #printable-order-modal {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        box-shadow: none !important;
+        background: white !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen font-sans flex flex-col antialiased selection:bg-brand-lime selection:text-white">
+
+  <!-- ========================================== -->
+  <!-- 1. VISTA DE INICIO DE SESIÓN (LOGIN)       -->
+  <!-- ========================================== -->
+  <div id="view-login" class="flex-1 flex items-center justify-center p-4 sm:p-6 min-h-screen bg-gradient-to-br from-slate-950 via-brand-dark to-slate-900">
+    <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+      <!-- Encabezado con Logo Oficial Vectorial -->
+      <div class="bg-white p-6 sm:p-7 text-center border-b border-slate-100 flex flex-col items-center">
+        <div class="w-full max-w-[280px] py-1">
+          <svg viewBox="0 0 420 170" class="w-full h-auto drop-shadow-sm select-none" xmlns="http://www.w3.org/2000/svg">
+            <g stroke-linecap="round" stroke-linejoin="round">
+              <path d="M 22 80 L 135 34 L 135 22 L 148 22 L 148 40 L 222 79" fill="none" stroke="#111827" stroke-width="11" />
+              <line x1="228" y1="79" x2="410" y2="79" stroke="#71A832" stroke-width="9" />
+              <text x="18" y="128" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" fill="#111827" letter-spacing="0.5">SERVIPORTONES</text>
+              <line x1="18" y1="148" x2="135" y2="148" stroke="#71A832" stroke-width="6" />
+              <text x="144" y="152" font-family="system-ui, -apple-system, sans-serif" font-size="19" font-weight="900" fill="#71A832" letter-spacing="3.5">ELECTRICOS MARTINEZ</text>
+            </g>
+          </svg>
+        </div>
+        <p class="text-[11px] text-slate-500 uppercase tracking-widest font-extrabold mt-1">Plataforma Operativa de Automatismos</p>
+      </div>
+
+      <!-- Formulario de acceso -->
+      <form onsubmit="app.handleLogin(event)" class="p-6 sm:p-8 space-y-4">
+        <div id="login-error-alert" class="hidden p-3.5 rounded-xl text-xs font-semibold bg-rose-50 border border-rose-200 text-rose-700 flex items-center gap-2">
+          <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+          <span id="login-error-text">Credenciales incorrectas.</span>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Usuario</label>
+          <div class="relative">
+            <i data-lucide="user" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+            <input type="text" id="login-username" required autocomplete="username" placeholder="Ingresa tu usuario" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none text-sm transition">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Contraseña</label>
+          <div class="relative">
+            <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+            <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••" class="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none text-sm transition">
+            <button type="button" onclick="app.togglePasswordVisibility('login-password')" class="absolute right-3 top-3 text-slate-400 hover:text-slate-600 transition" title="Ver / Ocultar">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-3 bg-brand-dark hover:bg-black text-white font-bold rounded-xl text-sm border-b-4 border-brand-lime shadow-lg active:scale-[0.98] transition flex items-center justify-center gap-2 mt-2">
+          <i data-lucide="log-in" class="w-4 h-4 text-brand-lime"></i>
+          Iniciar Sesión
+        </button>
+
+        <p class="text-center text-[11px] text-slate-400 pt-2">
+          Acceso privado para el personal técnico y administrativo.
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 2. VISTA PRINCIPAL (USUARIO CONECTADO)     -->
+  <!-- ========================================== -->
+  <div id="view-dashboard" class="hidden flex-1 flex flex-col">
+    <!-- Barra Superior Limpia y Sin Duplicados -->
+    <header class="bg-brand-dark text-white sticky top-0 z-40 shadow-md border-b-2 border-brand-lime">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        
+        <!-- Logotipo Oficial Vectorial -->
+        <div class="flex items-center space-x-3">
+          <div class="h-10 bg-white px-2 py-1 rounded-xl flex items-center shadow-sm">
+            <svg viewBox="0 0 420 170" class="h-8 w-auto" xmlns="http://www.w3.org/2000/svg">
+              <g stroke-linecap="round" stroke-linejoin="round">
+                <path d="M 22 80 L 135 34 L 135 22 L 148 22 L 148 40 L 222 79" fill="none" stroke="#111827" stroke-width="12" />
+                <line x1="228" y1="79" x2="410" y2="79" stroke="#71A832" stroke-width="10" />
+                <text x="18" y="128" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" fill="#111827">SERVIPORTONES</text>
+                <line x1="18" y1="148" x2="135" y2="148" stroke="#71A832" stroke-width="7" />
+                <text x="144" y="152" font-family="system-ui, -apple-system, sans-serif" font-size="19" font-weight="900" fill="#71A832" letter-spacing="3">ELECTRICOS MARTINEZ</text>
+              </g>
+            </svg>
+          </div>
+          <span id="header-role-badge" class="hidden sm:inline-block text-[10px] uppercase font-extrabold px-2.5 py-0.5 rounded-full bg-brand-lime/20 text-brand-lime border border-brand-lime/40">Admin</span>
+        </div>
+
+        <!-- Botones exteriores limpios: ÚNICAMENTE Nueva Orden, Engranaje de Ajustes y Cerrar Sesión -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
+          
+          <!-- Botón Nueva Orden (Solo Admin, visible en la barra exterior porque sí es operativo de trabajo) -->
+          <button id="btn-nav-new-order" onclick="app.openNewTaskModal()" class="hidden bg-brand-lime hover:bg-brand-limeHover text-white text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md shadow-brand-lime/20 transition active:scale-95">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>Nueva Orden</span>
+          </button>
+
+          <!-- ENGRANAJE DE CONFIGURACIONES (AQUÍ ESTÁ TODO: claves, usuarios, fotos de perfil) -->
+          <button id="btn-nav-settings" onclick="app.openSettingsModal()" class="p-2 sm:px-3 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl transition flex items-center gap-1.5 shadow-sm" title="Ajustes y Personal">
+            <i data-lucide="settings" class="w-4 h-4 text-brand-lime"></i>
+            <span class="hidden md:inline text-xs font-semibold">Configuración</span>
+          </button>
+
+          <!-- Badge de usuario conectado con Foto de Perfil Redondeada -->
+          <div class="flex items-center gap-2 bg-slate-800/90 pl-1.5 pr-2.5 sm:pr-3 py-1 rounded-xl border border-slate-700">
+            <div class="relative w-8 h-8 rounded-full overflow-hidden border-2 border-brand-lime bg-slate-700 flex items-center justify-center shrink-0">
+              <img id="header-user-photo" src="" alt="Foto" class="w-full h-full object-cover hidden">
+              <span id="header-avatar-initial" class="text-white font-black text-xs">A</span>
+              <span class="w-2.5 h-2.5 rounded-full bg-brand-lime border-2 border-slate-900 absolute top-0 right-0"></span>
+            </div>
+            <div class="text-left hidden sm:block">
+              <p id="header-user-name" class="text-xs font-bold leading-none text-white truncate max-w-[110px]">Administrador</p>
+              <span class="text-[10px] text-brand-lime font-medium">En línea</span>
+            </div>
+          </div>
+
+          <!-- Botón Cerrar Sesión (Registra hora de desconexión exacta) -->
+          <button onclick="app.logout()" class="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition" title="Cerrar Sesión">
+            <i data-lucide="log-out" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Contenedor Principal -->
+    <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
+
+      <!-- ============================================================== -->
+      <!-- MONITOR DE PERSONAL ONLINE / OFFLINE CON HORAS DE LOGUEO (ADMIN) -->
+      <!-- ============================================================== -->
+      <section id="section-technicians-monitor" class="mb-6 hidden">
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 sm:p-5">
+          <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2.5">
+            <div class="flex items-center gap-2">
+              <div class="w-2.5 h-2.5 rounded-full bg-brand-lime animate-ping"></div>
+              <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-800">
+                Monitor del Personal: Conexión y Horarios de Trabajo
+              </h2>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="techs-online-counter" class="text-xs font-bold px-2.5 py-1 bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder rounded-lg">
+                0 En Línea
+              </span>
+            </div>
+          </div>
+
+          <!-- Cards de Técnicos con Foto, Estado En Línea, Primer Logueo y Último Logueo -->
+          <div id="technicians-status-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <!-- Inyectado dinámicamente -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Banner de bienvenida limpio (Sin botones repetidos) -->
+      <div id="dashboard-banner" class="mb-6 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm">
+        <!-- Inyectado dinámicamente según rol -->
+      </div>
+
+      <!-- Tarjetas de Estadísticas -->
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] font-bold uppercase text-slate-500 tracking-wider">Total Órdenes</p>
+            <p id="stat-total" class="text-2xl font-black text-slate-800 mt-0.5">0</p>
+          </div>
+          <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-700">
+            <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] font-bold uppercase text-amber-600 tracking-wider">Pendientes / En Curso</p>
+            <p id="stat-pending" class="text-2xl font-black text-amber-600 mt-0.5">0</p>
+          </div>
+          <div class="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
+            <i data-lucide="clock" class="w-5 h-5"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] font-bold uppercase text-brand-limeHover tracking-wider">Realizadas</p>
+            <p id="stat-done" class="text-2xl font-black text-brand-limeHover mt-0.5">0</p>
+          </div>
+          <div class="w-10 h-10 bg-brand-limeLight rounded-xl flex items-center justify-center text-brand-limeHover">
+            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] font-bold uppercase text-rose-600 tracking-wider">No Realizadas</p>
+            <p id="stat-failed" class="text-2xl font-black text-rose-600 mt-0.5">0</p>
+          </div>
+          <div class="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600">
+            <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+          </div>
+        </div>
+      </section>
+
+      <!-- Filtros y Búsqueda -->
+      <section class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+        <div class="relative flex-1">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+          <input type="text" id="filter-search" oninput="app.renderTasks()" placeholder="Buscar cliente, dirección o motor (BFT, LiftMaster, Beninca)..." class="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none">
+        </div>
+
+        <div class="flex flex-wrap gap-2 items-center">
+          <select id="filter-status" onchange="app.renderTasks()" class="text-xs sm:text-sm border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:ring-2 focus:ring-brand-lime focus:outline-none font-medium">
+            <option value="ALL">Todos los Estados</option>
+            <option value="PENDIENTE">⏳ Pendientes</option>
+            <option value="EN_PROCESO">⚙️ En Proceso</option>
+            <option value="REALIZADA">✅ Realizadas</option>
+            <option value="NO_REALIZADA">❌ No Realizadas</option>
+          </select>
+
+          <!-- Filtro por Técnico (Visible solo al Administrador) -->
+          <select id="filter-tech" onchange="app.renderTasks()" class="text-xs sm:text-sm border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:ring-2 focus:ring-brand-lime focus:outline-none font-medium">
+            <option value="ALL">Todos los Técnicos</option>
+          </select>
+
+          <select id="filter-priority" onchange="app.renderTasks()" class="text-xs sm:text-sm border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:ring-2 focus:ring-brand-lime focus:outline-none font-medium">
+            <option value="ALL">Todas las Prioridades</option>
+            <option value="ALTA">Alta</option>
+            <option value="MEDIA">Media</option>
+            <option value="BAJA">Baja</option>
+          </select>
+
+          <button onclick="app.resetFilters()" class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl" title="Restablecer filtros">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </section>
+
+      <!-- Cuadrícula de Órdenes -->
+      <section>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-extrabold text-slate-800 text-lg flex items-center gap-2">
+            <span>Órdenes de Trabajo</span>
+            <span id="filtered-count" class="text-xs bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-full font-bold">0</span>
+          </h2>
+          <span class="text-xs text-slate-500 hidden sm:inline" id="role-hint-text">
+            Selecciona una orden para registrar el informe o verificar la ficha
+          </span>
+        </div>
+
+        <div id="tasks-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+          <!-- Tarjetas inyectadas dinámicamente -->
+        </div>
+
+        <!-- Mensaje si no hay órdenes -->
+        <div id="empty-state" class="hidden bg-white border-2 border-dashed border-slate-200 rounded-3xl p-10 text-center my-6">
+          <div class="w-16 h-16 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
+            <i data-lucide="inbox" class="w-8 h-8"></i>
+          </div>
+          <h3 class="text-base font-bold text-slate-800">No hay tareas para mostrar</h3>
+          <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">No hay órdenes asignadas con los filtros actuales o no tienes servicios programados hoy.</p>
+          <button onclick="app.resetFilters()" class="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">
+            Limpiar filtros
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Pie de página -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 mt-auto">
+      <p><b class="text-slate-800">SERVIPORTONES ELÉCTRICOS MARTÍNEZ</b> &bull; Sistema de Gestión Técnica de Automatismos &bull; 2026</p>
+    </footer>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL CENTRALIZADO: ENGRANAJE DE CONFIGURACIONES (CLAVES, USUARIOS, FOTOS)-->
+  <!-- ========================================================================= -->
+  <div id="modal-settings" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-slate-100 overflow-hidden my-8">
+      <!-- Header Configuraciones -->
+      <div class="bg-brand-dark text-white px-6 py-4 flex items-center justify-between border-b-2 border-brand-lime">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-brand-lime text-brand-dark flex items-center justify-center font-bold">
+            <i data-lucide="settings" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold">Configuración y Seguridad</h3>
+            <p id="settings-modal-subtitle" class="text-xs text-slate-300">Administración de credenciales, perfil y personal</p>
+          </div>
+        </div>
+        <button onclick="app.closeSettingsModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-6 max-h-[80vh] overflow-y-auto text-xs sm:text-sm">
+
+        <!-- 1. FOTO DE PERFIL PROPIA (DISPONIBLE PARA ADMIN Y EMPLEADOS) -->
+        <div class="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200">
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 mb-3 flex items-center gap-2">
+            <i data-lucide="camera" class="w-4 h-4 text-brand-limeHover"></i>
+            <span>Mi Foto de Perfil</span>
+          </h4>
+          <div class="flex flex-col sm:flex-row items-center gap-4">
+            <div class="relative w-20 h-20 rounded-full border-4 border-brand-lime overflow-hidden bg-slate-200 shadow-md shrink-0 flex items-center justify-center">
+              <img id="settings-my-photo-preview" src="" alt="Vista previa" class="w-full h-full object-cover hidden">
+              <span id="settings-my-initial-preview" class="text-2xl font-black text-slate-600">A</span>
+            </div>
+            <div class="flex-1 space-y-2 text-center sm:text-left">
+              <p class="text-xs text-slate-600">Sube una foto clara de tu rostro para que aparezca en el sistema y en las fichas técnicas.</p>
+              <div class="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
+                <label class="cursor-pointer px-3 py-1.5 bg-brand-dark hover:bg-black text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow transition">
+                  <i data-lucide="upload" class="w-3.5 h-3.5 text-brand-lime"></i> Subir Foto
+                  <input type="file" accept="image/*" class="hidden" onchange="app.handleUploadOwnPhoto(event)">
+                </label>
+                <button type="button" onclick="app.removeOwnPhoto()" class="px-3 py-1.5 border border-slate-300 text-slate-600 hover:bg-white text-xs font-semibold rounded-xl">
+                  Quitar Foto
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. CAMBIO DE CONTRASEÑA PROPIA (ADMIN O TÉCNICO) -->
+        <div class="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200">
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 mb-3 flex items-center gap-2">
+            <i data-lucide="key" class="w-4 h-4 text-brand-limeHover"></i>
+            <span>Cambiar Mi Contraseña Actual</span>
+          </h4>
+          <form onsubmit="app.handleChangeOwnPassword(event)" class="space-y-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Contraseña Actual *</label>
+              <input type="password" id="set-own-current-pass" required placeholder="Ingresa tu contraseña actual" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Nueva Contraseña *</label>
+                <input type="password" id="set-own-new-pass" required minlength="3" placeholder="Mínimo 3 caracteres" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Confirmar Nueva Contraseña *</label>
+                <input type="password" id="set-own-confirm-pass" required minlength="3" placeholder="Repite la nueva clave" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none">
+              </div>
+            </div>
+            <div class="flex justify-end pt-1">
+              <button type="submit" class="px-4 py-2 bg-brand-dark hover:bg-black text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow">
+                <i data-lucide="check" class="w-3.5 h-3.5 text-brand-lime"></i> Guardar Nueva Clave
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- 3. GESTIÓN COMPLETA DE TRABAJADORES (SOLO ADMINISTRADOR) -->
+        <div id="settings-admin-users-section" class="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-5 hidden">
+          <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+            <div>
+              <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                <i data-lucide="users" class="w-4 h-4 text-brand-limeHover"></i>
+                <span>Gestión de Técnicos y Accesos</span>
+              </h4>
+              <p class="text-[11px] text-slate-500">Crea trabajadores, cámbiales la clave o actualiza sus fotos de perfil.</p>
+            </div>
+            <span id="settings-users-count-badge" class="text-xs font-bold px-2 py-0.5 rounded bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder">0 Técnicos</span>
+          </div>
+
+          <!-- Formulario para Crear / Editar Técnico -->
+          <form id="manage-user-form" onsubmit="app.handleSaveUser(event)" class="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
+            <input type="hidden" id="manage-user-id" value="">
+            <input type="hidden" id="manage-user-photo" value="">
+
+            <div class="flex flex-col sm:flex-row items-center gap-4 pb-2 border-b border-slate-100">
+              <div class="relative w-16 h-16 rounded-full border-2 border-brand-lime overflow-hidden bg-slate-100 shrink-0 flex items-center justify-center">
+                <img id="manage-user-photo-preview" src="" alt="Foto técnico" class="w-full h-full object-cover hidden">
+                <span id="manage-user-initial-preview" class="text-lg font-bold text-slate-500">?</span>
+              </div>
+              <div class="flex-1 text-center sm:text-left">
+                <label class="cursor-pointer px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg inline-flex items-center gap-1 border border-slate-300">
+                  <i data-lucide="image" class="w-3.5 h-3.5 text-brand-limeHover"></i> Asignar Foto al Trabajador
+                  <input type="file" accept="image/*" class="hidden" onchange="app.handleUploadTechPhoto(event)">
+                </label>
+                <p class="text-[10px] text-slate-400 mt-1">Opcional. Si no se sube, se asignará un avatar por defecto.</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre Completo del Técnico *</label>
+                <input type="text" id="manage-fullname" required placeholder="Ej: Pedro González" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Usuario de Login *</label>
+                <input type="text" id="manage-username" required placeholder="Ej: pedro (sin espacios)" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Contraseña *</label>
+                <input type="text" id="manage-password" required placeholder="Clave para el técnico" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none font-mono">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Teléfono / WhatsApp *</label>
+                <input type="tel" id="manage-phone" required placeholder="Ej: 312 345 6789" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Especialidad</label>
+                <input type="text" id="manage-specialty" placeholder="Ej: Corredizos BFT" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none">
+              </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-1">
+              <button type="button" onclick="app.resetUserForm()" class="px-3 py-1.5 border border-slate-300 rounded-xl text-slate-600 text-xs font-semibold hover:bg-slate-50">Cancelar</button>
+              <button type="submit" id="btn-save-user" class="px-4 py-1.5 bg-brand-dark hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow">
+                <i data-lucide="check" class="w-3.5 h-3.5 text-brand-lime"></i> Guardar Trabajador
+              </button>
+            </div>
+          </form>
+
+          <!-- Tabla de Trabajadores dentro de Configuración -->
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl bg-white">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Personal</th>
+                  <th class="p-3">Usuario & Clave</th>
+                  <th class="p-3">Horario Registro Hoy</th>
+                  <th class="p-3">Estado</th>
+                  <th class="p-3 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="table-users-body" class="divide-y divide-slate-100">
+                <!-- Inyectado dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: ASIGNAR / EDITAR ORDEN (SOLO ADMINISTRADOR)       -->
+  <!-- ======================================================== -->
+  <div id="modal-task-form" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-xl w-full shadow-2xl border border-slate-100 overflow-hidden my-8">
+      <div class="bg-brand-dark text-white px-6 py-4 flex items-center justify-between border-b-2 border-brand-lime">
+        <div class="flex items-center gap-2">
+          <i data-lucide="clipboard-pen" class="w-5 h-5 text-brand-lime"></i>
+          <h3 id="form-modal-title" class="text-base font-bold">Asignar Orden de Trabajo</h3>
+        </div>
+        <button onclick="app.closeTaskModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="task-form" onsubmit="app.handleSaveTask(event)" class="p-6 space-y-4 text-xs sm:text-sm">
+        <input type="hidden" id="task-id" value="">
+
+        <!-- Cliente & Teléfono -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre del Cliente / Predio *</label>
+            <input type="text" id="task-client" required placeholder="Ej: Condominio Las Palmas o Juan Pérez" class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Teléfono Cliente *</label>
+            <input type="tel" id="task-phone" required placeholder="Ej: 310 123 4567" class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Dirección -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Dirección del Inmueble *</label>
+          <div class="relative">
+            <i data-lucide="map-pin" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+            <input type="text" id="task-address" required placeholder="Ej: Cra 14 # 50-20, Barrio La Floresta" class="w-full pl-9 pr-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Tipo de Servicio & Motor -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Tipo de Servicio *</label>
+            <select id="task-service-type" required class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none bg-white">
+              <option value="Mantenimiento Preventivo General">Mantenimiento Preventivo General</option>
+              <option value="Instalación de Motor Nuevo">Instalación de Motor Nuevo</option>
+              <option value="Reparación de Emergencia / Fallo">Reparación de Emergencia / No Abre</option>
+              <option value="Cambio de Cremallera o Engranajes">Cambio de Cremallera / Engranajes</option>
+              <option value="Programación de Mandos / Receptora">Programación de Controles Remotos</option>
+              <option value="Reemplazo de Tarjeta Electrónica">Cambio de Tarjeta / Tarjeta Quemada</option>
+              <option value="Calibración de Brazos Batientes">Calibración de Brazos Batientes</option>
+              <option value="Ajuste de Puerta Enrollable o Levadiza">Ajuste de Puerta Enrollable / Levadiza</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Tipo y Marca de Motor *</label>
+            <input type="text" id="task-equipment" required placeholder="Ej: Corredizo BFT Deimos / LiftMaster 800" class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Asignación Técnico, Prioridad y Fecha -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Técnico Asignado *</label>
+            <select id="task-assigned-to" required class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none bg-white font-semibold">
+              <!-- Inyectado dinámicamente -->
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Prioridad *</label>
+            <select id="task-priority" required class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none bg-white">
+              <option value="MEDIA">🟡 Media</option>
+              <option value="ALTA">🔴 Alta (Urgente)</option>
+              <option value="BAJA">🟢 Baja</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Fecha Programada *</label>
+            <input type="date" id="task-date" required class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none bg-white">
+          </div>
+        </div>
+
+        <!-- Instrucciones para el técnico -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Instrucciones / Falla reportada</label>
+          <textarea id="task-instructions" rows="3" placeholder="Ej: El portón se frena a mitad de recorrido. Revisar cremallera y lubricación..." class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none"></textarea>
+        </div>
+
+        <div class="pt-4 border-t flex justify-end gap-2">
+          <button type="button" onclick="app.closeTaskModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-xs">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-brand-dark hover:bg-black text-white rounded-xl font-bold flex items-center gap-1.5 shadow-md text-xs">
+            <i data-lucide="save" class="w-4 h-4 text-brand-lime"></i> Asignar Orden
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: REPORTE TÉCNICO (REALIZADA / NO REALIZADA)        -->
+  <!-- ======================================================== -->
+  <div id="modal-report" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden my-8">
+      <div id="report-modal-header" class="bg-brand-dark text-white px-6 py-4 flex items-center justify-between border-b-2 border-brand-lime">
+        <div>
+          <div class="flex items-center gap-2">
+            <i data-lucide="wrench" class="w-5 h-5 text-brand-lime"></i>
+            <h3 class="text-base font-bold">Reporte de Servicio Técnico</h3>
+          </div>
+          <p id="report-order-subtitle" class="text-xs text-slate-300 mt-0.5">Orden #... - Cliente</p>
+        </div>
+        <button onclick="app.closeReportModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-5 text-xs sm:text-sm max-h-[80vh] overflow-y-auto">
+        <!-- Resumen del trabajo -->
+        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div><span class="text-slate-500 font-medium">Servicio:</span> <span id="rep-service" class="font-bold text-slate-800"></span></div>
+            <div><span class="text-slate-500 font-medium">Equipo:</span> <span id="rep-equipment" class="font-bold text-slate-800"></span></div>
+            <div class="sm:col-span-2"><span class="text-slate-500 font-medium">Dirección:</span> <span id="rep-address" class="font-semibold text-slate-800"></span></div>
+            <div class="sm:col-span-2"><span class="text-slate-500 font-medium">Indicaciones del Administrador:</span> <span id="rep-instruction" class="text-slate-700 italic"></span></div>
+          </div>
+        </div>
+
+        <!-- SELECTOR CRÍTICO: ¿SE REALIZÓ O NO SE REALIZÓ? -->
+        <div>
+          <label class="block text-xs font-black uppercase tracking-wider text-slate-800 mb-2">
+            Resultado de la Visita *
+          </label>
+          <div class="grid grid-cols-2 gap-3">
+            <button type="button" id="btn-choice-done" onclick="app.setReportStatus('REALIZADA')" class="py-3 px-4 rounded-2xl border-2 flex items-center justify-center gap-2 font-bold transition text-slate-700 border-slate-200 hover:border-brand-lime">
+              <i data-lucide="check-circle" class="w-5 h-5 text-brand-limeHover"></i>
+              <span>✅ Sí, Realizada</span>
+            </button>
+            <button type="button" id="btn-choice-failed" onclick="app.setReportStatus('NO_REALIZADA')" class="py-3 px-4 rounded-2xl border-2 flex items-center justify-center gap-2 font-bold transition text-slate-700 border-slate-200 hover:border-rose-500">
+              <i data-lucide="x-circle" class="w-5 h-5 text-rose-600"></i>
+              <span>❌ No Realizada</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Checklist Dinámico y Editable -->
+        <div id="section-checklist" class="space-y-3 border-t pt-4">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              Checklist Técnico del Portón (Personalizable)
+            </label>
+            <span class="text-[11px] text-slate-400 font-medium">Usa ✏️ para editar o ✕ para quitar</span>
+          </div>
+
+          <!-- Contenedor de ítems del checklist -->
+          <div id="checklist-items-container" class="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs">
+            <!-- Inyectado dinámicamente -->
+          </div>
+
+          <!-- Agregar nuevo ítem al checklist -->
+          <div class="flex items-center gap-2 pt-1">
+            <input type="text" id="new-checklist-item-input" placeholder="Ej: Revisar sensor de fotocelda, capacitor..." class="flex-1 px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none shadow-sm" onkeydown="if(event.key==='Enter'){event.preventDefault(); app.addChecklistItem();}">
+            <button type="button" onclick="app.addChecklistItem()" class="px-3.5 py-2 bg-brand-dark hover:bg-black text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow transition active:scale-95 shrink-0">
+              <i data-lucide="plus-circle" class="w-4 h-4 text-brand-lime"></i>
+              <span>Agregar Ítem</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Observaciones del Técnico -->
+        <div class="space-y-2 border-t pt-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              Observaciones del Técnico <span id="obs-required-badge" class="text-rose-600 font-bold">*</span>
+            </label>
+            <div id="quick-reasons-wrap" class="hidden">
+              <select onchange="app.insertQuickReason(this.value)" class="text-[11px] text-slate-700 bg-slate-100 border border-slate-300 rounded-lg px-2 py-1">
+                <option value="">⚡ Motivo rápido de no realización...</option>
+                <option value="Cliente ausente tras 30 min de espera y llamadas telefónicas.">Cliente ausente</option>
+                <option value="Inmueble sin suministro eléctrico en el tablero general.">Sin energía eléctrica</option>
+                <option value="Tarjeta electrónica quemada por descarga. Requiere cotización.">Tarjeta quemada</option>
+                <option value="Piñón o cremallera rota por impacto vehicular. Requiere repuesto.">Corona o piñón averiado</option>
+                <option value="Portón descuadrado o soldado que traba el carril. Requiere cerrajería previa.">Daño mecánico estructural</option>
+                <option value="Lluvia torrencial en área abierta que impide manipular cables de 110V/220V.">Clima adverso/Seguridad</option>
+              </select>
+            </div>
+          </div>
+          <textarea id="rep-observations" rows="3" placeholder="Describe detalladamente el estado del portón o la justificación exacta si no se completó..." class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none text-xs sm:text-sm"></textarea>
+        </div>
+
+        <!-- Materiales utilizados -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Repuestos o Insumos Utilizados</label>
+          <input type="text" id="rep-materials" placeholder="Ej: 2 Controles 433Mhz, grasa blanca, fusible 5A, capacitor 16uF" class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-brand-lime focus:outline-none text-xs">
+        </div>
+
+        <!-- Acciones del Reporte -->
+        <div class="pt-4 border-t flex flex-col sm:flex-row justify-between items-center gap-3">
+          <button type="button" onclick="app.setTaskInProgress()" class="w-full sm:w-auto text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-3.5 py-2.5 rounded-xl font-bold">
+            Dejar "En Proceso"
+          </button>
+          <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <button type="button" onclick="app.sendWhatsAppReport()" class="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow">
+              <i data-lucide="phone-call" class="w-4 h-4"></i> Enviar a WhatsApp
+            </button>
+            <button type="button" onclick="app.submitReport()" class="px-4 py-2.5 bg-brand-dark hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow">
+              <i data-lucide="check" class="w-4 h-4 text-brand-lime"></i> Guardar Informe
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: FICHA DE ORDEN / IMPRIMIR (FORMATO FORMAL)        -->
+  <!-- ======================================================== -->
+  <div id="modal-view-order" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div id="printable-order-modal" class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 p-6 sm:p-8">
+      <!-- Membrete con Logo Oficial -->
+      <div class="border-b-2 border-slate-200 pb-4 flex justify-between items-start">
+        <div class="max-w-[280px]">
+          <svg viewBox="0 0 420 170" class="w-full h-auto drop-shadow-sm select-none" xmlns="http://www.w3.org/2000/svg">
+            <g stroke-linecap="round" stroke-linejoin="round">
+              <path d="M 22 80 L 135 34 L 135 22 L 148 22 L 148 40 L 222 79" fill="none" stroke="#111827" stroke-width="12" />
+              <line x1="228" y1="79" x2="410" y2="79" stroke="#71A832" stroke-width="10" />
+              <text x="18" y="128" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" fill="#111827">SERVIPORTONES</text>
+              <line x1="18" y1="148" x2="135" y2="148" stroke="#71A832" stroke-width="7" />
+              <text x="144" y="152" font-family="system-ui, -apple-system, sans-serif" font-size="19" font-weight="900" fill="#71A832" letter-spacing="3">ELECTRICOS MARTINEZ</text>
+            </g>
+          </svg>
+          <p class="text-[11px] text-slate-500 font-bold mt-1">Automatismos, Motores & Soluciones Electrónicas</p>
+          <p class="text-[10px] text-slate-400">Servicio Técnico, Mantenimientos y Garantías</p>
+        </div>
+        <div class="text-right">
+          <span id="view-order-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase inline-block">ESTADO</span>
+          <p id="view-order-number" class="text-sm font-mono font-black text-slate-800 mt-2">ORD-000</p>
+          <p id="view-order-date" class="text-xs text-slate-500">2026-10-24</p>
+        </div>
+      </div>
+
+      <!-- Datos de la orden -->
+      <div class="py-4 space-y-4 text-xs sm:text-sm">
+        <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <div>
+            <span class="text-slate-400 block text-[10px] font-bold uppercase">Cliente / Predio</span>
+            <span id="view-client" class="font-bold text-slate-900"></span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px] font-bold uppercase">Teléfono Contacto</span>
+            <span id="view-phone" class="font-bold text-slate-900"></span>
+          </div>
+          <div class="col-span-2">
+            <span class="text-slate-400 block text-[10px] font-bold uppercase">Dirección</span>
+            <span id="view-address" class="font-semibold text-slate-800"></span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div>
+            <span class="text-slate-400 block text-[10px] font-bold uppercase">Tipo de Trabajo</span>
+            <span id="view-service" class="font-semibold text-slate-800"></span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px] font-bold uppercase">Equipo / Motor</span>
+            <span id="view-equipment" class="font-semibold text-slate-800"></span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px] font-bold uppercase">Técnico Responsable</span>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <img id="view-technician-photo" src="" alt="" class="w-5 h-5 rounded-full object-cover hidden">
+              <span id="view-technician" class="font-bold text-slate-900"></span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <span class="text-slate-400 block text-[10px] font-bold uppercase">Instrucciones Iniciales</span>
+          <p id="view-instructions" class="text-slate-700 bg-white p-2.5 rounded-xl border border-slate-200 mt-1"></p>
+        </div>
+
+        <div>
+          <span class="text-slate-400 block text-[10px] font-bold uppercase">Informe Técnico de Campo & Observaciones</span>
+          <div id="view-observations" class="p-3 rounded-xl border mt-1 whitespace-pre-line font-medium"></div>
+        </div>
+
+        <div>
+          <span class="text-slate-400 block text-[10px] font-bold uppercase">Materiales / Repuestos Suministrados</span>
+          <p id="view-materials" class="text-slate-800 font-semibold mt-0.5"></p>
+        </div>
+      </div>
+
+      <!-- Acciones de visualización -->
+      <div class="mt-6 pt-4 border-t flex justify-between items-center no-print">
+        <button onclick="app.shareOrderViaWhatsApp()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow">
+          <i data-lucide="share-2" class="w-4 h-4"></i> Enviar por WhatsApp
+        </button>
+        <div class="flex gap-2">
+          <button onclick="app.closeViewModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 text-xs font-bold hover:bg-slate-100">Cerrar</button>
+          <button onclick="window.print()" class="px-4 py-2 bg-brand-dark hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow">
+            <i data-lucide="printer" class="w-4 h-4 text-brand-lime"></i> Imprimir / PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notificación Toast -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-950 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-800 text-xs sm:text-sm max-w-sm">
+    <div id="toast-icon"></div>
+    <span id="toast-message" class="font-semibold"></span>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- JAVASCRIPT: LÓGICA DE CONTROL, HORARIOS, FOTOS Y SEGURIDAD -->
+  <!-- ======================================================== -->
+  <script>
+    const DEFAULT_ADMIN = {
+      username: 'administrador',
+      password: 'PortoneselectricosMartinez',
+      fullName: 'Administrador (Don Martínez)',
+      role: 'ADMIN',
+      phone: '315 889 4521',
+      photo: '',
+      active: true,
+      firstLoginToday: null,
+      lastLogin: null
+    };
+
+    const INITIAL_TECHNICIANS = [
+      {
+        id: 'tech-1',
+        fullName: 'Freddy Méndez',
+        username: 'freddy',
+        password: '123',
+        phone: '315 889 4521',
+        specialty: 'Motores Corredizos BFT / Nice',
+        photo: '',
+        active: true,
+        lastHeartbeat: Date.now() - 25000,
+        firstLoginToday: '07:30 AM',
+        lastLogin: '11:15 AM (En línea)'
+      },
+      {
+        id: 'tech-2',
+        fullName: 'Carlos Rivera',
+        username: 'carlos',
+        password: '123',
+        phone: '310 442 1290',
+        specialty: 'Brazos Batientes LiftMaster',
+        photo: '',
+        active: true,
+        lastHeartbeat: Date.now() - (35 * 60000),
+        firstLoginToday: '08:00 AM',
+        lastLogin: '10:45 AM (Desconectado)'
+      },
+      {
+        id: 'tech-3',
+        fullName: 'Andrés Soler',
+        username: 'andres',
+        password: '123',
+        phone: '312 990 1122',
+        specialty: 'Receptoras & Cerrajería de Portón',
+        photo: '',
+        active: true,
+        lastHeartbeat: 0,
+        firstLoginToday: 'Sin registro hoy',
+        lastLogin: 'Ayer 05:40 PM'
+      }
+    ];
+
+    const INITIAL_TASKS = [
+      {
+        id: 'ORD-101',
+        client: 'Condominio Campestre El Peñón',
+        phone: '315 889 4521',
+        address: 'Km 3 Vía Silvania, Portería Principal',
+        serviceType: 'Mantenimiento Preventivo General',
+        equipment: 'Portón Corredizo BFT ICARO 2000',
+        assignedTo: 'Freddy Méndez',
+        priority: 'ALTA',
+        date: '2026-10-24',
+        instructions: 'Revisión periódica. Verificar tensión de cremallera y finales de carrera.',
+        status: 'PENDIENTE',
+        checklist: [
+          { id: 'c1', label: 'Engrase/limpieza de cremallera y rodamientos', checked: false },
+          { id: 'c2', label: 'Calibración de finales de carrera (imán/micros)', checked: false },
+          { id: 'c3', label: 'Fotocélulas y sistema anti-aplastamiento', checked: false },
+          { id: 'c4', label: 'Prueba de destrabe manual / llave de paso', checked: false },
+          { id: 'c5', label: 'Voltaje de alimentación y torque de embrague', checked: false },
+          { id: 'c6', label: 'Prueba de mandos y alcance de receptor', checked: false }
+        ],
+        observations: '',
+        materialsUsed: '',
+        completedAt: null
+      },
+      {
+        id: 'ORD-102',
+        client: 'Bodegas TransOriente Ltda',
+        phone: '310 442 1290',
+        address: 'Zona Industrial Calle 19 # 45-80',
+        serviceType: 'Reparación de Emergencia / Fallo',
+        equipment: 'Portón Batiente Doble LiftMaster LA500',
+        assignedTo: 'Carlos Rivera',
+        priority: 'ALTA',
+        date: '2026-10-24',
+        instructions: 'Camión rozó el brazo izquierdo. Portón bloqueado.',
+        status: 'EN_PROCESO',
+        checklist: [
+          { id: 'c1', label: 'Engrase/limpieza de cremallera y rodamientos', checked: true },
+          { id: 'c2', label: 'Calibración de finales de carrera (imán/micros)', checked: false },
+          { id: 'c3', label: 'Fotocélulas y sistema anti-aplastamiento', checked: true },
+          { id: 'c4', label: 'Prueba de destrabe manual / llave de paso', checked: true },
+          { id: 'c5', label: 'Voltaje de alimentación y torque de embrague', checked: true },
+          { id: 'c6', label: 'Prueba de mandos y alcance de receptor', checked: false }
+        ],
+        observations: 'Brazo desmontado para enderezar anclaje de poste.',
+        materialsUsed: 'Pernos de acero 1/2, arandelas',
+        completedAt: null
+      },
+      {
+        id: 'ORD-103',
+        client: 'Edificio San Jerónimo',
+        phone: '312 990 1122',
+        address: 'Carrera 15 # 85-20',
+        serviceType: 'Programación de Mandos / Receptora',
+        equipment: 'Receptora Multicódigo Beninca One',
+        assignedTo: 'Andrés Soler',
+        priority: 'MEDIA',
+        date: '2026-10-23',
+        instructions: 'Codificar 20 mandos a distancia para nuevos residentes.',
+        status: 'NO_REALIZADA',
+        checklist: [
+          { id: 'c1', label: 'Engrase/limpieza de cremallera y rodamientos', checked: false },
+          { id: 'c2', label: 'Calibración de finales de carrera (imán/micros)', checked: false },
+          { id: 'c3', label: 'Fotocélulas y sistema anti-aplastamiento', checked: false },
+          { id: 'c4', label: 'Prueba de destrabe manual / llave de paso', checked: false },
+          { id: 'c5', label: 'Voltaje de alimentación y torque de embrague', checked: false },
+          { id: 'c6', label: 'Prueba de mandos y alcance de receptor', checked: false }
+        ],
+        observations: 'NO REALIZADO: El vigilante no tenía la llave del tablero de control y el administrador no contestó el teléfono tras 40 minutos de espera.',
+        materialsUsed: 'Ninguno',
+        completedAt: '2026-10-23 11:30'
+      }
+    ];
+
+    class PortonProApp {
+      constructor() {
+        this.currentUser = null;
+        this.adminProfile = DEFAULT_ADMIN;
+        this.users = [];
+        this.tasks = [];
+        this.selectedTask = null;
+        this.activeReportStatus = 'REALIZADA';
+        this.heartbeatTimer = null;
+        this.currentModalChecklist = [];
+
+        this.init();
+      }
+
+      getDefaultChecklistItems() {
+        return [
+          { id: 'c1', label: 'Engrase/limpieza de cremallera y rodamientos', checked: false },
+          { id: 'c2', label: 'Calibración de finales de carrera (imán/micros)', checked: false },
+          { id: 'c3', label: 'Fotocélulas y sistema anti-aplastamiento', checked: false },
+          { id: 'c4', label: 'Prueba de destrabe manual / llave de paso', checked: false },
+          { id: 'c5', label: 'Voltaje de alimentación y torque de embrague', checked: false },
+          { id: 'c6', label: 'Prueba de mandos y alcance de receptor', checked: false }
+        ];
+      }
+
+      formatTime(dateObj = new Date()) {
+        return dateObj.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true });
+      }
+
+      formatFullDateTime(dateObj = new Date()) {
+        const time = this.formatTime(dateObj);
+        const day = dateObj.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' });
+        return `${day} ${time}`;
+      }
+
+      init() {
+        // Cargar Admin
+        const savedAdmin = localStorage.getItem('portonpro_admin_v4');
+        if (savedAdmin) {
+          try { this.adminProfile = JSON.parse(savedAdmin); } catch(e) { this.adminProfile = DEFAULT_ADMIN; }
+        } else {
+          this.adminProfile = DEFAULT_ADMIN;
+          this.saveAdmin();
+        }
+
+        // Cargar Técnicos
+        const savedUsers = localStorage.getItem('portonpro_users_v4');
+        if (savedUsers) {
+          try { this.users = JSON.parse(savedUsers); } catch(e) { this.users = INITIAL_TECHNICIANS; }
+        } else {
+          this.users = INITIAL_TECHNICIANS;
+          this.saveUsers();
+        }
+
+        // Cargar Tareas
+        const savedTasks = localStorage.getItem('portonpro_tasks_v4');
+        if (savedTasks) {
+          try {
+            this.tasks = JSON.parse(savedTasks);
+            this.tasks.forEach(t => {
+              if (!Array.isArray(t.checklist)) {
+                t.checklist = this.getDefaultChecklistItems();
+              }
+            });
+          } catch(e) {
+            this.tasks = INITIAL_TASKS;
+          }
+        } else {
+          this.tasks = INITIAL_TASKS;
+          this.saveTasks();
+        }
+
+        // Sesión activa
+        const savedSession = localStorage.getItem('portonpro_session_v4');
+        if (savedSession) {
+          try {
+            const user = JSON.parse(savedSession);
+            this.loginSuccess(user, false);
+          } catch(e) {
+            this.showLoginView();
+          }
+        } else {
+          this.showLoginView();
+        }
+
+        if (window.lucide) lucide.createIcons();
+      }
+
+      saveAdmin() {
+        localStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
+      }
+
+      saveUsers() {
+        localStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
+      }
+
+      saveTasks() {
+        localStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
+      }
+
+      showToast(message, type = 'info') {
+        const toast = document.getElementById('toast');
+        const msgElem = document.getElementById('toast-message');
+        const iconElem = document.getElementById('toast-icon');
+
+        let icon = '<i data-lucide="info" class="w-4 h-4 text-blue-400"></i>';
+        if (type === 'success') icon = '<i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>';
+        if (type === 'error') icon = '<i data-lucide="alert-circle" class="w-4 h-4 text-rose-400"></i>';
+
+        iconElem.innerHTML = icon;
+        msgElem.textContent = message;
+        if (window.lucide) lucide.createIcons();
+
+        toast.classList.remove('translate-y-20', 'opacity-0');
+        setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+      }
+
+      // --- AUTENTICACIÓN Y REGISTRO DE CONEXIÓN ---
+      showLoginView() {
+        document.getElementById('view-login').classList.remove('hidden');
+        document.getElementById('view-dashboard').classList.add('hidden');
+        if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+      }
+
+      handleLogin(e) {
+        e.preventDefault();
+        const userVal = document.getElementById('login-username').value.trim().toLowerCase();
+        const passVal = document.getElementById('login-password').value.trim();
+        const errorAlert = document.getElementById('login-error-alert');
+
+        const now = new Date();
+        const formattedTime = this.formatTime(now);
+
+        // 1. Administrador
+        if (userVal === this.adminProfile.username.toLowerCase() && passVal === this.adminProfile.password) {
+          errorAlert.classList.add('hidden');
+          if (!this.adminProfile.firstLoginToday) {
+            this.adminProfile.firstLoginToday = formattedTime;
+          }
+          this.adminProfile.lastLogin = `${formattedTime} (En línea)`;
+          this.saveAdmin();
+
+          this.loginSuccess(this.adminProfile, true);
+          return;
+        }
+
+        // 2. Técnico
+        const techIndex = this.users.findIndex(u => u.username.toLowerCase() === userVal && u.password === passVal);
+        if (techIndex !== -1) {
+          const foundTech = this.users[techIndex];
+          if (!foundTech.active) {
+            document.getElementById('login-error-text').textContent = 'Tu cuenta de técnico está desactivada. Consulta al Administrador.';
+            errorAlert.classList.remove('hidden');
+            return;
+          }
+          errorAlert.classList.add('hidden');
+
+          // Registrar primer logueo y último logueo
+          if (!foundTech.firstLoginToday || foundTech.firstLoginToday.includes('Sin registro')) {
+            foundTech.firstLoginToday = formattedTime;
+          }
+          foundTech.lastLogin = `${formattedTime} (En línea)`;
+          foundTech.lastHeartbeat = Date.now();
+          this.saveUsers();
+
+          const techSessionUser = {
+            id: foundTech.id,
+            username: foundTech.username,
+            fullName: foundTech.fullName,
+            role: 'TECNICO',
+            phone: foundTech.phone,
+            photo: foundTech.photo || ''
+          };
+          this.loginSuccess(techSessionUser, true);
+          return;
+        }
+
+        document.getElementById('login-error-text').textContent = 'Usuario o contraseña incorrectos. Por favor verifica tus credenciales.';
+        errorAlert.classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
+      }
+
+      loginSuccess(user, notify = true) {
+        this.currentUser = user;
+        localStorage.setItem('portonpro_session_v4', JSON.stringify(user));
+
+        document.getElementById('view-login').classList.add('hidden');
+        document.getElementById('view-dashboard').classList.remove('hidden');
+
+        // Heartbeat para técnicos online
+        this.sendHeartbeat();
+        if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+        this.heartbeatTimer = setInterval(() => this.sendHeartbeat(), 15000);
+
+        this.setupDashboardUI();
+        this.renderTechOptionsInSelects();
+        this.updateStats();
+        this.renderTasks();
+
+        if (this.currentUser.role === 'ADMIN') {
+          this.renderTechniciansMonitor();
+        }
+
+        if (notify) {
+          this.showToast(`Bienvenido, ${user.fullName}`, 'success');
+        }
+      }
+
+      logout() {
+        const now = new Date();
+        const formattedLogout = `${this.formatTime(now)} (Desconectado)`;
+
+        if (this.currentUser) {
+          if (this.currentUser.role === 'TECNICO') {
+            const tech = this.users.find(u => u.username.toLowerCase() === this.currentUser.username.toLowerCase());
+            if (tech) {
+              tech.lastHeartbeat = 0;
+              tech.lastLogin = formattedLogout;
+              this.saveUsers();
+            }
+          } else if (this.currentUser.role === 'ADMIN') {
+            this.adminProfile.lastLogin = formattedLogout;
+            this.saveAdmin();
+          }
+        }
+
+        this.currentUser = null;
+        localStorage.removeItem('portonpro_session_v4');
+        if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+        this.showLoginView();
+        this.showToast('Sesión cerrada y horario de salida registrado', 'info');
+      }
+
+      sendHeartbeat() {
+        if (!this.currentUser) return;
+        const now = Date.now();
+        if (this.currentUser.role === 'TECNICO') {
+          const techIndex = this.users.findIndex(u => u.username.toLowerCase() === this.currentUser.username.toLowerCase());
+          if (techIndex !== -1) {
+            this.users[techIndex].lastHeartbeat = now;
+            this.saveUsers();
+          }
+        }
+        if (this.currentUser.role === 'ADMIN') {
+          this.renderTechniciansMonitor();
+        }
+      }
+
+      togglePasswordVisibility(fieldId) {
+        const input = document.getElementById(fieldId);
+        input.type = input.type === 'password' ? 'text' : 'password';
+      }
+
+      // Configuración de interfaz según rol (Interfaz limpia exterior)
+      setupDashboardUI() {
+        const isAdmin = this.currentUser.role === 'ADMIN';
+
+        document.getElementById('header-user-name').textContent = this.currentUser.fullName;
+        document.getElementById('header-role-badge').textContent = isAdmin ? 'Administrador' : 'Técnico';
+
+        // Renderizar Foto de Perfil en la barra superior
+        const headerPhoto = document.getElementById('header-user-photo');
+        const headerInit = document.getElementById('header-avatar-initial');
+        if (this.currentUser.photo) {
+          headerPhoto.src = this.currentUser.photo;
+          headerPhoto.classList.remove('hidden');
+          headerInit.classList.add('hidden');
+        } else {
+          headerPhoto.classList.add('hidden');
+          headerInit.classList.remove('hidden');
+          headerInit.textContent = this.currentUser.fullName.charAt(0);
+        }
+
+        const btnNewOrder = document.getElementById('btn-nav-new-order');
+        const monitorSection = document.getElementById('section-technicians-monitor');
+        const filterTech = document.getElementById('filter-tech');
+        const roleHint = document.getElementById('role-hint-text');
+
+        if (isAdmin) {
+          btnNewOrder.classList.remove('hidden');
+          monitorSection.classList.remove('hidden');
+          filterTech.classList.remove('hidden');
+          filterTech.disabled = false;
+          roleHint.textContent = 'Control de órdenes, asignación de técnicos y seguimiento de horario';
+        } else {
+          btnNewOrder.classList.add('hidden');
+          monitorSection.classList.add('hidden');
+          filterTech.classList.add('hidden');
+          filterTech.disabled = true;
+          roleHint.textContent = 'Tus órdenes asignadas: diligencia el informe de visita o checklist';
+        }
+
+        // Banner limpio: Sin botones duplicados
+        const banner = document.getElementById('dashboard-banner');
+        if (isAdmin) {
+          banner.className = 'mb-6 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm bg-gradient-to-r from-slate-950 via-brand-dark to-slate-900 text-white border-brand-lime/40';
+          banner.innerHTML = `
+            <div class="flex items-center gap-3">
+              <div class="p-2.5 bg-brand-lime/20 rounded-xl border border-brand-lime/40 text-brand-lime shrink-0">
+                <i data-lucide="shield-check" class="w-6 h-6"></i>
+              </div>
+              <div>
+                <h3 class="font-extrabold text-sm sm:text-base text-white">Panel Central de Operaciones</h3>
+                <p class="text-xs text-slate-300 mt-0.5">Asigna las órdenes del día y consulta el estado de conexión del personal.</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 mt-3 sm:mt-0">
+              <button onclick="app.openNewTaskModal()" class="text-xs font-bold bg-brand-lime hover:bg-brand-limeHover text-white px-4 py-2 rounded-xl flex items-center gap-1.5 shadow transition active:scale-95">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i> Asignar Orden de Trabajo
+              </button>
+            </div>
+          `;
+        } else {
+          banner.className = 'mb-6 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm bg-gradient-to-r from-slate-900 via-brand-dark to-slate-950 text-white border-brand-lime/40';
+          banner.innerHTML = `
+            <div class="flex items-center gap-3">
+              <div class="p-2.5 bg-brand-lime/20 rounded-xl border border-brand-lime/40 text-brand-lime shrink-0">
+                <i data-lucide="wrench" class="w-6 h-6"></i>
+              </div>
+              <div>
+                <h3 class="font-extrabold text-sm sm:text-base text-white">Bienvenido, ${this.currentUser.fullName}</h3>
+                <p class="text-xs text-slate-300 mt-0.5">Revisa tus trabajos pendientes, marca qué se realizó y deja observaciones técnicas.</p>
+              </div>
+            </div>
+            <div class="mt-3 sm:mt-0 flex items-center gap-2">
+              <span class="inline-flex items-center gap-1.5 text-xs font-bold bg-brand-lime/20 text-brand-lime border border-brand-lime/40 px-3 py-1.5 rounded-full">
+                <span class="w-2 h-2 rounded-full bg-brand-lime animate-pulse"></span> Conectado
+              </span>
+            </div>
+          `;
+        }
+
+        if (window.lucide) lucide.createIcons();
+      }
+
+      // --- CONFIGURACIÓN CENTRALIZADA: AJUSTES, FOTOS Y PERSONAL ---
+      openSettingsModal() {
+        const isAdmin = this.currentUser.role === 'ADMIN';
+
+        // Previsualizar foto propia en ajustes
+        this.renderMySettingsPhotoPreview();
+
+        // Limpiar campos de contraseña
+        document.getElementById('set-own-current-pass').value = '';
+        document.getElementById('set-own-new-pass').value = '';
+        document.getElementById('set-own-confirm-pass').value = '';
+
+        const adminUsersSection = document.getElementById('settings-admin-users-section');
+        const subtitle = document.getElementById('settings-modal-subtitle');
+
+        if (isAdmin) {
+          subtitle.textContent = 'Gestión integral de personal, credenciales y perfil administrativo';
+          adminUsersSection.classList.remove('hidden');
+          this.resetUserForm();
+          this.renderUsersTable();
+        } else {
+          subtitle.textContent = `Ajustes personales de tu cuenta (${this.currentUser.fullName})`;
+          adminUsersSection.classList.add('hidden');
+        }
+
+        document.getElementById('modal-settings').classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
+      }
+
+      closeSettingsModal() {
+        document.getElementById('modal-settings').classList.add('hidden');
+      }
+
+      renderMySettingsPhotoPreview() {
+        const img = document.getElementById('settings-my-photo-preview');
+        const init = document.getElementById('settings-my-initial-preview');
+        if (this.currentUser.photo) {
+          img.src = this.currentUser.photo;
+          img.classList.remove('hidden');
+          init.classList.add('hidden');
+        } else {
+          img.classList.add('hidden');
+          init.classList.remove('hidden');
+          init.textContent = this.currentUser.fullName.charAt(0);
+        }
+      }
+
+      // Subir foto propia
+      handleUploadOwnPhoto(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+          this.showToast('La imagen debe pesar menos de 2MB', 'error');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const base64Data = event.target.result;
+          this.currentUser.photo = base64Data;
+          localStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
+
+          if (this.currentUser.role === 'ADMIN') {
+            this.adminProfile.photo = base64Data;
+            this.saveAdmin();
+          } else {
+            const tech = this.users.find(u => u.username.toLowerCase() === this.currentUser.username.toLowerCase());
+            if (tech) {
+              tech.photo = base64Data;
+              this.saveUsers();
+            }
+          }
+
+          this.renderMySettingsPhotoPreview();
+          this.setupDashboardUI();
+          this.renderTasks();
+          if (this.currentUser.role === 'ADMIN') {
+            this.renderTechniciansMonitor();
+          }
+          this.showToast('Foto de perfil actualizada con éxito', 'success');
+        };
+        reader.readAsDataURL(file);
+      }
+
+      removeOwnPhoto() {
+        this.currentUser.photo = '';
+        localStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
+
+        if (this.currentUser.role === 'ADMIN') {
+          this.adminProfile.photo = '';
+          this.saveAdmin();
+        } else {
+          const tech = this.users.find(u => u.username.toLowerCase() === this.currentUser.username.toLowerCase());
+          if (tech) {
+            tech.photo = '';
+            this.saveUsers();
+          }
+        }
+
+        this.renderMySettingsPhotoPreview();
+        this.setupDashboardUI();
+        this.renderTasks();
+        if (this.currentUser.role === 'ADMIN') {
+          this.renderTechniciansMonitor();
+        }
+        this.showToast('Foto de perfil eliminada', 'info');
+      }
+
+      // Subir foto a un técnico desde el formulario administrativo
+      handleUploadTechPhoto(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+          this.showToast('La imagen debe pesar menos de 2MB', 'error');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const base64 = event.target.result;
+          document.getElementById('manage-user-photo').value = base64;
+          const img = document.getElementById('manage-user-photo-preview');
+          const init = document.getElementById('manage-user-initial-preview');
+          img.src = base64;
+          img.classList.remove('hidden');
+          init.classList.add('hidden');
+          this.showToast('Foto cargada para el técnico', 'info');
+        };
+        reader.readAsDataURL(file);
+      }
+
+      // Cambiar contraseña propia
+      handleChangeOwnPassword(e) {
+        e.preventDefault();
+        const currentPass = document.getElementById('set-own-current-pass').value.trim();
+        const newPass = document.getElementById('set-own-new-pass').value.trim();
+        const confirmPass = document.getElementById('set-own-confirm-pass').value.trim();
+
+        if (newPass !== confirmPass) {
+          this.showToast('La nueva contraseña y la confirmación no coinciden', 'error');
+          return;
+        }
+
+        if (this.currentUser.role === 'ADMIN') {
+          if (currentPass !== this.adminProfile.password) {
+            this.showToast('Tu contraseña actual de administrador es incorrecta', 'error');
+            return;
+          }
+          this.adminProfile.password = newPass;
+          this.saveAdmin();
+          this.currentUser.password = newPass;
+          localStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
+          this.showToast('¡Contraseña de Administrador actualizada!', 'success');
+          this.closeSettingsModal();
+        } else {
+          const techIndex = this.users.findIndex(u => u.username.toLowerCase() === this.currentUser.username.toLowerCase());
+          if (techIndex === -1 || this.users[techIndex].password !== currentPass) {
+            this.showToast('Tu contraseña actual es incorrecta', 'error');
+            return;
+          }
+          this.users[techIndex].password = newPass;
+          this.saveUsers();
+          this.currentUser.password = newPass;
+          localStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
+          this.showToast('¡Tu contraseña ha sido actualizada!', 'success');
+          this.closeSettingsModal();
+        }
+      }
+
+      // --- MONITOR DE PERSONAL CON HORARIOS DE PRIMER Y ÚLTIMO LOGUEO ---
+      renderTechniciansMonitor() {
+        const grid = document.getElementById('technicians-status-grid');
+        const counter = document.getElementById('techs-online-counter');
+        if (!grid) return;
+
+        const ONLINE_THRESHOLD_MS = 45 * 1000;
+        const now = Date.now();
+        let onlineCount = 0;
+
+        grid.innerHTML = this.users.map(u => {
+          const isOnline = (now - (u.lastHeartbeat || 0)) < ONLINE_THRESHOLD_MS;
+          if (isOnline) onlineCount++;
+
+          const assignedPending = this.tasks.filter(t => t.assignedTo === u.fullName && (t.status === 'PENDIENTE' || t.status === 'EN_PROCESO')).length;
+
+          return `
+            <div class="p-3.5 rounded-2xl border ${isOnline ? 'bg-brand-limeLight border-brand-limeBorder shadow-sm' : 'bg-slate-50 border-slate-200'} flex flex-col justify-between">
+              <div class="flex items-center justify-between mb-2.5">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="relative w-11 h-11 rounded-full overflow-hidden border-2 ${isOnline ? 'border-brand-lime' : 'border-slate-300'} bg-slate-200 shrink-0 flex items-center justify-center">
+                    ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<span class="font-bold text-sm text-slate-700">${u.fullName.charAt(0)}</span>`}
+                    <span class="w-3 h-3 rounded-full ${isOnline ? 'bg-brand-lime ring-2 ring-white animate-pulse' : 'bg-slate-400'} absolute top-0 right-0"></span>
+                  </div>
+                  <div class="min-w-0">
+                    <h4 class="text-xs font-black text-slate-900 truncate leading-snug">${u.fullName}</h4>
+                    <p class="text-[11px] font-semibold ${isOnline ? 'text-brand-limeHover' : 'text-slate-500'}">
+                      ${isOnline ? '🟢 En línea ahora' : '⚪ Desconectado'}
+                    </p>
+                  </div>
+                </div>
+                <span class="text-[10px] px-2 py-0.5 rounded-md font-extrabold ${assignedPending > 0 ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-600'} shrink-0">
+                  ${assignedPending} ptes
+                </span>
+              </div>
+
+              <!-- Registro de Horas de Conexión y Desconexión -->
+              <div class="bg-white/80 rounded-xl p-2.5 border border-slate-200/70 text-[11px] space-y-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-500 flex items-center gap-1 font-medium">
+                    <i data-lucide="sunrise" class="w-3.5 h-3.5 text-amber-500"></i> Primer Logueo hoy:
+                  </span>
+                  <span class="font-bold text-slate-800">${u.firstLoginToday || 'Sin registro'}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-500 flex items-center gap-1 font-medium">
+                    <i data-lucide="log-in" class="w-3.5 h-3.5 text-brand-limeHover"></i> Último Logueo / Salida:
+                  </span>
+                  <span class="font-bold ${isOnline ? 'text-brand-limeHover' : 'text-slate-700'}">${u.lastLogin || 'No registrado'}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        counter.textContent = `${onlineCount} En Línea`;
+        if (window.lucide) lucide.createIcons();
+      }
+
+      // --- GESTIÓN DE USUARIOS EN EL MODAL DE CONFIGURACIÓN ---
+      resetUserForm() {
+        document.getElementById('manage-user-id').value = '';
+        document.getElementById('manage-user-photo').value = '';
+        document.getElementById('manage-user-form').reset();
+        document.getElementById('manage-user-photo-preview').classList.add('hidden');
+        const init = document.getElementById('manage-user-initial-preview');
+        init.classList.remove('hidden');
+        init.textContent = '?';
+        document.getElementById('btn-save-user').textContent = 'Guardar Trabajador';
+        if (window.lucide) lucide.createIcons();
+      }
+
+      handleSaveUser(e) {
+        e.preventDefault();
+        if (this.currentUser.role !== 'ADMIN') return;
+
+        const id = document.getElementById('manage-user-id').value;
+        const fullName = document.getElementById('manage-fullname').value.trim();
+        const username = document.getElementById('manage-username').value.trim().toLowerCase();
+        const password = document.getElementById('manage-password').value.trim();
+        const phone = document.getElementById('manage-phone').value.trim();
+        const specialty = document.getElementById('manage-specialty').value.trim();
+        const photo = document.getElementById('manage-user-photo').value;
+
+        if (username === this.adminProfile.username.toLowerCase()) {
+          this.showToast('El usuario no puede llamarse igual al administrador', 'error');
+          return;
+        }
+
+        if (id) {
+          const tech = this.users.find(u => u.id === id);
+          if (tech) {
+            tech.fullName = fullName;
+            tech.username = username;
+            tech.password = password;
+            tech.phone = phone;
+            tech.specialty = specialty;
+            if (photo) tech.photo = photo;
+            this.showToast(`Datos de ${fullName} actualizados`, 'success');
+          }
+        } else {
+          if (this.users.some(u => u.username.toLowerCase() === username)) {
+            this.showToast('Ya existe un técnico con ese nombre de usuario', 'error');
+            return;
+          }
+
+          const newTech = {
+            id: 'tech-' + Date.now(),
+            fullName,
+            username,
+            password,
+            phone,
+            specialty: specialty || 'Técnico de Portones',
+            photo: photo || '',
+            active: true,
+            lastHeartbeat: 0,
+            firstLoginToday: 'Sin registro hoy',
+            lastLogin: 'Nunca se ha conectado'
+          };
+          this.users.push(newTech);
+          this.showToast(`Trabajador ${fullName} registrado`, 'success');
+        }
+
+        this.saveUsers();
+        this.resetUserForm();
+        this.renderUsersTable();
+        this.renderTechOptionsInSelects();
+        this.renderTechniciansMonitor();
+      }
+
+      renderUsersTable() {
+        const tbody = document.getElementById('table-users-body');
+        document.getElementById('settings-users-count-badge').textContent = `${this.users.length} Registrados`;
+
+        tbody.innerHTML = this.users.map(u => {
+          return `
+            <tr class="hover:bg-slate-50 transition">
+              <td class="p-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-full border border-brand-lime overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center">
+                    ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<span class="font-bold text-xs">${u.fullName.charAt(0)}</span>`}
+                  </div>
+                  <div>
+                    <span class="font-bold text-slate-800 block">${u.fullName}</span>
+                    <span class="text-[10px] text-slate-500">${u.specialty || 'General'}</span>
+                  </div>
+                </div>
+              </td>
+              <td class="p-3">
+                <div class="font-mono text-xs text-brand-dark font-bold">@${u.username}</div>
+                <div class="text-[11px] font-mono text-slate-500">Clave: <b class="text-slate-800">${u.password}</b></div>
+              </td>
+              <td class="p-3">
+                <div class="text-[10px] text-slate-600">1°: <b class="text-slate-800">${u.firstLoginToday || 'Sin registro'}</b></div>
+                <div class="text-[10px] text-slate-600">Últ: <b class="text-slate-800">${u.lastLogin || 'No registrado'}</b></div>
+              </td>
+              <td class="p-3">
+                <button onclick="app.toggleUserStatus('${u.id}')" class="px-2 py-0.5 rounded text-[10px] font-bold ${u.active ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}">
+                  ${u.active ? 'ACTIVO' : 'INACTIVO'}
+                </button>
+              </td>
+              <td class="p-3 text-right space-x-1">
+                <button onclick="app.editUser('${u.id}')" class="p-1 text-slate-600 hover:text-brand-limeHover hover:bg-brand-limeLight rounded" title="Editar datos o clave">
+                  <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="app.deleteUser('${u.id}')" class="p-1 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded" title="Eliminar">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        if (window.lucide) lucide.createIcons();
+      }
+
+      editUser(id) {
+        const u = this.users.find(x => x.id === id);
+        if (!u) return;
+
+        document.getElementById('manage-user-id').value = u.id;
+        document.getElementById('manage-fullname').value = u.fullName;
+        document.getElementById('manage-username').value = u.username;
+        document.getElementById('manage-password').value = u.password;
+        document.getElementById('manage-phone').value = u.phone;
+        document.getElementById('manage-specialty').value = u.specialty || '';
+        document.getElementById('manage-user-photo').value = u.photo || '';
+
+        const img = document.getElementById('manage-user-photo-preview');
+        const init = document.getElementById('manage-user-initial-preview');
+        if (u.photo) {
+          img.src = u.photo;
+          img.classList.remove('hidden');
+          init.classList.add('hidden');
+        } else {
+          img.classList.add('hidden');
+          init.classList.remove('hidden');
+          init.textContent = u.fullName.charAt(0);
+        }
+
+        document.getElementById('btn-save-user').textContent = 'Actualizar Datos';
+        if (window.lucide) lucide.createIcons();
+      }
+
+      toggleUserStatus(id) {
+        const u = this.users.find(x => x.id === id);
+        if (u) {
+          u.active = !u.active;
+          this.saveUsers();
+          this.renderUsersTable();
+          this.showToast(`Estado de ${u.fullName} modificado`, 'info');
+        }
+      }
+
+      deleteUser(id) {
+        const u = this.users.find(x => x.id === id);
+        if (!u) return;
+        this.users = this.users.filter(x => x.id !== id);
+        this.saveUsers();
+        this.renderUsersTable();
+        this.renderTechOptionsInSelects();
+        this.renderTechniciansMonitor();
+        this.showToast(`Técnico ${u.fullName} eliminado`, 'info');
+      }
+
+      renderTechOptionsInSelects() {
+        const taskAssignedSelect = document.getElementById('task-assigned-to');
+        const filterTechSelect = document.getElementById('filter-tech');
+
+        const options = this.users.map(u => `<option value="${u.fullName}">${u.fullName}</option>`).join('');
+        taskAssignedSelect.innerHTML = options;
+        filterTechSelect.innerHTML = `<option value="ALL">Todos los Técnicos</option>` + options;
+      }
+
+      // --- FILTROS Y CONTADORES ---
+      updateStats() {
+        const isAdmin = this.currentUser.role === 'ADMIN';
+        const relevantTasks = isAdmin ? this.tasks : this.tasks.filter(t => t.assignedTo === this.currentUser.fullName);
+
+        document.getElementById('stat-total').textContent = relevantTasks.length;
+        document.getElementById('stat-pending').textContent = relevantTasks.filter(t => t.status === 'PENDIENTE' || t.status === 'EN_PROCESO').length;
+        document.getElementById('stat-done').textContent = relevantTasks.filter(t => t.status === 'REALIZADA').length;
+        document.getElementById('stat-failed').textContent = relevantTasks.filter(t => t.status === 'NO_REALIZADA').length;
+      }
+
+      resetFilters() {
+        document.getElementById('filter-search').value = '';
+        document.getElementById('filter-status').value = 'ALL';
+        document.getElementById('filter-priority').value = 'ALL';
+        if (this.currentUser.role === 'ADMIN') {
+          document.getElementById('filter-tech').value = 'ALL';
+        }
+        this.renderTasks();
+      }
+
+      // --- RENDERIZADO DE ÓRDENES CON FOTO DEL TÉCNICO ---
+      renderTasks() {
+        const search = document.getElementById('filter-search').value.toLowerCase();
+        const statusFilter = document.getElementById('filter-status').value;
+        const priorityFilter = document.getElementById('filter-priority').value;
+        const techFilter = document.getElementById('filter-tech').value;
+
+        const container = document.getElementById('tasks-container');
+        const emptyState = document.getElementById('empty-state');
+        const countTag = document.getElementById('filtered-count');
+
+        const isAdmin = this.currentUser.role === 'ADMIN';
+
+        let filtered = this.tasks.filter(t => {
+          if (!isAdmin && t.assignedTo !== this.currentUser.fullName) {
+            return false;
+          }
+
+          const matchText = !search ||
+            t.client.toLowerCase().includes(search) ||
+            t.address.toLowerCase().includes(search) ||
+            t.equipment.toLowerCase().includes(search) ||
+            t.serviceType.toLowerCase().includes(search) ||
+            t.id.toLowerCase().includes(search);
+
+          const matchStatus = statusFilter === 'ALL' || t.status === statusFilter;
+          const matchPriority = priorityFilter === 'ALL' || t.priority === priorityFilter;
+          const matchTech = !isAdmin || techFilter === 'ALL' || t.assignedTo === techFilter;
+
+          return matchText && matchStatus && matchPriority && matchTech;
+        });
+
+        countTag.textContent = filtered.length;
+
+        if (filtered.length === 0) {
+          container.innerHTML = '';
+          emptyState.classList.remove('hidden');
+          return;
+        }
+
+        emptyState.classList.add('hidden');
+
+        container.innerHTML = filtered.map(t => {
+          let statusBadge = '';
+          let borderClass = 'border-slate-200';
+
+          if (t.status === 'PENDIENTE') {
+            statusBadge = '<span class="bg-amber-100 text-amber-800 text-[11px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> Pendiente</span>';
+            borderClass = 'border-amber-200 hover:border-amber-400';
+          } else if (t.status === 'EN_PROCESO') {
+            statusBadge = '<span class="bg-blue-100 text-blue-800 text-[11px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1"><i data-lucide="loader" class="w-3 h-3 animate-spin"></i> En Proceso</span>';
+            borderClass = 'border-blue-300 hover:border-blue-500';
+          } else if (t.status === 'REALIZADA') {
+            statusBadge = '<span class="bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder text-[11px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3 h-3"></i> Realizada</span>';
+            borderClass = 'border-brand-lime/40 hover:border-brand-lime';
+          } else if (t.status === 'NO_REALIZADA') {
+            statusBadge = '<span class="bg-rose-100 text-rose-800 text-[11px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i> No Realizada</span>';
+            borderClass = 'border-rose-200 hover:border-rose-400';
+          }
+
+          let prioTag = '';
+          if (t.priority === 'ALTA') prioTag = '<span class="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">ALTA</span>';
+          if (t.priority === 'MEDIA') prioTag = '<span class="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">MEDIA</span>';
+          if (t.priority === 'BAJA') prioTag = '<span class="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">BAJA</span>';
+
+          const techObj = this.users.find(u => u.fullName === t.assignedTo);
+          const techPhoto = techObj && techObj.photo ? techObj.photo : '';
+
+          return `
+            <div class="bg-white rounded-2xl p-4 sm:p-5 border ${borderClass} shadow-sm hover:shadow-md transition flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-black text-slate-500">${t.id}</span>
+                    ${prioTag}
+                  </div>
+                  <div>${statusBadge}</div>
+                </div>
+
+                <h3 class="font-extrabold text-slate-900 text-base leading-snug">${t.serviceType}</h3>
+                <p class="text-xs font-bold text-brand-limeHover flex items-center gap-1 mt-0.5">
+                  <i data-lucide="cpu" class="w-3.5 h-3.5"></i> ${t.equipment}
+                </p>
+
+                <div class="mt-3 space-y-1 text-xs text-slate-600">
+                  <div class="flex items-center gap-1.5 font-bold text-slate-800">
+                    <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                    <span class="truncate">${t.client}</span>
+                  </div>
+                  <div class="flex items-start gap-1.5">
+                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5"></i>
+                    <span class="truncate">${t.address}</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                    <span>${t.date}</span>
+                    <span class="text-slate-300">•</span>
+                    <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                    <span>${t.phone}</span>
+                  </div>
+                </div>
+
+                <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span class="text-slate-500">Técnico:</span>
+                  <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-lg">
+                    <div class="w-5 h-5 rounded-full overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center border border-brand-lime">
+                      ${techPhoto ? `<img src="${techPhoto}" class="w-full h-full object-cover">` : `<span class="text-[9px] font-bold">${t.assignedTo.charAt(0)}</span>`}
+                    </div>
+                    <span class="font-bold text-slate-800">${t.assignedTo}</span>
+                  </div>
+                </div>
+
+                ${t.observations ? `
+                  <div class="mt-3 p-2.5 rounded-xl text-xs ${t.status === 'NO_REALIZADA' ? 'bg-rose-50 text-rose-900 border border-rose-200' : 'bg-slate-50 text-slate-700 border border-slate-200'}">
+                    <p class="font-bold text-[10px] uppercase text-slate-500 mb-0.5">Observación del técnico:</p>
+                    <p class="line-clamp-2 italic">"${t.observations}"</p>
+                  </div>
+                ` : ''}
+              </div>
+
+              <!-- Botones de Acción -->
+              <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                <button onclick="app.viewOrderDetails('${t.id}')" class="text-xs text-slate-600 hover:text-slate-900 font-bold flex items-center gap-1 py-1.5 px-2.5 rounded-lg hover:bg-slate-100">
+                  <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Ficha
+                </button>
+
+                <div class="flex items-center gap-1.5">
+                  <button onclick="app.openReportModal('${t.id}')" class="text-xs font-bold py-1.5 px-3 rounded-xl flex items-center gap-1 shadow-sm transition active:scale-95 ${
+                    t.status === 'REALIZADA'
+                      ? 'bg-brand-lime hover:bg-brand-limeHover text-white'
+                      : t.status === 'NO_REALIZADA'
+                      ? 'bg-rose-600 hover:bg-rose-500 text-white'
+                      : 'bg-brand-dark hover:bg-black text-white'
+                  }">
+                    <i data-lucide="${t.status === 'REALIZADA' || t.status === 'NO_REALIZADA' ? 'edit-3' : 'check-square'}" class="w-3.5 h-3.5"></i>
+                    ${t.status === 'REALIZADA' || t.status === 'NO_REALIZADA' ? 'Editar Informe' : 'Registrar Informe'}
+                  </button>
+
+                  <!-- Modificar y Borrar Orden: SOLO PARA EL ADMINISTRADOR -->
+                  ${isAdmin ? `
+                    <button onclick="app.openEditTaskModal('${t.id}')" class="p-1.5 text-slate-400 hover:text-brand-dark hover:bg-slate-100 rounded-lg" title="Modificar datos de la orden">
+                      <i data-lucide="file-edit" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button onclick="app.deleteTask('${t.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg" title="Eliminar orden">
+                      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        if (window.lucide) lucide.createIcons();
+      }
+
+      // --- CREACIÓN / MODIFICACIÓN DE ÓRDENES (ADMIN) ---
+      openNewTaskModal() {
+        if (this.currentUser.role !== 'ADMIN') return;
+        document.getElementById('form-modal-title').textContent = 'Asignar Nueva Orden de Trabajo';
+        document.getElementById('task-id').value = '';
+        document.getElementById('task-form').reset();
+        document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('modal-task-form').classList.remove('hidden');
+      }
+
+      openEditTaskModal(id) {
+        if (this.currentUser.role !== 'ADMIN') return;
+        const t = this.tasks.find(x => x.id === id);
+        if (!t) return;
+
+        document.getElementById('form-modal-title').textContent = `Editar Orden ${t.id}`;
+        document.getElementById('task-id').value = t.id;
+        document.getElementById('task-client').value = t.client;
+        document.getElementById('task-phone').value = t.phone;
+        document.getElementById('task-address').value = t.address;
+        document.getElementById('task-service-type').value = t.serviceType;
+        document.getElementById('task-equipment').value = t.equipment;
+        document.getElementById('task-assigned-to').value = t.assignedTo;
+        document.getElementById('task-priority').value = t.priority;
+        document.getElementById('task-date').value = t.date;
+        document.getElementById('task-instructions').value = t.instructions || '';
+
+        document.getElementById('modal-task-form').classList.remove('hidden');
+      }
+
+      closeTaskModal() {
+        document.getElementById('modal-task-form').classList.add('hidden');
+      }
+
+      handleSaveTask(e) {
+        e.preventDefault();
+        if (this.currentUser.role !== 'ADMIN') return;
+
+        const id = document.getElementById('task-id').value;
+
+        if (id) {
+          const index = this.tasks.findIndex(t => t.id === id);
+          if (index !== -1) {
+            this.tasks[index].client = document.getElementById('task-client').value;
+            this.tasks[index].phone = document.getElementById('task-phone').value;
+            this.tasks[index].address = document.getElementById('task-address').value;
+            this.tasks[index].serviceType = document.getElementById('task-service-type').value;
+            this.tasks[index].equipment = document.getElementById('task-equipment').value;
+            this.tasks[index].assignedTo = document.getElementById('task-assigned-to').value;
+            this.tasks[index].priority = document.getElementById('task-priority').value;
+            this.tasks[index].date = document.getElementById('task-date').value;
+            this.tasks[index].instructions = document.getElementById('task-instructions').value;
+            this.showToast('Orden modificada correctamente', 'success');
+          }
+        } else {
+          const num = 100 + this.tasks.length + 1;
+          const newTask = {
+            id: `ORD-${num}`,
+            client: document.getElementById('task-client').value,
+            phone: document.getElementById('task-phone').value,
+            address: document.getElementById('task-address').value,
+            serviceType: document.getElementById('task-service-type').value,
+            equipment: document.getElementById('task-equipment').value,
+            assignedTo: document.getElementById('task-assigned-to').value,
+            priority: document.getElementById('task-priority').value,
+            date: document.getElementById('task-date').value,
+            instructions: document.getElementById('task-instructions').value,
+            status: 'PENDIENTE',
+            checklist: this.getDefaultChecklistItems(),
+            observations: '',
+            materialsUsed: '',
+            completedAt: null
+          };
+          this.tasks.unshift(newTask);
+          this.showToast(`Nueva orden ${newTask.id} asignada a ${newTask.assignedTo}`, 'success');
+        }
+
+        this.saveTasks();
+        this.closeTaskModal();
+        this.updateStats();
+        this.renderTasks();
+        this.renderTechniciansMonitor();
+      }
+
+      deleteTask(id) {
+        if (this.currentUser.role !== 'ADMIN') return;
+        this.tasks = this.tasks.filter(t => t.id !== id);
+        this.saveTasks();
+        this.updateStats();
+        this.renderTasks();
+        this.showToast(`Orden ${id} eliminada`, 'info');
+      }
+
+      // --- REPORTE TÉCNICO (CHECKLIST, REALIZADA / NO REALIZADA) ---
+      openReportModal(id) {
+        const t = this.tasks.find(x => x.id === id);
+        if (!t) return;
+        this.selectedTask = t;
+
+        document.getElementById('report-order-subtitle').textContent = `Orden #${t.id} • ${t.client}`;
+        document.getElementById('rep-service').textContent = t.serviceType;
+        document.getElementById('rep-equipment').textContent = t.equipment;
+        document.getElementById('rep-address').textContent = t.address;
+        document.getElementById('rep-instruction').textContent = t.instructions || 'Sin observaciones iniciales';
+
+        document.getElementById('rep-observations').value = t.observations || '';
+        document.getElementById('rep-materials').value = t.materialsUsed || '';
+
+        if (Array.isArray(t.checklist) && t.checklist.length > 0) {
+          this.currentModalChecklist = JSON.parse(JSON.stringify(t.checklist));
+        } else {
+          this.currentModalChecklist = this.getDefaultChecklistItems();
+        }
+
+        this.renderDynamicChecklist();
+        document.getElementById('new-checklist-item-input').value = '';
+
+        this.setReportStatus(t.status === 'NO_REALIZADA' ? 'NO_REALIZADA' : 'REALIZADA');
+        document.getElementById('modal-report').classList.remove('hidden');
+      }
+
+      renderDynamicChecklist() {
+        const container = document.getElementById('checklist-items-container');
+        if (!container) return;
+
+        if (this.currentModalChecklist.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-4 text-slate-400 italic">
+              No hay ítems en la lista de chequeo. Agrega uno con el campo inferior.
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = this.currentModalChecklist.map((item) => {
+          return `
+            <div class="flex items-center justify-between gap-2 p-2 bg-white rounded-xl border border-slate-200 hover:border-slate-300 transition group" id="checklist-row-${item.id}">
+              <label class="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer select-none">
+                <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="app.toggleChecklistItem('${item.id}', this.checked)" class="w-4 h-4 rounded text-brand-lime focus:ring-brand-lime border-slate-300 transition">
+                <span id="checklist-text-${item.id}" class="text-xs ${item.checked ? 'line-through text-slate-400' : 'text-slate-700'} font-medium truncate">${item.label}</span>
+              </label>
+
+              <div class="flex items-center gap-1 shrink-0">
+                <button type="button" onclick="app.editChecklistItemPrompt('${item.id}')" title="Editar descripción" class="p-1.5 text-slate-400 hover:text-brand-limeHover hover:bg-brand-limeLight rounded-lg transition">
+                  <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                </button>
+                <button type="button" onclick="app.deleteChecklistItem('${item.id}')" title="Eliminar ítem" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition">
+                  <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        if (window.lucide) lucide.createIcons();
+      }
+
+      toggleChecklistItem(id, isChecked) {
+        const item = this.currentModalChecklist.find(c => c.id === id);
+        if (item) {
+          item.checked = isChecked;
+          const textSpan = document.getElementById(`checklist-text-${id}`);
+          if (textSpan) {
+            if (isChecked) {
+              textSpan.classList.add('line-through', 'text-slate-400');
+              textSpan.classList.remove('text-slate-700');
+            } else {
+              textSpan.classList.remove('line-through', 'text-slate-400');
+              textSpan.classList.add('text-slate-700');
+            }
+          }
+        }
+      }
+
+      editChecklistItemPrompt(id) {
+        const item = this.currentModalChecklist.find(c => c.id === id);
+        if (!item) return;
+
+        const newLabel = prompt('Modificar descripción del punto de chequeo:', item.label);
+        if (newLabel !== null && newLabel.trim() !== '') {
+          item.label = newLabel.trim();
+          this.renderDynamicChecklist();
+          this.showToast('Ítem actualizado', 'info');
+        }
+      }
+
+      deleteChecklistItem(id) {
+        this.currentModalChecklist = this.currentModalChecklist.filter(c => c.id !== id);
+        this.renderDynamicChecklist();
+      }
+
+      addChecklistItem() {
+        const input = document.getElementById('new-checklist-item-input');
+        const text = input.value.trim();
+        if (!text) {
+          this.showToast('Escribe una descripción para el ítem', 'error');
+          return;
+        }
+
+        const newItem = {
+          id: 'c_' + Date.now() + Math.random().toString(36).substring(2, 6),
+          label: text,
+          checked: false
+        };
+
+        this.currentModalChecklist.push(newItem);
+        input.value = '';
+        this.renderDynamicChecklist();
+        this.showToast('Nuevo punto agregado al checklist', 'success');
+      }
+
+      closeReportModal() {
+        document.getElementById('modal-report').classList.add('hidden');
+        this.selectedTask = null;
+      }
+
+      submitReport() {
+        if (!this.selectedTask) return;
+        const observations = document.getElementById('rep-observations').value.trim();
+        const materials = document.getElementById('rep-materials').value.trim();
+
+        if (this.activeReportStatus === 'NO_REALIZADA' && !observations) {
+          this.showToast('Debes indicar obligatoriamente el motivo por el cual no se realizó el servicio', 'error');
+          document.getElementById('rep-observations').focus();
+          return;
+        }
+
+        const taskIndex = this.tasks.findIndex(t => t.id === this.selectedTask.id);
+        if (taskIndex !== -1) {
+          this.tasks[taskIndex].status = this.activeReportStatus;
+          this.tasks[taskIndex].observations = observations;
+          this.tasks[taskIndex].materialsUsed = materials;
+          this.tasks[taskIndex].checklist = JSON.parse(JSON.stringify(this.currentModalChecklist));
+          this.tasks[taskIndex].completedAt = new Date().toLocaleString('es-CO');
+
+          this.saveTasks();
+          this.updateStats();
+          this.renderTasks();
+          if (this.currentUser.role === 'ADMIN') {
+            this.renderTechniciansMonitor();
+          }
+
+          this.closeReportModal();
+          this.showToast(`Informe de la orden ${this.selectedTask.id} guardado con éxito`, 'success');
+        }
+      }
+
+      setTaskInProgress() {
+        if (!this.selectedTask) return;
+        const taskIndex = this.tasks.findIndex(t => t.id === this.selectedTask.id);
+        if (taskIndex !== -1) {
+          this.tasks[taskIndex].status = 'EN_PROCESO';
+          this.tasks[taskIndex].checklist = JSON.parse(JSON.stringify(this.currentModalChecklist));
+          this.tasks[taskIndex].observations = document.getElementById('rep-observations').value.trim();
+          this.tasks[taskIndex].materialsUsed = document.getElementById('rep-materials').value.trim();
+          this.saveTasks();
+          this.updateStats();
+          this.renderTasks();
+          this.closeReportModal();
+          this.showToast(`Orden ${this.selectedTask.id} guardada en proceso`, 'info');
+        }
+      }
+
+      insertQuickReason(reason) {
+        if (!reason) return;
+        const obsElem = document.getElementById('rep-observations');
+        if (obsElem.value.trim() === '') {
+          obsElem.value = reason;
+        } else {
+          obsElem.value += ` | Motivo: ${reason}`;
+        }
+      }
+
+      // --- FICHA DE ORDEN FORMAL IMPRIMIBLE ---
+      viewOrderDetails(id) {
+        const t = this.tasks.find(x => x.id === id);
+        if (!t) return;
+        this.selectedTask = t;
+
+        document.getElementById('view-order-number').textContent = t.id;
+        document.getElementById('view-order-date').textContent = t.date;
+        document.getElementById('view-client').textContent = t.client;
+        document.getElementById('view-phone').textContent = t.phone;
+        document.getElementById('view-address').textContent = t.address;
+        document.getElementById('view-service').textContent = t.serviceType;
+        document.getElementById('view-equipment').textContent = t.equipment;
+        document.getElementById('view-technician').textContent = t.assignedTo;
+        document.getElementById('view-instructions').textContent = t.instructions || 'Sin observaciones iniciales.';
+        document.getElementById('view-materials').textContent = t.materialsUsed || 'Ninguno reportado';
+
+        const techObj = this.users.find(u => u.fullName === t.assignedTo);
+        const photoElem = document.getElementById('view-technician-photo');
+        if (techObj && techObj.photo) {
+          photoElem.src = techObj.photo;
+          photoElem.classList.remove('hidden');
+        } else {
+          photoElem.classList.add('hidden');
+        }
+
+        const badge = document.getElementById('view-order-badge');
+        const obsBox = document.getElementById('view-observations');
+
+        let checkSummary = '';
+        if (Array.isArray(t.checklist) && t.checklist.length > 0) {
+          const checkedCount = t.checklist.filter(c => c.checked).length;
+          const itemsList = t.checklist.map(c => `• ${c.checked ? '☑' : '☐'} ${c.label}`).join('\n');
+          checkSummary = `\n\n[Puntos de Inspección: ${checkedCount}/${t.checklist.length} revisados]\n${itemsList}`;
+        }
+
+        if (t.status === 'REALIZADA') {
+          badge.textContent = 'REALIZADA';
+          badge.className = 'px-3 py-1 rounded-full text-xs font-bold uppercase inline-block bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder';
+          obsBox.className = 'p-3 rounded-xl border mt-1 whitespace-pre-line font-medium bg-emerald-50/60 border-emerald-200 text-emerald-950 text-xs';
+          obsBox.textContent = (t.observations ? t.observations : 'Servicio ejecutado a conformidad según especificaciones técnicas.') + checkSummary;
+        } else if (t.status === 'NO_REALIZADA') {
+          badge.textContent = 'NO REALIZADA';
+          badge.className = 'px-3 py-1 rounded-full text-xs font-bold uppercase inline-block bg-rose-100 text-rose-800 border border-rose-300';
+          obsBox.className = 'p-3 rounded-xl border mt-1 whitespace-pre-line font-medium bg-rose-50 border-rose-200 text-rose-900 text-xs';
+          obsBox.textContent = `CAUSA DE NO REALIZACIÓN:\n${t.observations || 'Sin motivo detallado'}` + checkSummary;
+        } else {
+          badge.textContent = t.status === 'EN_PROCESO' ? 'EN PROCESO' : 'PENDIENTE';
+          badge.className = 'px-3 py-1 rounded-full text-xs font-bold uppercase inline-block bg-amber-100 text-amber-800 border border-amber-300';
+          obsBox.className = 'p-3 rounded-xl border mt-1 whitespace-pre-line font-medium bg-slate-50 border-slate-200 text-slate-700 text-xs';
+          obsBox.textContent = (t.observations ? t.observations : 'Visita sin informe final todavía.') + checkSummary;
+        }
+
+        document.getElementById('modal-view-order').classList.remove('hidden');
+      }
+
+      closeViewModal() {
+        document.getElementById('modal-view-order').classList.add('hidden');
+      }
+
+      setReportStatus(status) {
+        this.activeReportStatus = status;
+        const btnDone = document.getElementById('btn-choice-done');
+        const btnFailed = document.getElementById('btn-choice-failed');
+        const quickReasons = document.getElementById('quick-reasons-wrap');
+        const checklistSec = document.getElementById('section-checklist');
+        const obsBadge = document.getElementById('obs-required-badge');
+        const header = document.getElementById('report-modal-header');
+
+        if (status === 'REALIZADA') {
+          btnDone.className = 'py-3 px-4 rounded-2xl border-2 flex items-center justify-center gap-2 font-bold transition bg-brand-limeLight text-brand-limeHover border-brand-lime shadow-sm';
+          btnFailed.className = 'py-3 px-4 rounded-2xl border-2 flex items-center justify-center gap-2 font-bold transition text-slate-600 border-slate-200 hover:border-rose-400';
+          quickReasons.classList.add('hidden');
+          checklistSec.classList.remove('opacity-40', 'pointer-events-none');
+          obsBadge.textContent = '(Opcional)';
+          obsBadge.className = 'text-slate-400 font-normal';
+          header.className = 'bg-brand-dark text-white px-6 py-4 flex items-center justify-between border-b-2 border-brand-lime';
+        } else {
+          btnFailed.className = 'py-3 px-4 rounded-2xl border-2 flex items-center justify-center gap-2 font-bold transition bg-rose-50 text-rose-800 border-rose-500 shadow-sm';
+          btnDone.className = 'py-3 px-4 rounded-2xl border-2 flex items-center justify-center gap-2 font-bold transition text-slate-600 border-slate-200 hover:border-brand-lime';
+          quickReasons.classList.remove('hidden');
+          checklistSec.classList.add('opacity-40', 'pointer-events-none');
+          obsBadge.textContent = '(OBLIGATORIO indicar causa)';
+          obsBadge.className = 'text-rose-600 font-bold';
+          header.className = 'bg-rose-950 text-white px-6 py-4 flex items-center justify-between border-b-2 border-rose-500';
+        }
+      }
+
+      sendWhatsAppReport() {
+        if (!this.selectedTask) return;
+        const observations = document.getElementById('rep-observations').value.trim();
+        const materials = document.getElementById('rep-materials').value.trim();
+        const statusText = this.activeReportStatus === 'REALIZADA' ? '✅ REALIZADO' : '❌ NO REALIZADO';
+
+        const text = `*SERVIPORTONES ELÉCTRICOS MARTÍNEZ - INFORME TÉCNICO*%0A` +
+          `*Orden:* ${this.selectedTask.id}%0A` +
+          `*Cliente:* ${this.selectedTask.client}%0A` +
+          `*Dirección:* ${this.selectedTask.address}%0A` +
+          `*Motor:* ${this.selectedTask.equipment}%0A` +
+          `*Técnico:* ${this.currentUser.fullName}%0A` +
+          `*Resultado:* ${statusText}%0A` +
+          `*Observaciones:* ${encodeURIComponent(observations || 'Sin novedad')}%0A` +
+          `*Materiales:* ${encodeURIComponent(materials || 'Ninguno')}`;
+
+        window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+      }
+
+      shareOrderViaWhatsApp() {
+        if (!this.selectedTask) return;
+        const t = this.selectedTask;
+        const msg = `*SERVIPORTONES ELÉCTRICOS MARTÍNEZ - FICHA DE ORDEN ${t.id}*%0A` +
+          `*Cliente:* ${t.client}%0A` +
+          `*Dirección:* ${t.address}%0A` +
+          `*Estado:* ${t.status}%0A` +
+          `*Técnico:* ${t.assignedTo}%0A` +
+          `*Observaciones:* ${encodeURIComponent(t.observations || 'Sin observaciones')}`;
+
+        window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
+      }
+    }
+
+    let app;
+    window.addEventListener('DOMContentLoaded', () => {
+      app = new PortonProApp();
+    });
+  </script>
+</body>
+</html>
