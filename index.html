@@ -1123,14 +1123,14 @@
             osc.frequency.linearRampToValueAtTime(1050, now + delay + 0.09);
 
             gain.gain.setValueAtTime(0.001, now + delay);
-            gain.gain.linearRampToValueAtTime(0.25, now + delay + 0.015);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.12);
+            gain.gain.linearRampToValueAtTime(0.95, now + delay + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.17);
 
             osc.connect(gain);
             gain.connect(ctx.destination);
 
             osc.start(now + delay);
-            osc.stop(now + delay + 0.13);
+            osc.stop(now + delay + 0.18);
           });
         } catch (e) {
           console.warn("Audio Context bloqueado:", e);
@@ -2049,6 +2049,7 @@
 
       async startVoiceCall() {
         const targetWorker = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
+        console.info('[CALL] Iniciando llamada', { role: this.currentUser.role, caller: this.currentUser.fullName || this.currentUser.username, documentId: targetWorker });
         
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
@@ -2108,7 +2109,7 @@
                 console.log('[CALL] Respuesta recibida');
                 await this.flushPendingIceCandidates();
                 const label = document.getElementById('call-status-label');
-                if (label) label.textContent = 'Negociando audio...';
+                if (label) label.textContent = 'Conectando audio...';
               } else if (data.status === 'rejected' || data.status === 'ended') {
                 this.endVoiceCall(false);
               }
@@ -2201,7 +2202,7 @@
         });
         this.stopIncomingCallRingtone();
         SoundEngine.playCallAlertSound();
-        this.callRingtoneInterval = setInterval(() => SoundEngine.playCallAlertSound(), 2500);
+        this.callRingtoneInterval = setInterval(() => SoundEngine.playCallAlertSound(), 1800);
       }
 
       stopIncomingCallRingtone() {
@@ -2212,6 +2213,10 @@
       async acceptIncomingCall() {
         if (!this.currentCallData) return;
         this.stopIncomingCallRingtone();
+        const acceptButton = document.getElementById('btn-accept-call');
+        if (acceptButton) acceptButton.disabled = true;
+        const callStatusLabel = document.getElementById('call-status-label');
+        if (callStatusLabel) callStatusLabel.textContent = 'Conectando audio...';
 
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
@@ -2254,9 +2259,10 @@
             answer: { type: answer.type, sdp: answer.sdp }
           });
           console.log('[CALL] Respuesta enviada');
+          document.getElementById('btn-accept-call')?.classList.add('hidden');
           await this.flushPendingIceCandidates();
           const callStatus = document.getElementById('call-status-label');
-          if (callStatus) callStatus.textContent = 'Negociando audio...';
+          if (callStatus) callStatus.textContent = 'Conectando audio...';
 
           this.callSignalingUnsubscribes.push(callDoc.collection('callerCandidates').onSnapshot(snap => {
             snap.docChanges().forEach(change => {
@@ -2294,7 +2300,11 @@
           const state = this.peerConnection?.iceConnectionState;
           console.log('[CALL] ICE:', state);
           if (state === 'connected' || state === 'completed') this.onCallConnected();
-          else if (state === 'failed') this.showToast('No se estableció la ruta de audio. La red puede requerir un servidor TURN.', 'error');
+          else if (state === 'failed') {
+            const label = document.getElementById('call-status-label');
+            if (label) label.textContent = 'Sin ruta de audio';
+            this.showToast('No se estableció la ruta de audio. Esta red puede requerir un servidor TURN.', 'error');
+          }
         };
         this.peerConnection.onconnectionstatechange = () => console.log('[CALL] Conexión:', this.peerConnection?.connectionState);
         this.peerConnection.onicegatheringstatechange = () => console.log('[CALL] ICE gathering:', this.peerConnection?.iceGatheringState);
@@ -2332,6 +2342,7 @@
 
         const btnAccept = document.getElementById('btn-accept-call');
         if (isIncoming) {
+          btnAccept.disabled = false;
           btnAccept.classList.remove('hidden');
         } else {
           btnAccept.classList.add('hidden');
