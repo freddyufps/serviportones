@@ -38,6 +38,45 @@
       }
       .no-print { display: none !important; }
     }
+    /* Animación navideña: Nieve y Trineo con Reno */
+    .snow-flake {
+      position: fixed;
+      top: -20px;
+      color: #94a3b8;
+      user-select: none;
+      pointer-events: none;
+      z-index: 9998;
+      animation: fallSnow linear infinite;
+    }
+    @keyframes fallSnow {
+      0% { transform: translateY(0) rotate(0deg); opacity: 0.9; }
+      100% { transform: translateY(105vh) rotate(360deg); opacity: 0.2; }
+    }
+    .flying-sleigh-container {
+      position: fixed;
+      top: 14%;
+      left: -220px;
+      z-index: 9999;
+      pointer-events: none;
+      user-select: none;
+      animation: flySleigh 26s linear infinite;
+    }
+    .flying-sleigh-inner {
+      display: flex;
+      align-items: center;
+      font-size: 32px;
+      animation: gallopMotion 1.2s ease-in-out infinite alternate;
+      filter: drop-shadow(0 6px 8px rgba(0,0,0,0.3));
+    }
+    @keyframes flySleigh {
+      0% { left: -220px; transform: translateY(0); }
+      50% { transform: translateY(-30px); }
+      100% { left: 110vw; transform: translateY(15px); }
+    }
+    @keyframes gallopMotion {
+      0% { transform: rotate(-4deg) translateY(0); }
+      100% { transform: rotate(6deg) translateY(-8px); }
+    }
   </style>
   <!-- SDKs de Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -61,7 +100,7 @@
   <!-- ========================================== -->
   <!-- 1. VISTA DE INICIO DE SESIÓN (LOGIN)       -->
   <!-- ========================================== -->
-  <div id="view-login" class="flex-1 flex items-center justify-center p-4 sm:p-6 min-h-screen bg-gradient-to-br from-slate-950 via-brand-dark to-slate-900">
+  <div id="view-login" class="flex-1 flex items-center justify-center p-4 sm:p-6 min-h-screen bg-gradient-to-br from-slate-950 via-brand-dark to-slate-900 relative z-10">
     <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
       <div class="bg-white p-6 sm:p-7 text-center border-b border-slate-100 flex flex-col items-center">
         <div class="w-full max-w-[280px] py-1">
@@ -110,9 +149,9 @@
           </label>
         </div>
 
-        <button type="submit" class="w-full py-3 bg-brand-dark hover:bg-black text-white font-bold rounded-xl text-sm border-b-4 border-brand-lime shadow-lg active:scale-[0.98] transition flex items-center justify-center gap-2 mt-2">
+        <button type="submit" id="btn-submit-login" class="w-full py-3 bg-brand-dark hover:bg-black text-white font-bold rounded-xl text-sm border-b-4 border-brand-lime shadow-lg active:scale-[0.98] transition flex items-center justify-center gap-2 mt-2">
           <i data-lucide="log-in" class="w-4 h-4 text-brand-lime"></i>
-          Iniciar Sesión
+          <span>Iniciar Sesión</span>
         </button>
 
         <p class="text-center text-[11px] text-slate-400 pt-2">
@@ -125,7 +164,7 @@
   <!-- ========================================== -->
   <!-- 2. VISTA PRINCIPAL (USUARIO CONECTADO)     -->
   <!-- ========================================== -->
-  <div id="view-dashboard" class="hidden flex-1 flex flex-col">
+  <div id="view-dashboard" class="hidden flex-1 flex flex-col relative z-10">
     <header class="bg-brand-dark text-white sticky top-0 z-40 shadow-md border-b-2 border-brand-lime">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         
@@ -959,7 +998,44 @@
         window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
       }
 
+      // Animación Navideña Activa
+      initChristmasTheme() {
+        if (document.getElementById('christmas-container')) return;
+
+        const container = document.createElement('div');
+        container.id = 'christmas-container';
+        container.style.position = 'fixed';
+        container.style.top = '0';
+        container.style.left = '0';
+        container.style.width = '100vw';
+        container.style.height = '100vh';
+        container.style.pointerEvents = 'none';
+        container.style.zIndex = '9999';
+        container.style.overflow = 'hidden';
+
+        const sleighWrapper = document.createElement('div');
+        sleighWrapper.className = 'flying-sleigh-container';
+        sleighWrapper.innerHTML = `<div class="flying-sleigh-inner">🛷✨🦌</div>`;
+        container.appendChild(sleighWrapper);
+
+        const chars = ['❄', '❅', '•', '✻', '❆'];
+        for (let i = 0; i < 35; i++) {
+          const flake = document.createElement('div');
+          flake.className = 'snow-flake';
+          flake.textContent = chars[Math.floor(Math.random() * chars.length)];
+          flake.style.left = Math.random() * 98 + 'vw';
+          flake.style.animationDuration = (Math.random() * 7 + 5) + 's';
+          flake.style.animationDelay = (Math.random() * 8) + 's';
+          flake.style.fontSize = (Math.random() * 16 + 10) + 'px';
+          container.appendChild(flake);
+        }
+
+        document.body.appendChild(container);
+      }
+
       init() {
+        this.initChristmasTheme();
+
         const savedAdmin = localStorage.getItem('portonpro_admin_v4');
         if (savedAdmin) {
           try { this.adminProfile = JSON.parse(savedAdmin); } catch(e) { this.adminProfile = DEFAULT_ADMIN; }
@@ -991,7 +1067,6 @@
           this.tasks = INITIAL_TASKS;
         }
 
-        // Cargar credenciales guardadas si existen
         const remembered = localStorage.getItem('portonpro_remembered');
         if (remembered) {
           try {
@@ -1002,7 +1077,7 @@
           } catch(e) {}
         }
 
-        // 1. Sincronización en vivo con Firestore (Órdenes de Trabajo)
+        // Sincronización en vivo con Firestore
         if (window.db) {
           db.collection('ordenes').doc('todas').onSnapshot((doc) => {
             if (doc.exists) {
@@ -1027,7 +1102,6 @@
             }
           }, (error) => console.error("Error sincronizando órdenes:", error));
 
-          // 2. Sincronización en vivo de Usuarios
           db.collection('config').doc('users').onSnapshot((doc) => {
             if (doc.exists) {
               const data = doc.data();
@@ -1057,7 +1131,6 @@
             }
           }, (error) => console.error("Error en config users:", error));
 
-          // 3. Monitor de presencia global en Firestore (Actualiza Estados y Online en tiempo real)
           db.collection('presencia').onSnapshot((snapshot) => {
             snapshot.forEach(doc => {
               const data = doc.data();
@@ -1074,7 +1147,6 @@
             }
           }, (error) => console.error("Error en presencia:", error));
 
-          // 4. Sincronización en vivo de Notificaciones de Técnicos
           db.collection('notificaciones').orderBy('timestamp', 'desc').limit(25).onSnapshot((snapshot) => {
             const list = [];
             snapshot.forEach(doc => {
@@ -1121,12 +1193,11 @@
         }
       }
 
-      // Enviar notificación a Firestore cuando un trabajador interactúa
       async addActivityNotification(techName, taskId, actionType, details) {
         const notifData = {
           techName: techName,
           taskId: taskId,
-          actionType: actionType, // 'REALIZADA', 'NO_REALIZADA', 'EN_PROCESO', 'PENDIENTE'
+          actionType: actionType,
           details: details || '',
           time: this.formatTime(new Date()),
           timestamp: Date.now()
@@ -1220,17 +1291,48 @@
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
       }
 
-      handleLogin(e) {
+      // Login asíncrono con verificación directa en Firestore
+      async handleLogin(e) {
         e.preventDefault();
         const userVal = document.getElementById('login-username').value.trim().toLowerCase();
         const passVal = document.getElementById('login-password').value.trim();
         const rememberChecked = document.getElementById('login-remember').checked;
         const errorAlert = document.getElementById('login-error-alert');
+        const btnSubmit = document.getElementById('btn-submit-login');
+
+        if (btnSubmit) {
+          btnSubmit.disabled = true;
+          btnSubmit.innerHTML = `<span>Verificando credenciales...</span>`;
+        }
 
         if (rememberChecked) {
           localStorage.setItem('portonpro_remembered', JSON.stringify({ u: userVal, p: passVal }));
         } else {
           localStorage.removeItem('portonpro_remembered');
+        }
+
+        // Descarga fresca de Firestore para garantizar que reconozca a cualquier usuario nuevo
+        if (window.db) {
+          try {
+            const snapUsers = await db.collection('config').doc('users').get();
+            if (snapUsers.exists && Array.isArray(snapUsers.data().list)) {
+              this.users = snapUsers.data().list;
+              localStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
+            }
+            const snapAdmin = await db.collection('config').doc('adminProfile').get();
+            if (snapAdmin.exists) {
+              this.adminProfile = snapAdmin.data();
+              localStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
+            }
+          } catch (err) {
+            console.warn("Validando localmente...", err);
+          }
+        }
+
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = `<i data-lucide="log-in" class="w-4 h-4 text-brand-lime"></i><span>Iniciar Sesión</span>`;
+          if (window.lucide) lucide.createIcons();
         }
 
         const now = new Date();
@@ -1403,7 +1505,6 @@
         const auditLogSection = document.getElementById('section-admin-audit-log');
         const roleHint = document.getElementById('role-hint-text');
 
-        // Botones de reinicio en contadores (Solo Admin)
         const btnResetPending = document.getElementById('btn-reset-pending');
         const btnResetDone = document.getElementById('btn-reset-done');
         const btnResetFailed = document.getElementById('btn-reset-failed');
@@ -1420,7 +1521,7 @@
           if (btnResetDone) btnResetDone.classList.remove('hidden');
           if (btnResetFailed) btnResetFailed.classList.remove('hidden');
         } else {
-          btnNewOrder.classList.add('hidden'); // Sólo el administrador crea órdenes
+          btnNewOrder.classList.add('hidden');
           monitorSection.classList.add('hidden');
           filterTech.classList.add('hidden');
           filterTech.disabled = true;
@@ -1625,7 +1726,7 @@
         }
       }
 
-      // MONITOR DE TÉCNICOS: Umbral de 45 segundos para punto verde de online y gris para offline
+      // MONITOR DE TÉCNICOS: Umbral ajustado para conexión visual en vivo
       renderTechniciansMonitor() {
         const grid = document.getElementById('technicians-status-grid');
         const counter = document.getElementById('techs-online-counter');
@@ -1838,7 +1939,6 @@
         this.renderTasks();
       }
 
-      // REINICIO DE ÓRDENES (SÓLO ADMIN)
       async resetCategoryTasks(category) {
         if (this.currentUser.role !== 'ADMIN') {
           this.showToast('Acción reservada exclusivamente para el Administrador', 'error');
@@ -2025,7 +2125,7 @@
                 </button>
 
                 <div class="flex items-center gap-1.5">
-                  <!-- BOTÓN REGISTRAR / EDITAR INFORME (TOTALMENTE HABILITADO) -->
+                  <!-- BOTÓN REGISTRAR / EDITAR INFORME -->
                   <button onclick="app.openReportModal('${t.id}')" class="text-xs font-bold py-1 px-2.5 rounded-xl flex items-center gap-1 shadow-sm transition active:scale-95 ${
                     t.status === 'REALIZADA'
                       ? 'bg-brand-lime hover:bg-brand-limeHover text-white'
@@ -2037,7 +2137,7 @@
                     <span>${t.status === 'REALIZADA' || t.status === 'NO_REALIZADA' ? 'Editar Informe' : 'Registrar Informe'}</span>
                   </button>
 
-                  <!-- BOTONES EDITAR Y ELIMINAR ORDEN: VISIBLES SÓLO PARA EL ADMINISTRADOR -->
+                  <!-- BOTONES EDITAR Y ELIMINAR ORDEN (ADMIN) -->
                   ${isAdmin ? `
                     <button onclick="app.openEditTaskModal('${t.id}')" class="p-1 text-slate-400 hover:text-brand-dark hover:bg-slate-100 rounded-lg transition" title="Modificar datos de la orden">
                       <i data-lucide="file-edit" class="w-3.5 h-3.5"></i>
@@ -2477,7 +2577,6 @@
           this.tasks[taskIndex].evidence = JSON.parse(JSON.stringify(this.currentReportEvidence));
           this.tasks[taskIndex].completedAt = this.formatFullDateTime(new Date());
 
-          // Notificar en tiempo real al administrador
           this.addActivityNotification(this.currentUser.fullName, this.selectedTask.id, this.activeReportStatus, observations);
 
           this.saveTasks();
