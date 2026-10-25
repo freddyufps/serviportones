@@ -96,6 +96,35 @@
       background: #cbd5e1;
       border-radius: 4px;
     }
+
+    /* Animación del Popup Emergente Superior Derecho */
+    .popup-slide-in {
+      animation: popupSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .popup-slide-out {
+      animation: popupSlideOut 0.3s ease-in forwards;
+    }
+    @keyframes popupSlideIn {
+      0% { transform: translateX(110%); opacity: 0; }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes popupSlideOut {
+      0% { transform: translateX(0); opacity: 1; }
+      100% { transform: translateX(115%); opacity: 0; }
+    }
+
+    /* Campana con destello y rebote suave */
+    .bell-ring-active {
+      animation: bellShake 1.2s ease-in-out infinite alternate;
+    }
+    @keyframes bellShake {
+      0% { transform: rotate(0); }
+      20% { transform: rotate(14deg); }
+      40% { transform: rotate(-14deg); }
+      60% { transform: rotate(8deg); }
+      80% { transform: rotate(-8deg); }
+      100% { transform: rotate(0); }
+    }
   </style>
 
   <!-- SDKs de Firebase -->
@@ -117,6 +146,11 @@
   </script>
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen font-sans flex flex-col antialiased selection:bg-brand-lime selection:text-white relative">
+
+  <!-- ======================================================== -->
+  <!-- CONTENEDOR FLOTANTE DE NOTIFICACIONES EMERGENTES (TOASTS) -->
+  <!-- ======================================================== -->
+  <div id="toast-notification-stack" class="fixed top-4 right-4 z-[99999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-2 sm:px-0"></div>
 
   <!-- ========================================== -->
   <!-- 1. VISTA DE INICIO DE SESIÓN (LOGIN)       -->
@@ -215,7 +249,7 @@
           <!-- CAMPANA DE NOTIFICACIONES (TIEMPO REAL) -->
           <div class="relative" id="notifications-wrapper">
             <button id="btn-notifications-toggle" onclick="app.toggleNotificationsPanel()" class="p-1.5 sm:p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl transition flex items-center relative" title="Notificaciones de actividad">
-              <i data-lucide="bell" class="w-4 h-4 text-brand-lime"></i>
+              <i data-lucide="bell" id="bell-icon" class="w-4 h-4 text-brand-lime transition-transform"></i>
               <span id="notif-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-pulse">0</span>
             </button>
 
@@ -224,7 +258,7 @@
               <div class="p-3 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
                 <div class="flex items-center gap-2">
                   <i data-lucide="bell" class="w-4 h-4 text-brand-lime"></i>
-                  <span class="text-xs font-bold uppercase tracking-wider">Actividad en Tiempo Real</span>
+                  <span class="text-xs font-bold uppercase tracking-wider">Centro de Notificaciones</span>
                 </div>
                 <button onclick="app.clearNotifications()" class="text-[10px] text-slate-400 hover:text-white underline">Limpiar</button>
               </div>
@@ -484,7 +518,7 @@
   </div>
 
   <!-- ======================================================== -->
-  <!-- MODAL: AJUSTES, FOTOS Y PERSONAL                         -->
+  <!-- MODAL: AJUSTES, FOTOS Y CONFIGURACIÓN DE NOTIFICACIONES -->
   <!-- ======================================================== -->
   <div id="modal-settings" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
@@ -493,7 +527,7 @@
           <i data-lucide="settings" class="w-5 h-5 text-brand-lime"></i>
           <div>
             <h3 class="text-xs sm:text-sm font-bold">Configuración y Seguridad</h3>
-            <p id="settings-modal-subtitle" class="text-[10px] sm:text-[11px] text-slate-300">Administración de credenciales y perfil</p>
+            <p id="settings-modal-subtitle" class="text-[10px] sm:text-[11px] text-slate-300">Administración de credenciales, perfil y alertas</p>
           </div>
         </div>
         <button onclick="app.closeSettingsModal()" class="text-slate-400 hover:text-white p-1">
@@ -502,6 +536,34 @@
       </div>
 
       <div class="p-4 space-y-3.5 overflow-y-auto flex-1 text-xs sm:text-sm">
+        
+        <!-- PREFERENCIAS DE SONIDO Y NOTIFICACIONES -->
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+            <i data-lucide="bell" class="w-4 h-4 text-brand-limeHover"></i>
+            <span>Alertas y Notificaciones Sonoras</span>
+          </h4>
+          <p class="text-[11px] text-slate-500">Configura cómo deseas recibir avisos en tiempo real:</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+            <label class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer select-none">
+              <input type="checkbox" id="pref-sound" onchange="app.updatePref('sound', this.checked)" class="w-4 h-4 rounded text-brand-lime focus:ring-brand-lime border-slate-300">
+              <span class="text-xs font-semibold text-slate-700">🔊 Activar sonidos</span>
+            </label>
+            <label class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer select-none">
+              <input type="checkbox" id="pref-popup" onchange="app.updatePref('popup', this.checked)" class="w-4 h-4 rounded text-brand-lime focus:ring-brand-lime border-slate-300">
+              <span class="text-xs font-semibold text-slate-700">💬 Notificaciones emergentes</span>
+            </label>
+            <label class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer select-none">
+              <input type="checkbox" id="pref-chat-badge" onchange="app.updatePref('chatBadge', this.checked)" class="w-4 h-4 rounded text-brand-lime focus:ring-brand-lime border-slate-300">
+              <span class="text-xs font-semibold text-slate-700">🔴 Contador de chat</span>
+            </label>
+            <label class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer select-none">
+              <input type="checkbox" id="pref-notif-badge" onchange="app.updatePref('notifBadge', this.checked)" class="w-4 h-4 rounded text-brand-lime focus:ring-brand-lime border-slate-300">
+              <span class="text-xs font-semibold text-slate-700">🔔 Contador campana</span>
+            </label>
+          </div>
+        </div>
+
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
           <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 mb-2 flex items-center gap-1.5">
             <i data-lucide="camera" class="w-4 h-4 text-brand-limeHover"></i>
@@ -804,7 +866,7 @@
     </div>
   </div>
 
-  <!-- Toast -->
+  <!-- Toast Pequeño Anterior -->
   <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-950 text-white px-3.5 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2 text-xs">
     <div id="toast-icon"></div>
     <span id="toast-message" class="font-semibold"></span>
@@ -839,6 +901,146 @@
         try { localStorage.removeItem(key); } catch (e) {}
         try { sessionStorage.removeItem(key); } catch (e2) {}
         delete this.memStore[key];
+      }
+    };
+
+    // MOTOR ACÚSTICO PROFESIONAL CON WEB AUDIO API (Sin archivos externos ni copyright)
+    const SoundEngine = {
+      ctx: null,
+      getCtx() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+        return this.ctx;
+      },
+
+      // Sonido para Nuevos Mensajes de Chat (Acorde elegante y suave tipo Messenger/Teams)
+      playMessageSound() {
+        try {
+          const ctx = this.getCtx();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+
+          const osc1 = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc1.type = 'sine';
+          osc2.type = 'sine';
+
+          osc1.frequency.setValueAtTime(587.33, now); // D5
+          osc1.frequency.exponentialRampToValueAtTime(880, now + 0.12); // A5
+
+          osc2.frequency.setValueAtTime(880, now);
+          osc2.frequency.exponentialRampToValueAtTime(1174.66, now + 0.15); // D6
+
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.25, now + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc1.start(now);
+          osc2.start(now);
+          osc1.stop(now + 0.5);
+          osc2.stop(now + 0.5);
+        } catch (e) {
+          console.warn("Audio Context bloqueado:", e);
+        }
+      },
+
+      // Sonido para Nueva Orden de Trabajo (Doble campana ejecutiva de atención)
+      playOrderSound() {
+        try {
+          const ctx = this.getCtx();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+
+          [0, 0.14].forEach((delay, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+
+            const freq = idx === 0 ? 523.25 : 783.99; // C5 luego G5
+            osc.frequency.setValueAtTime(freq, now + delay);
+
+            gain.gain.setValueAtTime(0.001, now + delay);
+            gain.gain.linearRampToValueAtTime(0.3, now + delay + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.45);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.start(now + delay);
+            osc.stop(now + delay + 0.5);
+          });
+        } catch (e) {
+          console.warn("Audio Context bloqueado:", e);
+        }
+      },
+
+      // Sonido para Notificaciones Generales de Auditoría
+      playGeneralNotificationSound() {
+        try {
+          const ctx = this.getCtx();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+
+          osc.frequency.setValueAtTime(659.25, now); // E5
+          osc.frequency.exponentialRampToValueAtTime(987.77, now + 0.18); // B5
+
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.2, now + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.45);
+        } catch (e) {
+          console.warn("Audio Context bloqueado:", e);
+        }
+      },
+
+      // Sonido para Futuras Llamadas / Eventos Urgentes
+      playCallAlertSound() {
+        try {
+          const ctx = this.getCtx();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+
+          [0, 0.1, 0.2].forEach(delay => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+
+            osc.frequency.setValueAtTime(800, now + delay);
+            osc.frequency.linearRampToValueAtTime(1000, now + delay + 0.08);
+
+            gain.gain.setValueAtTime(0.001, now + delay);
+            gain.gain.linearRampToValueAtTime(0.2, now + delay + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.09);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.start(now + delay);
+            osc.stop(now + delay + 0.1);
+          });
+        } catch (e) {
+          console.warn("Audio Context bloqueado:", e);
+        }
       }
     };
 
@@ -879,7 +1081,124 @@
         this.activeChatWorker = 'Jeampaul';
         this.chatUnsubscribe = null;
 
+        // Preferencias de Notificación
+        this.prefs = {
+          sound: true,
+          popup: true,
+          chatBadge: true,
+          notifBadge: true
+        };
+
+        // Banderas anti-duplicados y exclusión de carga inicial
+        this.processedEventIds = new Set();
+        this.isTasksInitialLoad = true;
+        this.isNotifsInitialLoad = true;
+        this.isChatInitialLoad = true;
+        this.appStartTime = Date.now();
+
         this.init();
+      }
+
+      loadPreferences() {
+        const saved = SafeStorage.getItem('portonpro_preferences');
+        if (saved) {
+          try {
+            this.prefs = { ...this.prefs, ...JSON.parse(saved) };
+          } catch (e) {}
+        }
+        document.getElementById('pref-sound').checked = this.prefs.sound;
+        document.getElementById('pref-popup').checked = this.prefs.popup;
+        document.getElementById('pref-chat-badge').checked = this.prefs.chatBadge;
+        document.getElementById('pref-notif-badge').checked = this.prefs.notifBadge;
+      }
+
+      updatePref(key, value) {
+        this.prefs[key] = value;
+        SafeStorage.setItem('portonpro_preferences', JSON.stringify(this.prefs));
+        if (key === 'chatBadge' && !value) {
+          document.getElementById('chat-unread-badge').classList.add('hidden');
+        }
+        if (key === 'notifBadge' && !value) {
+          document.getElementById('notif-badge').classList.add('hidden');
+        }
+        this.showToast('Preferencia guardada', 'info');
+      }
+
+      // DISPARADOR DE NOTIFICACIONES EMERGENTES SUPERIOR DERECHO
+      showPopupNotification({ title, subtitle, details, type, icon, onClick }) {
+        if (!this.prefs.popup) return;
+
+        const stack = document.getElementById('toast-notification-stack');
+        if (!stack) return;
+
+        const toastId = 'pop_' + Date.now() + Math.random().toString(36).substring(2, 6);
+        const card = document.createElement('div');
+        card.id = toastId;
+        card.className = "pointer-events-auto bg-slate-900/95 text-white border border-slate-700/80 rounded-2xl shadow-2xl p-3.5 popup-slide-in backdrop-blur-md flex items-start gap-3 relative overflow-hidden transition cursor-pointer hover:border-brand-lime";
+
+        let badgeBg = "bg-brand-lime/20 text-brand-lime border border-brand-lime/40";
+        if (type === 'chat') badgeBg = "bg-cyan-500/20 text-cyan-400 border border-cyan-500/40";
+        if (type === 'order') badgeBg = "bg-amber-500/20 text-amber-400 border border-amber-500/40";
+
+        card.innerHTML = `
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${badgeBg} font-black text-sm">
+            ${icon || '🔔'}
+          </div>
+          <div class="flex-1 min-w-0 pr-4">
+            <div class="flex items-center justify-between gap-1">
+              <h5 class="text-xs font-black uppercase tracking-wider text-slate-100 truncate">${title}</h5>
+              <span class="text-[9px] text-slate-400 font-mono">Ahora</span>
+            </div>
+            ${subtitle ? `<p class="text-xs font-extrabold text-brand-lime truncate mt-0.5">${subtitle}</p>` : ''}
+            ${details ? `<p class="text-[11px] text-slate-300 line-clamp-2 mt-0.5 italic">"${details}"</p>` : ''}
+          </div>
+          <button type="button" class="absolute top-2 right-2 text-slate-400 hover:text-white p-1 rounded-lg" onclick="event.stopPropagation(); app.closePopup('${toastId}')">
+            ✕
+          </button>
+          <div class="absolute bottom-0 left-0 h-1 bg-brand-lime transition-all duration-[6500ms] w-full" id="${toastId}_bar"></div>
+        `;
+
+        if (onClick) {
+          card.onclick = () => {
+            onClick();
+            this.closePopup(toastId);
+          };
+        }
+
+        stack.appendChild(card);
+
+        // Barra de progreso decreciente
+        setTimeout(() => {
+          const bar = document.getElementById(`${toastId}_bar`);
+          if (bar) bar.style.width = '0%';
+        }, 50);
+
+        // Auto-cierre entre 5 y 8 segundos (6.5s)
+        setTimeout(() => {
+          this.closePopup(toastId);
+        }, 6500);
+      }
+
+      closePopup(toastId) {
+        const elem = document.getElementById(toastId);
+        if (elem) {
+          elem.classList.remove('popup-slide-in');
+          elem.classList.add('popup-slide-out');
+          setTimeout(() => elem.remove(), 320);
+        }
+      }
+
+      triggerBellAttention() {
+        const icon = document.getElementById('bell-icon');
+        const badge = document.getElementById('notif-badge');
+        if (icon) {
+          icon.classList.add('bell-ring-active', 'text-amber-400');
+          setTimeout(() => icon.classList.remove('bell-ring-active', 'text-amber-400'), 3000);
+        }
+        if (badge) {
+          badge.classList.add('ring-4', 'ring-rose-300');
+          setTimeout(() => badge.classList.remove('ring-4', 'ring-rose-300'), 2500);
+        }
       }
 
       normalizeInput(val) {
@@ -933,8 +1252,8 @@
 
       async init() {
         this.initTechTheme();
+        this.loadPreferences();
 
-        // Limpieza de dependencias obsoletas
         SafeStorage.removeItem('portonpro_admin_v4');
         SafeStorage.removeItem('portonpro_users_v4');
 
@@ -953,9 +1272,23 @@
           } catch(e) {}
         }
 
-        // Sincronización en tiempo real desde Firestore
         if (window.db) {
-          // Listener reactivo de la colección 'users'
+          // Inicializar usuarios base
+          const defaultDocs = [
+            { id: 'admin', data: { username: 'administrador', password: '123456789', role: 'admin', active: true, fullName: 'Administrador (Don Martínez)', phone: '315 889 4521', photo: '' } },
+            { id: 'tech-1', data: { username: 'Jeampaul', password: '123', role: 'worker', active: true, fullName: 'Jeampaul', phone: '315 889 4521', specialty: 'Motores Corredizos', photo: '' } },
+            { id: 'tech-2', data: { username: 'Alexis', password: '123', role: 'worker', active: true, fullName: 'Alexis', phone: '310 442 1290', specialty: 'Brazos Batientes', photo: '' } }
+          ];
+
+          defaultDocs.forEach(d => {
+            db.collection('users').doc(d.id).get().then(docSnap => {
+              if (!docSnap.exists) {
+                db.collection('users').doc(d.id).set(d.data);
+              }
+            }).catch(err => console.warn(`Inicializando users/${d.id}:`, err));
+          });
+
+          // Listener de usuarios
           db.collection('users').onSnapshot((snapshot) => {
             const list = [];
             snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
@@ -978,10 +1311,33 @@
             }
           }, err => console.error("Snapshot users error:", err));
 
-          // Snapshot Órdenes
+          // 1. Snapshot Órdenes con Sonido y Notificación Popup en Tiempo Real
           db.collection('ordenes').doc('todas').onSnapshot((doc) => {
             if (doc.exists && Array.isArray(doc.data().tasks)) {
-              this.tasks = doc.data().tasks;
+              const incomingTasks = doc.data().tasks;
+              
+              // Detección de nueva orden (Solo después de cargar y sin repetir)
+              if (!this.isTasksInitialLoad && incomingTasks.length > this.tasks.length) {
+                const latestTask = incomingTasks[0]; // Las nuevas se agregan al inicio
+                if (latestTask && !this.processedEventIds.has(latestTask.id)) {
+                  this.processedEventIds.add(latestTask.id);
+
+                  if (this.prefs.sound) SoundEngine.playOrderSound();
+                  this.triggerBellAttention();
+
+                  this.showPopupNotification({
+                    title: '📋 Nueva Orden de Trabajo',
+                    subtitle: `${latestTask.client} &bull; ${latestTask.serviceType}`,
+                    details: `Equipo: ${latestTask.equipment} | Técnico: ${latestTask.assignedTo}`,
+                    type: 'order',
+                    icon: '📋',
+                    onClick: () => this.viewOrderDetails(latestTask.id)
+                  });
+                }
+              }
+
+              this.isTasksInitialLoad = false;
+              this.tasks = incomingTasks;
               SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
               if (this.currentUser) {
                 this.updateStats();
@@ -994,7 +1350,7 @@
             }
           }, e => console.error("Snapshot órdenes:", e));
 
-          // Snapshot Presencia
+          // 2. Snapshot Presencia
           db.collection('presencia').onSnapshot((snapshot) => {
             snapshot.forEach(doc => {
               const data = doc.data();
@@ -1010,10 +1366,33 @@
             }
           });
 
-          // Snapshot Notificaciones
+          // 3. Snapshot Notificaciones de Auditoría con Alerta Sonora
           db.collection('notificaciones').orderBy('timestamp', 'desc').limit(25).onSnapshot((snapshot) => {
             const list = [];
-            snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+            snapshot.forEach(doc => {
+              const data = doc.data();
+              const notifId = doc.id;
+              list.push({ id: notifId, ...data });
+
+              // Alerta sonora y visual si llega una notificación de informe nueva
+              if (!this.isNotifsInitialLoad && data.timestamp > this.appStartTime && !this.processedEventIds.has(notifId)) {
+                this.processedEventIds.add(notifId);
+
+                if (this.prefs.sound) SoundEngine.playGeneralNotificationSound();
+                this.triggerBellAttention();
+
+                this.showPopupNotification({
+                  title: `🔔 Actualización de Estado (${data.actionType})`,
+                  subtitle: `${data.techName} &bull; ${data.taskId}`,
+                  details: data.details || 'Informe registrado',
+                  type: 'general',
+                  icon: '🔔',
+                  onClick: () => this.toggleNotificationsPanel()
+                });
+              }
+            });
+
+            this.isNotifsInitialLoad = false;
             this.notifications = list;
             this.updateNotificationsUI();
           }, e => console.error("Snapshot notificaciones:", e));
@@ -1086,7 +1465,8 @@
 
         if (this.notifications.length > 0) {
           badge.textContent = this.notifications.length > 9 ? '+9' : this.notifications.length;
-          badge.classList.remove('hidden');
+          if (this.prefs.notifBadge) badge.classList.remove('hidden');
+          else badge.classList.add('hidden');
 
           listContainer.innerHTML = this.notifications.map(n => {
             let statusColor = 'text-blue-600 bg-blue-50 border-blue-200';
@@ -1143,9 +1523,7 @@
         if (this.chatUnsubscribe) { this.chatUnsubscribe(); this.chatUnsubscribe = null; }
       }
 
-      // ========================================================
-      // AUTENTICACIÓN FIRESTORE (users) CON LOGS DETALLADOS
-      // ========================================================
+      // Autenticación directa en Firestore
       async handleLogin(e) {
         e.preventDefault();
         const rawUser = document.getElementById('login-username').value;
@@ -1156,13 +1534,8 @@
         const btnSubmit = document.getElementById('btn-submit-login');
         const btnText = document.getElementById('btn-submit-text');
 
-        // Sanitización estricta sin espacios accidentales
         const userVal = String(rawUser || '').trim().toLowerCase();
         const passVal = String(rawPass || '').trim();
-
-        console.log("=== INICIO DE VALIDACIÓN DE LOGIN ===");
-        console.log("Usuario ingresado:", userVal);
-        console.log("Contraseña ingresada:", passVal);
 
         if (!userVal || !passVal) {
           errorText.textContent = "Por favor ingresa usuario y contraseña.";
@@ -1185,38 +1558,13 @@
 
         if (window.db) {
           try {
-            console.log("[Login Debug] Consultando colección 'users'...");
             const snapshot = await db.collection('users').get();
-
-            // LOGS CRÍTICOS REQUERIDOS
-            console.log('snapshot.empty', snapshot.empty);
-            console.log('snapshot.size', snapshot.size);
-            console.log('snapshot.docs.length', snapshot.docs.length);
-
-            console.log('Entrando al recorrido');
-
             snapshot.forEach(doc => {
-              console.log('Documento actual', doc.id);
               const uData = doc.data() || {};
-              console.log(uData);
-
-              // Conversión segura a String para evitar discrepancias numéricas
               const dbUser = String(uData.username !== undefined ? uData.username : '').trim().toLowerCase();
               const dbPass = String(uData.password !== undefined ? uData.password : '').trim();
 
-              console.log('dbUser:', dbUser);
-              console.log('dbPass:', dbPass);
-              console.log('userVal:', userVal);
-              console.log('passVal:', passVal);
-
-              const userMatch = (dbUser === userVal);
-              const passMatch = (dbPass === passVal);
-
-              console.log('userMatch:', userMatch);
-              console.log('passMatch:', passMatch);
-              console.log('isMatch', userMatch && passMatch);
-
-              if (userMatch && passMatch) {
+              if (dbUser === userVal && dbPass === passVal) {
                 const isActive = (uData.active !== false);
                 authenticatedUser = {
                   id: doc.id,
@@ -1230,7 +1578,7 @@
               }
             });
           } catch (err) {
-            console.error("[Login Debug] Error crítico al consultar Firestore:", err);
+            console.error("Error al consultar Firestore:", err);
             errorText.textContent = "Error de conexión con Firestore: " + (err.message || "Fallo de red");
             errorAlert.classList.remove('hidden');
             if (btnSubmit) { btnSubmit.disabled = false; if (btnText) btnText.textContent = "Iniciar Sesión"; }
@@ -1244,8 +1592,6 @@
         }
 
         if (authenticatedUser) {
-          console.log("[Login Debug] Usuario validado con éxito:", authenticatedUser);
-
           if (authenticatedUser.active === false) {
             errorText.textContent = 'Esta cuenta está desactivada. Consulta al Administrador.';
             errorAlert.classList.remove('hidden');
@@ -1270,7 +1616,6 @@
           return;
         }
 
-        console.warn("[Login Debug] Ningún documento coincidió con las credenciales ingresadas.");
         errorText.textContent = 'Usuario o contraseña incorrectos en Firestore.';
         errorAlert.classList.remove('hidden');
         if (window.lucide) lucide.createIcons();
@@ -1450,6 +1795,9 @@
         document.getElementById('modal-photo-zoom').classList.add('hidden');
       }
 
+      // ==========================================
+      // CHAT PRIVADO EN TIEMPO REAL CON SONIDOS Y POPUPS
+      // ==========================================
       initChatModule() {
         const isAdmin = this.currentUser.role === 'admin';
         const adminThreads = document.getElementById('chat-admin-threads');
@@ -1499,18 +1847,45 @@
           .onSnapshot(snapshot => {
             const msgs = [];
             let unreadCount = 0;
+
             snapshot.forEach(doc => {
               const data = doc.data();
-              msgs.push({ id: doc.id, ...data });
-              if (data.senderRole !== this.currentUser.role && !data.read) {
+              const msgId = doc.id;
+              msgs.push({ id: msgId, ...data });
+
+              // Alerta de nuevo mensaje
+              const isFromOther = data.senderRole !== this.currentUser.role;
+              if (isFromOther && !data.read) {
                 unreadCount++;
+
+                // Solo detonar sonido y popup si el mensaje es reciente y no se ha procesado
+                if (!this.isChatInitialLoad && data.timestamp > this.appStartTime && !this.processedEventIds.has(msgId)) {
+                  this.processedEventIds.add(msgId);
+
+                  if (this.prefs.sound) SoundEngine.playMessageSound();
+
+                  this.showPopupNotification({
+                    title: '💬 Nuevo mensaje',
+                    subtitle: data.senderName,
+                    details: data.text,
+                    type: 'chat',
+                    icon: '💬',
+                    onClick: () => {
+                      const chatModal = document.getElementById('chat-window-modal');
+                      if (chatModal.classList.contains('hidden')) this.toggleChatWindow();
+                    }
+                  });
+                }
               }
             });
+
+            this.isChatInitialLoad = false;
             this.chatMessages = msgs;
             this.renderChatMessages();
 
+            // Contador de chat
             const badge = document.getElementById('chat-unread-badge');
-            if (unreadCount > 0) {
+            if (unreadCount > 0 && this.prefs.chatBadge) {
               badge.textContent = unreadCount;
               badge.classList.remove('hidden');
             } else {
