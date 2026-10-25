@@ -1228,6 +1228,7 @@
         this.callTimerInterval = null;
         this.callRingtoneInterval = null;
         this.callSeconds = 0;
+        this.callIceCounters = { generated: 0, received: 0, added: 0 };
         this.isMuted = false;
         this.lastIncomingCallId = null;
         this.notifiedChatMessageIds = new Set();
@@ -2068,15 +2069,18 @@
       async startVoiceCall() {
         const targetWorker = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
         console.info('[CALL] Iniciando llamada', { role: this.currentUser.role, caller: this.currentUser.fullName || this.currentUser.username, documentId: targetWorker });
+        let callStage = 'getUserMedia';
         
         try {
           console.info('[CALL] getUserMedia iniciado', { role: this.currentUser.role });
           const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
+          callStage = 'configurar stream local';
           this.localStream = stream;
           console.log('[CALL] Stream local obtenido', { active: stream.active });
           console.log('[CALL] Audio tracks encontrados:', stream.getAudioTracks().length);
           console.log('[CALL] Detalle audio tracks', stream.getAudioTracks().map(track => ({ label: track.label, enabled: track.enabled, muted: track.muted, readyState: track.readyState })));
           this.pendingIceCandidates = [];
+          this.callIceCounters = { generated: 0, received: 0, added: 0 };
           this.callSignalingUnsubscribes = [];
 
           this.openVoiceCallModal({
@@ -2087,6 +2091,7 @@
 
           if (this.prefs.sound) SoundEngine.playCallAlertSound();
 
+          callStage = 'crear RTCPeerConnection';
           this.peerConnection = new RTCPeerConnection({
             iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
           });
@@ -2100,20 +2105,28 @@
           const callDoc = db.collection('webrtc_calls').doc(targetWorker);
           const callSessionId = window.crypto?.randomUUID?.() || `call-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
           this.currentCallData = { id: targetWorker, sessionId: callSessionId, caller: this.currentUser.fullName || this.currentUser.username };
+          console.info('[CALL] Sesión de llamada', { sessionId: callSessionId, role: this.currentUser.role, side: 'caller' });
           const callerCandidates = callDoc.collection('callerCandidates');
 
           this.peerConnection.onicecandidate = event => {
             if (event.candidate) {
               const candidateData = event.candidate.toJSON();
               if (callSessionId) candidateData.callSessionId = callSessionId;
-              console.info('[CALL] ICE generado', { role: this.currentUser.role, type: event.candidate.type, protocol: event.candidate.protocol, sdpMid: event.candidate.sdpMid });
-              callerCandidates.add(candidateData).catch(error => console.error('[CALL] Error enviando ICE del llamante:', error));
-            } else { console.info('[CALL] ICE gathering completado', { role: this.currentUser.role }); }
+              this.callIceCounters.generated++;
+              console.info('[CALL] ICE generado', { count: this.callIceCounters.generated, role: this.currentUser.role, type: event.candidate.type, protocol: event.candidate.protocol, sdpMid: event.candidate.sdpMid });
+              callerCandidates.add(candidateData).then(() => console.info('[CALL] ICE enviado al canal de señalización', { count: this.callIceCounters.generated, side: 'caller' })).catch(error => console.error('[CALL] Error enviando ICE del llamante:', error));
+            } else { console.info('[CALL] ICE gathering completado', { role: this.currentUser.role, generatedCount: this.callIceCounters.generated }); }
           };
 
+          callStage = 'createOffer';
+          console.info('[CALL] createOffer iniciado');
           const offer = await this.peerConnection.createOffer();
+          console.info('[CALL] createOffer completado', { type: offer.type, hasSdp: !!offer.sdp });
+          callStage = 'setLocalDescription oferta';
           await this.peerConnection.setLocalDescription(offer);
+          console.info('[CALL] Oferta local aplicada');
 
+          callStage = 'guardar oferta';
           await callDoc.set({
             caller: this.currentUser.fullName || this.currentUser.username,
             callerRole: this.currentUser.role,
@@ -2145,13 +2158,15 @@
             snap.docChanges().forEach(change => {
               if (change.type === 'added') {
                 const candidate = change.doc.data();
-                console.info('[CALL] ICE recibido', { type: candidate.candidate ? new RTCIceCandidate(candidate).type : null, sessionMatches: !candidate.callSessionId || candidate.callSessionId === this.currentCallData?.sessionId });
+                this.callIceCounters.received++;
+                console.info('[CALL] ICE recibido', { count: this.callIceCounters.received, type: candidate.candidate ? new RTCIceCandidate(candidate).type : null, sessionMatches: !candidate.callSessionId || candidate.callSessionId === this.currentCallData?.sessionId });
                 if (!candidate.callSessionId || !this.currentCallData?.sessionId || candidate.callSessionId === this.currentCallData.sessionId) this.addRemoteIceCandidate(candidate);
               }
             });
           }, error => console.error('[CALL] Error recibiendo candidatos ICE:', error)));
 
         } catch (err) {
+          console.error('[CALL] Fallo en etapa', callStage, { name: err?.name, message: err?.message }, err);
           console.error('[CALL] getUserMedia o inicio de llamada falló', { name: err?.name, message: err?.message }, err);
           console.error("Error al iniciar llamada WebRTC:", err);
           this.showToast(`No se pudo iniciar la llamada: ${err.message || err}`, "error");
@@ -2240,11 +2255,13 @@
 
       async acceptIncomingCall() {
         if (!this.currentCallData) return;
+        console.info('[CALL] Sesión de llamada', { sessionId: this.currentCallData.sessionId, role: this.currentUser.role, side: 'callee' });
         this.stopIncomingCallRingtone();
         const acceptButton = document.getElementById('btn-accept-call');
         if (acceptButton) acceptButton.disabled = true;
         const callStatusLabel = document.getElementById('call-status-label');
         if (callStatusLabel) callStatusLabel.textContent = 'Conectando audio...';
+        let callStage = 'getUserMedia';
 
         try {
           console.info('[CALL] getUserMedia iniciado', { role: this.currentUser.role, direction: 'incoming' });
@@ -2252,11 +2269,14 @@
           console.log('[CALL] Stream local obtenido', { active: stream.active });
           console.log('[CALL] Audio tracks encontrados:', stream.getAudioTracks().length);
           console.log('[CALL] Detalle audio tracks', stream.getAudioTracks().map(track => ({ label: track.label, enabled: track.enabled, muted: track.muted, readyState: track.readyState })));
-          if (!this.currentCallData) { stream.getTracks().forEach(track => track.stop()); return; }
+          if (!this.currentCallData) { stream.getTracks().forEach(track => track.stop()); console.info('[CALL] Stream liberado: la llamada terminó antes de completar getUserMedia'); return; }
+          callStage = 'configurar stream local';
           this.localStream = stream;
           this.pendingIceCandidates = [];
+          this.callIceCounters = { generated: 0, received: 0, added: 0 };
           this.callSignalingUnsubscribes = [];
 
+          callStage = 'crear RTCPeerConnection';
           this.peerConnection = new RTCPeerConnection({
             iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
           });
@@ -2283,15 +2303,25 @@
             if (event.candidate) {
               const candidateData = event.candidate.toJSON();
               if (this.currentCallData?.sessionId) candidateData.callSessionId = this.currentCallData.sessionId;
-              console.info('[CALL] ICE generado', { role: this.currentUser.role, type: event.candidate.type, protocol: event.candidate.protocol, sdpMid: event.candidate.sdpMid });
-              calleeCandidates.add(candidateData).catch(error => console.error('[CALL] Error enviando ICE del receptor:', error));
-            } else { console.info('[CALL] ICE gathering completado', { role: this.currentUser.role }); }
+              this.callIceCounters.generated++;
+              console.info('[CALL] ICE generado', { count: this.callIceCounters.generated, role: this.currentUser.role, type: event.candidate.type, protocol: event.candidate.protocol, sdpMid: event.candidate.sdpMid });
+              calleeCandidates.add(candidateData).then(() => console.info('[CALL] ICE enviado al canal de señalización', { count: this.callIceCounters.generated, side: 'callee' })).catch(error => console.error('[CALL] Error enviando ICE del receptor:', error));
+            } else { console.info('[CALL] ICE gathering completado', { role: this.currentUser.role, generatedCount: this.callIceCounters.generated }); }
           };
 
+          callStage = 'setRemoteDescription oferta';
+          console.info('[CALL] Oferta remota recibida; aplicando');
           await this.peerConnection.setRemoteDescription(new RTCSessionDescription(this.currentCallData.offer));
+          console.info('[CALL] Oferta remota aplicada');
+          callStage = 'createAnswer';
+          console.info('[CALL] createAnswer iniciado');
           const answer = await this.peerConnection.createAnswer();
+          console.info('[CALL] createAnswer completado', { type: answer.type, hasSdp: !!answer.sdp });
+          callStage = 'setLocalDescription respuesta';
           await this.peerConnection.setLocalDescription(answer);
+          console.info('[CALL] Respuesta local aplicada');
 
+          callStage = 'guardar respuesta';
           await callDoc.update({
             status: 'answered',
             answer: { type: answer.type, sdp: answer.sdp }
@@ -2306,7 +2336,8 @@
             snap.docChanges().forEach(change => {
               if (change.type === 'added') {
                 const candidate = change.doc.data();
-                console.info('[CALL] ICE recibido', { type: candidate.candidate ? new RTCIceCandidate(candidate).type : null, sessionMatches: !candidate.callSessionId || candidate.callSessionId === this.currentCallData?.sessionId });
+                this.callIceCounters.received++;
+                console.info('[CALL] ICE recibido', { count: this.callIceCounters.received, type: candidate.candidate ? new RTCIceCandidate(candidate).type : null, sessionMatches: !candidate.callSessionId || candidate.callSessionId === this.currentCallData?.sessionId });
                 if (!candidate.callSessionId || !this.currentCallData?.sessionId || candidate.callSessionId === this.currentCallData.sessionId) this.addRemoteIceCandidate(candidate);
               }
             });
@@ -2314,6 +2345,7 @@
 
 
         } catch (err) {
+          console.error('[CALL] Fallo en etapa', callStage, { name: err?.name, message: err?.message }, err);
           console.error('[CALL] getUserMedia o aceptación falló', { name: err?.name, message: err?.message }, err);
           console.error("Error al aceptar llamada:", err);
           this.endVoiceCall();
@@ -2351,6 +2383,7 @@
         this.peerConnection.oniceconnectionstatechange = () => {
           const state = this.peerConnection?.iceConnectionState;
           console.log('[CALL] iceConnectionState', state);
+          if (state === 'connected' || state === 'completed') console.info('[CALL] ICE alcanzó estado', state);
           if (state === 'connected' || state === 'completed') this.onCallConnected();
           else if (state === 'failed') {
             const label = document.getElementById('call-status-label');
@@ -2358,7 +2391,7 @@
             console.error('[CALL] ICE alcanzó estado failed; revisar candidatos generados, recibidos y agregados en ambos extremos.');
           }
         };
-        this.peerConnection.onconnectionstatechange = () => console.log('[CALL] connectionState', this.peerConnection?.connectionState, { signalingState: this.peerConnection?.signalingState });
+        this.peerConnection.onconnectionstatechange = () => console.log('[CALL] connectionState', this.peerConnection?.connectionState, { signalingState: this.peerConnection?.signalingState, iceConnectionState: this.peerConnection?.iceConnectionState });
         this.peerConnection.onsignalingstatechange = () => console.log('[CALL] Estado señalización', this.peerConnection?.signalingState);
         this.peerConnection.onicegatheringstatechange = () => console.log('[CALL] Estado ICE gathering', this.peerConnection?.iceGatheringState);
         this.peerConnection.onicecandidateerror = event => console.warn('[CALL] Error ICE:', event.errorCode, event.errorText);
@@ -2375,13 +2408,14 @@
       }
 
       async addRemoteIceCandidate(candidateData) {
-        if (!this.peerConnection || !candidateData) return;
-        if (candidateData.callSessionId && this.currentCallData?.sessionId && candidateData.callSessionId !== this.currentCallData.sessionId) return;
-        if (!this.peerConnection.remoteDescription) { this.pendingIceCandidates.push(candidateData); return; }
+        if (!this.peerConnection || !candidateData) { console.warn('[CALL] ICE recibido pero no agregado: falta PeerConnection o candidato'); return; }
+        if (candidateData.callSessionId && this.currentCallData?.sessionId && candidateData.callSessionId !== this.currentCallData.sessionId) { console.warn('[CALL] ICE recibido pero descartado: sesión distinta'); return; }
+        if (!this.peerConnection.remoteDescription) { this.pendingIceCandidates.push(candidateData); console.info('[CALL] ICE en cola hasta aplicar descripción remota', { queued: this.pendingIceCandidates.length }); return; }
         const { callSessionId, ...iceCandidate } = candidateData;
         try {
           await this.peerConnection.addIceCandidate(new RTCIceCandidate(iceCandidate));
-          console.info('[CALL] ICE agregado', { type: iceCandidate.candidate ? new RTCIceCandidate(iceCandidate).type : null, sdpMid: iceCandidate.sdpMid });
+          this.callIceCounters.added++;
+          console.info('[CALL] ICE agregado', { count: this.callIceCounters.added, type: iceCandidate.candidate ? new RTCIceCandidate(iceCandidate).type : null, sdpMid: iceCandidate.sdpMid });
         } catch (error) { console.warn('[CALL] Error al agregar ICE', { name: error?.name, message: error?.message, sdpMid: iceCandidate.sdpMid }, error); }
       }
 
@@ -2439,7 +2473,8 @@
       }
 
       endVoiceCall(notifyServer = true) {
-        console.info('[CALL] Finalizando llamada', { notifyServer, callId: this.currentCallData?.id });
+        console.info('[CALL] Finalizando llamada', { notifyServer, callId: this.currentCallData?.id, sessionId: this.currentCallData?.sessionId });
+        console.info('[CALL] Conteo ICE al finalizar', { ...(this.callIceCounters || {}) });
         this.stopIncomingCallRingtone();
         clearInterval(this.callTimerInterval);
         this.callTimerInterval = null;
