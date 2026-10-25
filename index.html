@@ -1226,6 +1226,7 @@
         this.pendingIceCandidates = [];
         this.currentCallData = null;
         this.callTimerInterval = null;
+        this.callRingtoneInterval = null;
         this.callSeconds = 0;
         this.isMuted = false;
         this.lastIncomingCallId = null;
@@ -1423,6 +1424,7 @@
               this.renderConversationsSidebar();
               this.renderTasks();
               this.setupMultiWorkerChatListeners();
+              this.listenIncomingVoiceCalls();
             } else if (this.currentUser && this.currentUser.role === 'worker') {
               const myUpdated = list.find(u => String(u.username || '').toLowerCase() === this.currentUser.username.toLowerCase());
               if (myUpdated && myUpdated.photo !== this.currentUser.photo) {
@@ -2105,7 +2107,8 @@
                 await this.peerConnection.setRemoteDescription(answerDesc);
                 console.log('[CALL] Respuesta recibida');
                 await this.flushPendingIceCandidates();
-                this.onCallConnected();
+                const label = document.getElementById('call-status-label');
+                if (label) label.textContent = 'Negociando audio...';
               } else if (data.status === 'rejected' || data.status === 'ended') {
                 this.endVoiceCall(false);
               }
@@ -2164,28 +2167,51 @@
           this.lastIncomingCallId = id;
           this.triggerIncomingCallAlert(isAdmin ? (data.caller || 'Trabajador') : 'Administrador (Don Martínez)');
         };
-        this.callUnsubscribe = isAdmin
-          ? calls.onSnapshot(snapshot => {
+        if (isAdmin) {
+          // Escucha documentos conocidos de técnicos, sin requerir permiso de listar toda la colección.
+          const workerDocumentIds = [...new Set(this.workers.flatMap(worker => [worker.fullName, worker.username])
+            .map(name => String(name || '').trim()).filter(Boolean))];
+          const unsubscribers = workerDocumentIds.map(workerId =>
+            calls.doc(workerId).onSnapshot(doc => {
+              if (doc.exists) onCall(doc.id, doc.data());
+            }, error => console.error(`[CALL] Error escuchando llamada de ${workerId}:`, error))
+          );
+          try {
+            unsubscribers.push(calls.onSnapshot(snapshot => {
               snapshot.docChanges().forEach(change => {
                 if (change.type === 'added' || change.type === 'modified') onCall(change.doc.id, change.doc.data());
               });
-            }, error => console.error('[CALL] Error escuchando llamadas entrantes:', error))
-          : calls.doc(myName).onSnapshot(doc => {
-              if (doc.exists) onCall(doc.id, doc.data());
-            }, error => console.error('[CALL] Error escuchando llamada entrante:', error));
+            }, error => console.warn('[CALL] La escucha global no está permitida; se mantienen las escuchas por técnico:', error)));
+          } catch (error) {
+            console.warn('[CALL] No se pudo iniciar la escucha global de llamadas:', error);
+          }
+          this.callUnsubscribe = () => unsubscribers.forEach(unsubscribe => { try { unsubscribe(); } catch (_) {} });
+        } else {
+          this.callUnsubscribe = calls.doc(myName).onSnapshot(doc => {
+            if (doc.exists) onCall(doc.id, doc.data());
+          }, error => console.error('[CALL] Error escuchando llamada entrante:', error));
+        }
       }
 
       triggerIncomingCallAlert(callerName) {
-        if (this.prefs.sound) SoundEngine.playCallAlertSound();
         this.openVoiceCallModal({
           name: callerName,
           status: 'Llamada Entrante...',
           isIncoming: true
         });
+        this.stopIncomingCallRingtone();
+        SoundEngine.playCallAlertSound();
+        this.callRingtoneInterval = setInterval(() => SoundEngine.playCallAlertSound(), 2500);
+      }
+
+      stopIncomingCallRingtone() {
+        clearInterval(this.callRingtoneInterval);
+        this.callRingtoneInterval = null;
       }
 
       async acceptIncomingCall() {
         if (!this.currentCallData) return;
+        this.stopIncomingCallRingtone();
 
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
@@ -2229,6 +2255,8 @@
           });
           console.log('[CALL] Respuesta enviada');
           await this.flushPendingIceCandidates();
+          const callStatus = document.getElementById('call-status-label');
+          if (callStatus) callStatus.textContent = 'Negociando audio...';
 
           this.callSignalingUnsubscribes.push(callDoc.collection('callerCandidates').onSnapshot(snap => {
             snap.docChanges().forEach(change => {
@@ -2239,7 +2267,6 @@
             });
           }, error => console.error('[CALL] Error recibiendo candidatos ICE:', error)));
 
-          this.onCallConnected();
 
         } catch (err) {
           console.error("Error al aceptar llamada:", err);
@@ -2263,7 +2290,12 @@
             console.warn('[CALL] Autoplay bloqueado; toca Activar audio para habilitar la salida.', e);
           }
         };
-        this.peerConnection.oniceconnectionstatechange = () => console.log('[CALL] ICE:', this.peerConnection?.iceConnectionState);
+        this.peerConnection.oniceconnectionstatechange = () => {
+          const state = this.peerConnection?.iceConnectionState;
+          console.log('[CALL] ICE:', state);
+          if (state === 'connected' || state === 'completed') this.onCallConnected();
+          else if (state === 'failed') this.showToast('No se estableció la ruta de audio. La red puede requerir un servidor TURN.', 'error');
+        };
         this.peerConnection.onconnectionstatechange = () => console.log('[CALL] Conexión:', this.peerConnection?.connectionState);
         this.peerConnection.onicegatheringstatechange = () => console.log('[CALL] ICE gathering:', this.peerConnection?.iceGatheringState);
         this.peerConnection.onicecandidateerror = event => console.warn('[CALL] Error ICE:', event.errorCode, event.errorText);
@@ -2307,6 +2339,7 @@
       }
 
       onCallConnected() {
+        if (this.callTimerInterval) return;
         document.getElementById('call-status-label').textContent = 'Conectado';
         document.getElementById('btn-accept-call').classList.add('hidden');
         const timerElem = document.getElementById('call-duration-timer');
@@ -2340,7 +2373,9 @@
       }
 
       endVoiceCall(notifyServer = true) {
+        this.stopIncomingCallRingtone();
         clearInterval(this.callTimerInterval);
+        this.callTimerInterval = null;
         this.callSeconds = 0;
 
         if (this.localStream) {
