@@ -757,7 +757,7 @@
         </button>
       </div>
 
-      <form id="task-form" onsubmit="app.handleSaveTask(event)" class="p-3.5 sm:p-4 space-y-2.5 text-xs sm:text-sm overflow-y-auto flex-1">
+      <form id="task-form" onsubmit="app.submitTaskForm(event)" onkeydown="app.handleTaskFormKeydown(event)" class="p-3.5 sm:p-4 space-y-2.5 text-xs sm:text-sm overflow-y-auto flex-1">
         <input type="hidden" id="task-id" value="">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
@@ -784,8 +784,8 @@
             </div>
           </div>
           <div>
-            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Tipo y Marca de Motor *</label>
-            <input type="text" id="task-equipment" required placeholder="Ej: BFT Deimos / LiftMaster" class="w-full px-2.5 py-1.5 border rounded-lg">
+            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Tipo y Marca de Motor (opcional)</label>
+            <input type="text" id="task-equipment" placeholder="Ej: BFT Deimos / LiftMaster" class="w-full px-2.5 py-1.5 border rounded-lg">
           </div>
         </div>
 
@@ -820,7 +820,7 @@
 
         <div class="pt-2 border-t flex justify-end gap-2 sticky bottom-0 bg-white">
           <button type="button" onclick="app.closeTaskModal()" class="px-3.5 py-1.5 border border-slate-300 rounded-xl text-slate-700 font-semibold text-xs">Cancelar</button>
-          <button type="submit" class="px-4 py-1.5 bg-brand-dark hover:bg-black text-white rounded-xl font-bold flex items-center gap-1 shadow text-xs">
+          <button type="button" onclick="app.submitTaskForm()" class="px-4 py-1.5 bg-brand-dark hover:bg-black text-white rounded-xl font-bold flex items-center gap-1 shadow text-xs">
             <i data-lucide="save" class="w-3.5 h-3.5 text-brand-lime"></i> Guardar
           </button>
         </div>
@@ -1200,6 +1200,7 @@
         this.chatThreadUnsubscribe = null;
         this.chatThreadsUnsubscribe = null;
         this.conversations = {};
+        this.chatThreadSummaries = {};
         this.chatActivityRanks = {};
         this.chatActivitySequence = 0;
         this.workerUnreadCount = null;
@@ -1228,6 +1229,7 @@
         this.callSeconds = 0;
         this.isMuted = false;
         this.lastIncomingCallId = null;
+        this.notifiedChatMessageIds = new Set();
 
         // Preferencias de Notificación
         this.prefs = {
@@ -1258,14 +1260,24 @@
       updatePref(key, value) {
         this.prefs[key] = value;
         SafeStorage.setItem('portonpro_preferences', JSON.stringify(this.prefs));
-        if (key === 'chatBadge' && !value) {
-          document.getElementById('chat-unread-badge').classList.add('hidden');
+        if (key === 'chatBadge') {
+          if (this.currentUser?.role === 'admin') this.renderConversationsSidebar();
+          else {
+            const threadId = this.currentUser?.fullName || this.currentUser?.username;
+            const summary = this.chatThreadSummaries[threadId];
+            const count = summary?.hasMessages ? summary.unreadCount : Number(this.workerUnreadCount || 0);
+            const badge = document.getElementById('chat-unread-badge');
+            if (badge) {
+              badge.textContent = count > 99 ? '99+' : String(count);
+              badge.classList.toggle('hidden', !value || !count);
+            }
+          }
         }
         this.showToast('Preferencia guardada', 'info');
       }
 
-      showPopupNotification({ title, subtitle, details, type, icon, onClick }) {
-        if (!this.prefs.popup) return;
+      showPopupNotification({ title, subtitle, details, type, icon, onClick, force = false }) {
+        if (!force && !this.prefs.popup) return;
 
         const stack = document.getElementById('toast-notification-stack');
         if (!stack) return;
@@ -1496,9 +1508,22 @@
         if (window.lucide) lucide.createIcons();
       }
 
-      saveTasks() {
+      saveTasks(reportError = false) {
         SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
-        if (window.db) db.collection('ordenes').doc('todas').set({ tasks: this.tasks }).catch(e => console.error(e));
+        if (!window.db) return Promise.resolve({ ok: true, localOnly: true });
+        try {
+          return db.collection('ordenes').doc('todas').set({ tasks: this.tasks })
+            .then(() => ({ ok: true }))
+            .catch(error => {
+              console.error('[ORDEN] Falló la escritura de órdenes:', error);
+              if (reportError) this.showToast(`No se guardó en la nube: ${error.message || error}`, 'error');
+              return { ok: false, error };
+            });
+        } catch (error) {
+          console.error('[ORDEN] No se pudo iniciar la escritura de órdenes:', error);
+          if (reportError) this.showToast(`No se pudo guardar: ${error.message || error}`, 'error');
+          return Promise.resolve({ ok: false, error });
+        }
       }
 
       async addActivityNotification(techName, taskId, actionType, details, type = 'order') {
@@ -2046,11 +2071,15 @@
           this.configureRemoteAudio();
 
           const callDoc = db.collection('webrtc_calls').doc(targetWorker);
+          const callSessionId = window.crypto?.randomUUID?.() || `call-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+          this.currentCallData = { id: targetWorker, sessionId: callSessionId, caller: this.currentUser.fullName || this.currentUser.username };
           const callerCandidates = callDoc.collection('callerCandidates');
 
           this.peerConnection.onicecandidate = event => {
             if (event.candidate) {
-              callerCandidates.add(event.candidate.toJSON());
+              const candidateData = event.candidate.toJSON();
+              if (callSessionId) candidateData.callSessionId = callSessionId;
+              callerCandidates.add(candidateData).catch(error => console.error('[CALL] Error enviando ICE del llamante:', error));
             }
           };
 
@@ -2062,6 +2091,7 @@
             callerRole: this.currentUser.role,
             recipient: this.currentUser.role === 'admin' ? targetWorker : 'Administrador',
             status: 'calling',
+            callSessionId,
             offer: { type: offer.type, sdp: offer.sdp },
             timestamp: Date.now()
           });
@@ -2069,6 +2099,7 @@
           this.callSignalingUnsubscribes.push(callDoc.onSnapshot(async doc => {
             if (doc.exists) {
               const data = doc.data();
+              if (data.callSessionId && this.currentCallData?.sessionId && data.callSessionId !== this.currentCallData.sessionId) return;
               if (data.status === 'answered' && data.answer && !this.peerConnection.currentRemoteDescription) {
                 const answerDesc = new RTCSessionDescription(data.answer);
                 await this.peerConnection.setRemoteDescription(answerDesc);
@@ -2084,14 +2115,15 @@
           this.callSignalingUnsubscribes.push(callDoc.collection('calleeCandidates').onSnapshot(snap => {
             snap.docChanges().forEach(change => {
               if (change.type === 'added') {
-                this.addRemoteIceCandidate(change.doc.data());
+                const candidate = change.doc.data();
+                if (!candidate.callSessionId || !this.currentCallData?.sessionId || candidate.callSessionId === this.currentCallData.sessionId) this.addRemoteIceCandidate(candidate);
               }
             });
           }, error => console.error('[CALL] Error recibiendo candidatos ICE:', error)));
 
         } catch (err) {
           console.error("Error al iniciar llamada WebRTC:", err);
-          this.showToast("No se pudo acceder al micrófono", "error");
+          this.showToast(`No se pudo iniciar la llamada: ${err.message || err}`, "error");
           this.endVoiceCall(false);
         }
       }
@@ -2103,15 +2135,34 @@
         const isAdmin = this.currentUser.role === 'admin';
         const calls = db.collection('webrtc_calls');
         const onCall = (id, data) => {
-          const ageMs = Date.now() - Number(data.timestamp || 0);
-          const recentEnough = Number.isFinite(ageMs) && Math.abs(ageMs) <= 2 * 60 * 1000;
+          if (this.currentCallData?.id === id && (data.status === 'ended' || data.status === 'rejected')) {
+            this.lastIncomingCallId = null;
+            this.endVoiceCall(false);
+            return;
+          }
+          if (this.lastIncomingCallId === id && (data.status === 'ended' || data.status === 'rejected')) {
+            this.lastIncomingCallId = null;
+            this.currentCallData = null;
+            document.getElementById('modal-voice-call')?.classList.add('hidden');
+            return;
+          }
+          const timestamp = Number(data.timestamp || 0);
+          const ageMs = timestamp ? Date.now() - timestamp : 0;
+          const recentEnough = !timestamp || (Number.isFinite(ageMs) && Math.abs(ageMs) <= 10 * 60 * 1000);
+          const callerRole = String(data.callerRole || '').trim().toLowerCase();
+          const normalizedId = String(id || '').trim().toLowerCase();
+          const normalizedMyName = String(myName || '').trim().toLowerCase();
+          const workerCaller = callerRole === 'worker' || this.workers.some(worker =>
+            [worker.fullName, worker.username].some(name => String(name || '').trim().toLowerCase() === normalizedId)
+          );
           const isForMe = isAdmin
-            ? data.recipient === 'Administrador' && data.callerRole === 'worker'
-            : id === myName && data.callerRole === 'admin';
+            ? workerCaller
+            : normalizedId === normalizedMyName && callerRole === 'admin';
           if (data.status !== 'calling' || !isForMe || !recentEnough || this.lastIncomingCallId === id) return;
+          console.info('[CALL] Llamada entrante detectada', { id, caller: data.caller, callerRole, recipient: data.recipient });
           this.currentCallData = { id, ...data };
           this.lastIncomingCallId = id;
-          this.triggerIncomingCallAlert(isAdmin ? data.caller : 'Administrador (Don Martínez)');
+          this.triggerIncomingCallAlert(isAdmin ? (data.caller || 'Trabajador') : 'Administrador (Don Martínez)');
         };
         this.callUnsubscribe = isAdmin
           ? calls.onSnapshot(snapshot => {
@@ -2139,6 +2190,7 @@
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
           console.log('[CALL] Micrófono obtenido');
+          if (!this.currentCallData) { stream.getTracks().forEach(track => track.stop()); return; }
           this.localStream = stream;
           this.pendingIceCandidates = [];
           this.callSignalingUnsubscribes = [];
@@ -2151,11 +2203,19 @@
           this.configureRemoteAudio();
 
           const callDoc = db.collection('webrtc_calls').doc(this.currentCallData.id);
+          this.callSignalingUnsubscribes.push(callDoc.onSnapshot(doc => {
+            if (!doc.exists) return;
+            const call = doc.data();
+            if (call.callSessionId && this.currentCallData?.sessionId && call.callSessionId !== this.currentCallData.sessionId) return;
+            if (call.status === 'ended' || call.status === 'rejected') this.endVoiceCall(false);
+          }, error => console.error('[CALL] Error siguiendo el estado de la llamada:', error)));
           const calleeCandidates = callDoc.collection('calleeCandidates');
 
           this.peerConnection.onicecandidate = event => {
             if (event.candidate) {
-              calleeCandidates.add(event.candidate.toJSON());
+              const candidateData = event.candidate.toJSON();
+              if (this.currentCallData?.sessionId) candidateData.callSessionId = this.currentCallData.sessionId;
+              calleeCandidates.add(candidateData).catch(error => console.error('[CALL] Error enviando ICE del receptor:', error));
             }
           };
 
@@ -2173,7 +2233,8 @@
           this.callSignalingUnsubscribes.push(callDoc.collection('callerCandidates').onSnapshot(snap => {
             snap.docChanges().forEach(change => {
               if (change.type === 'added') {
-                this.addRemoteIceCandidate(change.doc.data());
+                const candidate = change.doc.data();
+                if (!candidate.callSessionId || !this.currentCallData?.sessionId || candidate.callSessionId === this.currentCallData.sessionId) this.addRemoteIceCandidate(candidate);
               }
             });
           }, error => console.error('[CALL] Error recibiendo candidatos ICE:', error)));
@@ -2203,6 +2264,8 @@
           }
         };
         this.peerConnection.oniceconnectionstatechange = () => console.log('[CALL] ICE:', this.peerConnection?.iceConnectionState);
+        this.peerConnection.onconnectionstatechange = () => console.log('[CALL] Conexión:', this.peerConnection?.connectionState);
+        this.peerConnection.onicegatheringstatechange = () => console.log('[CALL] ICE gathering:', this.peerConnection?.iceGatheringState);
         this.peerConnection.onicecandidateerror = event => console.warn('[CALL] Error ICE:', event.errorCode, event.errorText);
       }
 
@@ -2218,8 +2281,10 @@
 
       async addRemoteIceCandidate(candidateData) {
         if (!this.peerConnection || !candidateData) return;
+        if (candidateData.callSessionId && this.currentCallData?.sessionId && candidateData.callSessionId !== this.currentCallData.sessionId) return;
         if (!this.peerConnection.remoteDescription) { this.pendingIceCandidates.push(candidateData); return; }
-        try { await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidateData)); }
+        const { callSessionId, ...iceCandidate } = candidateData;
+        try { await this.peerConnection.addIceCandidate(new RTCIceCandidate(iceCandidate)); }
         catch (error) { console.warn('[CALL] No se pudo agregar candidato ICE:', error); }
       }
 
@@ -2294,7 +2359,7 @@
         if (notifyServer && window.db && this.currentCallData?.id) {
           db.collection('webrtc_calls').doc(this.currentCallData.id).update({
             status: 'ended'
-          }).catch(() => {});
+          }).catch(error => console.error('[CALL] No se pudo avisar que la llamada terminó:', error));
         }
 
         document.getElementById('modal-voice-call').classList.add('hidden');
@@ -2342,6 +2407,7 @@
           const attach = () => {
             if (cancelled) return;
             unsubscribe = query.onSnapshot(snap => {
+              this.refreshChatThreadSummary(wName, snap, isAdmin);
               snap.docChanges().forEach(change => {
                 if (change.type !== 'added') return;
                 const msgId = change.doc.id;
@@ -2349,10 +2415,7 @@
                 const data = change.doc.data();
                 const fromOther = isAdmin ? data.senderRole === 'worker' : data.senderRole === 'admin';
                 if (!fromOther) return;
-                this.chatActivityRanks[wName] = ++this.chatActivitySequence;
-                if (this.prefs.sound) SoundEngine.playMessageSound();
-                this.showPopupNotification({ title: (data.senderName || wName) + ' te envió un mensaje', details: data.text || '', type: 'chat', icon: '💬', onClick: () => this.openDirectWorkerChat(wName) });
-                if (isAdmin) this.renderConversationsSidebar();
+                this.notifyIncomingChatMessage(wName, msgId, data);
               });
               if (firstSnapshot) { firstSnapshot = false; baselineIds.clear(); }
             }, error => console.error('[CHAT] Error escuchando mensajes de ' + wName + ':', error));
@@ -2366,6 +2429,7 @@
             if (cancelled) return;
             let ignoreFirstSnapshot = true;
             unsubscribe = query.onSnapshot(snap => {
+              this.refreshChatThreadSummary(wName, snap, isAdmin);
               if (ignoreFirstSnapshot) {
                 snap.docChanges().forEach(change => { if (change.type === 'added') baselineIds.add(change.doc.id); });
                 ignoreFirstSnapshot = false;
@@ -2377,14 +2441,63 @@
                 const data = change.doc.data();
                 const fromOther = isAdmin ? data.senderRole === 'worker' : data.senderRole === 'admin';
                 if (!fromOther) return;
-                this.chatActivityRanks[wName] = ++this.chatActivitySequence;
-                if (this.prefs.sound) SoundEngine.playMessageSound();
-                this.showPopupNotification({ title: (data.senderName || wName) + ' te envió un mensaje', details: data.text || '', type: 'chat', icon: '💬', onClick: () => this.openDirectWorkerChat(wName) });
-                if (isAdmin) this.renderConversationsSidebar();
+                this.notifyIncomingChatMessage(wName, change.doc.id, data);
               });
             }, listenError => console.error('[CHAT] Error escuchando mensajes de ' + wName + ':', listenError));
           });
         });
+      }
+
+      refreshChatThreadSummary(wName, snapshot, isAdmin) {
+        const docs = snapshot?.docs || [];
+        const myRole = this.currentUser?.role;
+        let latest = null;
+        let unreadCount = 0;
+        docs.forEach(doc => {
+          const data = doc.data();
+          const timestamp = Number(data.timestamp || 0);
+          if (!latest || timestamp >= latest.timestamp) latest = { data, timestamp };
+          const isIncoming = isAdmin ? data.senderRole === 'worker' : data.senderRole === 'admin';
+          if (isIncoming && data.status !== 'read' && !data[`hiddenFor_${myRole}`]) unreadCount++;
+        });
+        const summary = {
+          hasMessages: docs.length > 0,
+          lastMessage: latest?.data.text || '',
+          lastTime: latest?.data.time || '',
+          lastTimestamp: latest?.timestamp || 0,
+          unreadCount
+        };
+        this.chatThreadSummaries[wName] = summary;
+        if (latest && this.chatActivityRanks[wName] === undefined) {
+          this.chatActivityRanks[wName] = ++this.chatActivitySequence;
+        }
+        if (isAdmin) this.renderConversationsSidebar();
+        else if (wName === (this.currentUser?.fullName || this.currentUser?.username)) {
+          const count = summary.hasMessages ? summary.unreadCount : Number(this.workerUnreadCount || 0);
+          const badge = document.getElementById('chat-unread-badge');
+          if (badge) {
+            badge.textContent = count > 99 ? '99+' : String(count);
+            badge.classList.toggle('hidden', !this.prefs.chatBadge || !count);
+          }
+        }
+      }
+
+      notifyIncomingChatMessage(wName, msgId, data) {
+        const uniqueId = `${wName}:${msgId}`;
+        if (this.notifiedChatMessageIds.has(uniqueId)) return;
+        this.notifiedChatMessageIds.add(uniqueId);
+        if (this.notifiedChatMessageIds.size > 500) {
+          const oldestId = this.notifiedChatMessageIds.values().next().value;
+          this.notifiedChatMessageIds.delete(oldestId);
+        }
+        this.chatActivityRanks[wName] = ++this.chatActivitySequence;
+        if (this.prefs.sound) SoundEngine.playMessageSound();
+        this.showPopupNotification({
+          title: `${data.senderName || wName} te envió un mensaje`,
+          details: data.text || '', type: 'chat', icon: '💬',
+          onClick: () => this.openDirectWorkerChat(wName)
+        });
+        if (this.currentUser?.role === 'admin') this.renderConversationsSidebar();
       }
 
       clearDedicatedWorkerChatListeners() {
@@ -2427,16 +2540,21 @@
           const rankA = this.chatActivityRanks[nameA] || 0;
           const rankB = this.chatActivityRanks[nameB] || 0;
           if (rankA !== rankB) return rankB - rankA;
-          const timeA = Number(this.conversations[nameA]?.lastTimestamp || 0);
-          const timeB = Number(this.conversations[nameB]?.lastTimestamp || 0);
+          const timeA = Math.max(Number(this.conversations[nameA]?.lastTimestamp || 0), Number(this.chatThreadSummaries[nameA]?.lastTimestamp || 0));
+          const timeB = Math.max(Number(this.conversations[nameB]?.lastTimestamp || 0), Number(this.chatThreadSummaries[nameB]?.lastTimestamp || 0));
           return timeB - timeA;
         });
 
-        const unreadTotal = sortedWorkers.reduce((sum, w) => sum + Number(this.conversations[w.fullName || w.username]?.unreadByAdmin || 0), 0);
+        const unreadTotal = sortedWorkers.reduce((sum, w) => {
+          const name = w.fullName || w.username;
+          const summary = this.chatThreadSummaries[name];
+          const count = summary?.hasMessages ? summary.unreadCount : Number(this.conversations[name]?.unreadByAdmin || 0);
+          return sum + count;
+        }, 0);
         const globalBadge = document.getElementById('chat-unread-badge');
         if (globalBadge && this.currentUser?.role === 'admin') {
           globalBadge.textContent = unreadTotal > 99 ? '99+' : String(unreadTotal);
-          globalBadge.classList.toggle('hidden', !unreadTotal || !this.prefs.chatBadge);
+          globalBadge.classList.toggle('hidden', !this.prefs.chatBadge || !unreadTotal);
         }
 
         const filtered = sortedWorkers.filter(w => {
@@ -2454,9 +2572,12 @@
         listElem.innerHTML = filtered.map(w => {
           const wName = w.fullName || w.username;
           const thread = this.conversations[wName] || {};
+          const summary = this.chatThreadSummaries[wName];
           const isSelected = this.activeChatWorker === wName;
           const isOnline = (now - (w.lastHeartbeat || 0)) < ONLINE_THRESHOLD_MS;
-          const unread = thread.unreadByAdmin || 0;
+          const unread = this.prefs.chatBadge ? (summary?.hasMessages ? summary.unreadCount : Number(thread.unreadByAdmin || 0)) : 0;
+          const preview = summary?.hasMessages ? summary.lastMessage : (thread.lastMessage || 'Sin mensajes');
+          const previewTime = summary?.hasMessages ? summary.lastTime : (thread.lastTime || '');
 
           return `
             <div onclick="app.selectChatConversation('${wName}')" class="p-3 flex items-center justify-between cursor-pointer transition ${isSelected ? 'bg-brand-limeLight/80 border-r-4 border-brand-lime' : 'hover:bg-slate-100/70'}">
@@ -2468,9 +2589,9 @@
                 <div class="min-w-0">
                   <div class="flex items-center justify-between gap-1">
                     <span class="font-extrabold text-xs text-slate-900 truncate">${wName}</span>
-                    <span class="text-[9px] text-slate-400 font-mono">${thread.lastTime || ''}</span>
+                    <span class="text-[9px] text-slate-400 font-mono">${this.escapeHtml(previewTime)}</span>
                   </div>
-                  <p class="text-[11px] text-slate-500 truncate italic mt-0.5">${thread.lastMessage || 'Sin mensajes'}</p>
+                  <p class="text-[11px] text-slate-500 truncate italic mt-0.5">${this.escapeHtml(preview || 'Sin mensajes')}</p>
                 </div>
               </div>
               ${unread > 0 ? `
@@ -2615,10 +2736,12 @@
             const isOtherTyping = data.typing && data.typing[otherRole];
             if (this.currentUser.role === 'worker') {
               this.workerUnreadCount = Number(data.unreadByWorker || 0);
+              const summary = this.chatThreadSummaries[threadId];
+              const count = summary?.hasMessages ? summary.unreadCount : this.workerUnreadCount;
               const badge = document.getElementById('chat-unread-badge');
               if (badge) {
-                badge.textContent = this.workerUnreadCount > 99 ? '99+' : String(this.workerUnreadCount);
-                badge.classList.toggle('hidden', !this.workerUnreadCount || !this.prefs.chatBadge);
+                badge.textContent = count > 99 ? '99+' : String(count);
+                badge.classList.toggle('hidden', !this.prefs.chatBadge || !count);
               }
             }
             const typingElem = document.getElementById('chat-typing-indicator');
@@ -2666,7 +2789,8 @@
             this.renderChatMessages();
 
             const badge = document.getElementById('chat-unread-badge');
-            const badgeCount = this.currentUser.role === 'worker' && this.workerUnreadCount !== null ? this.workerUnreadCount : unreadCount;
+            const threadSummary = this.chatThreadSummaries[threadId];
+            const badgeCount = threadSummary?.hasMessages ? threadSummary.unreadCount : (this.currentUser.role === 'worker' && this.workerUnreadCount !== null ? this.workerUnreadCount : unreadCount);
             if (badgeCount > 0 && this.prefs.chatBadge) {
               badge.textContent = badgeCount > 99 ? '99+' : String(badgeCount);
               badge.classList.remove('hidden');
@@ -2711,10 +2835,9 @@
                   ${isMine ? statusTick : ''}
                 </div>
 
-                <div class="flex sm:hidden sm:group-hover:flex items-center gap-1.5 absolute -top-3 ${isMine ? 'left-2' : 'right-2'} bg-slate-800/90 rounded-lg p-1 text-[10px] text-white shadow-md">
+                ${this.currentUser.role === 'admin' ? `<div class="flex sm:hidden sm:group-hover:flex items-center gap-1.5 absolute -top-3 ${isMine ? 'left-2' : 'right-2'} bg-slate-800/90 rounded-lg p-1 text-[10px] text-white shadow-md">
                   <button type="button" onclick="app.copyMessageText('${m.text.replace(/'/g, "\\'")}')" class="hover:text-brand-lime" title="Copiar">📋</button>
-                  ${isMine || this.currentUser.role === 'admin' ? `<button type="button" onclick="app.deleteMessageForEveryone('${m.id}')" class="hover:text-rose-400" title="${this.currentUser.role === 'admin' ? 'Eliminar para todos' : 'Eliminar mensaje enviado por mí'}">✕</button>` : ''}
-                </div>
+                </div>` : ''}
               </div>
             </div>
           `;
@@ -3498,10 +3621,48 @@
         document.getElementById('modal-task-form').classList.add('hidden');
       }
 
-      handleSaveTask(e) {
+      handleTaskFormKeydown(e) {
+        if (e.key !== 'Enter' || e.isComposing || e.shiftKey || e.ctrlKey || e.altKey || e.target?.tagName === 'TEXTAREA') return;
         e.preventDefault();
-        if (this.currentUser.role !== 'admin') return;
+        this.submitTaskForm();
+      }
+
+      async submitTaskForm(e) {
+        e?.preventDefault();
+        const form = document.getElementById('task-form');
+        if (!form) {
+          this.showToast('No se encontró el formulario de la orden.', 'error');
+          return;
+        }
+        if (!form.checkValidity()) {
+          const invalidControls = [...form.elements].filter(control => control.willValidate && !control.validity.valid);
+          const names = invalidControls.map(control => {
+            const label = control.labels?.[0]?.textContent || control.closest('div')?.querySelector('label')?.textContent;
+            return (label || control.id || 'Campo obligatorio').replace('*', '').trim();
+          });
+          form.reportValidity();
+          if (names.length) this.showToast(`Revisa: ${names.join(', ')}`, 'error');
+          invalidControls[0]?.focus();
+          return;
+        }
+        if (this.currentUser?.role !== 'admin') {
+          this.showToast('Solo el administrador puede guardar órdenes.', 'error');
+          return;
+        }
+        try {
+          await this.handleSaveTask({ preventDefault() {} });
+        } catch (error) {
+          console.error('[ORDEN] Error al guardar:', error);
+          this.showToast(`No se pudo guardar la orden: ${error.message || error}`, 'error');
+        }
+      }
+
+      async handleSaveTask(e) {
+        e.preventDefault();
+        if (this.currentUser?.role !== 'admin') return;
         const id = document.getElementById('task-id').value;
+        const previousTasks = this.tasks.map(task => ({ ...task }));
+        const previousChecklistTemplate = [...this.checklistTemplate];
 
         if (id) {
           const index = this.tasks.findIndex(t => t.id === id);
@@ -3516,7 +3677,6 @@
             this.tasks[index].date = document.getElementById('task-date').value;
             this.tasks[index].instructions = document.getElementById('task-instructions').value;
             if (this.checklistDraftDirty) this.tasks[index].checklist = this.activeChecklistDraft.map(item => ({ ...item }));
-            this.showToast('Orden modificada correctamente', 'success');
           }
         } else {
           const num = 100 + this.tasks.length + 1;
@@ -3541,13 +3701,23 @@
           this.tasks.unshift(newTask);
           this.checklistTemplate = this.activeChecklistDraft.map(item => item.label);
           SafeStorage.setItem('portonpro_checklist_template_v1', JSON.stringify(this.checklistTemplate));
-          this.showToast(`Nueva orden ${newTask.id} asignada`, 'success');
         }
 
-        this.saveTasks();
+        const saveResult = await this.saveTasks(true);
+        if (!saveResult.ok) {
+          this.tasks = previousTasks;
+          this.checklistTemplate = previousChecklistTemplate;
+          SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
+          SafeStorage.setItem('portonpro_checklist_template_v1', JSON.stringify(this.checklistTemplate));
+          this.updateStats();
+          this.renderTasks();
+          return;
+        }
+
         this.closeTaskModal();
         this.updateStats();
         this.renderTasks();
+        this.showToast(id ? 'Orden modificada correctamente' : `Nueva orden ${this.tasks[0]?.id || ''} guardada`, 'success');
       }
 
       deleteTask(id) {
