@@ -141,8 +141,8 @@
   <!-- CONTENEDOR FLOTANTE DE NOTIFICACIONES EMERGENTES INTERNAS (TOASTS) -->
   <div id="toast-notification-stack" class="fixed top-3 right-3 sm:top-4 sm:right-4 z-[99999] flex flex-col gap-2 max-w-[94vw] sm:max-w-sm w-full pointer-events-none"></div>
 
-  <!-- ELEMENTO DE AUDIO REMOTO WEBRTC (Con reproducción activa) -->
-  <audio id="remote-audio-stream" autoplay playsinline style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;"></audio>
+  <!-- ELEMENTO DE AUDIO REMOTO WEBRTC (Garantizado para streaming) -->
+  <audio id="remote-audio-stream" autoplay playsinline style="position: absolute; width: 1px; height: 1px; opacity: 0.01; pointer-events: none;"></audio>
 
   <!-- MODAL DE LLAMADA DE VOZ WEBRTC -->
   <div id="modal-voice-call" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[100000] hidden flex items-center justify-center p-4">
@@ -504,7 +504,7 @@
     </div>
   </div>
 
-  <!-- SISTEMA DE CHAT PRIVADO PROFESIONAL ESTILO MESSENGER/APP MÓVIL (PANTALLA COMPLETA EN CELULARES) -->
+  <!-- SISTEMA DE CHAT PRIVADO PROFESIONAL ESTILO MESSENGER/APP MÓVIL -->
   <div id="chat-floating-button-container" class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 hidden">
     <button onclick="app.toggleChatWindow()" class="relative p-3.5 sm:p-4 bg-brand-dark hover:bg-black text-white rounded-full shadow-2xl border-2 border-brand-lime flex items-center justify-center active:scale-95 transition" title="Chat Interno">
       <i data-lucide="message-square" class="w-5 h-5 sm:w-6 sm:h-6 text-brand-lime"></i>
@@ -532,7 +532,8 @@
           <span class="hidden sm:inline">Llamar</span>
         </button>
 
-        <div class="relative">
+        <!-- Opciones avanzadas de conversación (SOLO ADMINISTRADOR) -->
+        <div class="relative" id="chat-admin-actions-container">
           <button onclick="app.toggleChatOptionsMenu()" class="p-1.5 text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition">
             <i data-lucide="more-vertical" class="w-4 h-4"></i>
           </button>
@@ -735,7 +736,7 @@
     </div>
   </div>
 
-  <!-- MODAL: ASIGNAR / EDITAR ORDEN (ADMIN) -->
+  <!-- MODAL: ASIGNAR / EDITAR ORDEN (ADMIN) CON CHECKLIST DINÁMICO -->
   <div id="modal-task-form" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
       <div class="bg-brand-dark text-white px-4 sm:px-5 py-3 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
@@ -796,6 +797,17 @@
           </div>
         </div>
 
+        <!-- SECCIÓN: CHECKLIST TÉCNICO DINÁMICO DEL PORTÓN (ADMINISTRADOR) -->
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-black uppercase text-slate-800 tracking-wider">Checklist Técnico del Portón</span>
+            <button type="button" onclick="app.addChecklistItemAdmin()" class="px-2 py-0.5 bg-brand-lime hover:bg-brand-limeHover text-white text-[10px] font-bold rounded-lg shadow-sm flex items-center gap-1">
+              ➕ Agregar Ítem
+            </button>
+          </div>
+          <div id="admin-checklist-items-container" class="space-y-1.5 max-h-36 overflow-y-auto"></div>
+        </div>
+
         <div>
           <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Instrucciones</label>
           <textarea id="task-instructions" rows="2" placeholder="Indicaciones para el técnico..." class="w-full px-2.5 py-1.5 border rounded-lg"></textarea>
@@ -811,7 +823,7 @@
     </div>
   </div>
 
-  <!-- MODAL: REPORTE TÉCNICO -->
+  <!-- MODAL: REPORTE TÉCNICO CON CHECKLIST Y NOVEDADES EN CAMPO -->
   <div id="modal-report" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
       <div id="report-modal-header" class="bg-brand-dark text-white px-4 sm:px-5 py-3 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
@@ -841,6 +853,23 @@
           <button type="button" id="rep-btn-maps" class="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm flex items-center justify-center gap-1">
             📍 Maps
           </button>
+        </div>
+
+        <!-- CHECKLIST TÉCNICO OFICIAL (Solo verificación del técnico) -->
+        <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+          <span class="block text-[11px] font-black uppercase text-slate-700 mb-1.5">Checklist Técnico del Portón</span>
+          <div id="rep-checklist-container" class="space-y-1.5"></div>
+        </div>
+
+        <!-- NOVEDADES EN CAMPO / HALLAZGOS TÉCNICOS (CREADOS POR EL TÉCNICO) -->
+        <div class="bg-amber-50/60 p-2.5 rounded-xl border border-amber-200">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-black uppercase text-amber-900 tracking-wider">Hallazgos Técnicos / Novedades en Campo</span>
+            <button type="button" onclick="app.addWorkerFinding()" class="px-2 py-0.5 bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold rounded-lg shadow-sm flex items-center gap-1">
+              ➕ Agregar Novedad
+            </button>
+          </div>
+          <div id="rep-findings-container" class="space-y-1.5"></div>
         </div>
 
         <div>
@@ -905,6 +934,16 @@
           <p><b class="text-slate-500">Dirección:</b> <span id="view-address" class="font-semibold"></span></p>
           <p><b class="text-slate-500">Servicio:</b> <span id="view-service"></span> (<span id="view-equipment"></span>)</p>
           <p><b class="text-slate-500">Técnico:</b> <span id="view-technician" class="font-bold text-slate-900"></span></p>
+        </div>
+
+        <div class="p-2.5 bg-slate-50 border rounded-xl" id="view-checklist-section">
+          <p class="font-bold text-slate-500 mb-1 text-[10px] uppercase">Puntos de Verificación Técnico:</p>
+          <div id="view-checklist-list" class="space-y-1 text-xs"></div>
+        </div>
+
+        <div class="p-2.5 bg-amber-50/70 border border-amber-200 rounded-xl hidden" id="view-findings-section">
+          <p class="font-bold text-amber-900 mb-1 text-[10px] uppercase">Novedades en Campo Registradas:</p>
+          <div id="view-findings-list" class="space-y-1 text-xs"></div>
         </div>
 
         <div class="p-2.5 bg-slate-50 border rounded-xl">
@@ -1045,6 +1084,14 @@
       SoundEngine.getCtx();
     }, { once: true });
 
+    const INITIAL_CHECKLIST_TEMPLATE = [
+      'Engrase de cremallera / tornillo sin fin',
+      'Verificación y alineación de fotocélulas',
+      'Calibración y prueba de finales de carrera',
+      'Ajuste de embrague y fuerza de impacto',
+      'Revisión de tarjeta electrónica y fusibles'
+    ];
+
     const INITIAL_TASKS = [
       {
         id: 'ORD-101',
@@ -1058,7 +1105,9 @@
         date: '2026-10-25',
         instructions: 'Revisión periódica. Verificar tensión de cremallera y finales de carrera.',
         status: 'PENDIENTE',
-        checklist: [],
+        checklist: [...INITIAL_CHECKLIST_TEMPLATE],
+        completedChecklist: [],
+        findings: [],
         observations: '',
         evidence: [],
         completedAt: null
@@ -1075,6 +1124,12 @@
         this.activeReportStatus = 'REALIZADA';
         this.heartbeatTimer = null;
         this.currentReportEvidence = [];
+        
+        // Estado del Checklist al editar/crear orden (Admin)
+        this.currentEditingChecklist = [];
+
+        // Estado de Hallazgos en Campo del Técnico
+        this.currentWorkerFindings = [];
         
         // Estado del Chat y Conversaciones
         this.chatMessages = [];
@@ -1574,6 +1629,13 @@
         const auditLogSection = document.getElementById('section-admin-audit-log');
         const roleHint = document.getElementById('role-hint-text');
 
+        // Permisos en Chat: ocultar menú de acciones completas para trabajadores
+        const chatAdminActions = document.getElementById('chat-admin-actions-container');
+        if (chatAdminActions) {
+          if (isAdmin) chatAdminActions.classList.remove('hidden');
+          else chatAdminActions.classList.add('hidden');
+        }
+
         const btnResetPending = document.getElementById('btn-reset-pending');
         const btnResetDone = document.getElementById('btn-reset-done');
         const btnResetFailed = document.getElementById('btn-reset-failed');
@@ -1871,7 +1933,7 @@
       }
 
       // ========================================================
-      // SISTEMA WEBRTC AUDIO BIDIRECCIONAL CON SEÑALIZACIÓN ESTABLE
+      // SISTEMA WEBRTC AUDIO BIDIRECCIONAL ESTABILIZADO
       // ========================================================
       async startVoiceCall() {
         const targetWorker = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
@@ -1895,17 +1957,19 @@
 
           this.localStream.getTracks().forEach(track => {
             this.peerConnection.addTrack(track, this.localStream);
-            console.log("[CALL] Track agregado:", track.kind);
+            console.log("[CALL] Track agregado");
           });
 
           this.peerConnection.ontrack = event => {
-            console.log("[CALL] Audio remoto conectado", event.streams);
+            console.log("[CALL] Audio remoto conectado");
             const remoteAudio = document.getElementById('remote-audio-stream');
             if (remoteAudio && event.streams[0]) {
               remoteAudio.srcObject = event.streams[0];
               remoteAudio.volume = 1.0;
               remoteAudio.muted = false;
-              remoteAudio.play().catch(e => console.warn("[CALL] Error reproducción audio:", e));
+              remoteAudio.play().then(() => {
+                console.log("[CALL] Reproduciendo audio remoto");
+              }).catch(e => console.warn("[CALL] Error reproducción audio:", e));
             }
           };
 
@@ -2024,17 +2088,19 @@
 
           this.localStream.getTracks().forEach(track => {
             this.peerConnection.addTrack(track, this.localStream);
-            console.log("[CALL] Track agregado:", track.kind);
+            console.log("[CALL] Track agregado");
           });
 
           this.peerConnection.ontrack = event => {
-            console.log("[CALL] Audio remoto conectado", event.streams);
+            console.log("[CALL] Audio remoto conectado");
             const remoteAudio = document.getElementById('remote-audio-stream');
             if (remoteAudio && event.streams[0]) {
               remoteAudio.srcObject = event.streams[0];
               remoteAudio.volume = 1.0;
               remoteAudio.muted = false;
-              remoteAudio.play().catch(e => console.warn("[CALL] Error reproducción audio:", e));
+              remoteAudio.play().then(() => {
+                console.log("[CALL] Reproduciendo audio remoto");
+              }).catch(e => console.warn("[CALL] Error reproducción audio:", e));
             }
           };
 
@@ -2208,20 +2274,16 @@
                 if (this.processedEventIds.has(msgId)) return;
                 this.processedEventIds.add(msgId);
 
-                console.log(`[GLOBAL CHAT] Mensaje detectado en hilo ${threadId}:`, data);
+                console.log(`[GLOBAL CHAT] Mensaje detectado:`, data);
 
                 const isFromOther = data.senderRole !== this.currentUser.role;
 
                 if (isFromOther) {
-                  console.log(`[GLOBAL CHAT] Remitente: ${data.senderName}`);
-
-                  // 1. Sonido Inmediato
                   if (this.prefs.sound) {
                     SoundEngine.playMessageSound();
                     console.log('[GLOBAL CHAT] Sonido reproducido');
                   }
 
-                  // 2. Notificación Emergente Flotante Interna
                   this.showPopupNotification({
                     title: '💬 NUEVO MENSAJE',
                     subtitle: `${data.senderName}`,
@@ -2370,11 +2432,13 @@
       }
 
       toggleChatOptionsMenu() {
+        if (this.currentUser.role !== 'admin') return;
         const menu = document.getElementById('chat-conversation-options-dropdown');
         if (menu) menu.classList.toggle('hidden');
       }
 
       async archiveCurrentConversation() {
+        if (this.currentUser.role !== 'admin') return;
         const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
         this.toggleChatOptionsMenu();
 
@@ -2385,6 +2449,7 @@
       }
 
       async clearCurrentConversation() {
+        if (this.currentUser.role !== 'admin') return;
         this.toggleChatOptionsMenu();
         if (!confirm("¿Deseas vaciar todos los mensajes de esta conversación?")) return;
 
@@ -2398,6 +2463,7 @@
       }
 
       async deleteCurrentConversation() {
+        if (this.currentUser.role !== 'admin') return;
         this.toggleChatOptionsMenu();
         if (!confirm("¿Deseas eliminar completamente esta conversación y su historial?")) return;
 
@@ -2526,6 +2592,8 @@
         }
 
         const myName = this.currentUser.fullName || this.currentUser.username;
+        const isAdmin = this.currentUser.role === 'admin';
+
         container.innerHTML = this.chatMessages.map(m => {
           const isMine = m.senderName === myName;
 
@@ -2540,6 +2608,10 @@
             }
           }
 
+          // Permisos de borrado en mensaje:
+          // Admin puede borrar cualquiera. Trabajador sólo los que él mismo envió.
+          const canDelete = isAdmin || isMine;
+
           return `
             <div class="flex flex-col ${isMine ? 'items-end' : 'items-start'} group relative">
               <span class="text-[9px] font-bold text-slate-400 mb-0.5 px-1">${m.senderName} &bull; ${m.time}</span>
@@ -2551,8 +2623,8 @@
 
                 <div class="hidden group-hover:flex items-center gap-1.5 absolute -top-3 ${isMine ? 'left-2' : 'right-2'} bg-slate-800/90 rounded-lg p-1 text-[10px] text-white shadow-md z-30">
                   <button type="button" onclick="app.copyMessageText('${m.text.replace(/'/g, "\\'")}')" class="hover:text-brand-lime" title="Copiar">📋</button>
-                  <button type="button" onclick="app.deleteMessageForMe('${m.id}')" class="hover:text-amber-400" title="Eliminar para mí">🗑</button>
-                  ${isMine ? `<button type="button" onclick="app.deleteMessageForEveryone('${m.id}')" class="hover:text-rose-400" title="Eliminar para todos">✕</button>` : ''}
+                  ${canDelete ? `<button type="button" onclick="app.deleteMessageForMe('${m.id}')" class="hover:text-amber-400" title="Eliminar para mí">🗑</button>` : ''}
+                  ${isMine || isAdmin ? `<button type="button" onclick="app.deleteMessageForEveryone('${m.id}')" class="hover:text-rose-400" title="Eliminar para todos">✕</button>` : ''}
                 </div>
               </div>
             </div>
@@ -2627,280 +2699,6 @@
 
         const resetField = this.currentUser.role === 'admin' ? 'unreadByAdmin' : 'unreadByWorker';
         db.collection('chats_internos').doc(threadId).set({ [resetField]: 0 }, { merge: true }).catch(() => {});
-      }
-
-      renderTechniciansMonitor() {
-        const grid = document.getElementById('technicians-status-grid');
-        const counter = document.getElementById('techs-online-counter');
-        if (!grid) return;
-
-        const ONLINE_THRESHOLD_MS = 60 * 1000;
-        const now = Date.now();
-        let onlineCount = 0;
-
-        grid.innerHTML = this.workers.map(u => {
-          const isOnline = (now - (u.lastHeartbeat || 0)) < ONLINE_THRESHOLD_MS;
-          if (isOnline) onlineCount++;
-
-          const uName = u.fullName || u.username;
-          const assignedPending = this.tasks.filter(t => t.assignedTo === uName && (t.status === 'PENDIENTE' || t.status === 'EN_PROCESO')).length;
-
-          return `
-            <div class="p-3 rounded-2xl border ${isOnline ? 'bg-brand-limeLight border-brand-limeBorder shadow-sm' : 'bg-slate-50 border-slate-200'} flex flex-col justify-between">
-              <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center gap-2.5 min-w-0">
-                  <div onclick="app.zoomWorkerPhoto('${u.photo || ''}', '${uName}')" class="cursor-pointer relative w-10 h-10 rounded-full overflow-hidden border-2 ${isOnline ? 'border-brand-lime' : 'border-slate-300'} bg-slate-200 shrink-0 flex items-center justify-center hover:opacity-90 transition" title="Haz clic para ampliar">
-                    ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<span class="font-bold text-xs text-slate-700">${uName.charAt(0)}</span>`}
-                    <span class="w-3 h-3 rounded-full ${isOnline ? 'bg-emerald-500 ring-2 ring-white animate-pulse' : 'bg-slate-300'} absolute top-0 right-0"></span>
-                  </div>
-                  <div class="min-w-0 flex items-center gap-2">
-                    <h4 class="text-xs font-black text-slate-900 truncate">${uName}</h4>
-                    <span class="w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-500 ring-2 ring-emerald-300 animate-pulse' : 'bg-slate-300'} shrink-0" title="${isOnline ? 'Conectado' : 'Desconectado'}"></span>
-                  </div>
-                </div>
-                <span class="text-[10px] px-2 py-0.5 rounded-md font-extrabold ${assignedPending > 0 ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-600'} shrink-0">
-                  ${assignedPending} ptes
-                </span>
-              </div>
-
-              <div class="bg-white/80 rounded-xl p-2 border border-slate-200/70 text-[10px] space-y-0.5">
-                <div class="flex items-center justify-between">
-                  <span class="text-slate-500">Última Actividad:</span>
-                  <span class="font-bold ${isOnline ? 'text-emerald-600' : 'text-slate-700'}">${u.lastLogin || 'No registrado'}</span>
-                </div>
-              </div>
-            </div>
-          `;
-        }).join('');
-
-        counter.textContent = `${onlineCount} En Línea`;
-        if (window.lucide) lucide.createIcons();
-      }
-
-      openSettingsModal() {
-        const isAdmin = this.currentUser.role === 'admin';
-        this.renderMySettingsPhotoPreview();
-
-        document.getElementById('set-own-current-pass').value = '';
-        document.getElementById('set-own-new-pass').value = '';
-        document.getElementById('set-own-confirm-pass').value = '';
-
-        const adminUsersSection = document.getElementById('settings-admin-users-section');
-        const subtitle = document.getElementById('settings-modal-subtitle');
-
-        if (isAdmin) {
-          subtitle.textContent = 'Gestión integral de personal en Firestore';
-          adminUsersSection.classList.remove('hidden');
-          this.resetUserForm();
-          this.renderUsersTable();
-        } else {
-          subtitle.textContent = `Ajustes personales de tu cuenta (${this.currentUser.fullName || this.currentUser.username})`;
-          adminUsersSection.classList.add('hidden');
-        }
-
-        document.getElementById('modal-settings').classList.remove('hidden');
-        if (window.lucide) lucide.createIcons();
-      }
-
-      closeSettingsModal() {
-        document.getElementById('modal-settings').classList.add('hidden');
-      }
-
-      renderMySettingsPhotoPreview() {
-        const img = document.getElementById('settings-my-photo-preview');
-        const init = document.getElementById('settings-my-initial-preview');
-        const name = this.currentUser.fullName || this.currentUser.username || 'A';
-        if (this.currentUser.photo) {
-          img.src = this.currentUser.photo;
-          img.classList.remove('hidden');
-          init.classList.add('hidden');
-        } else {
-          img.classList.add('hidden');
-          init.classList.remove('hidden');
-          init.textContent = name.charAt(0);
-        }
-      }
-
-      handleUploadOwnPhoto(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        if (file.size > 2 * 1024 * 1024) {
-          this.showToast('La imagen debe pesar menos de 2MB', 'error');
-          return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const base64Data = event.target.result;
-          this.currentUser.photo = base64Data;
-          SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
-
-          if (window.db && this.currentUser.id) {
-            db.collection('users').doc(this.currentUser.id).update({ photo: base64Data }).catch(e => console.error(e));
-            db.collection('presencia').doc(this.currentUser.username.toLowerCase()).set({ photo: base64Data }, { merge: true }).catch(() => {});
-          }
-
-          this.renderMySettingsPhotoPreview();
-          this.setupDashboardUI();
-          this.renderTasks();
-          if (this.currentUser.role === 'admin') this.renderTechniciansMonitor();
-          this.showToast('Foto actualizada en Firestore', 'success');
-        };
-        reader.readAsDataURL(file);
-      }
-
-      removeOwnPhoto() {
-        this.currentUser.photo = '';
-        SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
-
-        if (window.db && this.currentUser.id) {
-          db.collection('users').doc(this.currentUser.id).update({ photo: '' }).catch(e => console.error(e));
-          db.collection('presencia').doc(this.currentUser.username.toLowerCase()).set({ photo: '' }, { merge: true }).catch(() => {});
-        }
-
-        this.renderMySettingsPhotoPreview();
-        this.setupDashboardUI();
-        this.renderTasks();
-        if (this.currentUser.role === 'admin') this.renderTechniciansMonitor();
-        this.showToast('Foto eliminada', 'info');
-      }
-
-      async handleChangeOwnPassword(e) {
-        e.preventDefault();
-        const currentPass = document.getElementById('set-own-current-pass').value.trim();
-        const newPass = document.getElementById('set-own-new-pass').value.trim();
-        const confirmPass = document.getElementById('set-own-confirm-pass').value.trim();
-
-        if (newPass !== confirmPass) {
-          this.showToast('Las contraseñas no coinciden', 'error');
-          return;
-        }
-
-        if (window.db && this.currentUser.id) {
-          try {
-            const userDoc = await db.collection('users').doc(this.currentUser.id).get();
-            if (userDoc.exists && String(userDoc.data().password).trim() === currentPass) {
-              await db.collection('users').doc(this.currentUser.id).update({ password: newPass });
-              this.currentUser.password = newPass;
-              SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
-              this.showToast('Contraseña actualizada en Firestore', 'success');
-              this.closeSettingsModal();
-              return;
-            } else {
-              this.showToast('Contraseña actual incorrecta', 'error');
-            }
-          } catch(err) {
-            this.showToast('Error al conectar con Firestore', 'error');
-          }
-        }
-      }
-
-      resetUserForm() {
-        document.getElementById('manage-user-id').value = '';
-        document.getElementById('manage-user-form').reset();
-        document.getElementById('btn-save-user').textContent = 'Guardar en Firestore';
-        if (window.lucide) lucide.createIcons();
-      }
-
-      async handleSaveUser(e) {
-        e.preventDefault();
-        if (this.currentUser.role !== 'admin') return;
-
-        const id = document.getElementById('manage-user-id').value;
-        const fullName = this.normalizeInput(document.getElementById('manage-fullname').value);
-        const username = this.normalizeInput(document.getElementById('manage-username').value);
-        const password = this.normalizeInput(document.getElementById('manage-password').value);
-        const phone = this.normalizeInput(document.getElementById('manage-phone').value);
-        const specialty = this.normalizeInput(document.getElementById('manage-specialty').value);
-
-        if (username.toLowerCase() === 'administrador' && id !== 'admin') {
-          this.showToast('El usuario no puede llamarse administrador', 'error');
-          return;
-        }
-
-        const userData = {
-          fullName,
-          username,
-          password,
-          phone,
-          specialty: specialty || 'Técnico de Portones',
-          role: 'worker',
-          active: true
-        };
-
-        if (window.db) {
-          try {
-            if (id) {
-              await db.collection('users').doc(id).set(userData, { merge: true });
-              this.showToast(`Trabajador ${fullName} actualizado en Firestore`, 'success');
-            } else {
-              const docId = 'tech-' + Date.now();
-              await db.collection('users').doc(docId).set({ ...userData, photo: '', lastHeartbeat: 0, lastLogin: 'Nunca' });
-              this.showToast(`Trabajador ${fullName} registrado en Firestore`, 'success');
-            }
-            this.resetUserForm();
-          } catch(err) {
-            console.error("Error guardando trabajador en Firestore:", err);
-            this.showToast('Error guardando en Firestore', 'error');
-          }
-        }
-      }
-
-      renderUsersTable() {
-        const tbody = document.getElementById('table-users-body');
-        if (!tbody) return;
-        document.getElementById('settings-users-count-badge').textContent = `${this.workers.length} Trabajadores`;
-
-        tbody.innerHTML = this.workers.map(u => {
-          const uName = u.fullName || u.username;
-          return `
-            <tr class="hover:bg-slate-50 transition">
-              <td class="p-1.5">
-                <div class="flex items-center gap-1.5">
-                  <div onclick="app.zoomWorkerPhoto('${u.photo || ''}', '${uName}')" class="cursor-pointer w-6 h-6 rounded-full border border-brand-lime overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center">
-                    ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<span class="font-bold text-[9px]">${uName.charAt(0)}</span>`}
-                  </div>
-                  <span class="font-bold text-slate-800 truncate max-w-[90px]">${uName}</span>
-                </div>
-              </td>
-              <td class="p-1.5 font-mono text-[10px] text-slate-600">
-                <span>@${u.username}</span>
-              </td>
-              <td class="p-1.5 text-right space-x-1">
-                <button onclick="app.editUser('${u.id}')" class="p-1 text-slate-600 hover:text-brand-limeHover" title="Editar"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
-                <button onclick="app.deleteUser('${u.id}')" class="p-1 text-slate-600 hover:text-rose-600" title="Eliminar"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-              </td>
-            </tr>
-          `;
-        }).join('');
-
-        if (window.lucide) lucide.createIcons();
-      }
-
-      editUser(id) {
-        const u = this.users.find(x => x.id === id);
-        if (!u) return;
-        document.getElementById('manage-user-id').value = u.id;
-        document.getElementById('manage-fullname').value = u.fullName || u.username;
-        document.getElementById('manage-username').value = u.username;
-        document.getElementById('manage-password').value = u.password;
-        document.getElementById('manage-phone').value = u.phone || '';
-        document.getElementById('manage-specialty').value = u.specialty || '';
-        document.getElementById('btn-save-user').textContent = 'Actualizar en Firestore';
-        if (window.lucide) lucide.createIcons();
-      }
-
-      async deleteUser(id) {
-        if (!confirm(`¿Eliminar trabajador de Firestore?`)) return;
-        if (window.db) {
-          try {
-            await db.collection('users').doc(id).delete();
-            this.showToast('Trabajador eliminado de Firestore', 'info');
-          } catch(err) {
-            this.showToast('Error al eliminar de Firestore', 'error');
-          }
-        }
       }
 
       renderTechOptionsInSelects() {
@@ -3131,12 +2929,20 @@
         if (window.lucide) lucide.createIcons();
       }
 
+      // ==========================================
+      // CHECKLIST DINÁMICO (ADMINISTRADOR)
+      // ==========================================
       openNewTaskModal() {
         if (this.currentUser.role !== 'admin') return;
         document.getElementById('form-modal-title').textContent = 'Nueva Orden de Trabajo';
         document.getElementById('task-id').value = '';
         document.getElementById('task-form').reset();
         document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
+        
+        // Checklist base por defecto
+        this.currentEditingChecklist = [...INITIAL_CHECKLIST_TEMPLATE];
+        this.renderAdminChecklistEditor();
+
         document.getElementById('modal-task-form').classList.remove('hidden');
       }
 
@@ -3156,7 +2962,53 @@
         document.getElementById('task-priority').value = t.priority;
         document.getElementById('task-date').value = t.date;
         document.getElementById('task-instructions').value = t.instructions || '';
+
+        this.currentEditingChecklist = Array.isArray(t.checklist) ? [...t.checklist] : [...INITIAL_CHECKLIST_TEMPLATE];
+        this.renderAdminChecklistEditor();
+
         document.getElementById('modal-task-form').classList.remove('hidden');
+      }
+
+      addChecklistItemAdmin() {
+        const itemText = prompt("Ingresa el nuevo ítem para el Checklist Técnico:");
+        if (itemText && itemText.trim()) {
+          this.currentEditingChecklist.push(itemText.trim());
+          this.renderAdminChecklistEditor();
+        }
+      }
+
+      editChecklistItemAdmin(index) {
+        const current = this.currentEditingChecklist[index];
+        const updated = prompt("Editar ítem del Checklist:", current);
+        if (updated && updated.trim()) {
+          this.currentEditingChecklist[index] = updated.trim();
+          this.renderAdminChecklistEditor();
+        }
+      }
+
+      deleteChecklistItemAdmin(index) {
+        this.currentEditingChecklist.splice(index, 1);
+        this.renderAdminChecklistEditor();
+      }
+
+      renderAdminChecklistEditor() {
+        const container = document.getElementById('admin-checklist-items-container');
+        if (!container) return;
+
+        if (this.currentEditingChecklist.length === 0) {
+          container.innerHTML = `<p class="text-[11px] text-slate-400 italic">No hay ítems configurados. Pulsa "Agregar Ítem".</p>`;
+          return;
+        }
+
+        container.innerHTML = this.currentEditingChecklist.map((item, idx) => `
+          <div class="flex items-center justify-between p-1.5 bg-white rounded-lg border border-slate-200">
+            <span class="text-xs font-semibold text-slate-700 truncate pr-2">☑ ${item}</span>
+            <div class="flex items-center gap-1 shrink-0">
+              <button type="button" onclick="app.editChecklistItemAdmin(${idx})" class="p-1 text-slate-500 hover:text-brand-dark" title="Editar">✏️</button>
+              <button type="button" onclick="app.deleteChecklistItemAdmin(${idx})" class="p-1 text-slate-500 hover:text-rose-600" title="Eliminar">🗑️</button>
+            </div>
+          </div>
+        `).join('');
       }
 
       closeTaskModal() {
@@ -3180,6 +3032,7 @@
             this.tasks[index].priority = document.getElementById('task-priority').value;
             this.tasks[index].date = document.getElementById('task-date').value;
             this.tasks[index].instructions = document.getElementById('task-instructions').value;
+            this.tasks[index].checklist = [...this.currentEditingChecklist];
             this.showToast('Orden modificada correctamente', 'success');
           }
         } else {
@@ -3195,6 +3048,9 @@
             priority: document.getElementById('task-priority').value,
             date: document.getElementById('task-date').value,
             instructions: document.getElementById('task-instructions').value,
+            checklist: [...this.currentEditingChecklist],
+            completedChecklist: [],
+            findings: [],
             status: 'PENDIENTE',
             observations: '',
             evidence: [],
@@ -3220,6 +3076,9 @@
         this.showToast(`Orden eliminada`, 'info');
       }
 
+      // ==========================================
+      // REPORTE TÉCNICO: CHECKLIST Y NOVEDADES EN CAMPO
+      // ==========================================
       openReportModal(id) {
         const t = this.tasks.find(x => x.id === id);
         if (!t) return;
@@ -3234,10 +3093,56 @@
         document.getElementById('rep-btn-waze').onclick = () => this.openWazeNavigation(t.address);
         document.getElementById('rep-btn-maps').onclick = () => this.openGoogleMapsNavigation(t.address);
 
+        // Checklist oficial (solo marcar completado, sin modificar texto)
+        const checklistItems = Array.isArray(t.checklist) && t.checklist.length > 0 ? t.checklist : INITIAL_CHECKLIST_TEMPLATE;
+        const completedItems = Array.isArray(t.completedChecklist) ? t.completedChecklist : [];
+        const chkContainer = document.getElementById('rep-checklist-container');
+        
+        chkContainer.innerHTML = checklistItems.map((item, idx) => `
+          <label class="flex items-center gap-2 p-1.5 bg-white rounded-lg border border-slate-200 cursor-pointer select-none">
+            <input type="checkbox" value="${item}" ${completedItems.includes(item) ? 'checked' : ''} class="w-4 h-4 rounded text-brand-lime focus:ring-brand-lime border-slate-300 rep-check-input">
+            <span class="text-xs text-slate-700">${item}</span>
+          </label>
+        `).join('');
+
+        // Hallazgos y novedades en campo del técnico
+        this.currentWorkerFindings = Array.isArray(t.findings) ? [...t.findings] : [];
+        this.renderWorkerFindings();
+
         this.currentReportEvidence = Array.isArray(t.evidence) ? [...t.evidence] : [];
         this.renderEvidenceGallery();
         this.setReportStatus(t.status === 'NO_REALIZADA' ? 'NO_REALIZADA' : 'REALIZADA');
         document.getElementById('modal-report').classList.remove('hidden');
+      }
+
+      addWorkerFinding() {
+        const finding = prompt("Describe la novedad o hallazgo técnico en campo (Ej: Cableado sulfatado, brazo golpeado, motor con ingreso de agua):");
+        if (finding && finding.trim()) {
+          this.currentWorkerFindings.push(finding.trim());
+          this.renderWorkerFindings();
+        }
+      }
+
+      deleteWorkerFinding(index) {
+        this.currentWorkerFindings.splice(index, 1);
+        this.renderWorkerFindings();
+      }
+
+      renderWorkerFindings() {
+        const container = document.getElementById('rep-findings-container');
+        if (!container) return;
+
+        if (this.currentWorkerFindings.length === 0) {
+          container.innerHTML = `<p class="text-[11px] text-amber-700 italic">No hay novedades registradas. Usa "➕ Agregar Novedad" si encuentras anomalías.</p>`;
+          return;
+        }
+
+        container.innerHTML = this.currentWorkerFindings.map((f, idx) => `
+          <div class="flex items-center justify-between p-1.5 bg-white rounded-lg border border-amber-300">
+            <span class="text-xs font-semibold text-amber-950 truncate pr-2">⚠️ ${f}</span>
+            <button type="button" onclick="app.deleteWorkerFinding(${idx})" class="p-1 text-slate-400 hover:text-rose-600" title="Eliminar novedad">🗑️</button>
+          </div>
+        `).join('');
       }
 
       closeReportModal() {
@@ -3269,8 +3174,13 @@
 
         const taskIndex = this.tasks.findIndex(t => t.id === this.selectedTask.id);
         if (taskIndex !== -1) {
+          // Extraer ítems de checklist completados por el técnico
+          const checked = Array.from(document.querySelectorAll('.rep-check-input:checked')).map(el => el.value);
+
           this.tasks[taskIndex].status = this.activeReportStatus;
           this.tasks[taskIndex].observations = observations;
+          this.tasks[taskIndex].completedChecklist = checked;
+          this.tasks[taskIndex].findings = this.currentWorkerFindings;
           this.tasks[taskIndex].evidence = this.currentReportEvidence;
           this.tasks[taskIndex].completedAt = this.formatFullDateTime(new Date());
 
@@ -3287,8 +3197,12 @@
         const taskIndex = this.tasks.findIndex(t => t.id === this.selectedTask.id);
         if (taskIndex !== -1) {
           const obs = document.getElementById('rep-observations').value.trim();
+          const checked = Array.from(document.querySelectorAll('.rep-check-input:checked')).map(el => el.value);
+
           this.tasks[taskIndex].status = 'EN_PROCESO';
           this.tasks[taskIndex].observations = obs;
+          this.tasks[taskIndex].completedChecklist = checked;
+          this.tasks[taskIndex].findings = this.currentWorkerFindings;
           this.tasks[taskIndex].evidence = this.currentReportEvidence;
           this.tasks[taskIndex].completedAt = this.formatFullDateTime(new Date());
 
@@ -3343,6 +3257,26 @@
         const badge = document.getElementById('view-order-badge');
         badge.textContent = t.status;
         badge.className = `px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${t.status === 'REALIZADA' ? 'bg-emerald-100 text-emerald-800' : t.status === 'NO_REALIZADA' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}`;
+
+        // Checklist en la Ficha
+        const chkList = document.getElementById('view-checklist-list');
+        const checklistItems = Array.isArray(t.checklist) && t.checklist.length > 0 ? t.checklist : INITIAL_CHECKLIST_TEMPLATE;
+        const completed = Array.isArray(t.completedChecklist) ? t.completedChecklist : [];
+
+        chkList.innerHTML = checklistItems.map(item => {
+          const isDone = completed.includes(item);
+          return `<div class="flex items-center gap-1.5"><span class="${isDone ? 'text-emerald-600 font-bold' : 'text-slate-400'}">${isDone ? '☑' : '☐'}</span> <span class="${isDone ? 'text-slate-900 font-medium' : 'text-slate-500'}">${item}</span></div>`;
+        }).join('');
+
+        // Novedades en la Ficha
+        const findingsSection = document.getElementById('view-findings-section');
+        const findingsList = document.getElementById('view-findings-list');
+        if (Array.isArray(t.findings) && t.findings.length > 0) {
+          findingsSection.classList.remove('hidden');
+          findingsList.innerHTML = t.findings.map(f => `<div class="text-amber-900 font-semibold">• ${f}</div>`).join('');
+        } else {
+          findingsSection.classList.add('hidden');
+        }
 
         const evSection = document.getElementById('view-evidence-section');
         const evGallery = document.getElementById('view-evidence-gallery');
