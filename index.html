@@ -4,11 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>ServiPortones Eléctricos Martínez - Gestión Operativa y Control de Personal</title>
+  
+  <!-- Configuración PWA Nativa (Manifest, Theme Color y Soporte Móvil) -->
+  <meta name="theme-color" content="#111827">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ServiPortones">
+  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22ServiPortones%20Mart%C3%ADnez%22%2C%22short_name%22%3A%22ServiPortones%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23111827%22%2C%22theme_color%22%3A%22%23111827%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fcdn-icons-png.flaticon.com%2F512%2F1048%2F1048953.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Leaflet CSS y JS para Mapa Satelital/Calles sin API Key de pago -->
+  <!-- Leaflet CSS y JS para Mapa Satelital/Calles sin costo -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
@@ -240,7 +248,7 @@
         </div>
 
         <div class="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
-          <!-- Botón de GPS para Administrador -->
+          <!-- Botón de GPS (Solo Administrador) -->
           <button id="btn-nav-admin-gps" onclick="app.openAdminGpsModal()" class="hidden bg-cyan-700 hover:bg-cyan-600 text-white text-xs font-bold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl flex items-center gap-1 shadow transition active:scale-95" title="Monitoreo GPS">
             <i data-lucide="map-pin" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-200"></i>
             <span class="hidden md:inline">GPS</span>
@@ -483,7 +491,6 @@
   <!-- ======================================================== -->
   <div id="modal-admin-gps" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-2 sm:p-4">
     <div class="bg-white rounded-3xl max-w-4xl w-full h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
-      <!-- Header GPS -->
       <div class="bg-brand-dark text-white p-3.5 sm:p-4 flex items-center justify-between border-b-2 border-cyan-500 shrink-0">
         <div class="flex items-center gap-2">
           <div class="p-1.5 bg-cyan-500/20 rounded-xl text-cyan-400 border border-cyan-500/40">
@@ -499,12 +506,9 @@
         </button>
       </div>
 
-      <!-- Contenedor Principal: Mapa + Lista Lateral -->
       <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
-        <!-- Mapa Leaflet -->
         <div id="gps-map-container" class="flex-1 w-full h-full min-h-[300px] z-10 bg-slate-100"></div>
 
-        <!-- Lista Lateral de Trabajadores y Rutas -->
         <div class="w-full md:w-80 bg-slate-50 border-t md:border-t-0 md:border-l border-slate-200 p-3 overflow-y-auto chat-scroll shrink-0 flex flex-col gap-2">
           <div class="flex items-center justify-between pb-1 border-b border-slate-200">
             <span class="text-[11px] font-black uppercase tracking-wider text-slate-700">Técnicos Emitiendo</span>
@@ -516,7 +520,6 @@
         </div>
       </div>
 
-      <!-- Footer GPS -->
       <div class="p-2.5 bg-white border-t border-slate-200 flex items-center justify-between text-xs shrink-0">
         <span class="text-slate-500 text-[10px] sm:text-[11px]">📍 Las coordenadas se actualizan automáticamente al emitir señal.</span>
         <button onclick="app.closeAdminGpsModal()" class="px-4 py-1.5 border border-slate-300 rounded-xl font-bold text-xs hover:bg-slate-100">Cerrar</button>
@@ -525,16 +528,16 @@
   </div>
 
   <!-- ======================================================== -->
-  <!-- SISTEMA DE CHAT PRIVADO ESTILO MESSENGER / WHATSAPP WEB   -->
+  <!-- SISTEMA DE CHAT PRIVADO PROFESIONAL ESTILO MESSENGER/APP -->
   <!-- ======================================================== -->
   <div id="chat-floating-button-container" class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 hidden">
-    <button onclick="app.toggleChatWindow()" class="relative p-3 sm:p-3.5 bg-brand-dark hover:bg-black text-white rounded-full shadow-2xl border-2 border-brand-lime flex items-center justify-center active:scale-95 transition" title="Chat Interno">
+    <button onclick="app.toggleChatWindow()" class="relative p-3.5 sm:p-4 bg-brand-dark hover:bg-black text-white rounded-full shadow-2xl border-2 border-brand-lime flex items-center justify-center active:scale-95 transition" title="Chat Interno">
       <i data-lucide="message-square" class="w-5 h-5 sm:w-6 sm:h-6 text-brand-lime"></i>
-      <span id="chat-unread-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-bounce">0</span>
+      <span id="chat-unread-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white font-black text-[9px] w-5 h-5 rounded-full flex items-center justify-center animate-bounce">0</span>
     </button>
   </div>
 
-  <div id="chat-window-modal" class="fixed bottom-0 right-0 sm:bottom-20 sm:right-6 w-full sm:w-[680px] md:w-[740px] h-[92vh] sm:h-[550px] bg-white sm:rounded-3xl shadow-2xl border border-slate-300 z-50 hidden flex flex-col overflow-hidden">
+  <div id="chat-window-modal" class="fixed inset-0 sm:inset-auto sm:bottom-20 sm:right-6 w-full sm:w-[680px] md:w-[740px] h-full sm:h-[550px] bg-white sm:rounded-3xl shadow-2xl border border-slate-300 z-50 hidden flex flex-col overflow-hidden">
     <!-- Header del Chat -->
     <div class="bg-brand-dark text-white p-3 sm:p-3.5 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
       <div class="flex items-center gap-2 min-w-0">
@@ -553,10 +556,10 @@
       </div>
     </div>
 
-    <!-- Contenedor Dividido: Barra Lateral (Messenger) + Ventana de Conversación -->
-    <div class="flex-1 flex overflow-hidden">
-      <!-- SIDEBAR DE CONVERSACIONES (ADMIN) -->
-      <div id="chat-sidebar" class="w-full sm:w-56 md:w-64 bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 overflow-y-auto chat-scroll hidden sm:flex">
+    <!-- Contenedor Dividido: Sidebar (Conversaciones) + Ventana de Mensajes -->
+    <div class="flex-1 flex overflow-hidden relative">
+      <!-- SIDEBAR DE CONVERSACIONES (MESSENGER) -->
+      <div id="chat-sidebar" class="w-full sm:w-60 md:w-64 bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 overflow-y-auto chat-scroll z-20">
         <div class="p-2.5 border-b border-slate-200 bg-white sticky top-0 z-10">
           <span class="text-[10px] font-black uppercase tracking-wider text-slate-500">Conversaciones</span>
         </div>
@@ -566,24 +569,24 @@
       </div>
 
       <!-- ÁREA DE MENSAJES Y ENVÍO -->
-      <div class="flex-1 flex flex-col bg-white overflow-hidden min-w-0">
-        <!-- Barra de conversación activa móvil para regresar a lista -->
-        <div id="chat-mobile-back-bar" class="p-2 bg-slate-100 border-b flex items-center justify-between sm:hidden">
+      <div id="chat-conversation-area" class="flex-1 flex flex-col bg-white overflow-hidden min-w-0 w-full">
+        <!-- Barra Móvil para volver a la lista -->
+        <div id="chat-mobile-back-bar" class="p-2 bg-slate-100 border-b flex items-center justify-between sm:hidden shrink-0">
           <button onclick="app.showMobileChatSidebar()" class="text-xs font-bold text-brand-dark flex items-center gap-1">
-            ← Ver Todos los Chats
+            ← Chats
           </button>
           <span id="chat-mobile-active-name" class="text-xs font-bold text-slate-700 truncate">Chat Activo</span>
         </div>
 
-        <!-- Mensajes -->
-        <div id="chat-messages-container" class="flex-1 p-3 overflow-y-auto space-y-2 text-xs chat-scroll bg-slate-50/40">
+        <!-- Contenedor de Mensajes -->
+        <div id="chat-messages-container" class="flex-1 p-3.5 overflow-y-auto space-y-2 text-xs chat-scroll bg-slate-50/50">
           <div class="text-center py-8 text-slate-400 text-xs italic">Selecciona o inicia una conversación...</div>
         </div>
 
-        <!-- Input de mensaje con indicador de escritura -->
+        <!-- Input de mensaje -->
         <form onsubmit="app.handleSendMessage(event)" class="p-2 sm:p-2.5 bg-white border-t border-slate-200 flex items-center gap-2 shrink-0">
-          <input type="text" id="chat-input-text" oninput="app.handleTypingInput()" placeholder="Escribe un mensaje..." autocomplete="off" required class="flex-1 px-3 py-2 text-xs bg-slate-100 rounded-xl border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-lime">
-          <button type="submit" class="p-2 bg-brand-dark hover:bg-black text-white rounded-xl shadow active:scale-95 transition" title="Enviar">
+          <input type="text" id="chat-input-text" oninput="app.handleTypingInput()" placeholder="Escribe un mensaje..." autocomplete="off" required class="flex-1 px-3 py-2 text-xs sm:text-sm bg-slate-100 rounded-xl border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-lime">
+          <button type="submit" class="p-2.5 bg-brand-dark hover:bg-black text-white rounded-xl shadow active:scale-95 transition" title="Enviar">
             <i data-lucide="send" class="w-4 h-4 text-brand-lime"></i>
           </button>
         </form>
@@ -592,7 +595,7 @@
   </div>
 
   <!-- ======================================================== -->
-  <!-- MODAL: AJUSTES, FOTOS Y CONFIGURACIÓN                    -->
+  <!-- MODAL: AJUSTES, FOTOS Y PREFERENCIAS                     -->
   <!-- ======================================================== -->
   <div id="modal-settings" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
@@ -600,8 +603,8 @@
         <div class="flex items-center gap-2">
           <i data-lucide="settings" class="w-5 h-5 text-brand-lime"></i>
           <div>
-            <h3 class="text-xs sm:text-sm font-bold">Configuración y Seguridad</h3>
-            <p id="settings-modal-subtitle" class="text-[10px] sm:text-[11px] text-slate-300">Administración de credenciales y alertas</p>
+            <h3 class="text-xs sm:text-sm font-bold">Configuración y Alertas</h3>
+            <p id="settings-modal-subtitle" class="text-[10px] sm:text-[11px] text-slate-300">Administración de credenciales y notificaciones</p>
           </div>
         </div>
         <button onclick="app.closeSettingsModal()" class="text-slate-400 hover:text-white p-1">
@@ -613,10 +616,15 @@
         
         <!-- PREFERENCIAS DE SONIDO Y NOTIFICACIONES -->
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
-          <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-            <i data-lucide="bell" class="w-4 h-4 text-brand-limeHover"></i>
-            <span>Alertas y Notificaciones Sonoras</span>
-          </h4>
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+              <i data-lucide="bell" class="w-4 h-4 text-brand-limeHover"></i>
+              <span>Alertas y Notificaciones</span>
+            </h4>
+            <button type="button" onclick="app.requestNativeNotificationPermission()" class="text-[10px] font-bold text-cyan-700 bg-cyan-100 px-2 py-0.5 rounded hover:bg-cyan-200">
+              🔔 Notificaciones Nativas
+            </button>
+          </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
             <label class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer select-none">
               <input type="checkbox" id="pref-sound" onchange="app.updatePref('sound', this.checked)" class="w-4 h-4 rounded text-brand-lime focus:ring-brand-lime border-slate-300">
@@ -624,7 +632,7 @@
             </label>
             <label class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer select-none">
               <input type="checkbox" id="pref-popup" onchange="app.updatePref('popup', this.checked)" class="w-4 h-4 rounded text-brand-lime focus:ring-brand-lime border-slate-300">
-              <span class="text-xs font-semibold text-slate-700">💬 Notificaciones emergentes</span>
+              <span class="text-xs font-semibold text-slate-700">💬 Notificaciones flotantes</span>
             </label>
             <label class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer select-none">
               <input type="checkbox" id="pref-chat-badge" onchange="app.updatePref('chatBadge', this.checked)" class="w-4 h-4 rounded text-brand-lime focus:ring-brand-lime border-slate-300">
@@ -1150,6 +1158,7 @@
         this.activeChatWorker = 'Jeampaul';
         this.chatUnsubscribe = null;
         this.chatThreadsUnsubscribe = null;
+        this.globalMessagesUnsubscribe = null;
         this.conversations = {};
         this.typingTimeout = null;
 
@@ -1172,7 +1181,7 @@
         this.processedEventIds = new Set();
         this.isTasksInitialLoad = true;
         this.isNotifsInitialLoad = true;
-        this.isChatInitialLoad = true;
+        this.isGlobalChatInitialLoad = true;
         this.appStartTime = Date.now();
 
         this.init();
@@ -1201,6 +1210,52 @@
           document.getElementById('notif-badge').classList.add('hidden');
         }
         this.showToast('Preferencia guardada', 'info');
+      }
+
+      // Solicitud de Permisos Notification API del Sistema Operativo
+      async requestNativeNotificationPermission() {
+        if (!("Notification" in window)) {
+          this.showToast("Tu navegador no soporta notificaciones nativas", "error");
+          return;
+        }
+
+        try {
+          const perm = await Notification.requestPermission();
+          if (perm === "granted") {
+            this.showToast("Notificaciones nativas concedidas", "success");
+            new Notification("ServiPortones", {
+              body: "Notificaciones del sistema activas correctamente.",
+              icon: "https://cdn-icons-png.flaticon.com/512/1048/1048953.png"
+            });
+          } else {
+            this.showToast("Permiso de notificaciones no concedido", "info");
+          }
+        } catch(e) {
+          console.warn("Error permiso notificaciones:", e);
+        }
+      }
+
+      // Disparador de Notificación Nativa del Sistema (Funciona en segundo plano)
+      sendNativeNotification({ title, body, workerName }) {
+        if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+        try {
+          const notif = new Notification(title || "ServiPortones", {
+            body: body || "Nuevo aviso en la plataforma",
+            icon: "https://cdn-icons-png.flaticon.com/512/1048/1048953.png",
+            tag: workerName || "general"
+          });
+
+          notif.onclick = () => {
+            window.focus();
+            if (workerName) {
+              this.openDirectWorkerChat(workerName);
+            }
+            notif.close();
+          };
+        } catch (e) {
+          console.warn("Fallo notificación nativa:", e);
+        }
       }
 
       showPopupNotification({ title, subtitle, details, type, icon, onClick }) {
@@ -1386,6 +1441,11 @@
                   if (this.prefs.sound) SoundEngine.playOrderSound();
                   this.triggerBellAttention();
 
+                  this.sendNativeNotification({
+                    title: "📋 Nueva Orden de Trabajo",
+                    body: `${latestTask.client} - ${latestTask.serviceType}`
+                  });
+
                   this.showPopupNotification({
                     title: '📋 Nueva Orden de Trabajo',
                     subtitle: `${latestTask.client} &bull; ${latestTask.serviceType}`,
@@ -1485,12 +1545,13 @@
         if (window.db) db.collection('ordenes').doc('todas').set({ tasks: this.tasks }).catch(e => console.error(e));
       }
 
-      async addActivityNotification(techName, taskId, actionType, details) {
+      async addActivityNotification(techName, taskId, actionType, details, type = 'order') {
         const notifData = {
           techName: techName,
-          taskId: taskId,
+          taskId: taskId || '',
           actionType: actionType,
           details: details || '',
+          type: type,
           time: this.formatTime(new Date()),
           timestamp: Date.now(),
           read: false
@@ -1524,7 +1585,6 @@
         const listContainer = document.getElementById('notifications-list');
         if (!badge || !listContainer) return;
 
-        // Contador de notificaciones no leídas
         const unreadNotifs = this.notifications.filter(n => !n.read).length;
 
         if (unreadNotifs > 0 && this.prefs.notifBadge) {
@@ -1540,6 +1600,7 @@
             if (n.actionType === 'REALIZADA') statusColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
             else if (n.actionType === 'NO_REALIZADA') statusColor = 'text-rose-700 bg-rose-50 border-rose-200';
             else if (n.actionType === 'EN_PROCESO') statusColor = 'text-amber-700 bg-amber-50 border-amber-200';
+            else if (n.actionType === 'MENSAJE') statusColor = 'text-cyan-700 bg-cyan-50 border-cyan-200';
 
             return `
               <div class="p-2.5 hover:bg-slate-50 transition cursor-pointer ${!n.read ? 'bg-amber-50/40' : ''}" onclick="app.markNotificationAsRead('${n.id}', '${n.type || 'order'}', '${n.taskId || ''}', '${n.techName || ''}')">
@@ -1602,11 +1663,11 @@
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
         if (this.chatUnsubscribe) { this.chatUnsubscribe(); this.chatUnsubscribe = null; }
         if (this.chatThreadsUnsubscribe) { this.chatThreadsUnsubscribe(); this.chatThreadsUnsubscribe = null; }
+        if (this.globalMessagesUnsubscribe) { this.globalMessagesUnsubscribe(); this.globalMessagesUnsubscribe = null; }
         if (this.gpsLocationsUnsubscribe) { this.gpsLocationsUnsubscribe(); this.gpsLocationsUnsubscribe = null; }
         this.stopGpsSharing();
       }
 
-      // Autenticación directa e infalible en Firestore
       async handleLogin(e) {
         e.preventDefault();
         const rawUser = document.getElementById('login-username').value;
@@ -1726,6 +1787,7 @@
           this.renderAdminAuditLog();
         }
 
+        // Iniciar Chat y Listener Global de Mensajes
         this.initChatModule();
 
         if (notify) this.showToast(`Bienvenido, ${user.fullName}`, 'success');
@@ -1978,7 +2040,6 @@
         const mapContainer = document.getElementById('gps-map-container');
         if (!mapContainer || this.adminMap) return;
 
-        // Centro inicial en Colombia / Bogotá
         this.adminMap = L.map('gps-map-container').setView([4.6097, -74.0817], 12);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -2091,24 +2152,94 @@
         window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
       }
 
-      // ==========================================
-      // CHAT ESTILO MESSENGER CON LISTA LATERAL Y ESTADOS
-      // ==========================================
+      // ========================================================
+      // CHAT ESTILO MESSENGER CON LISTENER GLOBAL collectionGroup
+      // ========================================================
       initChatModule() {
         const isAdmin = this.currentUser.role === 'admin';
         const sidebar = document.getElementById('chat-sidebar');
+        const backBar = document.getElementById('chat-mobile-back-bar');
 
         if (isAdmin) {
           sidebar.classList.remove('hidden');
+          if (backBar) backBar.classList.remove('hidden');
           const firstWorker = this.workers[0]?.fullName || this.workers[0]?.username || 'Jeampaul';
           this.activeChatWorker = firstWorker;
           this.subscribeAllChatThreads();
         } else {
           sidebar.classList.add('hidden');
+          if (backBar) backBar.classList.add('hidden');
           this.activeChatWorker = this.currentUser.fullName || this.currentUser.username;
         }
 
+        // Iniciar escucha del hilo activo
         this.subscribeChatMessages();
+
+        // LISTENER GLOBAL DE MENSAJES (ESCUCHA TODAS LAS CONVERSACIONES SIMULTÁNEAMENTE)
+        this.subscribeGlobalMessages();
+      }
+
+      // LISTENER GLOBAL: DETECTA MENSAJES DE CUALQUIER TRABAJADOR EN TIEMPO REAL
+      subscribeGlobalMessages() {
+        if (!window.db || this.globalMessagesUnsubscribe) return;
+
+        this.globalMessagesUnsubscribe = db.collectionGroup('mensajes')
+          .orderBy('timestamp', 'desc')
+          .limit(15)
+          .onSnapshot(snapshot => {
+            snapshot.docChanges().forEach(change => {
+              if (change.type === 'added') {
+                const data = change.doc.data();
+                const msgId = change.doc.id;
+
+                const isFromOther = data.senderRole !== this.currentUser.role;
+                const isForMe = (this.currentUser.role === 'admin' && data.recipient === 'Administrador') ||
+                                (this.currentUser.role === 'worker' && data.threadId === (this.currentUser.fullName || this.currentUser.username));
+
+                // Alerta únicamente para mensajes nuevos recibidos en tiempo real
+                if (isFromOther && isForMe && !this.isGlobalChatInitialLoad && data.timestamp > this.appStartTime && !this.processedEventIds.has(msgId)) {
+                  this.processedEventIds.add(msgId);
+
+                  const senderWorkerName = data.senderRole === 'worker' ? data.senderName : 'Administrador';
+
+                  // 1. Sonido elegante
+                  if (this.prefs.sound) SoundEngine.playMessageSound();
+                  
+                  // 2. Destello visual en campana
+                  this.triggerBellAttention();
+
+                  // 3. Notificación nativa del Sistema Operativo (Notification API)
+                  this.sendNativeNotification({
+                    title: `💬 Mensaje de ${data.senderName}`,
+                    body: data.text,
+                    workerName: data.senderRole === 'worker' ? data.senderName : null
+                  });
+
+                  // 4. Registrar en el historial de la campana
+                  this.addActivityNotification(data.senderName, '', 'MENSAJE', data.text, 'chat');
+
+                  // 5. Notificación flotante emergente en la app (Click abre directamente el chat correspondiente)
+                  this.showPopupNotification({
+                    title: '💬 NUEVO MENSAJE',
+                    subtitle: `${data.senderName} te envió un mensaje`,
+                    details: data.text,
+                    type: 'chat',
+                    icon: '💬',
+                    onClick: () => {
+                      if (this.currentUser.role === 'admin') {
+                        this.openDirectWorkerChat(data.senderName);
+                      } else {
+                        const chatModal = document.getElementById('chat-window-modal');
+                        if (chatModal.classList.contains('hidden')) this.toggleChatWindow();
+                      }
+                    }
+                  });
+                }
+              }
+            });
+
+            this.isGlobalChatInitialLoad = false;
+          }, err => console.warn("Aviso colección group mensajes:", err));
       }
 
       subscribeAllChatThreads() {
@@ -2150,9 +2281,9 @@
           const unread = thread.unreadByAdmin || 0;
 
           return `
-            <div onclick="app.selectChatConversation('${wName}')" class="p-2.5 flex items-center justify-between cursor-pointer transition ${isSelected ? 'bg-brand-limeLight/80 border-r-4 border-brand-lime' : 'hover:bg-slate-100/70'}">
-              <div class="flex items-center gap-2 min-w-0">
-                <div class="relative w-8 h-8 rounded-full overflow-hidden bg-slate-200 border border-brand-lime shrink-0">
+            <div onclick="app.selectChatConversation('${wName}')" class="p-3 flex items-center justify-between cursor-pointer transition ${isSelected ? 'bg-brand-limeLight/80 border-r-4 border-brand-lime' : 'hover:bg-slate-100/70'}">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="relative w-9 h-9 rounded-full overflow-hidden bg-slate-200 border border-brand-lime shrink-0">
                   ${w.photo ? `<img src="${w.photo}" class="w-full h-full object-cover">` : `<span class="w-full h-full flex items-center justify-center font-bold text-xs">${wName.charAt(0)}</span>`}
                   <span class="w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-500 ring-2 ring-white animate-pulse' : 'bg-slate-300'} absolute top-0 right-0"></span>
                 </div>
@@ -2161,11 +2292,11 @@
                     <span class="font-extrabold text-xs text-slate-900 truncate">${wName}</span>
                     <span class="text-[9px] text-slate-400 font-mono">${thread.lastTime || ''}</span>
                   </div>
-                  <p class="text-[11px] text-slate-500 truncate italic">${thread.lastMessage || 'Sin mensajes'}</p>
+                  <p class="text-[11px] text-slate-500 truncate italic mt-0.5">${thread.lastMessage || 'Sin mensajes'}</p>
                 </div>
               </div>
               ${unread > 0 ? `
-                <span class="w-4 h-4 rounded-full bg-rose-500 text-white font-black text-[9px] flex items-center justify-center shrink-0 ml-1">
+                <span class="w-5 h-5 rounded-full bg-rose-500 text-white font-black text-[10px] flex items-center justify-center shrink-0 ml-1.5 shadow-sm">
                   ${unread}
                 </span>
               ` : ''}
@@ -2179,8 +2310,10 @@
         document.getElementById('chat-header-title').textContent = `Chat: ${wName}`;
         document.getElementById('chat-mobile-active-name').textContent = wName;
 
-        // En móvil ocultar sidebar y mostrar mensajes
-        document.getElementById('chat-sidebar').classList.add('hidden');
+        // En móvil ocultar sidebar para dar paso a la pantalla completa de conversación
+        if (window.innerWidth < 640) {
+          document.getElementById('chat-sidebar').classList.add('hidden');
+        }
 
         this.subscribeChatMessages();
         this.renderConversationsSidebar();
@@ -2248,7 +2381,7 @@
           }
         });
 
-        // Listener de mensajes
+        // Listener de mensajes del hilo activo
         this.chatUnsubscribe = db.collection('chats_internos')
           .doc(threadId)
           .collection('mensajes')
@@ -2267,40 +2400,18 @@
               if (isFromOther && data.status !== 'read') {
                 unreadCount++;
 
-                // Marcar como entregado si no ha sido leído
+                // Actualizar estado a delivered
                 if (data.status === 'sent') {
                   db.collection('chats_internos').doc(threadId).collection('mensajes').doc(msgId).update({
                     status: 'delivered'
                   }).catch(() => {});
                 }
-
-                // Popup y Sonido para mensajes nuevos recibidos en tiempo real
-                if (!this.isChatInitialLoad && data.timestamp > this.appStartTime && !this.processedEventIds.has(msgId)) {
-                  this.processedEventIds.add(msgId);
-
-                  if (this.prefs.sound) SoundEngine.playMessageSound();
-                  this.triggerBellAttention();
-
-                  // Agregar a la campana de notificaciones
-                  this.addActivityNotification(data.senderName, '', 'MENSAJE', data.text);
-
-                  this.showPopupNotification({
-                    title: '💬 NUEVO MENSAJE',
-                    subtitle: `${data.senderName} te envió un mensaje`,
-                    details: data.text,
-                    type: 'chat',
-                    icon: '💬',
-                    onClick: () => this.openDirectWorkerChat(threadId)
-                  });
-                }
               }
             });
 
-            this.isChatInitialLoad = false;
             this.chatMessages = msgs;
             this.renderChatMessages();
 
-            // Contador flotante
             const badge = document.getElementById('chat-unread-badge');
             if (unreadCount > 0 && this.prefs.chatBadge) {
               badge.textContent = unreadCount;
@@ -2324,7 +2435,7 @@
         container.innerHTML = this.chatMessages.map(m => {
           const isMine = m.senderName === myName;
 
-          // Indicador de estado tipo WhatsApp
+          // Indicadores de estado tipo WhatsApp con colores específicos
           let statusTick = '';
           if (isMine) {
             if (m.status === 'read') {
@@ -2339,8 +2450,8 @@
           return `
             <div class="flex flex-col ${isMine ? 'items-end' : 'items-start'}">
               <span class="text-[9px] font-bold text-slate-400 mb-0.5 px-1">${m.senderName} &bull; ${m.time}</span>
-              <div class="max-w-[85%] sm:max-w-[78%] rounded-2xl px-3 py-2 shadow-sm ${isMine ? 'bg-brand-dark text-white rounded-br-none border-b-2 border-brand-lime' : 'bg-white text-slate-800 rounded-bl-none border border-slate-200'}">
-                <p class="leading-relaxed whitespace-pre-wrap">${m.text}</p>
+              <div class="max-w-[85%] sm:max-w-[78%] rounded-2xl px-3.5 py-2 shadow-sm ${isMine ? 'bg-brand-dark text-white rounded-br-none border-b-2 border-brand-lime' : 'bg-white text-slate-800 rounded-bl-none border border-slate-200'}">
+                <p class="leading-relaxed whitespace-pre-wrap text-xs sm:text-sm">${m.text}</p>
                 <div class="text-[9px] text-right mt-0.5 opacity-80 flex items-center justify-end">
                   ${isMine ? statusTick : ''}
                 </div>
@@ -2383,7 +2494,6 @@
           try {
             await db.collection('chats_internos').doc(threadId).collection('mensajes').add(msgObj);
             
-            // Metadatos para Sidebar tipo Messenger
             const updatePayload = {
               lastMessage: text,
               lastTime: this.formatTime(new Date()),
@@ -2479,7 +2589,7 @@
         const subtitle = document.getElementById('settings-modal-subtitle');
 
         if (isAdmin) {
-          subtitle.textContent = 'Gestión integral de personal y preferencias';
+          subtitle.textContent = 'Gestión integral de personal en Firestore';
           adminUsersSection.classList.remove('hidden');
           this.resetUserForm();
           this.renderUsersTable();
@@ -3065,7 +3175,7 @@
           this.tasks[taskIndex].completedAt = this.formatFullDateTime(new Date());
 
           const myName = this.currentUser.fullName || this.currentUser.username;
-          this.addActivityNotification(myName, this.selectedTask.id, this.activeReportStatus, observations);
+          this.addActivityNotification(myName, this.selectedTask.id, this.activeReportStatus, observations, 'order');
 
           this.saveTasks();
           this.updateStats();
@@ -3086,7 +3196,7 @@
           this.tasks[taskIndex].completedAt = this.formatFullDateTime(new Date());
 
           const myName = this.currentUser.fullName || this.currentUser.username;
-          this.addActivityNotification(myName, this.selectedTask.id, 'EN_PROCESO', obs || 'Trabajo iniciado');
+          this.addActivityNotification(myName, this.selectedTask.id, 'EN_PROCESO', obs || 'Trabajo iniciado', 'order');
 
           this.saveTasks();
           this.updateStats();
