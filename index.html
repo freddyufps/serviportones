@@ -2115,7 +2115,7 @@
               const candidateData = event.candidate.toJSON();
               if (callSessionId) candidateData.callSessionId = callSessionId;
               this.callIceCounters.generated++;
-              console.info('[CALL] ICE generado', { sessionId: this.currentCallData?.sessionId, count: this.callIceCounters.generated, role: this.currentUser.role, type: event.candidate.type, protocol: event.candidate.protocol, sdpMid: event.candidate.sdpMid });
+              console.info('[CALL] ICE generado', { sessionId: this.currentCallData?.sessionId, count: this.callIceCounters.generated, role: this.currentUser.role, type: event.candidate.type, protocol: event.candidate.protocol, usernameFragment: event.candidate.usernameFragment || null, sdpMid: event.candidate.sdpMid });
               callerCandidates.add(candidateData).then(() => console.info('[CALL] ICE enviado al canal de señalización', { count: this.callIceCounters.generated, side: 'caller' })).catch(error => console.error('[CALL] Error enviando ICE del llamante:', error));
             } else { console.info('[CALL] ICE gathering completado', { role: this.currentUser.role, generatedCount: this.callIceCounters.generated }); }
           };
@@ -2169,8 +2169,10 @@
               if (change.type === 'added') {
                 const candidate = change.doc.data();
                 this.callIceCounters.received++;
-                console.info('[CALL] ICE recibido', { sessionId: this.currentCallData?.sessionId, count: this.callIceCounters.received, type: candidate.candidate ? new RTCIceCandidate(candidate).type : null, sessionMatches: !candidate.callSessionId || candidate.callSessionId === this.currentCallData?.sessionId });
-                if (!candidate.callSessionId || !this.currentCallData?.sessionId || candidate.callSessionId === this.currentCallData.sessionId) this.addRemoteIceCandidate(candidate);
+                const candidateUfrag = candidate.usernameFragment || candidate.candidate?.match(/(?:^|\s)ufrag\s+([^\s]+)/)?.[1] || null;
+                const sessionMatches = !candidate.callSessionId || candidate.callSessionId === this.currentCallData?.sessionId;
+                console.info('[CALL] ICE recibido', { sessionId: this.currentCallData?.sessionId, candidateSessionId: candidate.callSessionId || null, count: this.callIceCounters.received, type: candidate.candidate ? new RTCIceCandidate(candidate).type : null, protocol: candidate.candidate ? new RTCIceCandidate(candidate).protocol : null, usernameFragment: candidateUfrag, sessionMatches });
+                if (sessionMatches) this.addRemoteIceCandidate(candidate);
               }
             });
           }, error => console.error('[CALL] Error recibiendo candidatos ICE:', error)));
@@ -2317,7 +2319,7 @@
               const candidateData = event.candidate.toJSON();
               if (this.currentCallData?.sessionId) candidateData.callSessionId = this.currentCallData.sessionId;
               this.callIceCounters.generated++;
-              console.info('[CALL] ICE generado', { sessionId: this.currentCallData?.sessionId, count: this.callIceCounters.generated, role: this.currentUser.role, type: event.candidate.type, protocol: event.candidate.protocol, sdpMid: event.candidate.sdpMid });
+              console.info('[CALL] ICE generado', { sessionId: this.currentCallData?.sessionId, count: this.callIceCounters.generated, role: this.currentUser.role, type: event.candidate.type, protocol: event.candidate.protocol, usernameFragment: event.candidate.usernameFragment || null, sdpMid: event.candidate.sdpMid });
               calleeCandidates.add(candidateData).then(() => console.info('[CALL] ICE enviado al canal de señalización', { count: this.callIceCounters.generated, side: 'callee' })).catch(error => console.error('[CALL] Error enviando ICE del receptor:', error));
             } else { console.info('[CALL] ICE gathering completado', { role: this.currentUser.role, generatedCount: this.callIceCounters.generated }); }
           };
@@ -2352,8 +2354,10 @@
               if (change.type === 'added') {
                 const candidate = change.doc.data();
                 this.callIceCounters.received++;
-                console.info('[CALL] ICE recibido', { sessionId: this.currentCallData?.sessionId, count: this.callIceCounters.received, type: candidate.candidate ? new RTCIceCandidate(candidate).type : null, sessionMatches: !candidate.callSessionId || candidate.callSessionId === this.currentCallData?.sessionId });
-                if (!candidate.callSessionId || !this.currentCallData?.sessionId || candidate.callSessionId === this.currentCallData.sessionId) this.addRemoteIceCandidate(candidate);
+                const candidateUfrag = candidate.usernameFragment || candidate.candidate?.match(/(?:^|\s)ufrag\s+([^\s]+)/)?.[1] || null;
+                const sessionMatches = !candidate.callSessionId || candidate.callSessionId === this.currentCallData?.sessionId;
+                console.info('[CALL] ICE recibido', { sessionId: this.currentCallData?.sessionId, candidateSessionId: candidate.callSessionId || null, count: this.callIceCounters.received, type: candidate.candidate ? new RTCIceCandidate(candidate).type : null, protocol: candidate.candidate ? new RTCIceCandidate(candidate).protocol : null, usernameFragment: candidateUfrag, sessionMatches });
+                if (sessionMatches) this.addRemoteIceCandidate(candidate);
               }
             });
           }, error => console.error('[CALL] Error recibiendo candidatos ICE:', error)));
@@ -2400,7 +2404,8 @@
         console.info('[CALL] ontrack registrado antes de recibir descripción remota', { registered: typeof this.peerConnection.ontrack === 'function', signalingState: this.peerConnection.signalingState });
         this.peerConnection.oniceconnectionstatechange = () => {
           const state = peerConnection?.iceConnectionState;
-          console.log('[CALL] iceConnectionState', state, { sessionId: this.currentCallData?.sessionId });
+          console.log('[CALL] iceConnectionState', state, { sessionId: this.currentCallData?.sessionId, connectionState: peerConnection.connectionState, signalingState: peerConnection.signalingState });
+          this.logIceDiagnostics(peerConnection, 'iceConnectionState');
           if (state === 'connected' || state === 'completed') console.info('[CALL] ICE alcanzó estado', state);
           if (state === 'connected' || state === 'completed') this.onCallConnected();
           else if (state === 'failed') {
@@ -2409,10 +2414,60 @@
             console.error('[CALL] ICE alcanzó estado failed; revisar candidatos generados, recibidos y agregados en ambos extremos.');
           }
         };
-        peerConnection.onconnectionstatechange = () => console.log('[CALL] connectionState', peerConnection?.connectionState, { sessionId: this.currentCallData?.sessionId, signalingState: peerConnection?.signalingState, iceConnectionState: peerConnection?.iceConnectionState });
-        peerConnection.onsignalingstatechange = () => console.log('[CALL] signalingState', peerConnection?.signalingState, { sessionId: this.currentCallData?.sessionId });
-        peerConnection.onicegatheringstatechange = () => console.log('[CALL] Estado ICE gathering', peerConnection?.iceGatheringState, { sessionId: this.currentCallData?.sessionId });
+        peerConnection.onconnectionstatechange = () => {
+          console.log('[CALL] connectionState', peerConnection.connectionState, { sessionId: this.currentCallData?.sessionId, signalingState: peerConnection.signalingState, iceConnectionState: peerConnection.iceConnectionState });
+          this.logIceDiagnostics(peerConnection, 'connectionState');
+        };
+        peerConnection.onsignalingstatechange = () => {
+          console.log('[CALL] signalingState', peerConnection.signalingState, { sessionId: this.currentCallData?.sessionId });
+          this.logIceDiagnostics(peerConnection, 'signalingState');
+        };
+        peerConnection.onicegatheringstatechange = () => console.log('[CALL] Estado ICE gathering', peerConnection.iceGatheringState, { sessionId: this.currentCallData?.sessionId });
         this.peerConnection.onicecandidateerror = event => console.warn('[CALL] Error ICE:', event.errorCode, event.errorText);
+        clearInterval(peerConnection._callStatsInterval);
+        this.logIceDiagnostics(peerConnection, 'diagnóstico inicial');
+        peerConnection._callStatsInterval = setInterval(() => {
+          if (peerConnection.connectionState === 'connected' || peerConnection.connectionState === 'failed' || peerConnection.connectionState === 'closed') {
+            clearInterval(peerConnection._callStatsInterval);
+            peerConnection._callStatsInterval = null;
+            if (peerConnection.connectionState !== 'connected') this.logIceDiagnostics(peerConnection, 'estado terminal');
+            return;
+          }
+          this.logIceDiagnostics(peerConnection, 'seguimiento');
+        }, 2500);
+      }
+
+      async logIceDiagnostics(peerConnection, trigger) {
+        if (!peerConnection || typeof peerConnection.getStats !== 'function') return;
+        try {
+          const report = await peerConnection.getStats();
+          const stats = Array.from(report.values());
+          const transports = stats.filter(item => item.type === 'transport' && item.selectedCandidatePairId);
+          const candidatePairs = stats.filter(item => item.type === 'candidate-pair');
+          const candidateById = new Map(stats.filter(item => item.type === 'local-candidate' || item.type === 'remote-candidate').map(item => [item.id, item]));
+          let selectedPair = null;
+          for (const transport of transports) {
+            const pair = report.get(transport.selectedCandidatePairId);
+            if (pair) { selectedPair = pair; break; }
+          }
+          if (!selectedPair) selectedPair = candidatePairs.find(pair => pair.selected === true) || null;
+          const describePair = pair => {
+            const local = candidateById.get(pair.localCandidateId);
+            const remote = candidateById.get(pair.remoteCandidateId);
+            return {
+              id: pair.id, state: pair.state, nominated: pair.nominated, selected: pair.selected === true,
+              local: local ? { type: local.candidateType, protocol: local.protocol, relayProtocol: local.relayProtocol || null } : null,
+              remote: remote ? { type: remote.candidateType, protocol: remote.protocol, relayProtocol: remote.relayProtocol || null } : null,
+              currentRoundTripTime: pair.currentRoundTripTime ?? null,
+              bytesSent: pair.bytesSent ?? 0, bytesReceived: pair.bytesReceived ?? 0
+            };
+          };
+          const state = { trigger, sessionId: this.currentCallData?.sessionId || null, connectionState: peerConnection.connectionState, iceConnectionState: peerConnection.iceConnectionState, signalingState: peerConnection.signalingState, generated: this.callIceCounters?.generated ?? null, received: this.callIceCounters?.received ?? null, added: this.callIceCounters?.added ?? null };
+          if (selectedPair) console.info('[CALL] selectedCandidatePair', { ...state, pair: describePair(selectedPair) });
+          else console.info('[CALL] no selectedCandidatePair', { ...state, candidatePairCount: candidatePairs.length, pairs: candidatePairs.map(describePair) });
+        } catch (error) {
+          console.error('[CALL] getStats failed', { trigger, sessionId: this.currentCallData?.sessionId || null, name: error?.name, message: error?.message }, error);
+        }
       }
 
       async resumeRemoteAudio() {
@@ -2433,7 +2488,8 @@
         try {
           await this.peerConnection.addIceCandidate(new RTCIceCandidate(iceCandidate));
           this.callIceCounters.added++;
-          console.info('[CALL] ICE agregado', { sessionId: this.currentCallData?.sessionId, count: this.callIceCounters.added, type: iceCandidate.candidate ? new RTCIceCandidate(iceCandidate).type : null, sdpMid: iceCandidate.sdpMid });
+          const parsedCandidate = iceCandidate.candidate ? new RTCIceCandidate(iceCandidate) : null;
+          console.info('[CALL] ICE agregado', { sessionId: this.currentCallData?.sessionId, candidateSessionId: candidateData.callSessionId || null, count: this.callIceCounters.added, type: parsedCandidate?.type || null, protocol: parsedCandidate?.protocol || null, usernameFragment: iceCandidate.usernameFragment || iceCandidate.candidate?.match(/(?:^|\s)ufrag\s+([^\s]+)/)?.[1] || null, sdpMid: iceCandidate.sdpMid });
         } catch (error) { console.warn('[CALL] Error al agregar ICE', { name: error?.name, message: error?.message, sdpMid: iceCandidate.sdpMid }, error); }
       }
 
@@ -2532,6 +2588,8 @@
         }
 
         if (this.peerConnection) {
+          clearInterval(this.peerConnection._callStatsInterval);
+          this.peerConnection._callStatsInterval = null;
           this.peerConnection.close();
           this.peerConnection = null;
         }
