@@ -2055,8 +2055,9 @@
           console.info('[CALL] getUserMedia iniciado', { role: this.currentUser.role });
           const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
           this.localStream = stream;
-          console.log('[CALL] Stream local obtenido');
-          console.log('[CALL] Pistas de audio encontradas', stream.getAudioTracks().map(track => ({ label: track.label, enabled: track.enabled, muted: track.muted, readyState: track.readyState })));
+          console.log('[CALL] Stream local obtenido', { active: stream.active });
+          console.log('[CALL] Audio tracks encontrados:', stream.getAudioTracks().length);
+          console.log('[CALL] Detalle audio tracks', stream.getAudioTracks().map(track => ({ label: track.label, enabled: track.enabled, muted: track.muted, readyState: track.readyState })));
           this.pendingIceCandidates = [];
           this.callSignalingUnsubscribes = [];
 
@@ -2074,7 +2075,7 @@
 
           this.localStream.getTracks().forEach(track => {
             this.peerConnection.addTrack(track, this.localStream);
-            console.log('[CALL] Track agregado', { kind: track.kind, enabled: track.enabled, muted: track.muted, readyState: track.readyState });
+            console.log('[CALL] Track agregado al PeerConnection', { kind: track.kind, enabled: track.enabled, muted: track.muted, readyState: track.readyState });
           });
           this.configureRemoteAudio();
 
@@ -2148,11 +2149,13 @@
         const calls = db.collection('webrtc_calls');
         const onCall = (id, data) => {
           if (this.currentCallData?.id === id && (data.status === 'ended' || data.status === 'rejected')) {
+            console.info('[CALL] Finalización recibida por el otro extremo', { status: data.status, callSessionId: data.callSessionId });
             this.lastIncomingCallId = null;
             this.endVoiceCall(false);
             return;
           }
           if (this.lastIncomingCallId === id && (data.status === 'ended' || data.status === 'rejected')) {
+            console.info('[CALL] Finalización recibida por el otro extremo', { status: data.status, callSessionId: data.callSessionId });
             this.lastIncomingCallId = null;
             this.endVoiceCall(false);
             return;
@@ -2228,8 +2231,9 @@
         try {
           console.info('[CALL] getUserMedia iniciado', { role: this.currentUser.role, direction: 'incoming' });
           const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
-          console.log('[CALL] Stream local obtenido');
-          console.log('[CALL] Pistas de audio encontradas', stream.getAudioTracks().map(track => ({ label: track.label, enabled: track.enabled, muted: track.muted, readyState: track.readyState })));
+          console.log('[CALL] Stream local obtenido', { active: stream.active });
+          console.log('[CALL] Audio tracks encontrados:', stream.getAudioTracks().length);
+          console.log('[CALL] Detalle audio tracks', stream.getAudioTracks().map(track => ({ label: track.label, enabled: track.enabled, muted: track.muted, readyState: track.readyState })));
           if (!this.currentCallData) { stream.getTracks().forEach(track => track.stop()); return; }
           this.localStream = stream;
           this.pendingIceCandidates = [];
@@ -2241,7 +2245,7 @@
 
           this.localStream.getTracks().forEach(track => {
             this.peerConnection.addTrack(track, this.localStream);
-            console.log('[CALL] Track agregado', { kind: track.kind, enabled: track.enabled, muted: track.muted, readyState: track.readyState });
+            console.log('[CALL] Track agregado al PeerConnection', { kind: track.kind, enabled: track.enabled, muted: track.muted, readyState: track.readyState });
           });
           this.configureRemoteAudio();
 
@@ -2250,7 +2254,10 @@
             if (!doc.exists) return;
             const call = doc.data();
             if (call.callSessionId && this.currentCallData?.sessionId && call.callSessionId !== this.currentCallData.sessionId) return;
-            if (call.status === 'ended' || call.status === 'rejected') this.endVoiceCall(false);
+            if (call.status === 'ended' || call.status === 'rejected') {
+              console.info('[CALL] Finalización recibida por el otro extremo', { status: call.status, callSessionId: call.callSessionId });
+              this.endVoiceCall(false);
+            }
           }, error => console.error('[CALL] Error siguiendo el estado de la llamada:', error)));
           const calleeCandidates = callDoc.collection('calleeCandidates');
 
@@ -2298,35 +2305,42 @@
       configureRemoteAudio() {
         const audio = document.getElementById('remote-audio-stream'); if (!audio) { console.error('[CALL] Elemento de audio remoto no encontrado'); return; }
         audio.autoplay = true; audio.playsInline = true; audio.volume = 1;
+        const audioStyle = getComputedStyle(audio);
+        console.info('[CALL] Elemento audio verificado', { display: audioStyle.display, visibility: audioStyle.visibility, muted: audio.muted, playsInline: audio.playsInline });
         this.peerConnection.ontrack = async event => {
           console.info('[CALL] ontrack ejecutado', { kind: event.track?.kind, readyState: event.track?.readyState, streamCount: event.streams?.length || 0 });
           if (event.streams && event.streams[0]) audio.srcObject = event.streams[0];
           else if (event.track) { const stream = new MediaStream(); stream.addTrack(event.track); audio.srcObject = stream; }
           const remoteTracks = audio.srcObject?.getAudioTracks?.() || [];
-          console.info('[CALL] Stream remoto recibido', { trackCount: remoteTracks.length, tracks: remoteTracks.map(track => ({ kind: track.kind, enabled: track.enabled, muted: track.muted, readyState: track.readyState })) });
-          console.info('[CALL] srcObject asignado', { assigned: !!audio.srcObject, audioTracks: remoteTracks.length });
+          console.info('[CALL] Stream remoto recibido', { active: audio.srcObject?.active, streamCount: event.streams?.length || 0 });
+          console.info('[CALL] tracks remotos:', remoteTracks.length, remoteTracks.map(track => ({ kind: track.kind, enabled: track.enabled, muted: track.muted, readyState: track.readyState })));
+          console.info('[CALL] srcObject asignado', !!audio.srcObject);
+          console.info('[CALL] muted:', audio.muted);
+          console.info('[CALL] playsInline:', audio.playsInline);
+          const remoteAudioStyle = getComputedStyle(audio);
+          console.info('[CALL] Estilo calculado del audio', { display: remoteAudioStyle.display, visibility: remoteAudioStyle.visibility });
           try {
-            console.info('[CALL] Audio play ejecutado');
+            console.info('[CALL] play() ejecutado');
             await audio.play();
             document.getElementById('btn-enable-remote-audio')?.classList.add('hidden');
-            console.log('[CALL] Audio reproduciéndose');
+            console.log('[CALL] audio reproduciéndose');
           } catch (e) {
             document.getElementById('btn-enable-remote-audio')?.classList.remove('hidden');
-            console.error('[CALL] Audio play rechazado', { name: e?.name, message: e?.message }, e);
+            console.error('[CALL] error reproduciendo audio', { name: e?.name, message: e?.message }, e);
             console.warn('[CALL] Autoplay bloqueado; toca Activar audio para habilitar la salida.', e);
           }
         };
         this.peerConnection.oniceconnectionstatechange = () => {
           const state = this.peerConnection?.iceConnectionState;
-          console.log('[CALL] Estado ICE', state);
+          console.log('[CALL] iceConnectionState', state);
           if (state === 'connected' || state === 'completed') this.onCallConnected();
           else if (state === 'failed') {
             const label = document.getElementById('call-status-label');
             if (label) label.textContent = 'Sin ruta de audio';
-            this.showToast('No se estableció la ruta de audio. Esta red puede requerir un servidor TURN.', 'error');
+            console.error('[CALL] ICE alcanzó estado failed; revisar candidatos generados, recibidos y agregados en ambos extremos.');
           }
         };
-        this.peerConnection.onconnectionstatechange = () => console.log('[CALL] Estado conexión', { connectionState: this.peerConnection?.connectionState, signalingState: this.peerConnection?.signalingState });
+        this.peerConnection.onconnectionstatechange = () => console.log('[CALL] connectionState', this.peerConnection?.connectionState, { signalingState: this.peerConnection?.signalingState });
         this.peerConnection.onsignalingstatechange = () => console.log('[CALL] Estado señalización', this.peerConnection?.signalingState);
         this.peerConnection.onicegatheringstatechange = () => console.log('[CALL] Estado ICE gathering', this.peerConnection?.iceGatheringState);
         this.peerConnection.onicecandidateerror = event => console.warn('[CALL] Error ICE:', event.errorCode, event.errorText);
@@ -2338,7 +2352,7 @@
         try {
           await audio.play();
           document.getElementById('btn-enable-remote-audio')?.classList.add('hidden');
-          console.log('[CALL] Audio reproduciéndose');
+          console.log('[CALL] audio reproduciéndose');
         } catch (error) { console.warn('[CALL] No se pudo iniciar el audio remoto:', error); }
       }
 
@@ -2427,9 +2441,11 @@
         this.pendingIceCandidates = [];
 
         if (notifyServer && window.db && this.currentCallData?.id) {
-          db.collection('webrtc_calls').doc(this.currentCallData.id).update({
+          const endedCallId = this.currentCallData.id;
+          db.collection('webrtc_calls').doc(endedCallId).update({
             status: 'ended'
-          }).catch(error => console.error('[CALL] No se pudo avisar que la llamada terminó:', error));
+          }).then(() => console.info('[CALL] Finalización enviada al otro extremo', { callId: endedCallId }))
+            .catch(error => console.error('[CALL] No se pudo avisar que la llamada terminó:', error));
         }
 
         document.getElementById('modal-voice-call').classList.add('hidden');
