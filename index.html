@@ -57,7 +57,7 @@
       100% { filter: drop-shadow(0 0 8px rgba(113, 168, 50, 0.85)); opacity: 1; }
     }
 
-    /* Micro-partículas tecnológicas tenues */
+    /* Micro-partículas tecnológicas */
     .tech-particle {
       position: fixed;
       width: 3px;
@@ -126,11 +126,8 @@
         <div class="w-full max-w-[240px] sm:max-w-[280px] py-1 relative">
           <svg viewBox="0 0 420 170" class="w-full h-auto drop-shadow-sm select-none" xmlns="http://www.w3.org/2000/svg">
             <g stroke-linecap="round" stroke-linejoin="round">
-              <!-- Techo estructural del automatismo -->
               <path d="M 22 80 L 135 34 L 135 22 L 148 22 L 148 40 L 222 79" fill="none" stroke="#111827" stroke-width="11" />
-              <!-- Cremallera verde base -->
               <line x1="228" y1="79" x2="410" y2="79" stroke="#71A832" stroke-width="9" />
-              <!-- Línea animada de pulso de energía -->
               <line x1="228" y1="79" x2="410" y2="79" stroke="#b3d88b" stroke-width="9" class="electric-energy-line tech-pulse-glow" />
               <text x="18" y="128" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" fill="#111827" letter-spacing="0.5">SERVIPORTONES</text>
               <line x1="18" y1="148" x2="135" y2="148" stroke="#71A832" stroke-width="6" />
@@ -209,7 +206,6 @@
         </div>
 
         <div class="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
-          <!-- Botón de Nueva Orden (Admin) -->
           <button id="btn-nav-new-order" onclick="app.openNewTaskModal()" class="hidden bg-brand-lime hover:bg-brand-limeHover text-white text-xs font-bold px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl flex items-center gap-1 shadow-md transition active:scale-95">
             <i data-lucide="plus-circle" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
             <span class="hidden xs:inline">Nueva Orden</span>
@@ -237,13 +233,11 @@
             </div>
           </div>
 
-          <!-- Botón de Configuración -->
           <button id="btn-nav-settings" onclick="app.openSettingsModal()" class="p-1.5 sm:p-2 sm:px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl transition flex items-center gap-1.5 shadow-sm" title="Ajustes y Personal">
             <i data-lucide="settings" class="w-4 h-4 text-brand-lime"></i>
             <span class="hidden md:inline text-xs font-semibold">Configuración</span>
           </button>
 
-          <!-- Perfil actual -->
           <div class="flex items-center gap-1.5 sm:gap-2 bg-slate-800/90 pl-1 pr-2 sm:pr-3 py-1 rounded-xl border border-slate-700">
             <div onclick="app.zoomWorkerPhoto(app.currentUser?.photo, app.currentUser?.fullName)" class="cursor-pointer relative w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border-2 border-brand-lime bg-slate-700 flex items-center justify-center shrink-0">
               <img id="header-user-photo" src="" alt="Foto" class="w-full h-full object-cover hidden">
@@ -358,7 +352,7 @@
             <option value="REALIZADA">✅ Realizadas</option>
             <option value="NO_REALIZADA">❌ No Realizadas</option>
           </select>
-          <select id="filter-tech" onchange="app.renderTasks()" class="text-xs border border-slate-200 rounded-xl px-2.5 py-1.5 bg-slate-50 font-medium"></select>
+          <select id="filter-tech" onchange="app.renderTasks()" class="text-xs border border-slate-200 rounded-xl px-2 py-1.5 bg-slate-50 font-medium"></select>
           <button onclick="app.resetFilters()" class="p-1.5 text-slate-500 hover:bg-slate-100 rounded-xl" title="Restablecer">
             <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
           </button>
@@ -446,7 +440,6 @@
   <!-- ======================================================== -->
   <!-- SISTEMA DE CHAT PRIVADO INTERNO EN TIEMPO REAL           -->
   <!-- ======================================================== -->
-  <!-- Botón Flotante para Dispositivos Móviles y Escritorio -->
   <div id="chat-floating-button-container" class="fixed bottom-5 right-4 sm:bottom-6 sm:right-6 z-40 hidden">
     <button onclick="app.toggleChatWindow()" class="relative p-3 sm:p-3.5 bg-brand-dark hover:bg-black text-white rounded-full shadow-2xl border-2 border-brand-lime flex items-center justify-center active:scale-95 transition" title="Chat Interno">
       <i data-lucide="message-square" class="w-5 h-5 sm:w-6 sm:h-6 text-brand-lime"></i>
@@ -454,9 +447,7 @@
     </button>
   </div>
 
-  <!-- Ventana Flotante / Modal de Chat (Estilo Messenger) -->
   <div id="chat-window-modal" class="fixed bottom-0 right-0 sm:bottom-20 sm:right-6 w-full sm:w-96 h-[85vh] sm:h-[500px] bg-white sm:rounded-3xl shadow-2xl border border-slate-300 z-50 hidden flex flex-col overflow-hidden">
-    <!-- Header del Chat -->
     <div class="bg-brand-dark text-white p-3.5 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
       <div class="flex items-center gap-2 min-w-0">
         <div class="w-7 h-7 rounded-full bg-slate-700 border border-brand-lime flex items-center justify-center text-xs font-bold text-white shrink-0">
@@ -474,18 +465,15 @@
       </div>
     </div>
 
-    <!-- Selector de Conversaciones (Admin) -->
     <div id="chat-admin-threads" class="bg-slate-50 border-b p-2 shrink-0 hidden">
       <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Conversar con:</label>
       <select id="chat-target-worker" onchange="app.switchChatWorker(this.value)" class="w-full text-xs font-bold bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-lime"></select>
     </div>
 
-    <!-- Mensajes -->
     <div id="chat-messages-container" class="flex-1 p-3.5 overflow-y-auto space-y-2 text-xs chat-scroll bg-slate-50/50">
       <div class="text-center py-6 text-slate-400 text-xs italic">Cargando conversación...</div>
     </div>
 
-    <!-- Envío de Mensaje -->
     <form onsubmit="app.handleSendMessage(event)" class="p-2 sm:p-2.5 bg-white border-t flex items-center gap-2 shrink-0">
       <input type="text" id="chat-input-text" placeholder="Escribe un mensaje..." autocomplete="off" required class="flex-1 px-3 py-2 text-xs bg-slate-100 rounded-xl border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-lime">
       <button type="submit" class="p-2 bg-brand-dark hover:bg-black text-white rounded-xl shadow active:scale-95 transition" title="Enviar">
@@ -566,21 +554,21 @@
           </form>
         </div>
 
-        <!-- Gestión de Técnicos (Admin) -->
+        <!-- Gestión de Técnicos en Firestore (Admin) -->
         <div id="settings-admin-users-section" class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2.5 hidden">
           <div class="flex items-center justify-between border-b pb-1">
             <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1">
               <i data-lucide="users" class="w-4 h-4 text-brand-limeHover"></i>
-              <span>Gestión de Técnicos</span>
+              <span>Gestión de Trabajadores (Firestore)</span>
             </h4>
-            <span id="settings-users-count-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-limeLight text-brand-limeHover">0 Técnicos</span>
+            <span id="settings-users-count-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-limeLight text-brand-limeHover">0 Trabajadores</span>
           </div>
 
           <form id="manage-user-form" onsubmit="app.handleSaveUser(event)" class="bg-white p-2.5 rounded-xl border border-slate-200 space-y-2">
             <input type="hidden" id="manage-user-id" value="">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input type="text" id="manage-fullname" required placeholder="Nombre Completo" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg">
-              <input type="text" id="manage-username" required placeholder="Usuario (sin espacios)" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg">
+              <input type="text" id="manage-username" required placeholder="Usuario" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg">
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <input type="text" id="manage-password" required placeholder="Contraseña" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg font-mono">
@@ -588,8 +576,8 @@
               <input type="text" id="manage-specialty" placeholder="Especialidad" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg">
             </div>
             <div class="flex justify-end gap-1.5 pt-0.5">
-              <button type="button" onclick="app.resetUserForm()" class="px-2 py-1 text-xs border rounded-lg">Cancelar</button>
-              <button type="submit" id="btn-save-user" class="px-3 py-1 bg-brand-dark text-white rounded-lg text-xs font-bold">Guardar</button>
+              <button type="button" onclick="app.resetUserForm()" class="px-2.5 py-1 text-xs border rounded-lg">Cancelar</button>
+              <button type="submit" id="btn-save-user" class="px-3 py-1 bg-brand-dark text-white rounded-lg text-xs font-bold">Guardar en Firestore</button>
             </div>
           </form>
 
@@ -759,7 +747,6 @@
         </div>
       </div>
 
-      <!-- Barra de Acciones y Estados -->
       <div class="p-3 border-t bg-slate-50 flex items-center justify-between gap-1.5 shrink-0">
         <button type="button" onclick="app.setTaskInProgress()" class="text-[11px] text-amber-700 bg-amber-50 border border-amber-300 px-2.5 py-1.5 rounded-xl font-bold">
           Dejar "En Proceso"
@@ -823,79 +810,9 @@
   </div>
 
   <!-- ======================================================== -->
-  <!-- JAVASCRIPT: LÓGICA INTEGRAL DE LA APLICACIÓN             -->
+  <!-- JAVASCRIPT: MIGRACIÓN TOTAL A FIRESTORE 'users'          -->
   <!-- ======================================================== -->
   <script>
-    // Capa de Almacenamiento Seguro
-    const SafeStorage = {
-      memStore: {},
-      setItem(key, value) {
-        try { localStorage.setItem(key, value); }
-        catch (e) {
-          try { sessionStorage.setItem(key, value); }
-          catch (e2) { this.memStore[key] = String(value); }
-        }
-      },
-      getItem(key) {
-        try {
-          const item = localStorage.getItem(key);
-          if (item !== null) return item;
-        } catch (e) {}
-        try {
-          const itemSession = sessionStorage.getItem(key);
-          if (itemSession !== null) return itemSession;
-        } catch (e2) {}
-        return this.memStore[key] || null;
-      },
-      removeItem(key) {
-        try { localStorage.removeItem(key); } catch (e) {}
-        try { sessionStorage.removeItem(key); } catch (e2) {}
-        delete this.memStore[key];
-      }
-    };
-
-    // USUARIOS PREDETERMINADOS SOLICITADOS
-    const DEFAULT_ADMIN = {
-      username: 'administrador',
-      password: '123456789',
-      fullName: 'Administrador (Don Martínez)',
-      role: 'ADMIN',
-      phone: '315 889 4521',
-      photo: '',
-      active: true,
-      firstLoginToday: null,
-      lastLogin: null
-    };
-
-    const INITIAL_TECHNICIANS = [
-      {
-        id: 'tech-1',
-        fullName: 'Jeampaul',
-        username: 'Jeampaul',
-        password: '123',
-        phone: '315 889 4521',
-        specialty: 'Motores Corredizos & Automatismos',
-        photo: '',
-        active: true,
-        lastHeartbeat: Date.now() - 10000,
-        firstLoginToday: '07:30 AM',
-        lastLogin: 'En línea'
-      },
-      {
-        id: 'tech-2',
-        fullName: 'Alexis',
-        username: 'Alexis',
-        password: '123',
-        phone: '310 442 1290',
-        specialty: 'Brazos Batientes & Electrónica',
-        photo: '',
-        active: true,
-        lastHeartbeat: 0,
-        firstLoginToday: '08:00 AM',
-        lastLogin: 'Desconectado'
-      }
-    ];
-
     const INITIAL_TASKS = [
       {
         id: 'ORD-101',
@@ -919,8 +836,8 @@
     class PortonProApp {
       constructor() {
         this.currentUser = null;
-        this.adminProfile = DEFAULT_ADMIN;
-        this.users = INITIAL_TECHNICIANS;
+        this.users = []; // Lista reactiva de la colección 'users'
+        this.workers = []; // Usuarios con role === 'worker'
         this.tasks = INITIAL_TASKS;
         this.notifications = [];
         this.selectedTask = null;
@@ -945,12 +862,6 @@
         return dateObj.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true });
       }
 
-      formatFullDateTime(dateObj = new Date()) {
-        const time = this.formatTime(dateObj);
-        const day = dateObj.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        return `${day} ${time}`;
-      }
-
       openWazeNavigation(address) {
         if (!address) return this.showToast('No hay una dirección registrada', 'error');
         window.open(`https://waze.com/ul?q=${encodeURIComponent(address)}&navigate=yes`, '_blank');
@@ -961,10 +872,8 @@
         window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
       }
 
-      // Micro-partículas tecnológicas modernas
       initTechTheme() {
         if (document.getElementById('tech-particles-container')) return;
-
         const container = document.createElement('div');
         container.id = 'tech-particles-container';
         container.style.position = 'fixed';
@@ -990,15 +899,9 @@
       async init() {
         this.initTechTheme();
 
-        const savedAdmin = SafeStorage.getItem('portonpro_admin_v4');
-        if (savedAdmin) {
-          try { this.adminProfile = JSON.parse(savedAdmin); } catch(e) { this.adminProfile = DEFAULT_ADMIN; }
-        }
-
-        const savedUsers = SafeStorage.getItem('portonpro_users_v4');
-        if (savedUsers) {
-          try { this.users = JSON.parse(savedUsers); } catch(e) { this.users = INITIAL_TECHNICIANS; }
-        }
+        // 1. ELIMINACIÓN DE DEPENDENCIAS OBSOLETAS DE LOCALSTORAGE
+        SafeStorage.removeItem('portonpro_admin_v4');
+        SafeStorage.removeItem('portonpro_users_v4');
 
         const savedTasks = SafeStorage.getItem('portonpro_tasks_v4');
         if (savedTasks) {
@@ -1015,68 +918,66 @@
           } catch(e) {}
         }
 
-        // Sincronización en tiempo real y listeners con Firestore
+        // 2. SINCRONIZACIÓN Y GARANTÍA EN LA COLECCIÓN 'users' DE FIRESTORE
         if (window.db) {
-          // Asegurar adminProfile
-          db.collection('config').doc('adminProfile').get().then(doc => {
-            if (doc.exists) {
-              const data = doc.data();
-              if (data.username && data.password) this.adminProfile = data;
-              SafeStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
-            } else {
-              db.collection('config').doc('adminProfile').set(DEFAULT_ADMIN);
-            }
-          }).catch(e => console.warn("Firestore adminProfile:", e));
+          // Inicializar documentos predeterminados en la colección 'users' si están vacíos
+          const defaultDocs = [
+            { id: 'admin', data: { username: 'administrador', password: '123456789', role: 'admin', active: true, fullName: 'Administrador (Don Martínez)', phone: '315 889 4521', photo: '' } },
+            { id: 'tech-1', data: { username: 'Jeampaul', password: '123', role: 'worker', active: true, fullName: 'Jeampaul', phone: '315 889 4521', specialty: 'Motores Corredizos', photo: '' } },
+            { id: 'tech-2', data: { username: 'Alexis', password: '123', role: 'worker', active: true, fullName: 'Alexis', phone: '310 442 1290', specialty: 'Brazos Batientes', photo: '' } }
+          ];
 
-          // Asegurar usuarios iniciales (Jeampaul y Alexis)
-          db.collection('config').doc('users').get().then(doc => {
-            if (doc.exists && Array.isArray(doc.data().list) && doc.data().list.length > 0) {
-              let existingList = doc.data().list;
-              INITIAL_TECHNICIANS.forEach(initTech => {
-                const found = existingList.find(x => x.username.toLowerCase() === initTech.username.toLowerCase());
-                if (!found) existingList.push(initTech);
-              });
-              this.users = existingList;
-              SafeStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
-              this.renderTechOptionsInSelects();
-            } else {
-              db.collection('config').doc('users').set({ list: INITIAL_TECHNICIANS });
-            }
-          }).catch(e => console.warn("Firestore users:", e));
+          defaultDocs.forEach(d => {
+            db.collection('users').doc(d.id).get().then(docSnap => {
+              if (!docSnap.exists) {
+                db.collection('users').doc(d.id).set(d.data);
+              }
+            }).catch(err => console.warn(`Error inicializando users/${d.id}:`, err));
+          });
 
-          // 1. Snapshot Órdenes
+          // 3. LISTENER REACTIVO EN TIEMPO REAL A LA COLECCIÓN 'users'
+          db.collection('users').onSnapshot((snapshot) => {
+            const list = [];
+            snapshot.forEach(doc => {
+              list.push({ id: doc.id, ...doc.data() });
+            });
+            this.users = list;
+            // Filtrar automáticamente para que el administrador visualice a los "worker"
+            this.workers = list.filter(u => u.role === 'worker');
+
+            this.renderTechOptionsInSelects();
+            this.renderUsersTable();
+
+            if (this.currentUser && this.currentUser.role === 'admin') {
+              this.renderTechniciansMonitor();
+              this.renderTasks();
+            } else if (this.currentUser && this.currentUser.role === 'worker') {
+              const myUpdated = list.find(u => u.username.toLowerCase() === this.currentUser.username.toLowerCase());
+              if (myUpdated && myUpdated.photo !== this.currentUser.photo) {
+                this.currentUser.photo = myUpdated.photo;
+                SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
+                this.setupDashboardUI();
+              }
+            }
+          }, err => console.error("Error en snapshot users:", err));
+
+          // 4. Snapshot Órdenes
           db.collection('ordenes').doc('todas').onSnapshot((doc) => {
-            if (doc.exists) {
-              const data = doc.data();
-              if (Array.isArray(data.tasks)) {
-                this.tasks = data.tasks;
-                SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
-                if (this.currentUser) {
-                  this.updateStats();
-                  this.renderTasks();
-                  if (this.currentUser.role === 'ADMIN') {
-                    this.renderTechniciansMonitor();
-                    this.renderAdminAuditLog();
-                  }
+            if (doc.exists && Array.isArray(doc.data().tasks)) {
+              this.tasks = doc.data().tasks;
+              SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
+              if (this.currentUser) {
+                this.updateStats();
+                this.renderTasks();
+                if (this.currentUser.role === 'admin') {
+                  this.renderTechniciansMonitor();
+                  this.renderAdminAuditLog();
                 }
               }
             }
           }, e => console.error("Snapshot órdenes:", e));
 
-          // 2. Snapshot Usuarios
-          db.collection('config').doc('users').onSnapshot((doc) => {
-            if (doc.exists && Array.isArray(doc.data().list)) {
-              this.users = doc.data().list;
-              SafeStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
-              this.renderTechOptionsInSelects();
-              if (this.currentUser && this.currentUser.role === 'ADMIN') {
-                this.renderTechniciansMonitor();
-                this.renderTasks();
-              }
-            }
-          }, e => console.error("Snapshot users:", e));
-
-          // 3. Snapshot Presencia (EN LÍNEA EN TIEMPO REAL)
+          // 5. Snapshot Presencia Global
           db.collection('presencia').onSnapshot((snapshot) => {
             snapshot.forEach(doc => {
               const data = doc.data();
@@ -1087,12 +988,12 @@
                 if (data.lastLogin) u.lastLogin = data.lastLogin;
               }
             });
-            if (this.currentUser && this.currentUser.role === 'ADMIN') {
+            if (this.currentUser && this.currentUser.role === 'admin') {
               this.renderTechniciansMonitor();
             }
           });
 
-          // 4. Snapshot Notificaciones Reactivas
+          // 6. Snapshot Notificaciones Reactivas
           db.collection('notificaciones').orderBy('timestamp', 'desc').limit(25).onSnapshot((snapshot) => {
             const list = [];
             snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
@@ -1101,13 +1002,13 @@
           }, e => console.error("Snapshot notificaciones:", e));
         }
 
-        // Listener para reactivar presencia en teléfonos al desbloquear
         document.addEventListener('visibilitychange', () => {
           if (!document.hidden && this.currentUser) {
             this.sendHeartbeat();
           }
         });
 
+        // Restaurar sesión activa
         const savedSession = SafeStorage.getItem('portonpro_session_v4');
         if (savedSession) {
           try {
@@ -1121,16 +1022,6 @@
         }
 
         if (window.lucide) lucide.createIcons();
-      }
-
-      saveAdmin() {
-        SafeStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
-        if (window.db) db.collection('config').doc('adminProfile').set(this.adminProfile).catch(e => console.error(e));
-      }
-
-      saveUsers() {
-        SafeStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
-        if (window.db) db.collection('config').doc('users').set({ list: this.users }).catch(e => console.error(e));
       }
 
       saveTasks() {
@@ -1235,37 +1126,9 @@
         if (this.chatUnsubscribe) { this.chatUnsubscribe(); this.chatUnsubscribe = null; }
       }
 
-      async syncUsersFromFirestoreWithRetry(maxRetries = 3) {
-        if (!window.db) return false;
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-          try {
-            const [snapUsers, snapAdmin] = await Promise.all([
-              db.collection('config').doc('users').get({ source: 'server' }).catch(() => db.collection('config').doc('users').get()),
-              db.collection('config').doc('adminProfile').get({ source: 'server' }).catch(() => db.collection('config').doc('adminProfile').get())
-            ]);
-
-            let syncSuccess = false;
-            if (snapUsers && snapUsers.exists) {
-              const data = snapUsers.data();
-              if (Array.isArray(data.list) && data.list.length > 0) {
-                this.users = data.list;
-                SafeStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
-                syncSuccess = true;
-              }
-            }
-            if (snapAdmin && snapAdmin.exists) {
-              this.adminProfile = snapAdmin.data();
-              SafeStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
-              syncSuccess = true;
-            }
-            if (syncSuccess) return true;
-          } catch (err) {
-            await new Promise(r => setTimeout(r, attempt * 500));
-          }
-        }
-        return false;
-      }
-
+      // ========================================================
+      // AUTENTICACIÓN 100% DIRECTA CON FIRESTORE (users)
+      // ========================================================
       async handleLogin(e) {
         e.preventDefault();
         const rawUser = document.getElementById('login-username').value;
@@ -1276,7 +1139,7 @@
         const btnSubmit = document.getElementById('btn-submit-login');
         const btnText = document.getElementById('btn-submit-text');
 
-        const userVal = this.normalizeInput(rawUser).toLowerCase();
+        const userVal = this.normalizeInput(rawUser);
         const passVal = this.normalizeInput(rawPass);
 
         if (!userVal || !passVal) {
@@ -1287,7 +1150,7 @@
 
         if (btnSubmit) {
           btnSubmit.disabled = true;
-          if (btnText) btnText.textContent = "Verificando...";
+          if (btnText) btnText.textContent = "Verificando en Firestore...";
         }
 
         if (rememberChecked) {
@@ -1296,78 +1159,69 @@
           SafeStorage.removeItem('portonpro_remembered');
         }
 
-        const isOnline = await this.syncUsersFromFirestoreWithRetry(3);
+        let authenticatedUser = null;
+
+        // CONSULTA DIRECTA A LA COLECCIÓN 'users' DE FIRESTORE
+        if (window.db) {
+          try {
+            // 1. Búsqueda por documento directo o consulta case-insensitive
+            const snapshot = await db.collection('users').get({ source: 'server' }).catch(() => db.collection('users').get());
+            if (!snapshot.empty) {
+              snapshot.forEach(doc => {
+                const uData = doc.data();
+                const dbUser = this.normalizeInput(uData.username).toLowerCase();
+                const dbPass = this.normalizeInput(uData.password);
+                if (dbUser === userVal.toLowerCase() && dbPass === passVal) {
+                  authenticatedUser = { id: doc.id, ...uData };
+                }
+              });
+            }
+          } catch (err) {
+            console.error("Error al consultar users en Firestore:", err);
+          }
+        }
 
         if (btnSubmit) {
           btnSubmit.disabled = false;
           if (btnText) btnText.textContent = "Iniciar Sesión";
         }
 
-        const now = new Date();
-        const formattedTime = this.formatTime(now);
-
-        // 1. Validar Administrador
-        const adminUserMatch = this.normalizeInput(this.adminProfile.username).toLowerCase();
-        const adminPassMatch = this.normalizeInput(this.adminProfile.password);
-
-        if (userVal === adminUserMatch && passVal === adminPassMatch) {
-          errorAlert.classList.add('hidden');
-          if (!this.adminProfile.firstLoginToday) this.adminProfile.firstLoginToday = formattedTime;
-          this.adminProfile.lastLogin = `${formattedTime} (En línea)`;
-          this.saveAdmin();
-          this.loginSuccess(this.adminProfile, true);
-          return;
-        }
-
-        // 2. Validar Técnicos
-        const techIndex = this.users.findIndex(u => {
-          const uName = this.normalizeInput(u.username).toLowerCase();
-          const uPass = this.normalizeInput(u.password);
-          return uName === userVal && uPass === passVal;
-        });
-
-        if (techIndex !== -1) {
-          const foundTech = this.users[techIndex];
-          if (!foundTech.active) {
-            errorText.textContent = 'Tu cuenta de técnico está desactivada. Consulta al Administrador.';
+        if (authenticatedUser) {
+          if (authenticatedUser.active === false) {
+            errorText.textContent = 'Esta cuenta está desactivada. Consulta al Administrador.';
             errorAlert.classList.remove('hidden');
             return;
           }
+
           errorAlert.classList.add('hidden');
+          const now = new Date();
+          const formattedTime = this.formatTime(now);
 
-          foundTech.lastLogin = `${formattedTime} (En línea)`;
-          foundTech.lastHeartbeat = Date.now();
-          this.saveUsers();
-
+          // Actualizar presencia inmediata en Firestore
           if (window.db) {
-            db.collection('presencia').doc(foundTech.username.toLowerCase()).set({
-              username: foundTech.username,
-              fullName: foundTech.fullName,
+            db.collection('presencia').doc(authenticatedUser.username.toLowerCase()).set({
+              username: authenticatedUser.username,
+              fullName: authenticatedUser.fullName || authenticatedUser.username,
               lastHeartbeat: Date.now(),
-              photo: foundTech.photo || '',
-              lastLogin: foundTech.lastLogin
+              photo: authenticatedUser.photo || '',
+              lastLogin: `${formattedTime} (En línea)`
             }, { merge: true }).catch(e => console.error(e));
           }
 
-          const techSessionUser = {
-            id: foundTech.id,
-            username: foundTech.username,
-            fullName: foundTech.fullName,
-            role: 'TECNICO',
-            phone: foundTech.phone,
-            photo: foundTech.photo || ''
+          const sessionObj = {
+            id: authenticatedUser.id,
+            username: authenticatedUser.username,
+            fullName: authenticatedUser.fullName || authenticatedUser.username,
+            role: authenticatedUser.role === 'admin' ? 'admin' : 'worker',
+            phone: authenticatedUser.phone || '',
+            photo: authenticatedUser.photo || ''
           };
-          this.loginSuccess(techSessionUser, true);
+
+          this.loginSuccess(sessionObj, true);
           return;
         }
 
-        if (!isOnline && (!this.users || this.users.length === 0)) {
-          errorText.textContent = 'Error de conexión con la base de datos. Verifica tu conexión.';
-          errorAlert.classList.remove('hidden');
-          return;
-        }
-
-        errorText.textContent = 'Usuario o contraseña incorrectos. Verifica tus credenciales.';
+        errorText.textContent = 'Usuario o contraseña incorrectos en Firestore.';
         errorAlert.classList.remove('hidden');
         if (window.lucide) lucide.createIcons();
       }
@@ -1380,7 +1234,6 @@
         document.getElementById('view-dashboard').classList.remove('hidden');
         document.getElementById('chat-floating-button-container').classList.remove('hidden');
 
-        // Latido activo cada 6 segundos
         this.sendHeartbeat();
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
         this.heartbeatTimer = setInterval(() => this.sendHeartbeat(), 6000);
@@ -1390,7 +1243,7 @@
         this.updateStats();
         this.renderTasks();
 
-        if (this.currentUser.role === 'ADMIN') {
+        if (this.currentUser.role === 'admin') {
           this.renderTechniciansMonitor();
           this.renderAdminAuditLog();
         }
@@ -1404,24 +1257,11 @@
         const now = new Date();
         const formattedLogout = `${this.formatTime(now)} (Desconectado)`;
 
-        if (this.currentUser) {
-          if (this.currentUser.role === 'TECNICO') {
-            const tech = this.users.find(u => u.username.toLowerCase() === this.currentUser.username.toLowerCase());
-            if (tech) {
-              tech.lastHeartbeat = 0;
-              tech.lastLogin = formattedLogout;
-              this.saveUsers();
-            }
-            if (window.db) {
-              db.collection('presencia').doc(this.currentUser.username.toLowerCase()).set({
-                lastHeartbeat: 0,
-                lastLogin: formattedLogout
-              }, { merge: true }).catch(e => console.error(e));
-            }
-          } else if (this.currentUser.role === 'ADMIN') {
-            this.adminProfile.lastLogin = formattedLogout;
-            this.saveAdmin();
-          }
+        if (this.currentUser && window.db) {
+          db.collection('presencia').doc(this.currentUser.username.toLowerCase()).set({
+            lastHeartbeat: 0,
+            lastLogin: formattedLogout
+          }, { merge: true }).catch(e => console.error(e));
         }
 
         this.currentUser = null;
@@ -1434,20 +1274,16 @@
       sendHeartbeat() {
         if (!this.currentUser) return;
         const now = Date.now();
-        if (this.currentUser.role === 'TECNICO') {
-          const techIndex = this.users.findIndex(u => u.username.toLowerCase() === this.currentUser.username.toLowerCase());
-          if (techIndex !== -1) this.users[techIndex].lastHeartbeat = now;
-          if (window.db) {
-            db.collection('presencia').doc(this.currentUser.username.toLowerCase()).set({
-              username: this.currentUser.username,
-              fullName: this.currentUser.fullName,
-              lastHeartbeat: now,
-              photo: this.currentUser.photo || '',
-              role: 'TECNICO'
-            }, { merge: true }).catch(e => console.error(e));
-          }
+        if (window.db) {
+          db.collection('presencia').doc(this.currentUser.username.toLowerCase()).set({
+            username: this.currentUser.username,
+            fullName: this.currentUser.fullName,
+            lastHeartbeat: now,
+            photo: this.currentUser.photo || '',
+            role: this.currentUser.role
+          }, { merge: true }).catch(e => console.error(e));
         }
-        if (this.currentUser.role === 'ADMIN') this.renderTechniciansMonitor();
+        if (this.currentUser.role === 'admin') this.renderTechniciansMonitor();
       }
 
       togglePasswordVisibility(fieldId) {
@@ -1456,10 +1292,10 @@
       }
 
       setupDashboardUI() {
-        const isAdmin = this.currentUser.role === 'ADMIN';
+        const isAdmin = this.currentUser.role === 'admin';
 
         document.getElementById('header-user-name').textContent = this.currentUser.fullName;
-        document.getElementById('header-role-badge').textContent = isAdmin ? 'Administrador' : 'Técnico';
+        document.getElementById('header-role-badge').textContent = isAdmin ? 'Admin' : 'Técnico';
 
         const headerPhoto = document.getElementById('header-user-photo');
         const headerInit = document.getElementById('header-avatar-initial');
@@ -1539,9 +1375,6 @@
         if (window.lucide) lucide.createIcons();
       }
 
-      // ==========================================
-      // LIGHTBOX DE ZOOM DE FOTO
-      // ==========================================
       zoomWorkerPhoto(photoUrl, name) {
         const modal = document.getElementById('modal-photo-zoom');
         const img = document.getElementById('zoom-modal-img');
@@ -1567,20 +1400,16 @@
         document.getElementById('modal-photo-zoom').classList.add('hidden');
       }
 
-      // ==========================================
-      // SISTEMA DE CHAT PRIVADO INTERNO
-      // ==========================================
       initChatModule() {
-        const isAdmin = this.currentUser.role === 'ADMIN';
+        const isAdmin = this.currentUser.role === 'admin';
         const adminThreads = document.getElementById('chat-admin-threads');
         const targetSelect = document.getElementById('chat-target-worker');
         const chatTitle = document.getElementById('chat-header-title');
 
         if (isAdmin) {
           adminThreads.classList.remove('hidden');
-          const techWorkers = this.users.filter(u => u.username.toLowerCase() !== 'administrador');
-          targetSelect.innerHTML = techWorkers.map(t => `<option value="${t.fullName}">${t.fullName}</option>`).join('');
-          this.activeChatWorker = targetSelect.value || (techWorkers[0]?.fullName || 'Jeampaul');
+          targetSelect.innerHTML = this.workers.map(t => `<option value="${t.fullName}">${t.fullName}</option>`).join('');
+          this.activeChatWorker = targetSelect.value || (this.workers[0]?.fullName || 'Jeampaul');
           chatTitle.textContent = `Chat: ${this.activeChatWorker}`;
         } else {
           adminThreads.classList.add('hidden');
@@ -1610,7 +1439,7 @@
         if (!window.db) return;
         if (this.chatUnsubscribe) { this.chatUnsubscribe(); }
 
-        const threadId = this.currentUser.role === 'ADMIN' ? this.activeChatWorker : this.currentUser.fullName;
+        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : this.currentUser.fullName;
 
         this.chatUnsubscribe = db.collection('chats_internos')
           .doc(threadId)
@@ -1637,7 +1466,7 @@
             } else {
               badge.classList.add('hidden');
             }
-          }, err => console.error("Error en chat snapshot:", err));
+          }, err => console.error("Error chat snapshot:", err));
       }
 
       renderChatMessages() {
@@ -1666,9 +1495,7 @@
 
       scrollToChatBottom() {
         const container = document.getElementById('chat-messages-container');
-        if (container) {
-          container.scrollTop = container.scrollHeight;
-        }
+        if (container) container.scrollTop = container.scrollHeight;
       }
 
       async handleSendMessage(e) {
@@ -1677,14 +1504,14 @@
         const text = input.value.trim();
         if (!text) return;
 
-        const threadId = this.currentUser.role === 'ADMIN' ? this.activeChatWorker : this.currentUser.fullName;
+        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : this.currentUser.fullName;
 
         const msgObj = {
           threadId: threadId,
           text: text,
           senderName: this.currentUser.fullName,
           senderRole: this.currentUser.role,
-          recipient: this.currentUser.role === 'ADMIN' ? this.activeChatWorker : 'Administrador',
+          recipient: this.currentUser.role === 'admin' ? this.activeChatWorker : 'Administrador',
           time: this.formatTime(new Date()),
           timestamp: Date.now(),
           read: false
@@ -1701,14 +1528,13 @@
             }, { merge: true });
           } catch(err) {
             console.error("Error al enviar mensaje:", err);
-            this.showToast("Error al enviar mensaje", "error");
           }
         }
       }
 
       markMessagesAsRead() {
         if (!window.db || this.chatMessages.length === 0) return;
-        const threadId = this.currentUser.role === 'ADMIN' ? this.activeChatWorker : this.currentUser.fullName;
+        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : this.currentUser.fullName;
 
         this.chatMessages.forEach(m => {
           if (m.senderRole !== this.currentUser.role && !m.read && m.id) {
@@ -1717,20 +1543,17 @@
         });
       }
 
-      // ==========================================
-      // MONITOR Y CONFIGURACIÓN (SÓLO CÍRCULO VERDE/GRIS)
-      // ==========================================
+      // MONITOR DE PERSONAL: VISUALIZACIÓN AUTOMÁTICA DE TODOS LOS "worker"
       renderTechniciansMonitor() {
         const grid = document.getElementById('technicians-status-grid');
         const counter = document.getElementById('techs-online-counter');
         if (!grid) return;
 
-        // Umbral de 60 segundos
         const ONLINE_THRESHOLD_MS = 60 * 1000;
         const now = Date.now();
         let onlineCount = 0;
 
-        grid.innerHTML = this.users.map(u => {
+        grid.innerHTML = this.workers.map(u => {
           const isOnline = (now - (u.lastHeartbeat || 0)) < ONLINE_THRESHOLD_MS;
           if (isOnline) onlineCount++;
 
@@ -1740,15 +1563,13 @@
             <div class="p-3 rounded-2xl border ${isOnline ? 'bg-brand-limeLight border-brand-limeBorder shadow-sm' : 'bg-slate-50 border-slate-200'} flex flex-col justify-between">
               <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2.5 min-w-0">
-                  <div onclick="app.zoomWorkerPhoto('${u.photo || ''}', '${u.fullName}')" class="cursor-pointer relative w-10 h-10 rounded-full overflow-hidden border-2 ${isOnline ? 'border-brand-lime' : 'border-slate-300'} bg-slate-200 shrink-0 flex items-center justify-center hover:opacity-90 transition" title="Haz clic para ampliar foto">
+                  <div onclick="app.zoomWorkerPhoto('${u.photo || ''}', '${u.fullName}')" class="cursor-pointer relative w-10 h-10 rounded-full overflow-hidden border-2 ${isOnline ? 'border-brand-lime' : 'border-slate-300'} bg-slate-200 shrink-0 flex items-center justify-center hover:opacity-90 transition" title="Haz clic para ampliar">
                     ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<span class="font-bold text-xs text-slate-700">${u.fullName.charAt(0)}</span>`}
-                    <!-- Círculo indicador de conexión en la esquina del avatar -->
                     <span class="w-3 h-3 rounded-full ${isOnline ? 'bg-emerald-500 ring-2 ring-white animate-pulse' : 'bg-slate-300'} absolute top-0 right-0"></span>
                   </div>
                   <div class="min-w-0 flex items-center gap-2">
                     <h4 class="text-xs font-black text-slate-900 truncate">${u.fullName}</h4>
-                    <!-- Círculo visual sin letras de desconectado -->
-                    <span class="w-3 h-3 rounded-full ${isOnline ? 'bg-emerald-500 ring-2 ring-emerald-300 animate-pulse' : 'bg-slate-300'} shrink-0" title="${isOnline ? 'Conectado trabajando' : 'Sin conexión'}"></span>
+                    <span class="w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-500 ring-2 ring-emerald-300 animate-pulse' : 'bg-slate-300'} shrink-0" title="${isOnline ? 'Conectado' : 'Desconectado'}"></span>
                   </div>
                 </div>
                 <span class="text-[10px] px-2 py-0.5 rounded-md font-extrabold ${assignedPending > 0 ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-600'} shrink-0">
@@ -1771,7 +1592,7 @@
       }
 
       openSettingsModal() {
-        const isAdmin = this.currentUser.role === 'ADMIN';
+        const isAdmin = this.currentUser.role === 'admin';
         this.renderMySettingsPhotoPreview();
 
         document.getElementById('set-own-current-pass').value = '';
@@ -1782,7 +1603,7 @@
         const subtitle = document.getElementById('settings-modal-subtitle');
 
         if (isAdmin) {
-          subtitle.textContent = 'Gestión integral de personal y credenciales';
+          subtitle.textContent = 'Gestión integral de personal en Firestore';
           adminUsersSection.classList.remove('hidden');
           this.resetUserForm();
           this.renderUsersTable();
@@ -1828,27 +1649,16 @@
           this.currentUser.photo = base64Data;
           SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
 
-          if (this.currentUser.role === 'ADMIN') {
-            this.adminProfile.photo = base64Data;
-            this.saveAdmin();
-          } else {
-            const tech = this.users.find(u => u.username.toLowerCase() === this.currentUser.username.toLowerCase());
-            if (tech) {
-              tech.photo = base64Data;
-              this.saveUsers();
-            }
-            if (window.db) {
-              db.collection('presencia').doc(this.currentUser.username.toLowerCase()).set({
-                photo: base64Data
-              }, { merge: true }).catch(e => console.error(e));
-            }
+          if (window.db && this.currentUser.id) {
+            db.collection('users').doc(this.currentUser.id).update({ photo: base64Data }).catch(e => console.error(e));
+            db.collection('presencia').doc(this.currentUser.username.toLowerCase()).set({ photo: base64Data }, { merge: true }).catch(() => {});
           }
 
           this.renderMySettingsPhotoPreview();
           this.setupDashboardUI();
           this.renderTasks();
-          if (this.currentUser.role === 'ADMIN') this.renderTechniciansMonitor();
-          this.showToast('Foto actualizada y sincronizada', 'success');
+          if (this.currentUser.role === 'admin') this.renderTechniciansMonitor();
+          this.showToast('Foto actualizada en Firestore', 'success');
         };
         reader.readAsDataURL(file);
       }
@@ -1857,30 +1667,19 @@
         this.currentUser.photo = '';
         SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
 
-        if (this.currentUser.role === 'ADMIN') {
-          this.adminProfile.photo = '';
-          this.saveAdmin();
-        } else {
-          const tech = this.users.find(u => u.username.toLowerCase() === this.currentUser.username.toLowerCase());
-          if (tech) {
-            tech.photo = '';
-            this.saveUsers();
-          }
-          if (window.db) {
-            db.collection('presencia').doc(this.currentUser.username.toLowerCase()).set({
-              photo: ''
-            }, { merge: true }).catch(e => console.error(e));
-          }
+        if (window.db && this.currentUser.id) {
+          db.collection('users').doc(this.currentUser.id).update({ photo: '' }).catch(e => console.error(e));
+          db.collection('presencia').doc(this.currentUser.username.toLowerCase()).set({ photo: '' }, { merge: true }).catch(() => {});
         }
 
         this.renderMySettingsPhotoPreview();
         this.setupDashboardUI();
         this.renderTasks();
-        if (this.currentUser.role === 'ADMIN') this.renderTechniciansMonitor();
+        if (this.currentUser.role === 'admin') this.renderTechniciansMonitor();
         this.showToast('Foto eliminada', 'info');
       }
 
-      handleChangeOwnPassword(e) {
+      async handleChangeOwnPassword(e) {
         e.preventDefault();
         const currentPass = document.getElementById('set-own-current-pass').value.trim();
         const newPass = document.getElementById('set-own-new-pass').value.trim();
@@ -1891,100 +1690,83 @@
           return;
         }
 
-        if (this.currentUser.role === 'ADMIN') {
-          if (currentPass !== this.adminProfile.password) {
-            this.showToast('Contraseña actual incorrecta', 'error');
-            return;
+        if (window.db && this.currentUser.id) {
+          try {
+            const userDoc = await db.collection('users').doc(this.currentUser.id).get();
+            if (userDoc.exists && userDoc.data().password === currentPass) {
+              await db.collection('users').doc(this.currentUser.id).update({ password: newPass });
+              this.currentUser.password = newPass;
+              SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
+              this.showToast('Contraseña actualizada en Firestore', 'success');
+              this.closeSettingsModal();
+              return;
+            } else {
+              this.showToast('Contraseña actual incorrecta', 'error');
+            }
+          } catch(err) {
+            this.showToast('Error al conectar con Firestore', 'error');
           }
-          this.adminProfile.password = newPass;
-          this.saveAdmin();
-          this.currentUser.password = newPass;
-          SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
-          this.showToast('Contraseña actualizada con éxito', 'success');
-          this.closeSettingsModal();
-        } else {
-          const techIndex = this.users.findIndex(u => u.username.toLowerCase() === this.currentUser.username.toLowerCase());
-          if (techIndex === -1 || this.users[techIndex].password !== currentPass) {
-            this.showToast('Contraseña actual incorrecta', 'error');
-            return;
-          }
-          this.users[techIndex].password = newPass;
-          this.saveUsers();
-          this.currentUser.password = newPass;
-          SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
-          this.showToast('Contraseña actualizada con éxito', 'success');
-          this.closeSettingsModal();
         }
       }
 
       resetUserForm() {
         document.getElementById('manage-user-id').value = '';
         document.getElementById('manage-user-form').reset();
-        document.getElementById('btn-save-user').textContent = 'Guardar';
+        document.getElementById('btn-save-user').textContent = 'Guardar en Firestore';
         if (window.lucide) lucide.createIcons();
       }
 
-      handleSaveUser(e) {
+      // GUARDAR O ACTUALIZAR DIRECTO EN COLECCIÓN 'users'
+      async handleSaveUser(e) {
         e.preventDefault();
-        if (this.currentUser.role !== 'ADMIN') return;
+        if (this.currentUser.role !== 'admin') return;
 
         const id = document.getElementById('manage-user-id').value;
         const fullName = this.normalizeInput(document.getElementById('manage-fullname').value);
-        const username = this.normalizeInput(document.getElementById('manage-username').value).toLowerCase();
+        const username = this.normalizeInput(document.getElementById('manage-username').value);
         const password = this.normalizeInput(document.getElementById('manage-password').value);
         const phone = this.normalizeInput(document.getElementById('manage-phone').value);
         const specialty = this.normalizeInput(document.getElementById('manage-specialty').value);
 
-        if (username === this.adminProfile.username.toLowerCase()) {
-          this.showToast('El usuario no puede llamarse igual al admin', 'error');
+        if (username.toLowerCase() === 'administrador' && id !== 'admin') {
+          this.showToast('El usuario no puede llamarse administrador', 'error');
           return;
         }
 
-        if (id) {
-          const tech = this.users.find(u => u.id === id);
-          if (tech) {
-            tech.fullName = fullName;
-            tech.username = username;
-            tech.password = password;
-            tech.phone = phone;
-            tech.specialty = specialty;
-            this.showToast(`Datos de ${fullName} actualizados`, 'success');
-          }
-        } else {
-          if (this.users.some(u => u.username.toLowerCase() === username)) {
-            this.showToast('Ya existe un técnico con ese nombre de usuario', 'error');
-            return;
-          }
+        const userData = {
+          fullName,
+          username,
+          password,
+          phone,
+          specialty: specialty || 'Técnico de Portones',
+          role: 'worker',
+          active: true
+        };
 
-          const newTech = {
-            id: 'tech-' + Date.now(),
-            fullName,
-            username,
-            password,
-            phone,
-            specialty: specialty || 'Técnico de Portones',
-            photo: '',
-            active: true,
-            lastHeartbeat: 0,
-            firstLoginToday: 'Sin registro hoy',
-            lastLogin: 'Nunca se ha conectado'
-          };
-          this.users.push(newTech);
-          this.showToast(`Trabajador ${fullName} registrado`, 'success');
+        if (window.db) {
+          try {
+            if (id) {
+              await db.collection('users').doc(id).set(userData, { merge: true });
+              this.showToast(`Trabajador ${fullName} actualizado en Firestore`, 'success');
+            } else {
+              const docId = 'tech-' + Date.now();
+              await db.collection('users').doc(docId).set({ ...userData, photo: '', lastHeartbeat: 0, lastLogin: 'Nunca' });
+              this.showToast(`Trabajador ${fullName} registrado en Firestore`, 'success');
+            }
+            this.resetUserForm();
+          } catch(err) {
+            console.error("Error guardando trabajador en Firestore:", err);
+            this.showToast('Error guardando en Firestore', 'error');
+          }
         }
-
-        this.saveUsers();
-        this.resetUserForm();
-        this.renderUsersTable();
-        this.renderTechOptionsInSelects();
-        this.renderTechniciansMonitor();
       }
 
       renderUsersTable() {
         const tbody = document.getElementById('table-users-body');
-        document.getElementById('settings-users-count-badge').textContent = `${this.users.length} Registrados`;
+        if (!tbody) return;
+        document.getElementById('settings-users-count-badge').textContent = `${this.workers.length} Trabajadores`;
 
-        tbody.innerHTML = this.users.map(u => {
+        tbody.innerHTML = this.workers.map(u => {
           return `
             <tr class="hover:bg-slate-50 transition">
               <td class="p-1.5">
@@ -2018,31 +1800,32 @@
         document.getElementById('manage-password').value = u.password;
         document.getElementById('manage-phone').value = u.phone;
         document.getElementById('manage-specialty').value = u.specialty || '';
-        document.getElementById('btn-save-user').textContent = 'Actualizar';
+        document.getElementById('btn-save-user').textContent = 'Actualizar en Firestore';
         if (window.lucide) lucide.createIcons();
       }
 
-      deleteUser(id) {
-        const u = this.users.find(x => x.id === id);
-        if (!u) return;
-        this.users = this.users.filter(x => x.id !== id);
-        this.saveUsers();
-        this.renderUsersTable();
-        this.renderTechOptionsInSelects();
-        this.renderTechniciansMonitor();
-        this.showToast(`Técnico eliminado`, 'info');
+      async deleteUser(id) {
+        if (!confirm(`¿Eliminar trabajador de Firestore?`)) return;
+        if (window.db) {
+          try {
+            await db.collection('users').doc(id).delete();
+            this.showToast('Trabajador eliminado de Firestore', 'info');
+          } catch(err) {
+            this.showToast('Error al eliminar de Firestore', 'error');
+          }
+        }
       }
 
       renderTechOptionsInSelects() {
         const taskAssignedSelect = document.getElementById('task-assigned-to');
         const filterTechSelect = document.getElementById('filter-tech');
-        const options = this.users.map(u => `<option value="${u.fullName}">${u.fullName}</option>`).join('');
-        taskAssignedSelect.innerHTML = options;
-        filterTechSelect.innerHTML = `<option value="ALL">Todos los Técnicos</option>` + options;
+        const opts = this.workers.map(u => `<option value="${u.fullName}">${u.fullName}</option>`).join('');
+        if (taskAssignedSelect) taskAssignedSelect.innerHTML = opts;
+        if (filterTechSelect) filterTechSelect.innerHTML = `<option value="ALL">Todos los Técnicos</option>` + opts;
       }
 
       updateStats() {
-        const isAdmin = this.currentUser.role === 'ADMIN';
+        const isAdmin = this.currentUser.role === 'admin';
         const relevantTasks = isAdmin ? this.tasks : this.tasks.filter(t => t.assignedTo === this.currentUser.fullName);
         document.getElementById('stat-total').textContent = relevantTasks.length;
         document.getElementById('stat-pending').textContent = relevantTasks.filter(t => t.status === 'PENDIENTE' || t.status === 'EN_PROCESO').length;
@@ -2053,12 +1836,12 @@
       resetFilters() {
         document.getElementById('filter-search').value = '';
         document.getElementById('filter-status').value = 'ALL';
-        if (this.currentUser.role === 'ADMIN') document.getElementById('filter-tech').value = 'ALL';
+        if (this.currentUser.role === 'admin') document.getElementById('filter-tech').value = 'ALL';
         this.renderTasks();
       }
 
       async resetCategoryTasks(category) {
-        if (this.currentUser.role !== 'ADMIN') {
+        if (this.currentUser.role !== 'admin') {
           this.showToast('Acción reservada al Administrador', 'error');
           return;
         }
@@ -2100,7 +1883,7 @@
         const container = document.getElementById('tasks-container');
         const emptyState = document.getElementById('empty-state');
         const countTag = document.getElementById('filtered-count');
-        const isAdmin = this.currentUser.role === 'ADMIN';
+        const isAdmin = this.currentUser.role === 'admin';
 
         let filtered = this.tasks.filter(t => {
           if (!isAdmin && t.assignedTo !== this.currentUser.fullName) return false;
@@ -2219,8 +2002,48 @@
         if (window.lucide) lucide.createIcons();
       }
 
+      renderAdminAuditLog() {
+        const tbody = document.getElementById('audit-log-tbody');
+        const counter = document.getElementById('audit-log-counter');
+        if (!tbody) return;
+
+        const reportedTasks = this.tasks.filter(t => t.completedAt || t.observations);
+        counter.textContent = `${reportedTasks.length} Informes`;
+
+        if (reportedTasks.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-slate-400 italic">No hay informes registrados.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = reportedTasks.map(t => {
+          const evidenceCount = Array.isArray(t.evidence) ? t.evidence.length : 0;
+          return `
+            <tr class="hover:bg-slate-50 transition">
+              <td class="p-2 font-semibold text-slate-700 whitespace-nowrap text-[11px]">${t.completedAt || 'En proceso'}</td>
+              <td class="p-2 font-bold text-slate-900">${t.assignedTo}</td>
+              <td class="p-2 font-bold text-slate-800">${t.client}</td>
+              <td class="p-2">
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold ${t.status === 'REALIZADA' ? 'bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder' : t.status === 'NO_REALIZADA' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}">
+                  ${t.status}
+                </span>
+              </td>
+              <td class="p-2 max-w-xs truncate text-[11px]">${t.observations || 'Sin detalle'}</td>
+              <td class="p-2 whitespace-nowrap">
+                ${evidenceCount > 0 ? `
+                  <button onclick="app.viewOrderDetails('${t.id}')" class="text-brand-limeHover font-bold flex items-center gap-1 hover:underline">
+                    <i data-lucide="eye" class="w-3.5 h-3.5"></i> Ver (${evidenceCount})
+                  </button>
+                ` : `<span class="text-slate-400">Sin archivos</span>`}
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        if (window.lucide) lucide.createIcons();
+      }
+
       openNewTaskModal() {
-        if (this.currentUser.role !== 'ADMIN') return;
+        if (this.currentUser.role !== 'admin') return;
         document.getElementById('form-modal-title').textContent = 'Nueva Orden de Trabajo';
         document.getElementById('task-id').value = '';
         document.getElementById('task-form').reset();
@@ -2229,7 +2052,7 @@
       }
 
       openEditTaskModal(id) {
-        if (this.currentUser.role !== 'ADMIN') return;
+        if (this.currentUser.role !== 'admin') return;
         const t = this.tasks.find(x => x.id === id);
         if (!t) return;
 
@@ -2253,7 +2076,7 @@
 
       handleSaveTask(e) {
         e.preventDefault();
-        if (this.currentUser.role !== 'ADMIN') return;
+        if (this.currentUser.role !== 'admin') return;
         const id = document.getElementById('task-id').value;
 
         if (id) {
@@ -2299,7 +2122,7 @@
       }
 
       deleteTask(id) {
-        if (this.currentUser.role !== 'ADMIN') return;
+        if (this.currentUser.role !== 'admin') return;
         if (!confirm(`¿Eliminar la orden ${id}?`)) return;
         this.tasks = this.tasks.filter(x => x.id !== id);
         this.saveTasks();
