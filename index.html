@@ -352,7 +352,7 @@
             <option value="REALIZADA">✅ Realizadas</option>
             <option value="NO_REALIZADA">❌ No Realizadas</option>
           </select>
-          <select id="filter-tech" onchange="app.renderTasks()" class="text-xs border border-slate-200 rounded-xl px-2 py-1.5 bg-slate-50 font-medium"></select>
+          <select id="filter-tech" onchange="app.renderTasks()" class="text-xs border border-slate-200 rounded-xl px-2.5 py-1.5 bg-slate-50 font-medium"></select>
           <button onclick="app.resetFilters()" class="p-1.5 text-slate-500 hover:bg-slate-100 rounded-xl" title="Restablecer">
             <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
           </button>
@@ -810,9 +810,37 @@
   </div>
 
   <!-- ======================================================== -->
-  <!-- JAVASCRIPT: MIGRACIÓN TOTAL A FIRESTORE 'users'          -->
+  <!-- JAVASCRIPT: LÓGICA DE LA APLICACIÓN                      -->
   <!-- ======================================================== -->
   <script>
+    // Capa de Almacenamiento Seguro (SafeStorage)
+    const SafeStorage = {
+      memStore: {},
+      setItem(key, value) {
+        try { localStorage.setItem(key, value); }
+        catch (e) {
+          try { sessionStorage.setItem(key, value); }
+          catch (e2) { this.memStore[key] = String(value); }
+        }
+      },
+      getItem(key) {
+        try {
+          const item = localStorage.getItem(key);
+          if (item !== null) return item;
+        } catch (e) {}
+        try {
+          const itemSession = sessionStorage.getItem(key);
+          if (itemSession !== null) return itemSession;
+        } catch (e2) {}
+        return this.memStore[key] || null;
+      },
+      removeItem(key) {
+        try { localStorage.removeItem(key); } catch (e) {}
+        try { sessionStorage.removeItem(key); } catch (e2) {}
+        delete this.memStore[key];
+      }
+    };
+
     const INITIAL_TASKS = [
       {
         id: 'ORD-101',
@@ -836,8 +864,8 @@
     class PortonProApp {
       constructor() {
         this.currentUser = null;
-        this.users = []; // Lista reactiva de la colección 'users'
-        this.workers = []; // Usuarios con role === 'worker'
+        this.users = [];
+        this.workers = [];
         this.tasks = INITIAL_TASKS;
         this.notifications = [];
         this.selectedTask = null;
@@ -899,7 +927,7 @@
       async init() {
         this.initTechTheme();
 
-        // 1. ELIMINACIÓN DE DEPENDENCIAS OBSOLETAS DE LOCALSTORAGE
+        // Limpieza de dependencias obsoletas
         SafeStorage.removeItem('portonpro_admin_v4');
         SafeStorage.removeItem('portonpro_users_v4');
 
@@ -918,9 +946,8 @@
           } catch(e) {}
         }
 
-        // 2. SINCRONIZACIÓN Y GARANTÍA EN LA COLECCIÓN 'users' DE FIRESTORE
+        // Sincronización en tiempo real desde Firestore
         if (window.db) {
-          // Inicializar documentos predeterminados en la colección 'users' si están vacíos
           const defaultDocs = [
             { id: 'admin', data: { username: 'administrador', password: '123456789', role: 'admin', active: true, fullName: 'Administrador (Don Martínez)', phone: '315 889 4521', photo: '' } },
             { id: 'tech-1', data: { username: 'Jeampaul', password: '123', role: 'worker', active: true, fullName: 'Jeampaul', phone: '315 889 4521', specialty: 'Motores Corredizos', photo: '' } },
@@ -932,17 +959,14 @@
               if (!docSnap.exists) {
                 db.collection('users').doc(d.id).set(d.data);
               }
-            }).catch(err => console.warn(`Error inicializando users/${d.id}:`, err));
+            }).catch(err => console.warn(`Inicializando users/${d.id}:`, err));
           });
 
-          // 3. LISTENER REACTIVO EN TIEMPO REAL A LA COLECCIÓN 'users'
+          // Listener de la colección 'users'
           db.collection('users').onSnapshot((snapshot) => {
             const list = [];
-            snapshot.forEach(doc => {
-              list.push({ id: doc.id, ...doc.data() });
-            });
+            snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
             this.users = list;
-            // Filtrar automáticamente para que el administrador visualice a los "worker"
             this.workers = list.filter(u => u.role === 'worker');
 
             this.renderTechOptionsInSelects();
@@ -959,9 +983,9 @@
                 this.setupDashboardUI();
               }
             }
-          }, err => console.error("Error en snapshot users:", err));
+          }, err => console.error("Snapshot users error:", err));
 
-          // 4. Snapshot Órdenes
+          // Snapshot Órdenes
           db.collection('ordenes').doc('todas').onSnapshot((doc) => {
             if (doc.exists && Array.isArray(doc.data().tasks)) {
               this.tasks = doc.data().tasks;
@@ -977,7 +1001,7 @@
             }
           }, e => console.error("Snapshot órdenes:", e));
 
-          // 5. Snapshot Presencia Global
+          // Snapshot Presencia
           db.collection('presencia').onSnapshot((snapshot) => {
             snapshot.forEach(doc => {
               const data = doc.data();
@@ -993,7 +1017,7 @@
             }
           });
 
-          // 6. Snapshot Notificaciones Reactivas
+          // Snapshot Notificaciones
           db.collection('notificaciones').orderBy('timestamp', 'desc').limit(25).onSnapshot((snapshot) => {
             const list = [];
             snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
@@ -1126,9 +1150,6 @@
         if (this.chatUnsubscribe) { this.chatUnsubscribe(); this.chatUnsubscribe = null; }
       }
 
-      // ========================================================
-      // AUTENTICACIÓN 100% DIRECTA CON FIRESTORE (users)
-      // ========================================================
       async handleLogin(e) {
         e.preventDefault();
         const rawUser = document.getElementById('login-username').value;
@@ -1161,10 +1182,8 @@
 
         let authenticatedUser = null;
 
-        // CONSULTA DIRECTA A LA COLECCIÓN 'users' DE FIRESTORE
         if (window.db) {
           try {
-            // 1. Búsqueda por documento directo o consulta case-insensitive
             const snapshot = await db.collection('users').get({ source: 'server' }).catch(() => db.collection('users').get());
             if (!snapshot.empty) {
               snapshot.forEach(doc => {
@@ -1197,7 +1216,6 @@
           const now = new Date();
           const formattedTime = this.formatTime(now);
 
-          // Actualizar presencia inmediata en Firestore
           if (window.db) {
             db.collection('presencia').doc(authenticatedUser.username.toLowerCase()).set({
               username: authenticatedUser.username,
@@ -1543,7 +1561,6 @@
         });
       }
 
-      // MONITOR DE PERSONAL: VISUALIZACIÓN AUTOMÁTICA DE TODOS LOS "worker"
       renderTechniciansMonitor() {
         const grid = document.getElementById('technicians-status-grid');
         const counter = document.getElementById('techs-online-counter');
@@ -1716,7 +1733,6 @@
         if (window.lucide) lucide.createIcons();
       }
 
-      // GUARDAR O ACTUALIZAR DIRECTO EN COLECCIÓN 'users'
       async handleSaveUser(e) {
         e.preventDefault();
         if (this.currentUser.role !== 'admin') return;
