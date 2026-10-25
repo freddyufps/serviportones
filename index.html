@@ -8,6 +8,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Leaflet CSS y JS para Mapa Satelital/Calles sin API Key de pago -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -76,7 +79,6 @@
       100% { transform: translateY(-20px) scale(1.1); opacity: 0; }
     }
 
-    /* Transición suave para modal de zoom de foto */
     .zoom-photo-enter {
       animation: zoomInSmooth 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
@@ -85,7 +87,6 @@
       100% { transform: scale(1); opacity: 1; }
     }
 
-    /* Scrollbar estilizada para chat */
     .chat-scroll::-webkit-scrollbar {
       width: 5px;
     }
@@ -97,7 +98,6 @@
       border-radius: 4px;
     }
 
-    /* Animación del Popup Emergente Superior Derecho */
     .popup-slide-in {
       animation: popupSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
@@ -113,7 +113,6 @@
       100% { transform: translateX(115%); opacity: 0; }
     }
 
-    /* Campana con destello y rebote suave */
     .bell-ring-active {
       animation: bellShake 1.2s ease-in-out infinite alternate;
     }
@@ -150,7 +149,7 @@
   <!-- ======================================================== -->
   <!-- CONTENEDOR FLOTANTE DE NOTIFICACIONES EMERGENTES (TOASTS) -->
   <!-- ======================================================== -->
-  <div id="toast-notification-stack" class="fixed top-4 right-4 z-[99999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-2 sm:px-0"></div>
+  <div id="toast-notification-stack" class="fixed top-3 right-3 sm:top-4 sm:right-4 z-[99999] flex flex-col gap-2.5 max-w-[92vw] sm:max-w-sm w-full pointer-events-none"></div>
 
   <!-- ========================================== -->
   <!-- 1. VISTA DE INICIO DE SESIÓN (LOGIN)       -->
@@ -240,7 +239,14 @@
           <span id="header-role-badge" class="text-[9px] sm:text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-brand-lime/20 text-brand-lime border border-brand-lime/40 truncate">Admin</span>
         </div>
 
-        <div class="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
+        <div class="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+          <!-- Botón de GPS para Administrador -->
+          <button id="btn-nav-admin-gps" onclick="app.openAdminGpsModal()" class="hidden bg-cyan-700 hover:bg-cyan-600 text-white text-xs font-bold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl flex items-center gap-1 shadow transition active:scale-95" title="Monitoreo GPS">
+            <i data-lucide="map-pin" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-200"></i>
+            <span class="hidden md:inline">GPS</span>
+          </button>
+
+          <!-- Botón de Nueva Orden (Admin) -->
           <button id="btn-nav-new-order" onclick="app.openNewTaskModal()" class="hidden bg-brand-lime hover:bg-brand-limeHover text-white text-xs font-bold px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl flex items-center gap-1 shadow-md transition active:scale-95">
             <i data-lucide="plus-circle" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
             <span class="hidden xs:inline">Nueva Orden</span>
@@ -253,8 +259,8 @@
               <span id="notif-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-pulse">0</span>
             </button>
 
-            <!-- Menú Desplegable de Notificaciones -->
-            <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-72 sm:w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden text-slate-800">
+            <!-- Menú Desplegable de Notificaciones con Scroll Interno y Responsive -->
+            <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-[88vw] sm:w-80 md:w-96 max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden text-slate-800">
               <div class="p-3 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
                 <div class="flex items-center gap-2">
                   <i data-lucide="bell" class="w-4 h-4 text-brand-lime"></i>
@@ -262,7 +268,7 @@
                 </div>
                 <button onclick="app.clearNotifications()" class="text-[10px] text-slate-400 hover:text-white underline">Limpiar</button>
               </div>
-              <div id="notifications-list" class="max-h-72 overflow-y-auto divide-y divide-slate-100 text-xs">
+              <div id="notifications-list" class="max-h-64 sm:max-h-80 overflow-y-auto divide-y divide-slate-100 text-xs chat-scroll">
                 <div class="p-4 text-center text-slate-400 italic">No hay novedades recientes</div>
               </div>
             </div>
@@ -473,24 +479,71 @@
   </div>
 
   <!-- ======================================================== -->
-  <!-- SISTEMA DE CHAT PRIVADO INTERNO EN TIEMPO REAL           -->
+  <!-- MODAL GPS SATELITAL DE TRABAJADORES (ADMIN)              -->
   <!-- ======================================================== -->
-  <div id="chat-floating-button-container" class="fixed bottom-5 right-4 sm:bottom-6 sm:right-6 z-40 hidden">
+  <div id="modal-admin-gps" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-4xl w-full h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
+      <!-- Header GPS -->
+      <div class="bg-brand-dark text-white p-3.5 sm:p-4 flex items-center justify-between border-b-2 border-cyan-500 shrink-0">
+        <div class="flex items-center gap-2">
+          <div class="p-1.5 bg-cyan-500/20 rounded-xl text-cyan-400 border border-cyan-500/40">
+            <i data-lucide="map-pin" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-xs sm:text-sm font-black">Monitoreo GPS en Vivo &bull; Cuadrilla Técnica</h3>
+            <p class="text-[10px] sm:text-[11px] text-slate-300">Ubicaciones satelitales en tiempo real de los técnicos</p>
+          </div>
+        </div>
+        <button onclick="app.closeAdminGpsModal()" class="text-slate-400 hover:text-white p-1 rounded-xl">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Contenedor Principal: Mapa + Lista Lateral -->
+      <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+        <!-- Mapa Leaflet -->
+        <div id="gps-map-container" class="flex-1 w-full h-full min-h-[300px] z-10 bg-slate-100"></div>
+
+        <!-- Lista Lateral de Trabajadores y Rutas -->
+        <div class="w-full md:w-80 bg-slate-50 border-t md:border-t-0 md:border-l border-slate-200 p-3 overflow-y-auto chat-scroll shrink-0 flex flex-col gap-2">
+          <div class="flex items-center justify-between pb-1 border-b border-slate-200">
+            <span class="text-[11px] font-black uppercase tracking-wider text-slate-700">Técnicos Emitiendo</span>
+            <span id="gps-active-count" class="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-100 text-cyan-800">0 Activos</span>
+          </div>
+          <div id="gps-workers-list" class="space-y-2 text-xs">
+            <p class="text-center py-6 text-slate-400 italic text-[11px]">Esperando señales GPS...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer GPS -->
+      <div class="p-2.5 bg-white border-t border-slate-200 flex items-center justify-between text-xs shrink-0">
+        <span class="text-slate-500 text-[10px] sm:text-[11px]">📍 Las coordenadas se actualizan automáticamente al emitir señal.</span>
+        <button onclick="app.closeAdminGpsModal()" class="px-4 py-1.5 border border-slate-300 rounded-xl font-bold text-xs hover:bg-slate-100">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- SISTEMA DE CHAT PRIVADO ESTILO MESSENGER / WHATSAPP WEB   -->
+  <!-- ======================================================== -->
+  <div id="chat-floating-button-container" class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 hidden">
     <button onclick="app.toggleChatWindow()" class="relative p-3 sm:p-3.5 bg-brand-dark hover:bg-black text-white rounded-full shadow-2xl border-2 border-brand-lime flex items-center justify-center active:scale-95 transition" title="Chat Interno">
       <i data-lucide="message-square" class="w-5 h-5 sm:w-6 sm:h-6 text-brand-lime"></i>
-      <span id="chat-unread-badge" class="hidden absolute -top-1 -right-1 bg-emerald-500 text-white font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-bounce">0</span>
+      <span id="chat-unread-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-bounce">0</span>
     </button>
   </div>
 
-  <div id="chat-window-modal" class="fixed bottom-0 right-0 sm:bottom-20 sm:right-6 w-full sm:w-96 h-[85vh] sm:h-[500px] bg-white sm:rounded-3xl shadow-2xl border border-slate-300 z-50 hidden flex flex-col overflow-hidden">
-    <div class="bg-brand-dark text-white p-3.5 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
+  <div id="chat-window-modal" class="fixed bottom-0 right-0 sm:bottom-20 sm:right-6 w-full sm:w-[680px] md:w-[740px] h-[92vh] sm:h-[550px] bg-white sm:rounded-3xl shadow-2xl border border-slate-300 z-50 hidden flex flex-col overflow-hidden">
+    <!-- Header del Chat -->
+    <div class="bg-brand-dark text-white p-3 sm:p-3.5 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
       <div class="flex items-center gap-2 min-w-0">
         <div class="w-7 h-7 rounded-full bg-slate-700 border border-brand-lime flex items-center justify-center text-xs font-bold text-white shrink-0">
           <i data-lucide="message-circle" class="w-3.5 h-3.5 text-brand-lime"></i>
         </div>
         <div class="min-w-0">
           <h4 id="chat-header-title" class="text-xs sm:text-sm font-bold truncate">Chat Corporativo</h4>
-          <p id="chat-header-status" class="text-[10px] text-brand-lime font-semibold truncate">Canal seguro en tiempo real</p>
+          <p id="chat-typing-indicator" class="text-[10px] text-brand-lime font-semibold truncate hidden">Escribiendo...</p>
         </div>
       </div>
       <div class="flex items-center gap-1">
@@ -500,25 +553,46 @@
       </div>
     </div>
 
-    <div id="chat-admin-threads" class="bg-slate-50 border-b p-2 shrink-0 hidden">
-      <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Conversar con:</label>
-      <select id="chat-target-worker" onchange="app.switchChatWorker(this.value)" class="w-full text-xs font-bold bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-lime"></select>
-    </div>
+    <!-- Contenedor Dividido: Barra Lateral (Messenger) + Ventana de Conversación -->
+    <div class="flex-1 flex overflow-hidden">
+      <!-- SIDEBAR DE CONVERSACIONES (ADMIN) -->
+      <div id="chat-sidebar" class="w-full sm:w-56 md:w-64 bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 overflow-y-auto chat-scroll hidden sm:flex">
+        <div class="p-2.5 border-b border-slate-200 bg-white sticky top-0 z-10">
+          <span class="text-[10px] font-black uppercase tracking-wider text-slate-500">Conversaciones</span>
+        </div>
+        <div id="chat-conversations-list" class="divide-y divide-slate-100 flex-1">
+          <div class="text-center py-6 text-slate-400 text-xs italic">Cargando chats...</div>
+        </div>
+      </div>
 
-    <div id="chat-messages-container" class="flex-1 p-3.5 overflow-y-auto space-y-2 text-xs chat-scroll bg-slate-50/50">
-      <div class="text-center py-6 text-slate-400 text-xs italic">Cargando conversación...</div>
-    </div>
+      <!-- ÁREA DE MENSAJES Y ENVÍO -->
+      <div class="flex-1 flex flex-col bg-white overflow-hidden min-w-0">
+        <!-- Barra de conversación activa móvil para regresar a lista -->
+        <div id="chat-mobile-back-bar" class="p-2 bg-slate-100 border-b flex items-center justify-between sm:hidden">
+          <button onclick="app.showMobileChatSidebar()" class="text-xs font-bold text-brand-dark flex items-center gap-1">
+            ← Ver Todos los Chats
+          </button>
+          <span id="chat-mobile-active-name" class="text-xs font-bold text-slate-700 truncate">Chat Activo</span>
+        </div>
 
-    <form onsubmit="app.handleSendMessage(event)" class="p-2 sm:p-2.5 bg-white border-t flex items-center gap-2 shrink-0">
-      <input type="text" id="chat-input-text" placeholder="Escribe un mensaje..." autocomplete="off" required class="flex-1 px-3 py-2 text-xs bg-slate-100 rounded-xl border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-lime">
-      <button type="submit" class="p-2 bg-brand-dark hover:bg-black text-white rounded-xl shadow active:scale-95 transition" title="Enviar">
-        <i data-lucide="send" class="w-4 h-4 text-brand-lime"></i>
-      </button>
-    </form>
+        <!-- Mensajes -->
+        <div id="chat-messages-container" class="flex-1 p-3 overflow-y-auto space-y-2 text-xs chat-scroll bg-slate-50/40">
+          <div class="text-center py-8 text-slate-400 text-xs italic">Selecciona o inicia una conversación...</div>
+        </div>
+
+        <!-- Input de mensaje con indicador de escritura -->
+        <form onsubmit="app.handleSendMessage(event)" class="p-2 sm:p-2.5 bg-white border-t border-slate-200 flex items-center gap-2 shrink-0">
+          <input type="text" id="chat-input-text" oninput="app.handleTypingInput()" placeholder="Escribe un mensaje..." autocomplete="off" required class="flex-1 px-3 py-2 text-xs bg-slate-100 rounded-xl border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-lime">
+          <button type="submit" class="p-2 bg-brand-dark hover:bg-black text-white rounded-xl shadow active:scale-95 transition" title="Enviar">
+            <i data-lucide="send" class="w-4 h-4 text-brand-lime"></i>
+          </button>
+        </form>
+      </div>
+    </div>
   </div>
 
   <!-- ======================================================== -->
-  <!-- MODAL: AJUSTES, FOTOS Y CONFIGURACIÓN DE NOTIFICACIONES -->
+  <!-- MODAL: AJUSTES, FOTOS Y CONFIGURACIÓN                    -->
   <!-- ======================================================== -->
   <div id="modal-settings" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
@@ -527,7 +601,7 @@
           <i data-lucide="settings" class="w-5 h-5 text-brand-lime"></i>
           <div>
             <h3 class="text-xs sm:text-sm font-bold">Configuración y Seguridad</h3>
-            <p id="settings-modal-subtitle" class="text-[10px] sm:text-[11px] text-slate-300">Administración de credenciales, perfil y alertas</p>
+            <p id="settings-modal-subtitle" class="text-[10px] sm:text-[11px] text-slate-300">Administración de credenciales y alertas</p>
           </div>
         </div>
         <button onclick="app.closeSettingsModal()" class="text-slate-400 hover:text-white p-1">
@@ -543,7 +617,6 @@
             <i data-lucide="bell" class="w-4 h-4 text-brand-limeHover"></i>
             <span>Alertas y Notificaciones Sonoras</span>
           </h4>
-          <p class="text-[11px] text-slate-500">Configura cómo deseas recibir avisos en tiempo real:</p>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
             <label class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer select-none">
               <input type="checkbox" id="pref-sound" onchange="app.updatePref('sound', this.checked)" class="w-4 h-4 rounded text-brand-lime focus:ring-brand-lime border-slate-300">
@@ -904,7 +977,7 @@
       }
     };
 
-    // MOTOR ACÚSTICO PROFESIONAL CON WEB AUDIO API (Sin archivos externos ni copyright)
+    // MOTOR ACÚSTICO PROFESIONAL CON WEB AUDIO API
     const SoundEngine = {
       ctx: null,
       getCtx() {
@@ -918,7 +991,6 @@
         return this.ctx;
       },
 
-      // Sonido para Nuevos Mensajes de Chat (Acorde elegante y suave tipo Messenger/Teams)
       playMessageSound() {
         try {
           const ctx = this.getCtx();
@@ -932,11 +1004,11 @@
           osc1.type = 'sine';
           osc2.type = 'sine';
 
-          osc1.frequency.setValueAtTime(587.33, now); // D5
-          osc1.frequency.exponentialRampToValueAtTime(880, now + 0.12); // A5
+          osc1.frequency.setValueAtTime(587.33, now);
+          osc1.frequency.exponentialRampToValueAtTime(880, now + 0.12);
 
           osc2.frequency.setValueAtTime(880, now);
-          osc2.frequency.exponentialRampToValueAtTime(1174.66, now + 0.15); // D6
+          osc2.frequency.exponentialRampToValueAtTime(1174.66, now + 0.15);
 
           gain.gain.setValueAtTime(0.001, now);
           gain.gain.linearRampToValueAtTime(0.25, now + 0.02);
@@ -955,7 +1027,6 @@
         }
       },
 
-      // Sonido para Nueva Orden de Trabajo (Doble campana ejecutiva de atención)
       playOrderSound() {
         try {
           const ctx = this.getCtx();
@@ -967,7 +1038,7 @@
             const gain = ctx.createGain();
             osc.type = 'triangle';
 
-            const freq = idx === 0 ? 523.25 : 783.99; // C5 luego G5
+            const freq = idx === 0 ? 523.25 : 783.99;
             osc.frequency.setValueAtTime(freq, now + delay);
 
             gain.gain.setValueAtTime(0.001, now + delay);
@@ -985,7 +1056,6 @@
         }
       },
 
-      // Sonido para Notificaciones Generales de Auditoría
       playGeneralNotificationSound() {
         try {
           const ctx = this.getCtx();
@@ -996,8 +1066,8 @@
           const gain = ctx.createGain();
           osc.type = 'sine';
 
-          osc.frequency.setValueAtTime(659.25, now); // E5
-          osc.frequency.exponentialRampToValueAtTime(987.77, now + 0.18); // B5
+          osc.frequency.setValueAtTime(659.25, now);
+          osc.frequency.exponentialRampToValueAtTime(987.77, now + 0.18);
 
           gain.gain.setValueAtTime(0.001, now);
           gain.gain.linearRampToValueAtTime(0.2, now + 0.02);
@@ -1013,7 +1083,6 @@
         }
       },
 
-      // Sonido para Futuras Llamadas / Eventos Urgentes
       playCallAlertSound() {
         try {
           const ctx = this.getCtx();
@@ -1076,10 +1145,21 @@
         this.heartbeatTimer = null;
         this.currentReportEvidence = [];
         
-        // Estado del Chat
+        // Estado del Chat y Conversaciones
         this.chatMessages = [];
         this.activeChatWorker = 'Jeampaul';
         this.chatUnsubscribe = null;
+        this.chatThreadsUnsubscribe = null;
+        this.conversations = {};
+        this.typingTimeout = null;
+
+        // Estado del GPS
+        this.gpsWatchId = null;
+        this.isGpsSharing = false;
+        this.adminMap = null;
+        this.adminMapMarkers = {};
+        this.gpsLocationsUnsubscribe = null;
+        this.locationsData = {};
 
         // Preferencias de Notificación
         this.prefs = {
@@ -1089,7 +1169,6 @@
           notifBadge: true
         };
 
-        // Banderas anti-duplicados y exclusión de carga inicial
         this.processedEventIds = new Set();
         this.isTasksInitialLoad = true;
         this.isNotifsInitialLoad = true;
@@ -1124,7 +1203,6 @@
         this.showToast('Preferencia guardada', 'info');
       }
 
-      // DISPARADOR DE NOTIFICACIONES EMERGENTES SUPERIOR DERECHO
       showPopupNotification({ title, subtitle, details, type, icon, onClick }) {
         if (!this.prefs.popup) return;
 
@@ -1167,13 +1245,11 @@
 
         stack.appendChild(card);
 
-        // Barra de progreso decreciente
         setTimeout(() => {
           const bar = document.getElementById(`${toastId}_bar`);
           if (bar) bar.style.width = '0%';
         }, 50);
 
-        // Auto-cierre entre 5 y 8 segundos (6.5s)
         setTimeout(() => {
           this.closePopup(toastId);
         }, 6500);
@@ -1273,21 +1349,6 @@
         }
 
         if (window.db) {
-          // Inicializar usuarios base
-          const defaultDocs = [
-            { id: 'admin', data: { username: 'administrador', password: '123456789', role: 'admin', active: true, fullName: 'Administrador (Don Martínez)', phone: '315 889 4521', photo: '' } },
-            { id: 'tech-1', data: { username: 'Jeampaul', password: '123', role: 'worker', active: true, fullName: 'Jeampaul', phone: '315 889 4521', specialty: 'Motores Corredizos', photo: '' } },
-            { id: 'tech-2', data: { username: 'Alexis', password: '123', role: 'worker', active: true, fullName: 'Alexis', phone: '310 442 1290', specialty: 'Brazos Batientes', photo: '' } }
-          ];
-
-          defaultDocs.forEach(d => {
-            db.collection('users').doc(d.id).get().then(docSnap => {
-              if (!docSnap.exists) {
-                db.collection('users').doc(d.id).set(d.data);
-              }
-            }).catch(err => console.warn(`Inicializando users/${d.id}:`, err));
-          });
-
           // Listener de usuarios
           db.collection('users').onSnapshot((snapshot) => {
             const list = [];
@@ -1300,6 +1361,7 @@
 
             if (this.currentUser && this.currentUser.role === 'admin') {
               this.renderTechniciansMonitor();
+              this.renderConversationsSidebar();
               this.renderTasks();
             } else if (this.currentUser && this.currentUser.role === 'worker') {
               const myUpdated = list.find(u => String(u.username || '').toLowerCase() === this.currentUser.username.toLowerCase());
@@ -1311,14 +1373,13 @@
             }
           }, err => console.error("Snapshot users error:", err));
 
-          // 1. Snapshot Órdenes con Sonido y Notificación Popup en Tiempo Real
+          // Snapshot Órdenes
           db.collection('ordenes').doc('todas').onSnapshot((doc) => {
             if (doc.exists && Array.isArray(doc.data().tasks)) {
               const incomingTasks = doc.data().tasks;
               
-              // Detección de nueva orden (Solo después de cargar y sin repetir)
               if (!this.isTasksInitialLoad && incomingTasks.length > this.tasks.length) {
-                const latestTask = incomingTasks[0]; // Las nuevas se agregan al inicio
+                const latestTask = incomingTasks[0];
                 if (latestTask && !this.processedEventIds.has(latestTask.id)) {
                   this.processedEventIds.add(latestTask.id);
 
@@ -1350,7 +1411,7 @@
             }
           }, e => console.error("Snapshot órdenes:", e));
 
-          // 2. Snapshot Presencia
+          // Snapshot Presencia
           db.collection('presencia').onSnapshot((snapshot) => {
             snapshot.forEach(doc => {
               const data = doc.data();
@@ -1363,18 +1424,18 @@
             });
             if (this.currentUser && this.currentUser.role === 'admin') {
               this.renderTechniciansMonitor();
+              this.renderConversationsSidebar();
             }
           });
 
-          // 3. Snapshot Notificaciones de Auditoría con Alerta Sonora
-          db.collection('notificaciones').orderBy('timestamp', 'desc').limit(25).onSnapshot((snapshot) => {
+          // Snapshot Notificaciones
+          db.collection('notificaciones').orderBy('timestamp', 'desc').limit(30).onSnapshot((snapshot) => {
             const list = [];
             snapshot.forEach(doc => {
               const data = doc.data();
               const notifId = doc.id;
               list.push({ id: notifId, ...data });
 
-              // Alerta sonora y visual si llega una notificación de informe nueva
               if (!this.isNotifsInitialLoad && data.timestamp > this.appStartTime && !this.processedEventIds.has(notifId)) {
                 this.processedEventIds.add(notifId);
 
@@ -1404,7 +1465,6 @@
           }
         });
 
-        // Restaurar sesión activa
         const savedSession = SafeStorage.getItem('portonpro_session_v4');
         if (savedSession) {
           try {
@@ -1432,7 +1492,8 @@
           actionType: actionType,
           details: details || '',
           time: this.formatTime(new Date()),
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          read: false
         };
 
         if (window.db) {
@@ -1463,11 +1524,17 @@
         const listContainer = document.getElementById('notifications-list');
         if (!badge || !listContainer) return;
 
-        if (this.notifications.length > 0) {
-          badge.textContent = this.notifications.length > 9 ? '+9' : this.notifications.length;
-          if (this.prefs.notifBadge) badge.classList.remove('hidden');
-          else badge.classList.add('hidden');
+        // Contador de notificaciones no leídas
+        const unreadNotifs = this.notifications.filter(n => !n.read).length;
 
+        if (unreadNotifs > 0 && this.prefs.notifBadge) {
+          badge.textContent = unreadNotifs > 9 ? '+9' : unreadNotifs;
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+
+        if (this.notifications.length > 0) {
           listContainer.innerHTML = this.notifications.map(n => {
             let statusColor = 'text-blue-600 bg-blue-50 border-blue-200';
             if (n.actionType === 'REALIZADA') statusColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
@@ -1475,15 +1542,18 @@
             else if (n.actionType === 'EN_PROCESO') statusColor = 'text-amber-700 bg-amber-50 border-amber-200';
 
             return `
-              <div class="p-2.5 hover:bg-slate-50 transition">
+              <div class="p-2.5 hover:bg-slate-50 transition cursor-pointer ${!n.read ? 'bg-amber-50/40' : ''}" onclick="app.markNotificationAsRead('${n.id}', '${n.type || 'order'}', '${n.taskId || ''}', '${n.techName || ''}')">
                 <div class="flex items-center justify-between mb-1">
-                  <span class="font-bold text-slate-800 text-[11px]">${n.techName}</span>
+                  <span class="font-bold text-slate-800 text-[11px] flex items-center gap-1.5">
+                    ${!n.read ? '<span class="w-1.5 h-1.5 rounded-full bg-brand-lime"></span>' : ''}
+                    ${n.techName}
+                  </span>
                   <span class="text-[10px] text-slate-400 font-mono">${n.time}</span>
                 </div>
                 <div class="flex items-center gap-1.5 mb-1">
-                  <span class="font-mono text-[10px] font-extrabold text-slate-600 bg-slate-100 px-1 py-0.5 rounded">${n.taskId}</span>
+                  ${n.taskId ? `<span class="font-mono text-[10px] font-extrabold text-slate-600 bg-slate-100 px-1 py-0.5 rounded">${n.taskId}</span>` : ''}
                   <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded border ${statusColor}">
-                    ${n.actionType}
+                    ${n.actionType || 'AVISO'}
                   </span>
                 </div>
                 ${n.details ? `<p class="text-[10px] text-slate-600 truncate italic">"${n.details}"</p>` : ''}
@@ -1491,10 +1561,20 @@
             `;
           }).join('');
         } else {
-          badge.classList.add('hidden');
           listContainer.innerHTML = `<div class="p-4 text-center text-slate-400 italic">No hay novedades recientes</div>`;
         }
         if (window.lucide) lucide.createIcons();
+      }
+
+      markNotificationAsRead(notifId, type, taskId, techName) {
+        if (window.db && notifId) {
+          db.collection('notificaciones').doc(notifId).update({ read: true }).catch(() => {});
+        }
+        if (type === 'chat' && techName) {
+          this.openDirectWorkerChat(techName);
+        } else if (taskId) {
+          this.viewOrderDetails(taskId);
+        }
       }
 
       showToast(message, type = 'info') {
@@ -1521,9 +1601,12 @@
         document.getElementById('chat-window-modal').classList.add('hidden');
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
         if (this.chatUnsubscribe) { this.chatUnsubscribe(); this.chatUnsubscribe = null; }
+        if (this.chatThreadsUnsubscribe) { this.chatThreadsUnsubscribe(); this.chatThreadsUnsubscribe = null; }
+        if (this.gpsLocationsUnsubscribe) { this.gpsLocationsUnsubscribe(); this.gpsLocationsUnsubscribe = null; }
+        this.stopGpsSharing();
       }
 
-      // Autenticación directa en Firestore
+      // Autenticación directa e infalible en Firestore
       async handleLogin(e) {
         e.preventDefault();
         const rawUser = document.getElementById('login-username').value;
@@ -1705,6 +1788,7 @@
         }
 
         const btnNewOrder = document.getElementById('btn-nav-new-order');
+        const btnAdminGps = document.getElementById('btn-nav-admin-gps');
         const monitorSection = document.getElementById('section-technicians-monitor');
         const filterTech = document.getElementById('filter-tech');
         const auditLogSection = document.getElementById('section-admin-audit-log');
@@ -1716,17 +1800,19 @@
 
         if (isAdmin) {
           btnNewOrder.classList.remove('hidden');
+          btnAdminGps.classList.remove('hidden');
           monitorSection.classList.remove('hidden');
           filterTech.classList.remove('hidden');
           filterTech.disabled = false;
           auditLogSection.classList.remove('hidden');
-          roleHint.textContent = 'Supervisión en vivo y control total';
+          roleHint.textContent = 'Supervisión en vivo, GPS y control total';
 
           if (btnResetPending) btnResetPending.classList.remove('hidden');
           if (btnResetDone) btnResetDone.classList.remove('hidden');
           if (btnResetFailed) btnResetFailed.classList.remove('hidden');
         } else {
           btnNewOrder.classList.add('hidden');
+          btnAdminGps.classList.add('hidden');
           monitorSection.classList.add('hidden');
           filterTech.classList.add('hidden');
           filterTech.disabled = true;
@@ -1744,9 +1830,12 @@
           banner.innerHTML = `
             <div>
               <h3 class="font-extrabold text-xs sm:text-sm text-white">Panel Central de Operaciones</h3>
-              <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5">Asigna órdenes, supervisa técnicos en vivo y comunícate por chat.</p>
+              <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5">Asigna órdenes, supervisa técnicos en mapa GPS y comunícate por chat.</p>
             </div>
-            <div class="mt-2 sm:mt-0">
+            <div class="mt-2 sm:mt-0 flex items-center gap-2">
+              <button onclick="app.openAdminGpsModal()" class="text-xs font-bold bg-cyan-700 hover:bg-cyan-600 text-white px-3 py-1.5 rounded-xl flex items-center gap-1 shadow transition active:scale-95">
+                <i data-lucide="map-pin" class="w-3.5 h-3.5"></i> Ver Mapa GPS
+              </button>
               <button onclick="app.openNewTaskModal()" class="text-xs font-bold bg-brand-lime hover:bg-brand-limeHover text-white px-3 py-1.5 rounded-xl flex items-center gap-1 shadow transition active:scale-95">
                 <i data-lucide="plus-circle" class="w-4 h-4"></i> Asignar Orden
               </button>
@@ -1757,12 +1846,13 @@
           banner.innerHTML = `
             <div>
               <h3 class="font-extrabold text-xs sm:text-sm text-white">Bienvenido, ${this.currentUser.fullName || this.currentUser.username}</h3>
-              <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5">Revisa tus visitas asignadas y envía tus reportes técnicos con fotos.</p>
+              <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5">Revisa tus visitas asignadas y comparte tu posición para asistirte en campo.</p>
             </div>
-            <div class="mt-2 sm:mt-0">
-              <span class="inline-flex items-center gap-1.5 text-xs font-bold bg-brand-lime/20 text-brand-lime border border-brand-lime/40 px-2.5 py-1 rounded-full">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Conectado
-              </span>
+            <div class="mt-2 sm:mt-0 flex items-center gap-2">
+              <button id="btn-worker-toggle-gps" onclick="app.toggleWorkerGps()" class="text-xs font-bold px-3 py-1.5 rounded-xl border flex items-center gap-1.5 shadow transition active:scale-95 bg-slate-800 text-slate-200 border-slate-700 hover:border-cyan-400">
+                <span class="w-2 h-2 rounded-full bg-slate-400" id="worker-gps-dot"></span>
+                <span id="worker-gps-label">📍 Activar GPS</span>
+              </button>
             </div>
           `;
         }
@@ -1796,32 +1886,315 @@
       }
 
       // ==========================================
-      // CHAT PRIVADO EN TIEMPO REAL CON SONIDOS Y POPUPS
+      // GEOLOCALIZACIÓN Y GPS EN TIEMPO REAL
+      // ==========================================
+      toggleWorkerGps() {
+        if (this.isGpsSharing) {
+          this.stopGpsSharing();
+        } else {
+          this.startGpsSharing();
+        }
+      }
+
+      startGpsSharing() {
+        if (!navigator.geolocation) {
+          this.showToast("Tu navegador no soporta geolocalización", "error");
+          return;
+        }
+
+        const myName = this.currentUser.fullName || this.currentUser.username;
+        const btnLabel = document.getElementById('worker-gps-label');
+        const btnDot = document.getElementById('worker-gps-dot');
+
+        this.gpsWatchId = navigator.geolocation.watchPosition(
+          pos => {
+            const coords = {
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+              workerName: myName,
+              active: true,
+              updatedAt: this.formatTime(new Date()),
+              timestamp: Date.now()
+            };
+
+            if (window.db) {
+              db.collection('gps_locations').doc(myName).set(coords, { merge: true }).catch(() => {});
+            }
+
+            this.isGpsSharing = true;
+            if (btnLabel) btnLabel.textContent = "📍 Desactivar GPS";
+            if (btnDot) btnDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+          },
+          err => {
+            console.warn("Error GPS:", err);
+            this.showToast("Permiso de GPS denegado", "error");
+            this.stopGpsSharing();
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+        );
+
+        this.showToast("GPS Activado: compartiendo posición", "success");
+      }
+
+      stopGpsSharing() {
+        if (this.gpsWatchId !== null) {
+          navigator.geolocation.clearWatch(this.gpsWatchId);
+          this.gpsWatchId = null;
+        }
+        this.isGpsSharing = false;
+
+        const myName = this.currentUser?.fullName || this.currentUser?.username;
+        if (window.db && myName) {
+          db.collection('gps_locations').doc(myName).set({
+            active: false,
+            timestamp: Date.now(),
+            updatedAt: this.formatTime(new Date())
+          }, { merge: true }).catch(() => {});
+        }
+
+        const btnLabel = document.getElementById('worker-gps-label');
+        const btnDot = document.getElementById('worker-gps-dot');
+        if (btnLabel) btnLabel.textContent = "📍 Activar GPS";
+        if (btnDot) btnDot.className = "w-2 h-2 rounded-full bg-slate-400";
+
+        this.showToast("GPS Desactivado", "info");
+      }
+
+      openAdminGpsModal() {
+        document.getElementById('modal-admin-gps').classList.remove('hidden');
+        if (!this.adminMap) {
+          setTimeout(() => this.initAdminMap(), 150);
+        } else {
+          setTimeout(() => this.adminMap.invalidateSize(), 200);
+        }
+        this.subscribeGpsLocations();
+      }
+
+      closeAdminGpsModal() {
+        document.getElementById('modal-admin-gps').classList.add('hidden');
+      }
+
+      initAdminMap() {
+        const mapContainer = document.getElementById('gps-map-container');
+        if (!mapContainer || this.adminMap) return;
+
+        // Centro inicial en Colombia / Bogotá
+        this.adminMap = L.map('gps-map-container').setView([4.6097, -74.0817], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap'
+        }).addTo(this.adminMap);
+      }
+
+      subscribeGpsLocations() {
+        if (!window.db || this.gpsLocationsUnsubscribe) return;
+
+        this.gpsLocationsUnsubscribe = db.collection('gps_locations').onSnapshot(snap => {
+          const locs = {};
+          let activeCount = 0;
+
+          snap.forEach(doc => {
+            const data = doc.data();
+            locs[doc.id] = data;
+            if (data.active) activeCount++;
+          });
+
+          this.locationsData = locs;
+          document.getElementById('gps-active-count').textContent = `${activeCount} Activos`;
+          this.renderGpsWorkersList();
+          this.updateGpsMarkersOnMap();
+        }, e => console.error("Snapshot GPS:", e));
+      }
+
+      renderGpsWorkersList() {
+        const listElem = document.getElementById('gps-workers-list');
+        if (!listElem) return;
+
+        const workers = this.workers;
+        if (workers.length === 0) {
+          listElem.innerHTML = `<p class="text-center py-4 text-slate-400 italic">No hay trabajadores registrados.</p>`;
+          return;
+        }
+
+        listElem.innerHTML = workers.map(w => {
+          const wName = w.fullName || w.username;
+          const loc = this.locationsData[wName];
+          const isGpsActive = loc && loc.active && (Date.now() - (loc.timestamp || 0) < 180000);
+
+          return `
+            <div class="p-2.5 bg-white rounded-xl border ${isGpsActive ? 'border-cyan-300 shadow-sm' : 'border-slate-200'} flex flex-col gap-1.5">
+              <div class="flex items-center justify-between">
+                <span class="font-extrabold text-slate-800 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full ${isGpsActive ? 'bg-cyan-500 animate-ping' : 'bg-slate-300'}"></span>
+                  ${wName}
+                </span>
+                <span class="text-[10px] text-slate-400 font-mono">${loc?.updatedAt || 'Sin señal'}</span>
+              </div>
+              <div class="text-[10px] text-slate-500 flex items-center justify-between">
+                <span>Estado: <b class="${isGpsActive ? 'text-cyan-700' : 'text-slate-400'}">${isGpsActive ? 'Transmitiendo' : 'Inactivo'}</b></span>
+              </div>
+              ${isGpsActive ? `
+                <div class="flex items-center gap-1.5 pt-1 border-t border-slate-100">
+                  <button type="button" onclick="app.focusWorkerOnMap('${wName}')" class="flex-1 py-1 bg-slate-800 text-white font-bold rounded-lg text-[10px]">
+                    📍 Ver en Mapa
+                  </button>
+                  <button type="button" onclick="app.openExternalRoute(${loc.latitude}, ${loc.longitude})" class="flex-1 py-1 bg-cyan-600 text-white font-bold rounded-lg text-[10px]">
+                    🧭 Trazar Ruta
+                  </button>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
+      }
+
+      updateGpsMarkersOnMap() {
+        if (!this.adminMap) return;
+
+        Object.keys(this.locationsData).forEach(wName => {
+          const loc = this.locationsData[wName];
+          if (loc.active && loc.latitude && loc.longitude) {
+            const popupHtml = `
+              <div class="p-1 text-xs">
+                <b class="text-slate-900 block">${wName}</b>
+                <span class="text-slate-500 text-[10px] block">Actualizado: ${loc.updatedAt}</span>
+                <div class="flex gap-1 mt-2">
+                  <a href="https://waze.com/ul?ll=${loc.latitude},${loc.longitude}&navigate=yes" target="_blank" class="px-2 py-0.5 bg-cyan-600 text-white rounded text-[10px] font-bold">Waze</a>
+                  <a href="https://www.google.com/maps/dir/?api=1&destination=${loc.latitude},${loc.longitude}" target="_blank" class="px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px] font-bold">Maps</a>
+                </div>
+              </div>
+            `;
+
+            if (this.adminMapMarkers[wName]) {
+              this.adminMapMarkers[wName].setLatLng([loc.latitude, loc.longitude]).bindPopup(popupHtml);
+            } else {
+              const marker = L.marker([loc.latitude, loc.longitude]).addTo(this.adminMap).bindPopup(popupHtml);
+              this.adminMapMarkers[wName] = marker;
+            }
+          } else if (this.adminMapMarkers[wName]) {
+            this.adminMap.removeLayer(this.adminMapMarkers[wName]);
+            delete this.adminMapMarkers[wName];
+          }
+        });
+      }
+
+      focusWorkerOnMap(wName) {
+        const marker = this.adminMapMarkers[wName];
+        if (marker && this.adminMap) {
+          this.adminMap.setView(marker.getLatLng(), 15);
+          marker.openPopup();
+        }
+      }
+
+      openExternalRoute(lat, lng) {
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+      }
+
+      // ==========================================
+      // CHAT ESTILO MESSENGER CON LISTA LATERAL Y ESTADOS
       // ==========================================
       initChatModule() {
         const isAdmin = this.currentUser.role === 'admin';
-        const adminThreads = document.getElementById('chat-admin-threads');
-        const targetSelect = document.getElementById('chat-target-worker');
-        const chatTitle = document.getElementById('chat-header-title');
+        const sidebar = document.getElementById('chat-sidebar');
 
         if (isAdmin) {
-          adminThreads.classList.remove('hidden');
-          targetSelect.innerHTML = this.workers.map(t => `<option value="${t.fullName || t.username}">${t.fullName || t.username}</option>`).join('');
-          this.activeChatWorker = targetSelect.value || (this.workers[0]?.fullName || this.workers[0]?.username || 'Jeampaul');
-          chatTitle.textContent = `Chat: ${this.activeChatWorker}`;
+          sidebar.classList.remove('hidden');
+          const firstWorker = this.workers[0]?.fullName || this.workers[0]?.username || 'Jeampaul';
+          this.activeChatWorker = firstWorker;
+          this.subscribeAllChatThreads();
         } else {
-          adminThreads.classList.add('hidden');
+          sidebar.classList.add('hidden');
           this.activeChatWorker = this.currentUser.fullName || this.currentUser.username;
-          chatTitle.textContent = 'Mensaje al Administrador';
         }
 
         this.subscribeChatMessages();
       }
 
-      switchChatWorker(workerName) {
-        this.activeChatWorker = workerName;
-        document.getElementById('chat-header-title').textContent = `Chat: ${workerName}`;
+      subscribeAllChatThreads() {
+        if (!window.db || this.chatThreadsUnsubscribe) return;
+
+        this.chatThreadsUnsubscribe = db.collection('chats_internos')
+          .orderBy('lastTimestamp', 'desc')
+          .onSnapshot(snap => {
+            const convs = {};
+            snap.forEach(doc => {
+              convs[doc.id] = doc.data();
+            });
+            this.conversations = convs;
+            this.renderConversationsSidebar();
+          });
+      }
+
+      renderConversationsSidebar() {
+        const listElem = document.getElementById('chat-conversations-list');
+        if (!listElem) return;
+
+        const ONLINE_THRESHOLD_MS = 60 * 1000;
+        const now = Date.now();
+
+        // Ordenar trabajadores: los que tengan mensajes más recientes arriba
+        const sortedWorkers = [...this.workers].sort((a, b) => {
+          const nameA = a.fullName || a.username;
+          const nameB = b.fullName || b.username;
+          const timeA = this.conversations[nameA]?.lastTimestamp || 0;
+          const timeB = this.conversations[nameB]?.lastTimestamp || 0;
+          return timeB - timeA;
+        });
+
+        listElem.innerHTML = sortedWorkers.map(w => {
+          const wName = w.fullName || w.username;
+          const thread = this.conversations[wName] || {};
+          const isSelected = this.activeChatWorker === wName;
+          const isOnline = (now - (w.lastHeartbeat || 0)) < ONLINE_THRESHOLD_MS;
+          const unread = thread.unreadByAdmin || 0;
+
+          return `
+            <div onclick="app.selectChatConversation('${wName}')" class="p-2.5 flex items-center justify-between cursor-pointer transition ${isSelected ? 'bg-brand-limeLight/80 border-r-4 border-brand-lime' : 'hover:bg-slate-100/70'}">
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="relative w-8 h-8 rounded-full overflow-hidden bg-slate-200 border border-brand-lime shrink-0">
+                  ${w.photo ? `<img src="${w.photo}" class="w-full h-full object-cover">` : `<span class="w-full h-full flex items-center justify-center font-bold text-xs">${wName.charAt(0)}</span>`}
+                  <span class="w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-500 ring-2 ring-white animate-pulse' : 'bg-slate-300'} absolute top-0 right-0"></span>
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center justify-between gap-1">
+                    <span class="font-extrabold text-xs text-slate-900 truncate">${wName}</span>
+                    <span class="text-[9px] text-slate-400 font-mono">${thread.lastTime || ''}</span>
+                  </div>
+                  <p class="text-[11px] text-slate-500 truncate italic">${thread.lastMessage || 'Sin mensajes'}</p>
+                </div>
+              </div>
+              ${unread > 0 ? `
+                <span class="w-4 h-4 rounded-full bg-rose-500 text-white font-black text-[9px] flex items-center justify-center shrink-0 ml-1">
+                  ${unread}
+                </span>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
+      }
+
+      selectChatConversation(wName) {
+        this.activeChatWorker = wName;
+        document.getElementById('chat-header-title').textContent = `Chat: ${wName}`;
+        document.getElementById('chat-mobile-active-name').textContent = wName;
+
+        // En móvil ocultar sidebar y mostrar mensajes
+        document.getElementById('chat-sidebar').classList.add('hidden');
+
         this.subscribeChatMessages();
+        this.renderConversationsSidebar();
+      }
+
+      showMobileChatSidebar() {
+        document.getElementById('chat-sidebar').classList.remove('hidden');
+      }
+
+      openDirectWorkerChat(workerName) {
+        this.activeChatWorker = workerName;
+        const chatModal = document.getElementById('chat-window-modal');
+        chatModal.classList.remove('hidden');
+        this.selectChatConversation(workerName);
       }
 
       toggleChatWindow() {
@@ -1833,12 +2206,49 @@
         }
       }
 
+      handleTypingInput() {
+        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
+        const myRole = this.currentUser.role;
+
+        if (window.db && threadId) {
+          db.collection('chats_internos').doc(threadId).set({
+            typing: { [myRole]: true }
+          }, { merge: true }).catch(() => {});
+
+          clearTimeout(this.typingTimeout);
+          this.typingTimeout = setTimeout(() => {
+            db.collection('chats_internos').doc(threadId).set({
+              typing: { [myRole]: false }
+            }, { merge: true }).catch(() => {});
+          }, 2000);
+        }
+      }
+
       subscribeChatMessages() {
         if (!window.db) return;
         if (this.chatUnsubscribe) { this.chatUnsubscribe(); }
 
         const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
 
+        // Listener del hilo para ver si la contraparte está escribiendo
+        db.collection('chats_internos').doc(threadId).onSnapshot(doc => {
+          if (doc.exists) {
+            const data = doc.data();
+            const otherRole = this.currentUser.role === 'admin' ? 'worker' : 'admin';
+            const isOtherTyping = data.typing && data.typing[otherRole];
+            const typingElem = document.getElementById('chat-typing-indicator');
+            if (typingElem) {
+              if (isOtherTyping) {
+                typingElem.textContent = `${this.activeChatWorker} está escribiendo...`;
+                typingElem.classList.remove('hidden');
+              } else {
+                typingElem.classList.add('hidden');
+              }
+            }
+          }
+        });
+
+        // Listener de mensajes
         this.chatUnsubscribe = db.collection('chats_internos')
           .doc(threadId)
           .collection('mensajes')
@@ -1853,27 +2263,34 @@
               const msgId = doc.id;
               msgs.push({ id: msgId, ...data });
 
-              // Alerta de nuevo mensaje
               const isFromOther = data.senderRole !== this.currentUser.role;
-              if (isFromOther && !data.read) {
+              if (isFromOther && data.status !== 'read') {
                 unreadCount++;
 
-                // Solo detonar sonido y popup si el mensaje es reciente y no se ha procesado
+                // Marcar como entregado si no ha sido leído
+                if (data.status === 'sent') {
+                  db.collection('chats_internos').doc(threadId).collection('mensajes').doc(msgId).update({
+                    status: 'delivered'
+                  }).catch(() => {});
+                }
+
+                // Popup y Sonido para mensajes nuevos recibidos en tiempo real
                 if (!this.isChatInitialLoad && data.timestamp > this.appStartTime && !this.processedEventIds.has(msgId)) {
                   this.processedEventIds.add(msgId);
 
                   if (this.prefs.sound) SoundEngine.playMessageSound();
+                  this.triggerBellAttention();
+
+                  // Agregar a la campana de notificaciones
+                  this.addActivityNotification(data.senderName, '', 'MENSAJE', data.text);
 
                   this.showPopupNotification({
-                    title: '💬 Nuevo mensaje',
-                    subtitle: data.senderName,
+                    title: '💬 NUEVO MENSAJE',
+                    subtitle: `${data.senderName} te envió un mensaje`,
                     details: data.text,
                     type: 'chat',
                     icon: '💬',
-                    onClick: () => {
-                      const chatModal = document.getElementById('chat-window-modal');
-                      if (chatModal.classList.contains('hidden')) this.toggleChatWindow();
-                    }
+                    onClick: () => this.openDirectWorkerChat(threadId)
                   });
                 }
               }
@@ -1883,7 +2300,7 @@
             this.chatMessages = msgs;
             this.renderChatMessages();
 
-            // Contador de chat
+            // Contador flotante
             const badge = document.getElementById('chat-unread-badge');
             if (unreadCount > 0 && this.prefs.chatBadge) {
               badge.textContent = unreadCount;
@@ -1906,11 +2323,27 @@
         const myName = this.currentUser.fullName || this.currentUser.username;
         container.innerHTML = this.chatMessages.map(m => {
           const isMine = m.senderName === myName;
+
+          // Indicador de estado tipo WhatsApp
+          let statusTick = '';
+          if (isMine) {
+            if (m.status === 'read') {
+              statusTick = '<span class="text-emerald-400 font-black ml-1 select-none" title="Leído">✓✓</span>';
+            } else if (m.status === 'delivered') {
+              statusTick = '<span class="text-amber-400 font-bold ml-1 select-none" title="Entregado">✓✓</span>';
+            } else {
+              statusTick = '<span class="text-slate-400 font-bold ml-1 select-none" title="Enviado">✓</span>';
+            }
+          }
+
           return `
             <div class="flex flex-col ${isMine ? 'items-end' : 'items-start'}">
               <span class="text-[9px] font-bold text-slate-400 mb-0.5 px-1">${m.senderName} &bull; ${m.time}</span>
-              <div class="max-w-[80%] rounded-2xl px-3 py-2 shadow-sm ${isMine ? 'bg-brand-dark text-white rounded-br-none border-b-2 border-brand-lime' : 'bg-white text-slate-800 rounded-bl-none border border-slate-200'}">
+              <div class="max-w-[85%] sm:max-w-[78%] rounded-2xl px-3 py-2 shadow-sm ${isMine ? 'bg-brand-dark text-white rounded-br-none border-b-2 border-brand-lime' : 'bg-white text-slate-800 rounded-bl-none border border-slate-200'}">
                 <p class="leading-relaxed whitespace-pre-wrap">${m.text}</p>
+                <div class="text-[9px] text-right mt-0.5 opacity-80 flex items-center justify-end">
+                  ${isMine ? statusTick : ''}
+                </div>
               </div>
             </div>
           `;
@@ -1941,7 +2374,7 @@
           recipient: this.currentUser.role === 'admin' ? this.activeChatWorker : 'Administrador',
           time: this.formatTime(new Date()),
           timestamp: Date.now(),
-          read: false
+          status: 'sent'
         };
 
         input.value = '';
@@ -1949,10 +2382,23 @@
         if (window.db) {
           try {
             await db.collection('chats_internos').doc(threadId).collection('mensajes').add(msgObj);
-            await db.collection('chats_internos').doc(threadId).set({
-              lastUpdate: Date.now(),
-              workerName: threadId
-            }, { merge: true });
+            
+            // Metadatos para Sidebar tipo Messenger
+            const updatePayload = {
+              lastMessage: text,
+              lastTime: this.formatTime(new Date()),
+              lastTimestamp: Date.now(),
+              workerName: threadId,
+              typing: { [this.currentUser.role]: false }
+            };
+
+            if (this.currentUser.role === 'admin') {
+              updatePayload.unreadByWorker = firebase.firestore.FieldValue.increment(1);
+            } else {
+              updatePayload.unreadByAdmin = firebase.firestore.FieldValue.increment(1);
+            }
+
+            await db.collection('chats_internos').doc(threadId).set(updatePayload, { merge: true });
           } catch(err) {
             console.error("Error al enviar mensaje:", err);
           }
@@ -1964,10 +2410,13 @@
         const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
 
         this.chatMessages.forEach(m => {
-          if (m.senderRole !== this.currentUser.role && !m.read && m.id) {
-            db.collection('chats_internos').doc(threadId).collection('mensajes').doc(m.id).update({ read: true }).catch(() => {});
+          if (m.senderRole !== this.currentUser.role && m.status !== 'read' && m.id) {
+            db.collection('chats_internos').doc(threadId).collection('mensajes').doc(m.id).update({ status: 'read' }).catch(() => {});
           }
         });
+
+        const resetField = this.currentUser.role === 'admin' ? 'unreadByAdmin' : 'unreadByWorker';
+        db.collection('chats_internos').doc(threadId).set({ [resetField]: 0 }, { merge: true }).catch(() => {});
       }
 
       renderTechniciansMonitor() {
@@ -2030,7 +2479,7 @@
         const subtitle = document.getElementById('settings-modal-subtitle');
 
         if (isAdmin) {
-          subtitle.textContent = 'Gestión integral de personal en Firestore';
+          subtitle.textContent = 'Gestión integral de personal y preferencias';
           adminUsersSection.classList.remove('hidden');
           this.resetUserForm();
           this.renderUsersTable();
