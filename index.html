@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>ServiPortones Eléctricos Martínez - Gestión Operativa y Control de Personal</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -54,10 +54,10 @@
     }
     @keyframes circuitGlow {
       0% { filter: drop-shadow(0 0 1px rgba(113, 168, 50, 0.2)); opacity: 0.92; }
-      100% { filter: drop-shadow(0 0 7px rgba(113, 168, 50, 0.85)); opacity: 1; }
+      100% { filter: drop-shadow(0 0 8px rgba(113, 168, 50, 0.85)); opacity: 1; }
     }
 
-    /* Micro-partículas flotantes de telemetría/señal */
+    /* Micro-partículas tecnológicas tenues */
     .tech-particle {
       position: fixed;
       width: 3px;
@@ -75,7 +75,29 @@
       80% { opacity: 0.6; }
       100% { transform: translateY(-20px) scale(1.1); opacity: 0; }
     }
+
+    /* Transición suave para modal de zoom de foto */
+    .zoom-photo-enter {
+      animation: zoomInSmooth 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes zoomInSmooth {
+      0% { transform: scale(0.82); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Scrollbar estilizada para chat */
+    .chat-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .chat-scroll::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .chat-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
   </style>
+
   <!-- SDKs de Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -93,15 +115,15 @@
     const db = firebase.firestore();
   </script>
 </head>
-<body class="bg-slate-100 text-slate-900 min-h-screen font-sans flex flex-col antialiased selection:bg-brand-lime selection:text-white">
+<body class="bg-slate-100 text-slate-900 min-h-screen font-sans flex flex-col antialiased selection:bg-brand-lime selection:text-white relative">
 
   <!-- ========================================== -->
   <!-- 1. VISTA DE INICIO DE SESIÓN (LOGIN)       -->
   <!-- ========================================== -->
-  <div id="view-login" class="flex-1 flex items-center justify-center p-4 sm:p-6 min-h-screen bg-gradient-to-br from-slate-950 via-brand-dark to-slate-900 relative z-10">
-    <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
-      <div class="bg-white p-6 sm:p-7 text-center border-b border-slate-100 flex flex-col items-center relative">
-        <div class="w-full max-w-[280px] py-1 relative">
+  <div id="view-login" class="flex-1 flex items-center justify-center p-3 sm:p-6 min-h-screen bg-gradient-to-br from-slate-950 via-brand-dark to-slate-900 relative z-10">
+    <div class="w-full max-w-sm sm:max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden mx-auto">
+      <div class="bg-white p-5 sm:p-7 text-center border-b border-slate-100 flex flex-col items-center relative">
+        <div class="w-full max-w-[240px] sm:max-w-[280px] py-1 relative">
           <svg viewBox="0 0 420 170" class="w-full h-auto drop-shadow-sm select-none" xmlns="http://www.w3.org/2000/svg">
             <g stroke-linecap="round" stroke-linejoin="round">
               <!-- Techo estructural del automatismo -->
@@ -116,47 +138,47 @@
             </g>
           </svg>
         </div>
-        <p class="text-[11px] text-slate-500 uppercase tracking-widest font-extrabold mt-1">Plataforma Operativa de Automatismos</p>
+        <p class="text-[10px] sm:text-[11px] text-slate-500 uppercase tracking-widest font-extrabold mt-1">Plataforma Operativa de Automatismos</p>
       </div>
 
-      <form onsubmit="app.handleLogin(event)" class="p-6 sm:p-8 space-y-4">
-        <div id="login-error-alert" class="hidden p-3.5 rounded-xl text-xs font-semibold bg-rose-50 border border-rose-200 text-rose-700 flex items-center gap-2">
+      <form onsubmit="app.handleLogin(event)" class="p-5 sm:p-8 space-y-3.5 sm:space-y-4">
+        <div id="login-error-alert" class="hidden p-3 rounded-xl text-xs font-semibold bg-rose-50 border border-rose-200 text-rose-700 flex items-center gap-2">
           <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
           <span id="login-error-text">Credenciales incorrectas.</span>
         </div>
 
         <div>
-          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Usuario</label>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Usuario</label>
           <div class="relative">
-            <i data-lucide="user" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
-            <input type="text" id="login-username" required autocomplete="username" placeholder="Ingresa tu usuario" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none text-sm transition">
+            <i data-lucide="user" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+            <input type="text" id="login-username" required autocomplete="username" placeholder="Ingresa tu usuario" class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none transition">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Contraseña</label>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Contraseña</label>
           <div class="relative">
-            <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
-            <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••" class="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none text-sm transition">
-            <button type="button" onclick="app.togglePasswordVisibility('login-password')" class="absolute right-3 top-3 text-slate-400 hover:text-slate-600 transition" title="Ver / Ocultar">
+            <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+            <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••" class="w-full pl-9 pr-9 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none transition">
+            <button type="button" onclick="app.togglePasswordVisibility('login-password')" class="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 p-0.5" title="Ver / Ocultar">
               <i data-lucide="eye" class="w-4 h-4"></i>
             </button>
           </div>
         </div>
 
-        <div class="flex items-center justify-between pt-1">
+        <div class="flex items-center justify-between pt-0.5">
           <label class="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" id="login-remember" class="w-4 h-4 rounded text-brand-lime focus:ring-brand-lime border-slate-300 transition">
-            <span class="text-xs font-medium text-slate-600">Recordar credenciales</span>
+            <input type="checkbox" id="login-remember" class="w-3.5 h-3.5 rounded text-brand-lime focus:ring-brand-lime border-slate-300 transition">
+            <span class="text-[11px] sm:text-xs text-slate-600">Recordar credenciales</span>
           </label>
         </div>
 
-        <button type="submit" id="btn-submit-login" class="w-full py-3 bg-brand-dark hover:bg-black text-white font-bold rounded-xl text-sm border-b-4 border-brand-lime shadow-lg active:scale-[0.98] transition flex items-center justify-center gap-2 mt-2">
+        <button type="submit" id="btn-submit-login" class="w-full py-2.5 sm:py-3 bg-brand-dark hover:bg-black text-white font-bold rounded-xl text-xs sm:text-sm border-b-4 border-brand-lime shadow-lg active:scale-[0.98] transition flex items-center justify-center gap-2 mt-2">
           <i data-lucide="log-in" class="w-4 h-4 text-brand-lime"></i>
           <span id="btn-submit-text">Iniciar Sesión</span>
         </button>
 
-        <p class="text-center text-[11px] text-slate-400 pt-2">
+        <p class="text-center text-[10px] sm:text-[11px] text-slate-400 pt-1">
           Acceso privado para el personal técnico y administrativo.
         </p>
       </form>
@@ -166,13 +188,13 @@
   <!-- ========================================== -->
   <!-- 2. VISTA PRINCIPAL (USUARIO CONECTADO)     -->
   <!-- ========================================== -->
-  <div id="view-dashboard" class="hidden flex-1 flex flex-col relative z-10">
+  <div id="view-dashboard" class="hidden flex-1 flex flex-col relative z-10 w-full overflow-x-hidden">
     <header class="bg-brand-dark text-white sticky top-0 z-40 shadow-md border-b-2 border-brand-lime">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
         
-        <div class="flex items-center space-x-3">
-          <div class="h-10 bg-white px-2 py-1 rounded-xl flex items-center shadow-sm">
-            <svg viewBox="0 0 420 170" class="h-8 w-auto" xmlns="http://www.w3.org/2000/svg">
+        <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
+          <div class="h-8 sm:h-9 bg-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl flex items-center shadow-sm shrink-0">
+            <svg viewBox="0 0 420 170" class="h-6 sm:h-8 w-auto" xmlns="http://www.w3.org/2000/svg">
               <g stroke-linecap="round" stroke-linejoin="round">
                 <path d="M 22 80 L 135 34 L 135 22 L 148 22 L 148 40 L 222 79" fill="none" stroke="#111827" stroke-width="12" />
                 <line x1="228" y1="79" x2="410" y2="79" stroke="#71A832" stroke-width="10" />
@@ -183,24 +205,25 @@
               </g>
             </svg>
           </div>
-          <span id="header-role-badge" class="hidden sm:inline-block text-[10px] uppercase font-extrabold px-2.5 py-0.5 rounded-full bg-brand-lime/20 text-brand-lime border border-brand-lime/40">Admin</span>
+          <span id="header-role-badge" class="text-[9px] sm:text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-brand-lime/20 text-brand-lime border border-brand-lime/40 truncate">Admin</span>
         </div>
 
-        <div class="flex items-center space-x-2 sm:space-x-3">
-          <button id="btn-nav-new-order" onclick="app.openNewTaskModal()" class="hidden bg-brand-lime hover:bg-brand-limeHover text-white text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md shadow-brand-lime/20 transition active:scale-95">
-            <i data-lucide="plus-circle" class="w-4 h-4"></i>
-            <span>Nueva Orden</span>
+        <div class="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
+          <!-- Botón de Nueva Orden (Admin) -->
+          <button id="btn-nav-new-order" onclick="app.openNewTaskModal()" class="hidden bg-brand-lime hover:bg-brand-limeHover text-white text-xs font-bold px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl flex items-center gap-1 shadow-md transition active:scale-95">
+            <i data-lucide="plus-circle" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+            <span class="hidden xs:inline">Nueva Orden</span>
           </button>
 
           <!-- CAMPANA DE NOTIFICACIONES (TIEMPO REAL) -->
           <div class="relative" id="notifications-wrapper">
-            <button id="btn-notifications-toggle" onclick="app.toggleNotificationsPanel()" class="p-2 sm:px-2.5 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl transition flex items-center relative" title="Notificaciones de actividad">
+            <button id="btn-notifications-toggle" onclick="app.toggleNotificationsPanel()" class="p-1.5 sm:p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl transition flex items-center relative" title="Notificaciones de actividad">
               <i data-lucide="bell" class="w-4 h-4 text-brand-lime"></i>
               <span id="notif-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-pulse">0</span>
             </button>
 
             <!-- Menú Desplegable de Notificaciones -->
-            <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden text-slate-800">
+            <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-72 sm:w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden text-slate-800">
               <div class="p-3 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
                 <div class="flex items-center gap-2">
                   <i data-lucide="bell" class="w-4 h-4 text-brand-lime"></i>
@@ -214,137 +237,128 @@
             </div>
           </div>
 
-          <button id="btn-nav-settings" onclick="app.openSettingsModal()" class="p-2 sm:px-3 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl transition flex items-center gap-1.5 shadow-sm" title="Ajustes y Personal">
+          <!-- Botón de Configuración -->
+          <button id="btn-nav-settings" onclick="app.openSettingsModal()" class="p-1.5 sm:p-2 sm:px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl transition flex items-center gap-1.5 shadow-sm" title="Ajustes y Personal">
             <i data-lucide="settings" class="w-4 h-4 text-brand-lime"></i>
             <span class="hidden md:inline text-xs font-semibold">Configuración</span>
           </button>
 
-          <div class="flex items-center gap-2 bg-slate-800/90 pl-1.5 pr-2.5 sm:pr-3 py-1 rounded-xl border border-slate-700">
-            <div class="relative w-8 h-8 rounded-full overflow-hidden border-2 border-brand-lime bg-slate-700 flex items-center justify-center shrink-0">
+          <!-- Perfil actual -->
+          <div class="flex items-center gap-1.5 sm:gap-2 bg-slate-800/90 pl-1 pr-2 sm:pr-3 py-1 rounded-xl border border-slate-700">
+            <div onclick="app.zoomWorkerPhoto(app.currentUser?.photo, app.currentUser?.fullName)" class="cursor-pointer relative w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border-2 border-brand-lime bg-slate-700 flex items-center justify-center shrink-0">
               <img id="header-user-photo" src="" alt="Foto" class="w-full h-full object-cover hidden">
               <span id="header-avatar-initial" class="text-white font-black text-xs">A</span>
-              <span class="w-2.5 h-2.5 rounded-full bg-brand-lime border-2 border-slate-900 absolute top-0 right-0"></span>
+              <span class="w-2 h-2 rounded-full bg-brand-lime border border-slate-900 absolute top-0 right-0"></span>
             </div>
             <div class="text-left hidden sm:block">
-              <p id="header-user-name" class="text-xs font-bold leading-none text-white truncate max-w-[110px]">Administrador</p>
-              <span class="text-[10px] text-brand-lime font-medium">En línea</span>
+              <p id="header-user-name" class="text-xs font-bold leading-none text-white truncate max-w-[100px]">Administrador</p>
+              <span class="text-[9px] text-brand-lime font-medium">En línea</span>
             </div>
           </div>
 
-          <button onclick="app.logout()" class="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition" title="Cerrar Sesión">
-            <i data-lucide="log-out" class="w-5 h-5"></i>
+          <button onclick="app.logout()" class="p-1.5 sm:p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition" title="Cerrar Sesión">
+            <i data-lucide="log-out" class="w-4 h-4 sm:w-5 sm:h-5"></i>
           </button>
         </div>
       </div>
     </header>
 
-    <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-5">
+    <main class="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-5">
 
       <!-- MONITOR DE PERSONAL (ADMIN) -->
-      <section id="section-technicians-monitor" class="mb-5 hidden">
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
-          <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2.5">
+      <section id="section-technicians-monitor" class="mb-4 sm:mb-5 hidden">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-3.5 sm:p-4">
+          <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
             <div class="flex items-center gap-2">
               <div class="w-2.5 h-2.5 rounded-full bg-brand-lime animate-ping"></div>
               <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-800">
-                Monitor del Personal: Conexión y Horarios de Trabajo
+                Monitor del Personal: Estado de Conexión
               </h2>
             </div>
-            <span id="techs-online-counter" class="text-xs font-bold px-2.5 py-1 bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder rounded-lg">
+            <span id="techs-online-counter" class="text-[11px] font-bold px-2 py-0.5 bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder rounded-lg">
               0 En Línea
             </span>
           </div>
-          <div id="technicians-status-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+          <div id="technicians-status-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3"></div>
         </div>
       </section>
 
       <!-- Banner de bienvenida -->
-      <div id="dashboard-banner" class="mb-5 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm"></div>
+      <div id="dashboard-banner" class="mb-4 sm:mb-5 p-3.5 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm gap-2"></div>
 
-      <!-- Tarjetas de Estadísticas CON ACCIÓN DE REINICIO -->
-      <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+      <!-- Tarjetas de Estadísticas -->
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 mb-4 sm:mb-5">
+        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
-            <p class="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Total Órdenes</p>
-            <p id="stat-total" class="text-xl font-black text-slate-800">0</p>
+            <p class="text-[9px] sm:text-[10px] font-bold uppercase text-slate-500 tracking-wider">Total Órdenes</p>
+            <p id="stat-total" class="text-lg sm:text-xl font-black text-slate-800">0</p>
           </div>
-          <div class="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-700">
+          <div class="w-8 h-8 sm:w-9 sm:h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-700">
             <i data-lucide="clipboard-list" class="w-4 h-4"></i>
           </div>
         </div>
 
-        <!-- Reiniciar Pendientes/En Curso -->
-        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between group">
+        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between group">
           <div>
-            <div class="flex items-center gap-1.5">
-              <p class="text-[10px] font-bold uppercase text-amber-600 tracking-wider">Pendientes / En Curso</p>
-              <button id="btn-reset-pending" onclick="app.resetCategoryTasks('PENDIENTE_GRUPO')" class="text-slate-400 hover:text-amber-600 transition hidden" title="Reiniciar órdenes en proceso a pendientes limpias">
+            <div class="flex items-center gap-1">
+              <p class="text-[9px] sm:text-[10px] font-bold uppercase text-amber-600 tracking-wider">Pendientes</p>
+              <button id="btn-reset-pending" onclick="app.resetCategoryTasks('PENDIENTE_GRUPO')" class="text-slate-400 hover:text-amber-600 transition hidden" title="Reiniciar a pendientes limpias">
                 <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
               </button>
             </div>
-            <p id="stat-pending" class="text-xl font-black text-amber-600">0</p>
+            <p id="stat-pending" class="text-lg sm:text-xl font-black text-amber-600">0</p>
           </div>
-          <div class="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
+          <div class="w-8 h-8 sm:w-9 sm:h-9 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
             <i data-lucide="clock" class="w-4 h-4"></i>
           </div>
         </div>
 
-        <!-- Reiniciar Realizadas -->
-        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between group">
+        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between group">
           <div>
-            <div class="flex items-center gap-1.5">
-              <p class="text-[10px] font-bold uppercase text-brand-limeHover tracking-wider">Realizadas</p>
-              <button id="btn-reset-done" onclick="app.resetCategoryTasks('REALIZADA')" class="text-slate-400 hover:text-brand-limeHover transition hidden" title="Reiniciar todas las realizadas a pendientes">
+            <div class="flex items-center gap-1">
+              <p class="text-[9px] sm:text-[10px] font-bold uppercase text-brand-limeHover tracking-wider">Realizadas</p>
+              <button id="btn-reset-done" onclick="app.resetCategoryTasks('REALIZADA')" class="text-slate-400 hover:text-brand-limeHover transition hidden" title="Reiniciar realizadas">
                 <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
               </button>
             </div>
-            <p id="stat-done" class="text-xl font-black text-brand-limeHover">0</p>
+            <p id="stat-done" class="text-lg sm:text-xl font-black text-brand-limeHover">0</p>
           </div>
-          <div class="w-9 h-9 bg-brand-limeLight rounded-xl flex items-center justify-center text-brand-limeHover">
+          <div class="w-8 h-8 sm:w-9 sm:h-9 bg-brand-limeLight rounded-xl flex items-center justify-center text-brand-limeHover">
             <i data-lucide="check-circle-2" class="w-4 h-4"></i>
           </div>
         </div>
 
-        <!-- Reiniciar No Realizadas -->
-        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between group">
+        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between group">
           <div>
-            <div class="flex items-center gap-1.5">
-              <p class="text-[10px] font-bold uppercase text-rose-600 tracking-wider">No Realizadas</p>
-              <button id="btn-reset-failed" onclick="app.resetCategoryTasks('NO_REALIZADA')" class="text-slate-400 hover:text-rose-600 transition hidden" title="Reiniciar todas las no realizadas a pendientes">
+            <div class="flex items-center gap-1">
+              <p class="text-[9px] sm:text-[10px] font-bold uppercase text-rose-600 tracking-wider">No Realizadas</p>
+              <button id="btn-reset-failed" onclick="app.resetCategoryTasks('NO_REALIZADA')" class="text-slate-400 hover:text-rose-600 transition hidden" title="Reiniciar no realizadas">
                 <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
               </button>
             </div>
-            <p id="stat-failed" class="text-xl font-black text-rose-600">0</p>
+            <p id="stat-failed" class="text-lg sm:text-xl font-black text-rose-600">0</p>
           </div>
-          <div class="w-9 h-9 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600">
+          <div class="w-8 h-8 sm:w-9 sm:h-9 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600">
             <i data-lucide="alert-triangle" class="w-4 h-4"></i>
           </div>
         </div>
       </section>
 
       <!-- Filtros y Búsqueda -->
-      <section class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm mb-5 flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
+      <section class="bg-white p-2.5 sm:p-3.5 rounded-2xl border border-slate-200 shadow-sm mb-4 sm:mb-5 flex flex-col md:flex-row gap-2 items-stretch md:items-center justify-between">
         <div class="relative flex-1">
-          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
-          <input type="text" id="filter-search" oninput="app.renderTasks()" placeholder="Buscar cliente, dirección o motor..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none">
+          <i data-lucide="search" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 absolute left-3 top-2.5"></i>
+          <input type="text" id="filter-search" oninput="app.renderTasks()" placeholder="Buscar cliente, dirección o motor..." class="w-full pl-8 sm:pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none">
         </div>
-        <div class="flex flex-wrap gap-2 items-center">
-          <select id="filter-status" onchange="app.renderTasks()" class="text-xs border border-slate-200 rounded-xl px-2.5 py-1.5 bg-slate-50 font-medium">
-            <option value="ALL">Todos los Estados</option>
+        <div class="flex flex-wrap gap-1.5 sm:gap-2 items-center">
+          <select id="filter-status" onchange="app.renderTasks()" class="text-xs border border-slate-200 rounded-xl px-2 py-1.5 bg-slate-50 font-medium">
+            <option value="ALL">Estados</option>
             <option value="PENDIENTE">⏳ Pendientes</option>
             <option value="EN_PROCESO">⚙️ En Proceso</option>
             <option value="REALIZADA">✅ Realizadas</option>
             <option value="NO_REALIZADA">❌ No Realizadas</option>
           </select>
-          <select id="filter-tech" onchange="app.renderTasks()" class="text-xs border border-slate-200 rounded-xl px-2.5 py-1.5 bg-slate-50 font-medium">
-            <option value="ALL">Todos los Técnicos</option>
-          </select>
-          <select id="filter-priority" onchange="app.renderTasks()" class="text-xs border border-slate-200 rounded-xl px-2.5 py-1.5 bg-slate-50 font-medium">
-            <option value="ALL">Prioridades</option>
-            <option value="ALTA">Alta</option>
-            <option value="MEDIA">Media</option>
-            <option value="BAJA">Baja</option>
-          </select>
+          <select id="filter-tech" onchange="app.renderTasks()" class="text-xs border border-slate-200 rounded-xl px-2.5 py-1.5 bg-slate-50 font-medium"></select>
           <button onclick="app.resetFilters()" class="p-1.5 text-slate-500 hover:bg-slate-100 rounded-xl" title="Restablecer">
             <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
           </button>
@@ -353,51 +367,51 @@
 
       <!-- Cuadrícula de Órdenes -->
       <section class="mb-8">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2.5">
-            <h2 class="font-extrabold text-slate-800 text-base flex items-center gap-1.5">
+        <div class="flex items-center justify-between mb-2.5">
+          <div class="flex items-center gap-2">
+            <h2 class="font-extrabold text-slate-800 text-sm sm:text-base flex items-center gap-1.5">
               <span>Órdenes de Trabajo</span>
               <span id="filtered-count" class="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-bold">0</span>
             </h2>
           </div>
-          <span class="text-xs text-slate-500 hidden sm:inline" id="role-hint-text"></span>
+          <span class="text-[11px] text-slate-500" id="role-hint-text"></span>
         </div>
 
-        <div id="tasks-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        <div id="tasks-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"></div>
 
-        <div id="empty-state" class="hidden bg-white border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center my-4">
-          <div class="w-12 h-12 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center mx-auto mb-2">
-            <i data-lucide="inbox" class="w-6 h-6"></i>
+        <div id="empty-state" class="hidden bg-white border-2 border-dashed border-slate-200 rounded-2xl p-6 sm:p-8 text-center my-4">
+          <div class="w-10 h-10 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center mx-auto mb-2">
+            <i data-lucide="inbox" class="w-5 h-5"></i>
           </div>
-          <h3 class="text-sm font-bold text-slate-800">No hay tareas para mostrar</h3>
-          <p class="text-xs text-slate-500 mt-0.5">No hay órdenes con los filtros actuales.</p>
+          <h3 class="text-xs sm:text-sm font-bold text-slate-800">No hay tareas para mostrar</h3>
+          <p class="text-[11px] text-slate-500 mt-0.5">No hay órdenes con los filtros actuales.</p>
         </div>
       </section>
 
       <!-- BITÁCORA DETALLADA PARA EL ADMINISTRADOR -->
-      <section id="section-admin-audit-log" class="hidden bg-white rounded-2xl border border-slate-200 p-4 shadow-sm mb-8">
-        <div class="flex items-center justify-between border-b border-slate-200 pb-2.5 mb-3">
-          <div class="flex items-center gap-2">
-            <div class="p-1.5 bg-brand-limeLight rounded-lg text-brand-limeHover border border-brand-limeBorder">
+      <section id="section-admin-audit-log" class="hidden bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-4 shadow-sm mb-8">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-2 mb-3">
+          <div class="flex items-center gap-2 min-w-0">
+            <div class="p-1.5 bg-brand-limeLight rounded-lg text-brand-limeHover border border-brand-limeBorder shrink-0">
               <i data-lucide="history" class="w-4 h-4"></i>
             </div>
-            <div>
-              <h3 class="font-extrabold text-sm text-slate-900">Bitácora Operativa: Registro de Informes de Empleados</h3>
-              <p class="text-[11px] text-slate-500">Historial con fecha, hora, lugar, detalles y evidencias multimedia.</p>
+            <div class="min-w-0">
+              <h3 class="font-extrabold text-xs sm:text-sm text-slate-900 truncate">Bitácora Operativa: Informes de Empleados</h3>
+              <p class="text-[10px] sm:text-[11px] text-slate-500 truncate">Historial con fecha, hora, lugar, detalles y evidencias.</p>
             </div>
           </div>
-          <span id="audit-log-counter" class="text-xs font-black px-2 py-0.5 bg-slate-100 text-slate-700 rounded-lg">0 Informes</span>
+          <span id="audit-log-counter" class="text-xs font-black px-2 py-0.5 bg-slate-100 text-slate-700 rounded-lg shrink-0">0 Informes</span>
         </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs">
+        <div class="overflow-x-auto -mx-1 sm:mx-0">
+          <table class="w-full text-left text-xs min-w-[550px]">
             <thead class="bg-slate-50 text-slate-600 uppercase font-bold border-b">
               <tr>
-                <th class="p-2.5">Fecha y Hora</th>
-                <th class="p-2.5">Técnico</th>
-                <th class="p-2.5">Cliente / Lugar</th>
-                <th class="p-2.5">Estado</th>
-                <th class="p-2.5">Detalle</th>
-                <th class="p-2.5">Evidencias</th>
+                <th class="p-2">Fecha/Hora</th>
+                <th class="p-2">Técnico</th>
+                <th class="p-2">Cliente</th>
+                <th class="p-2">Estado</th>
+                <th class="p-2">Detalle</th>
+                <th class="p-2">Evidencias</th>
               </tr>
             </thead>
             <tbody id="audit-log-tbody" class="divide-y divide-slate-100"></tbody>
@@ -407,45 +421,113 @@
 
     </main>
 
-    <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500 mt-auto">
+    <footer class="bg-white border-t border-slate-200 py-3 text-center text-[11px] sm:text-xs text-slate-500 mt-auto">
       <p><b class="text-slate-800">SERVIPORTONES ELÉCTRICOS MARTÍNEZ</b> &bull; Sistema Operativo Técnico &bull; 2026</p>
     </footer>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- MODAL: AJUSTES, FOTOS Y PERSONAL                                          -->
-  <!-- ========================================================================= -->
+  <!-- ======================================================== -->
+  <!-- MODAL ZOOM ELEGANTE DE FOTOGRAFÍA (LIGHTBOX)             -->
+  <!-- ======================================================== -->
+  <div id="modal-photo-zoom" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-5" onclick="app.closePhotoZoom()">
+    <div class="relative max-w-sm sm:max-w-md w-full bg-slate-900/95 border border-slate-700/80 rounded-3xl p-4 shadow-2xl flex flex-col items-center zoom-photo-enter" onclick="event.stopPropagation()">
+      <button onclick="app.closePhotoZoom()" class="absolute top-3 right-3 text-slate-400 hover:text-white bg-slate-800/80 p-1.5 rounded-full shadow transition" title="Cerrar">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+      <div class="w-48 h-48 sm:w-64 sm:h-64 rounded-2xl overflow-hidden border-2 border-brand-lime shadow-lg bg-slate-800 mb-3 flex items-center justify-center">
+        <img id="zoom-modal-img" src="" alt="Foto" class="w-full h-full object-contain">
+        <span id="zoom-modal-initial" class="text-6xl font-black text-white hidden">A</span>
+      </div>
+      <h3 id="zoom-modal-name" class="text-sm sm:text-base font-extrabold text-white text-center">Nombre del Trabajador</h3>
+      <p class="text-[11px] text-brand-lime font-bold mt-0.5">Perfil Verificado &bull; ServiPortones</p>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- SISTEMA DE CHAT PRIVADO INTERNO EN TIEMPO REAL           -->
+  <!-- ======================================================== -->
+  <!-- Botón Flotante para Dispositivos Móviles y Escritorio -->
+  <div id="chat-floating-button-container" class="fixed bottom-5 right-4 sm:bottom-6 sm:right-6 z-40 hidden">
+    <button onclick="app.toggleChatWindow()" class="relative p-3 sm:p-3.5 bg-brand-dark hover:bg-black text-white rounded-full shadow-2xl border-2 border-brand-lime flex items-center justify-center active:scale-95 transition" title="Chat Interno">
+      <i data-lucide="message-square" class="w-5 h-5 sm:w-6 sm:h-6 text-brand-lime"></i>
+      <span id="chat-unread-badge" class="hidden absolute -top-1 -right-1 bg-emerald-500 text-white font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-bounce">0</span>
+    </button>
+  </div>
+
+  <!-- Ventana Flotante / Modal de Chat (Estilo Messenger) -->
+  <div id="chat-window-modal" class="fixed bottom-0 right-0 sm:bottom-20 sm:right-6 w-full sm:w-96 h-[85vh] sm:h-[500px] bg-white sm:rounded-3xl shadow-2xl border border-slate-300 z-50 hidden flex flex-col overflow-hidden">
+    <!-- Header del Chat -->
+    <div class="bg-brand-dark text-white p-3.5 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-7 h-7 rounded-full bg-slate-700 border border-brand-lime flex items-center justify-center text-xs font-bold text-white shrink-0">
+          <i data-lucide="message-circle" class="w-3.5 h-3.5 text-brand-lime"></i>
+        </div>
+        <div class="min-w-0">
+          <h4 id="chat-header-title" class="text-xs sm:text-sm font-bold truncate">Chat Corporativo</h4>
+          <p id="chat-header-status" class="text-[10px] text-brand-lime font-semibold truncate">Canal seguro en tiempo real</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1">
+        <button onclick="app.toggleChatWindow()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Selector de Conversaciones (Admin) -->
+    <div id="chat-admin-threads" class="bg-slate-50 border-b p-2 shrink-0 hidden">
+      <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Conversar con:</label>
+      <select id="chat-target-worker" onchange="app.switchChatWorker(this.value)" class="w-full text-xs font-bold bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-lime"></select>
+    </div>
+
+    <!-- Mensajes -->
+    <div id="chat-messages-container" class="flex-1 p-3.5 overflow-y-auto space-y-2 text-xs chat-scroll bg-slate-50/50">
+      <div class="text-center py-6 text-slate-400 text-xs italic">Cargando conversación...</div>
+    </div>
+
+    <!-- Envío de Mensaje -->
+    <form onsubmit="app.handleSendMessage(event)" class="p-2 sm:p-2.5 bg-white border-t flex items-center gap-2 shrink-0">
+      <input type="text" id="chat-input-text" placeholder="Escribe un mensaje..." autocomplete="off" required class="flex-1 px-3 py-2 text-xs bg-slate-100 rounded-xl border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-lime">
+      <button type="submit" class="p-2 bg-brand-dark hover:bg-black text-white rounded-xl shadow active:scale-95 transition" title="Enviar">
+        <i data-lucide="send" class="w-4 h-4 text-brand-lime"></i>
+      </button>
+    </form>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: AJUSTES, FOTOS Y PERSONAL                         -->
+  <!-- ======================================================== -->
   <div id="modal-settings" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
-      <div class="bg-brand-dark text-white px-5 py-3.5 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
+      <div class="bg-brand-dark text-white px-4 sm:px-5 py-3 sm:py-3.5 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
         <div class="flex items-center gap-2">
           <i data-lucide="settings" class="w-5 h-5 text-brand-lime"></i>
           <div>
-            <h3 class="text-sm font-bold">Configuración y Seguridad</h3>
-            <p id="settings-modal-subtitle" class="text-[11px] text-slate-300">Administración de credenciales, perfil y personal</p>
+            <h3 class="text-xs sm:text-sm font-bold">Configuración y Seguridad</h3>
+            <p id="settings-modal-subtitle" class="text-[10px] sm:text-[11px] text-slate-300">Administración de credenciales y perfil</p>
           </div>
         </div>
-        <button onclick="app.closeSettingsModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+        <button onclick="app.closeSettingsModal()" class="text-slate-400 hover:text-white p-1">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <div class="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1 text-xs sm:text-sm">
-        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+      <div class="p-4 space-y-3.5 overflow-y-auto flex-1 text-xs sm:text-sm">
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
           <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 mb-2 flex items-center gap-1.5">
             <i data-lucide="camera" class="w-4 h-4 text-brand-limeHover"></i>
             <span>Mi Foto de Perfil</span>
           </h4>
           <div class="flex items-center gap-3">
-            <div class="relative w-14 h-14 rounded-full border-2 border-brand-lime overflow-hidden bg-slate-200 shadow shrink-0 flex items-center justify-center">
+            <div onclick="app.zoomWorkerPhoto(app.currentUser?.photo, app.currentUser?.fullName)" class="cursor-pointer relative w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-brand-lime overflow-hidden bg-slate-200 shadow shrink-0 flex items-center justify-center">
               <img id="settings-my-photo-preview" src="" alt="Foto" class="w-full h-full object-cover hidden">
-              <span id="settings-my-initial-preview" class="text-xl font-black text-slate-600">A</span>
+              <span id="settings-my-initial-preview" class="text-lg font-black text-slate-600">A</span>
             </div>
-            <div class="flex-1 space-y-1.5">
-              <p class="text-xs text-slate-600">Se sincronizará en tiempo real con el panel del Administrador.</p>
+            <div class="flex-1 space-y-1">
+              <p class="text-[11px] text-slate-600">Haz clic en la foto para ampliarla en cualquier momento.</p>
               <div class="flex items-center gap-2">
                 <label class="cursor-pointer px-3 py-1 bg-brand-dark hover:bg-black text-white text-xs font-bold rounded-lg inline-flex items-center gap-1 shadow">
-                  <i data-lucide="upload" class="w-3.5 h-3.5 text-brand-lime"></i> Subir Foto
+                  <i data-lucide="upload" class="w-3.5 h-3.5 text-brand-lime"></i> Subir
                   <input type="file" accept="image/*" class="hidden" onchange="app.handleUploadOwnPhoto(event)">
                 </label>
                 <button type="button" onclick="app.removeOwnPhoto()" class="px-2.5 py-1 border border-slate-300 text-slate-600 hover:bg-white text-xs font-semibold rounded-lg">
@@ -456,23 +538,23 @@
           </div>
         </div>
 
-        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
           <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 mb-2 flex items-center gap-1.5">
             <i data-lucide="key" class="w-4 h-4 text-brand-limeHover"></i>
-            <span>Cambiar Mi Contraseña Actual</span>
+            <span>Cambiar Mi Contraseña</span>
           </h4>
-          <form onsubmit="app.handleChangeOwnPassword(event)" class="space-y-2.5">
+          <form onsubmit="app.handleChangeOwnPassword(event)" class="space-y-2">
             <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-0.5">Contraseña Actual *</label>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">Contraseña Actual *</label>
               <input type="password" id="set-own-current-pass" required placeholder="Clave actual" class="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg">
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-0.5">Nueva Contraseña *</label>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">Nueva Contraseña *</label>
                 <input type="password" id="set-own-new-pass" required minlength="3" placeholder="Nueva clave" class="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg">
               </div>
               <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-0.5">Confirmar *</label>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">Confirmar *</label>
                 <input type="password" id="set-own-confirm-pass" required minlength="3" placeholder="Repite la clave" class="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg">
               </div>
             </div>
@@ -484,41 +566,40 @@
           </form>
         </div>
 
-        <div id="settings-admin-users-section" class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3 hidden">
-          <div class="flex items-center justify-between border-b border-slate-200 pb-1.5">
-            <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+        <!-- Gestión de Técnicos (Admin) -->
+        <div id="settings-admin-users-section" class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2.5 hidden">
+          <div class="flex items-center justify-between border-b pb-1">
+            <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1">
               <i data-lucide="users" class="w-4 h-4 text-brand-limeHover"></i>
               <span>Gestión de Técnicos</span>
             </h4>
-            <span id="settings-users-count-badge" class="text-[11px] font-bold px-2 py-0.5 rounded bg-brand-limeLight text-brand-limeHover">0 Técnicos</span>
+            <span id="settings-users-count-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-limeLight text-brand-limeHover">0 Técnicos</span>
           </div>
 
-          <form id="manage-user-form" onsubmit="app.handleSaveUser(event)" class="bg-white p-3 rounded-xl border border-slate-200 space-y-2">
+          <form id="manage-user-form" onsubmit="app.handleSaveUser(event)" class="bg-white p-2.5 rounded-xl border border-slate-200 space-y-2">
             <input type="hidden" id="manage-user-id" value="">
-            <input type="hidden" id="manage-user-photo" value="">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <input type="text" id="manage-fullname" required placeholder="Nombre Completo" class="w-full px-2.5 py-1.5 text-xs bg-slate-50 border rounded-lg">
-              <input type="text" id="manage-username" required placeholder="Usuario (sin espacios)" class="w-full px-2.5 py-1.5 text-xs bg-slate-50 border rounded-lg">
+              <input type="text" id="manage-fullname" required placeholder="Nombre Completo" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg">
+              <input type="text" id="manage-username" required placeholder="Usuario (sin espacios)" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg">
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <input type="text" id="manage-password" required placeholder="Contraseña" class="w-full px-2.5 py-1.5 text-xs bg-slate-50 border rounded-lg font-mono">
-              <input type="tel" id="manage-phone" required placeholder="WhatsApp" class="w-full px-2.5 py-1.5 text-xs bg-slate-50 border rounded-lg">
-              <input type="text" id="manage-specialty" placeholder="Especialidad" class="w-full px-2.5 py-1.5 text-xs bg-slate-50 border rounded-lg">
+              <input type="text" id="manage-password" required placeholder="Contraseña" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg font-mono">
+              <input type="tel" id="manage-phone" required placeholder="WhatsApp" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg">
+              <input type="text" id="manage-specialty" placeholder="Especialidad" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg">
             </div>
-            <div class="flex justify-end gap-1.5 pt-1">
-              <button type="button" onclick="app.resetUserForm()" class="px-2.5 py-1 text-xs border rounded-lg">Cancelar</button>
-              <button type="submit" id="btn-save-user" class="px-3.5 py-1 bg-brand-dark text-white rounded-lg text-xs font-bold">Guardar Trabajador</button>
+            <div class="flex justify-end gap-1.5 pt-0.5">
+              <button type="button" onclick="app.resetUserForm()" class="px-2 py-1 text-xs border rounded-lg">Cancelar</button>
+              <button type="submit" id="btn-save-user" class="px-3 py-1 bg-brand-dark text-white rounded-lg text-xs font-bold">Guardar</button>
             </div>
           </form>
 
-          <div class="overflow-x-auto border border-slate-200 rounded-xl bg-white max-h-48 overflow-y-auto">
-            <table class="w-full text-left text-xs">
-              <thead class="bg-slate-100 text-slate-700 uppercase font-bold sticky top-0">
+          <div class="overflow-x-auto border rounded-xl bg-white max-h-40 overflow-y-auto">
+            <table class="w-full text-left text-xs min-w-[320px]">
+              <thead class="bg-slate-100 text-slate-700 uppercase font-bold sticky top-0 text-[10px]">
                 <tr>
-                  <th class="p-2">Personal</th>
-                  <th class="p-2">Usuario & Clave</th>
-                  <th class="p-2">Estado</th>
-                  <th class="p-2 text-right">Acción</th>
+                  <th class="p-1.5">Personal</th>
+                  <th class="p-1.5">Usuario/Clave</th>
+                  <th class="p-1.5 text-right">Acción</th>
                 </tr>
               </thead>
               <tbody id="table-users-body" class="divide-y divide-slate-100"></tbody>
@@ -527,70 +608,62 @@
         </div>
       </div>
       <div class="p-3 border-t bg-slate-50 flex justify-end shrink-0">
-        <button onclick="app.closeSettingsModal()" class="px-4 py-1.5 border border-slate-300 rounded-xl text-slate-700 text-xs font-bold hover:bg-slate-100">Cerrar</button>
+        <button onclick="app.closeSettingsModal()" class="px-3.5 py-1.5 border border-slate-300 rounded-xl text-slate-700 text-xs font-bold hover:bg-slate-100">Cerrar</button>
       </div>
     </div>
   </div>
 
   <!-- ======================================================== -->
-  <!-- MODAL: ASIGNAR / EDITAR ORDEN (SÓLO ADMINISTRADOR)       -->
+  <!-- MODAL: ASIGNAR / EDITAR ORDEN (ADMIN)                    -->
   <!-- ======================================================== -->
   <div id="modal-task-form" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
-      <div class="bg-brand-dark text-white px-5 py-3.5 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
+      <div class="bg-brand-dark text-white px-4 sm:px-5 py-3 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
         <div class="flex items-center gap-2">
           <i data-lucide="clipboard-pen" class="w-5 h-5 text-brand-lime"></i>
-          <h3 id="form-modal-title" class="text-sm font-bold">Orden de Trabajo</h3>
+          <h3 id="form-modal-title" class="text-xs sm:text-sm font-bold">Orden de Trabajo</h3>
         </div>
         <button onclick="app.closeTaskModal()" class="text-slate-400 hover:text-white p-1">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <form id="task-form" onsubmit="app.handleSaveTask(event)" class="p-4 space-y-3 text-xs sm:text-sm overflow-y-auto flex-1">
+      <form id="task-form" onsubmit="app.handleSaveTask(event)" class="p-3.5 sm:p-4 space-y-2.5 text-xs sm:text-sm overflow-y-auto flex-1">
         <input type="hidden" id="task-id" value="">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-0.5">Cliente / Predio *</label>
+            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Cliente / Predio *</label>
             <input type="text" id="task-client" required placeholder="Nombre del cliente" class="w-full px-2.5 py-1.5 border rounded-lg">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-0.5">Teléfono *</label>
+            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Teléfono *</label>
             <input type="tel" id="task-phone" required placeholder="Teléfono" class="w-full px-2.5 py-1.5 border rounded-lg">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-0.5">Dirección del Inmueble *</label>
+          <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Dirección del Inmueble *</label>
           <input type="text" id="task-address" required placeholder="Dirección completa" class="w-full px-2.5 py-1.5 border rounded-lg">
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-0.5">Tipo de Servicio *</label>
-            <select id="task-service-type" required class="w-full px-2.5 py-1.5 border rounded-lg bg-white">
-              <option value="Mantenimiento Preventivo General">Mantenimiento Preventivo General</option>
-              <option value="Instalación de Motor Nuevo">Instalación de Motor Nuevo</option>
-              <option value="Reparación de Emergencia / Fallo">Reparación de Emergencia / No Abre</option>
-              <option value="Cambio de Cremallera o Engranajes">Cambio de Cremallera / Engranajes</option>
-              <option value="Programación de Mandos / Receptora">Programación de Controles</option>
-              <option value="Reemplazo de Tarjeta Electrónica">Cambio de Tarjeta</option>
-              <option value="Calibración de Brazos Batientes">Calibración de Brazos</option>
-            </select>
+            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Tipo de Servicio *</label>
+            <input type="text" id="task-service-type" required placeholder="Ej: Mantenimiento Preventivo" class="w-full px-2.5 py-1.5 border rounded-lg bg-white">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-0.5">Tipo y Marca de Motor *</label>
+            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Tipo y Marca de Motor *</label>
             <input type="text" id="task-equipment" required placeholder="Ej: BFT Deimos / LiftMaster" class="w-full px-2.5 py-1.5 border rounded-lg">
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-0.5">Técnico Asignado *</label>
+            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Técnico Asignado *</label>
             <select id="task-assigned-to" required class="w-full px-2.5 py-1.5 border rounded-lg bg-white font-semibold"></select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-0.5">Prioridad *</label>
+            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Prioridad *</label>
             <select id="task-priority" required class="w-full px-2.5 py-1.5 border rounded-lg bg-white">
               <option value="MEDIA">🟡 Media</option>
               <option value="ALTA">🔴 Alta</option>
@@ -598,29 +671,20 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-0.5">Fecha *</label>
+            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Fecha *</label>
             <input type="date" id="task-date" required class="w-full px-2.5 py-1.5 border rounded-lg bg-white">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-0.5">Instrucciones</label>
+          <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Instrucciones</label>
           <textarea id="task-instructions" rows="2" placeholder="Indicaciones para el técnico..." class="w-full px-2.5 py-1.5 border rounded-lg"></textarea>
         </div>
 
-        <div class="border-t pt-2.5">
-          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Checklist de la Orden</label>
-          <div id="task-modal-checklist-container" class="space-y-1 max-h-36 overflow-y-auto p-1 bg-slate-50 rounded-xl border"></div>
-          <div class="flex items-center gap-2 mt-2">
-            <input type="text" id="task-modal-new-item-input" placeholder="Nuevo punto para esta orden..." class="flex-1 px-2.5 py-1 text-xs border rounded-lg">
-            <button type="button" onclick="app.addTaskModalChecklistItem()" class="px-3 py-1 text-xs bg-slate-800 text-white font-semibold rounded-lg shrink-0">+ Agregar</button>
-          </div>
-        </div>
-
-        <div class="pt-3 border-t flex justify-end gap-2 sticky bottom-0 bg-white">
+        <div class="pt-2 border-t flex justify-end gap-2 sticky bottom-0 bg-white">
           <button type="button" onclick="app.closeTaskModal()" class="px-3.5 py-1.5 border border-slate-300 rounded-xl text-slate-700 font-semibold text-xs">Cancelar</button>
           <button type="submit" class="px-4 py-1.5 bg-brand-dark hover:bg-black text-white rounded-xl font-bold flex items-center gap-1 shadow text-xs">
-            <i data-lucide="save" class="w-3.5 h-3.5 text-brand-lime"></i> Guardar Cambios
+            <i data-lucide="save" class="w-3.5 h-3.5 text-brand-lime"></i> Guardar
           </button>
         </div>
       </form>
@@ -628,133 +692,82 @@
   </div>
 
   <!-- ======================================================== -->
-  <!-- MODAL: REPORTE TÉCNICO (CON FOTOS, VIDEOS Y ESTADOS)     -->
+  <!-- MODAL: REPORTE TÉCNICO (CON FOTOS Y ESTADOS)             -->
   <!-- ======================================================== -->
   <div id="modal-report" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
-      <div id="report-modal-header" class="bg-brand-dark text-white px-5 py-3.5 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
+      <div id="report-modal-header" class="bg-brand-dark text-white px-4 sm:px-5 py-3 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
         <div>
           <div class="flex items-center gap-2">
             <i data-lucide="wrench" class="w-5 h-5 text-brand-lime"></i>
-            <h3 class="text-sm font-bold">Reporte de Servicio Técnico</h3>
+            <h3 class="text-xs sm:text-sm font-bold">Reporte de Servicio Técnico</h3>
           </div>
-          <p id="report-order-subtitle" class="text-[11px] text-slate-300">Orden #... - Cliente</p>
+          <p id="report-order-subtitle" class="text-[10px] sm:text-[11px] text-slate-300 truncate max-w-xs">Orden #...</p>
         </div>
         <button onclick="app.closeReportModal()" class="text-slate-400 hover:text-white p-1">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <div class="p-4 space-y-4 text-xs sm:text-sm overflow-y-auto flex-1">
-        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-            <div><span class="text-slate-500 font-medium">Servicio:</span> <span id="rep-service" class="font-bold text-slate-800"></span></div>
-            <div><span class="text-slate-500 font-medium">Equipo:</span> <span id="rep-equipment" class="font-bold text-slate-800"></span></div>
-            <div class="sm:col-span-2"><span class="text-slate-500 font-medium">Dirección:</span> <span id="rep-address" class="font-semibold text-slate-800"></span></div>
-            <div class="sm:col-span-2"><span class="text-slate-500 font-medium">Instrucción:</span> <span id="rep-instruction" class="font-semibold text-slate-700"></span></div>
-          </div>
+      <div class="p-3.5 sm:p-4 space-y-3 text-xs sm:text-sm overflow-y-auto flex-1">
+        <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs">
+          <p><span class="text-slate-500 font-bold">Servicio:</span> <span id="rep-service" class="font-bold text-slate-800"></span></p>
+          <p><span class="text-slate-500 font-bold">Equipo:</span> <span id="rep-equipment" class="font-semibold text-slate-800"></span></p>
+          <p class="truncate"><span class="text-slate-500 font-bold">Dirección:</span> <span id="rep-address" class="font-semibold text-slate-800"></span></p>
         </div>
 
-        <!-- Botones de GPS en el modal -->
-        <div class="p-2.5 bg-cyan-50/70 border border-cyan-200 rounded-xl flex items-center justify-between gap-2">
-          <span class="text-xs font-bold text-cyan-900 flex items-center gap-1">
-            <i data-lucide="navigation" class="w-3.5 h-3.5 text-cyan-600"></i> Iniciar Ruta GPS:
-          </span>
-          <div class="flex items-center gap-2">
-            <button type="button" id="rep-btn-waze" class="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg text-xs shadow-sm">
-              🚙 Waze
-            </button>
-            <button type="button" id="rep-btn-maps" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-sm">
-              📍 Maps
-            </button>
-          </div>
+        <!-- Botones de GPS -->
+        <div class="flex items-center gap-2">
+          <button type="button" id="rep-btn-waze" class="flex-1 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl text-xs shadow-sm flex items-center justify-center gap-1">
+            🚙 Waze
+          </button>
+          <button type="button" id="rep-btn-maps" class="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm flex items-center justify-center gap-1">
+            📍 Maps
+          </button>
         </div>
 
         <!-- Selector de Resultado -->
         <div>
-          <label class="block text-xs font-black uppercase tracking-wider text-slate-800 mb-1.5">
+          <label class="block text-xs font-black uppercase tracking-wider text-slate-800 mb-1">
             Resultado de la Visita *
           </label>
-          <div class="grid grid-cols-2 gap-2.5">
-            <button type="button" id="btn-choice-done" onclick="app.setReportStatus('REALIZADA')" class="py-2.5 px-3 rounded-xl border-2 flex items-center justify-center gap-1.5 font-bold transition text-slate-700 border-slate-200">
-              <i data-lucide="check-circle" class="w-4 h-4 text-brand-limeHover"></i>
-              <span>✅ Sí, Realizada</span>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" id="btn-choice-done" onclick="app.setReportStatus('REALIZADA')" class="py-2 px-2.5 rounded-xl border-2 flex items-center justify-center gap-1 font-bold text-xs">
+              <span>✅ Realizada</span>
             </button>
-            <button type="button" id="btn-choice-failed" onclick="app.setReportStatus('NO_REALIZADA')" class="py-2.5 px-3 rounded-xl border-2 flex items-center justify-center gap-1.5 font-bold transition text-slate-700 border-slate-200">
-              <i data-lucide="x-circle" class="w-4 h-4 text-rose-600"></i>
+            <button type="button" id="btn-choice-failed" onclick="app.setReportStatus('NO_REALIZADA')" class="py-2 px-2.5 rounded-xl border-2 flex items-center justify-center gap-1 font-bold text-xs">
               <span>❌ No Realizada</span>
             </button>
           </div>
         </div>
 
-        <!-- Checklist -->
-        <div id="section-checklist" class="space-y-2 border-t pt-3">
-          <div class="flex items-center justify-between">
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Checklist Técnico</label>
-            <span class="text-[10px] text-slate-400">✏️ Editar / ✕ Quitar</span>
-          </div>
-          <div id="checklist-items-container" class="space-y-1.5 bg-slate-50 p-2.5 rounded-xl border text-xs max-h-40 overflow-y-auto"></div>
-          <div class="flex items-center gap-2 pt-1">
-            <input type="text" id="new-checklist-item-input" placeholder="Nuevo punto de verificación..." class="flex-1 px-2.5 py-1 text-xs bg-white border border-slate-300 rounded-lg">
-            <button type="button" onclick="app.addChecklistItem()" class="px-3 py-1 bg-brand-dark text-white text-xs font-bold rounded-lg shrink-0">+ Añadir</button>
-          </div>
-        </div>
-
         <!-- Observaciones / Detalles -->
-        <div class="space-y-1.5 border-t pt-3">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-              Detalles / Observaciones <span id="obs-required-badge" class="text-rose-600 font-bold">*</span>
-            </label>
-            <div id="quick-reasons-wrap" class="hidden">
-              <select onchange="app.insertQuickReason(this.value)" class="text-[11px] bg-slate-100 border border-slate-300 rounded-lg px-2 py-0.5">
-                <option value="">⚡ Motivo rápido...</option>
-                <option value="Cliente ausente tras 30 min de espera.">Cliente ausente</option>
-                <option value="Sin suministro eléctrico en el tablero general.">Sin energía eléctrica</option>
-                <option value="Tarjeta electrónica averiada por descarga.">Tarjeta quemada</option>
-                <option value="Cremallera o piñón partido por golpe.">Piñón/Cremallera rota</option>
-                <option value="Portón trabado por deformación estructural.">Daño mecánico portón</option>
-                <option value="Lluvia torrencial que impide manipular corriente.">Clima adverso</option>
-              </select>
-            </div>
-          </div>
-          <textarea id="rep-observations" rows="3" placeholder="Describe detalladamente el trabajo realizado o el motivo si no se completó..." class="w-full px-2.5 py-1.5 border rounded-xl text-xs"></textarea>
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+            Detalles / Observaciones *
+          </label>
+          <textarea id="rep-observations" rows="3" placeholder="Describe detalladamente el trabajo realizado o motivo..." class="w-full px-2.5 py-1.5 border rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-brand-lime"></textarea>
         </div>
 
         <!-- Evidencias Multimedia -->
-        <div class="space-y-2 border-t pt-3">
-          <div class="flex items-center justify-between">
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-              <i data-lucide="camera" class="w-4 h-4 text-brand-limeHover"></i>
-              <span>Fotos y Videos de Evidencia</span>
-            </label>
-            <span class="text-[10px] text-slate-400">Máx. 5 archivos</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <label class="cursor-pointer px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow">
-              <i data-lucide="upload-cloud" class="w-3.5 h-3.5 text-brand-lime"></i> Subir Foto/Video
-              <input type="file" id="rep-media-input" accept="image/*,video/*" multiple class="hidden" onchange="app.handleUploadEvidence(event)">
-            </label>
-            <span class="text-[10px] text-slate-500">Toma fotos o sube videos del portón.</span>
-          </div>
-          <div id="rep-evidence-gallery" class="grid grid-cols-3 sm:grid-cols-4 gap-2 pt-1"></div>
+        <div>
+          <label class="cursor-pointer px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl inline-flex items-center gap-1.5 shadow">
+            <i data-lucide="camera" class="w-3.5 h-3.5 text-brand-lime"></i> Subir Fotos
+            <input type="file" id="rep-media-input" accept="image/*,video/*" multiple class="hidden" onchange="app.handleUploadEvidence(event)">
+          </label>
+          <div id="rep-evidence-gallery" class="grid grid-cols-3 gap-2 pt-2"></div>
         </div>
       </div>
 
-      <!-- Barra de Acciones y Estados fija en la base -->
-      <div class="p-3 border-t bg-slate-50 flex flex-wrap items-center justify-between gap-2 shrink-0">
+      <!-- Barra de Acciones y Estados -->
+      <div class="p-3 border-t bg-slate-50 flex items-center justify-between gap-1.5 shrink-0">
+        <button type="button" onclick="app.setTaskInProgress()" class="text-[11px] text-amber-700 bg-amber-50 border border-amber-300 px-2.5 py-1.5 rounded-xl font-bold">
+          Dejar "En Proceso"
+        </button>
         <div class="flex items-center gap-1.5">
-          <button type="button" onclick="app.setTaskInProgress()" class="text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-3 py-1.5 rounded-xl font-bold">
-            Dejar "En Proceso"
-          </button>
-          <button type="button" onclick="app.setTaskPendingFromReport()" class="text-xs text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded-xl font-bold">
-            Regresar a Pendiente
-          </button>
-        </div>
-        <div class="flex items-center gap-2">
           <button type="button" onclick="app.closeReportModal()" class="px-3 py-1.5 border border-slate-300 rounded-xl text-slate-600 text-xs font-bold">Cancelar</button>
-          <button type="button" onclick="app.submitReport()" class="px-4 py-1.5 bg-brand-dark hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow">
-            <i data-lucide="check" class="w-3.5 h-3.5 text-brand-lime"></i> Guardar Informe
+          <button type="button" onclick="app.submitReport()" class="px-3.5 py-1.5 bg-brand-dark hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow">
+            <i data-lucide="check" class="w-3.5 h-3.5 text-brand-lime"></i> Guardar
           </button>
         </div>
       </div>
@@ -766,118 +779,61 @@
   <!-- ======================================================== -->
   <div id="modal-view-order" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div id="printable-order-modal" class="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 flex flex-col max-h-[92vh] overflow-hidden my-auto">
-      <div class="border-b-2 border-slate-200 p-4 sm:p-5 flex justify-between items-start shrink-0">
-        <div class="max-w-[240px]">
-          <svg viewBox="0 0 420 170" class="w-full h-auto drop-shadow-sm select-none" xmlns="http://www.w3.org/2000/svg">
-            <g stroke-linecap="round" stroke-linejoin="round">
-              <path d="M 22 80 L 135 34 L 135 22 L 148 22 L 148 40 L 222 79" fill="none" stroke="#111827" stroke-width="12" />
-              <line x1="228" y1="79" x2="410" y2="79" stroke="#71A832" stroke-width="10" />
-              <line x1="228" y1="79" x2="410" y2="79" stroke="#b3d88b" stroke-width="10" class="electric-energy-line tech-pulse-glow" />
-              <text x="18" y="128" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" fill="#111827">SERVIPORTONES</text>
-              <line x1="18" y1="148" x2="135" y2="148" stroke="#71A832" stroke-width="7" />
-              <text x="144" y="152" font-family="system-ui, -apple-system, sans-serif" font-size="19" font-weight="900" fill="#71A832" letter-spacing="3">ELECTRICOS MARTINEZ</text>
-            </g>
-          </svg>
-          <p class="text-[10px] text-slate-500 font-bold mt-0.5">Automatismos, Motores & Soluciones Electrónicas</p>
+      <div class="border-b p-3.5 sm:p-4 flex justify-between items-start shrink-0">
+        <div>
+          <h2 class="font-black text-base text-slate-900">SERVIPORTONES MARTÍNEZ</h2>
+          <p id="view-order-number" class="text-xs font-mono font-bold text-slate-500">ORD-000</p>
         </div>
-        <div class="text-right">
-          <span id="view-order-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase inline-block">ESTADO</span>
-          <p id="view-order-number" class="text-xs font-mono font-black text-slate-800 mt-1">ORD-000</p>
-          <p id="view-order-date" class="text-[11px] text-slate-500">2026-10-24</p>
-        </div>
+        <span id="view-order-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase"></span>
       </div>
 
-      <div class="p-4 sm:p-5 space-y-3 text-xs sm:text-sm overflow-y-auto flex-1">
-        <div class="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-          <div>
-            <span class="text-slate-400 block text-[9px] font-bold uppercase">Cliente / Predio</span>
-            <span id="view-client" class="font-bold text-slate-900"></span>
-          </div>
-          <div>
-            <span class="text-slate-400 block text-[9px] font-bold uppercase">Teléfono Contacto</span>
-            <span id="view-phone" class="font-bold text-slate-900"></span>
-          </div>
-          <div class="col-span-2 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pt-1 border-t border-slate-100">
-            <div>
-              <span class="text-slate-400 block text-[9px] font-bold uppercase">Dirección</span>
-              <span id="view-address" class="font-semibold text-slate-800"></span>
-            </div>
-            <div class="flex items-center gap-1.5 no-print shrink-0">
-              <button type="button" id="view-btn-waze" class="px-2 py-0.5 bg-cyan-600 hover:bg-cyan-700 text-white text-[10px] font-bold rounded-lg flex items-center gap-1 shadow-sm">
-                🚙 Waze
-              </button>
-              <button type="button" id="view-btn-maps" class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold rounded-lg flex items-center gap-1 shadow-sm">
-                📍 Maps
-              </button>
-            </div>
-          </div>
+      <div class="p-3.5 sm:p-4 space-y-2 text-xs overflow-y-auto flex-1">
+        <div class="bg-slate-50 p-2.5 rounded-xl border">
+          <p><b class="text-slate-500">Cliente:</b> <span id="view-client" class="font-bold text-slate-900"></span></p>
+          <p><b class="text-slate-500">Teléfono:</b> <span id="view-phone"></span></p>
+          <p><b class="text-slate-500">Dirección:</b> <span id="view-address" class="font-semibold"></span></p>
+          <p><b class="text-slate-500">Servicio:</b> <span id="view-service"></span> (<span id="view-equipment"></span>)</p>
+          <p><b class="text-slate-500">Técnico:</b> <span id="view-technician" class="font-bold text-slate-900"></span></p>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          <div>
-            <span class="text-slate-400 block text-[9px] font-bold uppercase">Servicio</span>
-            <span id="view-service" class="font-semibold text-slate-800"></span>
-          </div>
-          <div>
-            <span class="text-slate-400 block text-[9px] font-bold uppercase">Equipo / Motor</span>
-            <span id="view-equipment" class="font-semibold text-slate-800"></span>
-          </div>
-          <div>
-            <span class="text-slate-400 block text-[9px] font-bold uppercase">Técnico Responsable</span>
-            <div class="flex items-center gap-1 mt-0.5">
-              <img id="view-technician-photo" src="" alt="" class="w-4 h-4 rounded-full object-cover hidden">
-              <span id="view-technician" class="font-bold text-slate-900"></span>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <span class="text-slate-400 block text-[9px] font-bold uppercase">Instrucciones Iniciales</span>
-          <p id="view-instructions" class="text-slate-700 bg-white p-2 rounded-xl border border-slate-200 mt-0.5"></p>
-        </div>
-
-        <div>
-          <span class="text-slate-400 block text-[9px] font-bold uppercase">Informe Técnico de Campo & Observaciones</span>
-          <div id="view-observations" class="p-2.5 rounded-xl border mt-0.5 whitespace-pre-line font-medium text-xs"></div>
+        <div class="p-2.5 bg-slate-50 border rounded-xl">
+          <p class="font-bold text-slate-500 mb-0.5 text-[10px] uppercase">Informe Técnico:</p>
+          <p id="view-observations" class="whitespace-pre-line text-slate-800 text-xs"></p>
         </div>
 
         <div id="view-evidence-section" class="hidden">
-          <span class="text-slate-400 block text-[9px] font-bold uppercase mb-1">Evidencias Adjuntas</span>
-          <div id="view-evidence-gallery" class="grid grid-cols-3 sm:grid-cols-4 gap-2"></div>
+          <p class="font-bold text-slate-500 mb-1 text-[10px] uppercase">Evidencias:</p>
+          <div id="view-evidence-gallery" class="grid grid-cols-3 gap-2"></div>
         </div>
       </div>
 
       <div class="p-3 border-t bg-slate-50 flex justify-end gap-2 shrink-0 no-print">
-        <button onclick="app.closeViewModal()" class="px-4 py-1.5 border border-slate-300 rounded-xl text-slate-700 text-xs font-bold hover:bg-slate-100">Cerrar</button>
-        <button onclick="window.print()" class="px-4 py-1.5 bg-brand-dark hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow">
-          <i data-lucide="printer" class="w-3.5 h-3.5 text-brand-lime"></i> Imprimir / PDF
+        <button onclick="app.closeViewModal()" class="px-3.5 py-1.5 border border-slate-300 rounded-xl text-slate-700 text-xs font-bold">Cerrar</button>
+        <button onclick="window.print()" class="px-4 py-1.5 bg-brand-dark hover:bg-black text-white rounded-xl text-xs font-bold shadow flex items-center gap-1">
+          <i data-lucide="printer" class="w-3.5 h-3.5 text-brand-lime"></i> Imprimir
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Notificación Toast -->
-  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-950 text-white px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2.5 border border-slate-800 text-xs sm:text-sm max-w-sm">
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-950 text-white px-3.5 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2 text-xs">
     <div id="toast-icon"></div>
     <span id="toast-message" class="font-semibold"></span>
   </div>
 
   <!-- ======================================================== -->
-  <!-- JAVASCRIPT: LÓGICA COMPLETA DE LA APLICACIÓN             -->
+  <!-- JAVASCRIPT: LÓGICA INTEGRAL DE LA APLICACIÓN             -->
   <!-- ======================================================== -->
   <script>
-    // Capa de almacenamiento seguro sin bloqueos en ventanas privadas o Safari
+    // Capa de Almacenamiento Seguro
     const SafeStorage = {
       memStore: {},
       setItem(key, value) {
-        try {
-          localStorage.setItem(key, value);
-        } catch (e) {
-          try {
-            sessionStorage.setItem(key, value);
-          } catch (e2) {
-            this.memStore[key] = String(value);
-          }
+        try { localStorage.setItem(key, value); }
+        catch (e) {
+          try { sessionStorage.setItem(key, value); }
+          catch (e2) { this.memStore[key] = String(value); }
         }
       },
       getItem(key) {
@@ -898,9 +854,10 @@
       }
     };
 
+    // USUARIOS PREDETERMINADOS SOLICITADOS
     const DEFAULT_ADMIN = {
       username: 'administrador',
-      password: 'PortoneselectricosMartinez',
+      password: '123456789',
       fullName: 'Administrador (Don Martínez)',
       role: 'ADMIN',
       phone: '315 889 4521',
@@ -913,42 +870,29 @@
     const INITIAL_TECHNICIANS = [
       {
         id: 'tech-1',
-        fullName: 'Freddy Méndez',
-        username: 'freddy',
+        fullName: 'Jeampaul',
+        username: 'Jeampaul',
         password: '123',
         phone: '315 889 4521',
-        specialty: 'Motores Corredizos BFT / Nice',
+        specialty: 'Motores Corredizos & Automatismos',
         photo: '',
         active: true,
-        lastHeartbeat: Date.now() - 25000,
+        lastHeartbeat: Date.now() - 10000,
         firstLoginToday: '07:30 AM',
-        lastLogin: '11:15 AM (En línea)'
+        lastLogin: 'En línea'
       },
       {
         id: 'tech-2',
-        fullName: 'Carlos Rivera',
-        username: 'carlos',
+        fullName: 'Alexis',
+        username: 'Alexis',
         password: '123',
         phone: '310 442 1290',
-        specialty: 'Brazos Batientes LiftMaster',
-        photo: '',
-        active: true,
-        lastHeartbeat: Date.now() - (35 * 60000),
-        firstLoginToday: '08:00 AM',
-        lastLogin: '10:45 AM (Desconectado)'
-      },
-      {
-        id: 'tech-3',
-        fullName: 'Andrés Soler',
-        username: 'andres',
-        password: '123',
-        phone: '312 990 1122',
-        specialty: 'Receptoras & Cerrajería de Portón',
+        specialty: 'Brazos Batientes & Electrónica',
         photo: '',
         active: true,
         lastHeartbeat: 0,
-        firstLoginToday: 'Sin registro hoy',
-        lastLogin: 'Ayer 05:40 PM'
+        firstLoginToday: '08:00 AM',
+        lastLogin: 'Desconectado'
       }
     ];
 
@@ -960,19 +904,12 @@
         address: 'Km 3 Vía Silvania, Portería Principal',
         serviceType: 'Mantenimiento Preventivo General',
         equipment: 'Portón Corredizo BFT ICARO 2000',
-        assignedTo: 'Freddy Méndez',
+        assignedTo: 'Jeampaul',
         priority: 'ALTA',
-        date: '2026-10-24',
+        date: '2026-10-25',
         instructions: 'Revisión periódica. Verificar tensión de cremallera y finales de carrera.',
         status: 'PENDIENTE',
-        checklist: [
-          { id: 'c1', label: 'Engrase/limpieza de cremallera y rodamientos', checked: false },
-          { id: 'c2', label: 'Calibración de finales de carrera (imán/micros)', checked: false },
-          { id: 'c3', label: 'Fotocélulas y sistema anti-aplastamiento', checked: false },
-          { id: 'c4', label: 'Prueba de destrabe manual / llave de paso', checked: false },
-          { id: 'c5', label: 'Voltaje de alimentación y torque de embrague', checked: false },
-          { id: 'c6', label: 'Prueba de mandos y alcance de receptor', checked: false }
-        ],
+        checklist: [],
         observations: '',
         evidence: [],
         completedAt: null
@@ -989,31 +926,19 @@
         this.selectedTask = null;
         this.activeReportStatus = 'REALIZADA';
         this.heartbeatTimer = null;
-        this.currentModalChecklist = [];
-        this.currentTaskModalChecklist = [];
         this.currentReportEvidence = [];
+        
+        // Estado del Chat
+        this.chatMessages = [];
+        this.activeChatWorker = 'Jeampaul';
+        this.chatUnsubscribe = null;
 
         this.init();
       }
 
-      getDefaultChecklistItems() {
-        return [
-          { id: 'c1', label: 'Engrase/limpieza de cremallera y rodamientos', checked: false },
-          { id: 'c2', label: 'Calibración de finales de carrera (imán/micros)', checked: false },
-          { id: 'c3', label: 'Fotocélulas y sistema anti-aplastamiento', checked: false },
-          { id: 'c4', label: 'Prueba de destrabe manual / llave de paso', checked: false },
-          { id: 'c5', label: 'Voltaje de alimentación y torque de embrague', checked: false },
-          { id: 'c6', label: 'Prueba de mandos y alcance de receptor', checked: false }
-        ];
-      }
-
-      // Sanitización segura y tolerante de entradas
       normalizeInput(val) {
         if (!val) return '';
-        return String(val)
-          .trim()
-          .normalize('NFC')
-          .replace(/[\u200B-\u200D\uFEFF]/g, '');
+        return String(val).trim().normalize('NFC').replace(/[\u200B-\u200D\uFEFF]/g, '');
       }
 
       formatTime(dateObj = new Date()) {
@@ -1027,22 +952,16 @@
       }
 
       openWazeNavigation(address) {
-        if (!address) {
-          this.showToast('No hay una dirección registrada', 'error');
-          return;
-        }
+        if (!address) return this.showToast('No hay una dirección registrada', 'error');
         window.open(`https://waze.com/ul?q=${encodeURIComponent(address)}&navigate=yes`, '_blank');
       }
 
       openGoogleMapsNavigation(address) {
-        if (!address) {
-          this.showToast('No hay una dirección registrada', 'error');
-          return;
-        }
+        if (!address) return this.showToast('No hay una dirección registrada', 'error');
         window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
       }
 
-      // Micro-partículas tecnológicas modernas de automatismos (Reemplazo elegante de nieve)
+      // Micro-partículas tecnológicas modernas
       initTechTheme() {
         if (document.getElementById('tech-particles-container')) return;
 
@@ -1057,7 +976,7 @@
         container.style.zIndex = '9998';
         container.style.overflow = 'hidden';
 
-        for (let i = 0; i < 24; i++) {
+        for (let i = 0; i < 20; i++) {
           const particle = document.createElement('div');
           particle.className = 'tech-particle';
           particle.style.left = Math.random() * 98 + 'vw';
@@ -1065,12 +984,10 @@
           particle.style.animationDelay = (Math.random() * 8) + 's';
           container.appendChild(particle);
         }
-
         document.body.appendChild(container);
       }
 
       async init() {
-        console.log("Inicializando ServiPortones App Engine...");
         this.initTechTheme();
 
         const savedAdmin = SafeStorage.getItem('portonpro_admin_v4');
@@ -1085,15 +1002,7 @@
 
         const savedTasks = SafeStorage.getItem('portonpro_tasks_v4');
         if (savedTasks) {
-          try {
-            this.tasks = JSON.parse(savedTasks);
-            this.tasks.forEach(t => {
-              if (!Array.isArray(t.checklist)) t.checklist = this.getDefaultChecklistItems();
-              if (!Array.isArray(t.evidence)) t.evidence = [];
-            });
-          } catch(e) {
-            this.tasks = INITIAL_TASKS;
-          }
+          try { this.tasks = JSON.parse(savedTasks); } catch(e) { this.tasks = INITIAL_TASKS; }
         }
 
         const remembered = SafeStorage.getItem('portonpro_remembered');
@@ -1106,39 +1015,42 @@
           } catch(e) {}
         }
 
-        // Sincronización transparente con Firestore
+        // Sincronización en tiempo real y listeners con Firestore
         if (window.db) {
+          // Asegurar adminProfile
           db.collection('config').doc('adminProfile').get().then(doc => {
             if (doc.exists) {
-              this.adminProfile = doc.data();
+              const data = doc.data();
+              if (data.username && data.password) this.adminProfile = data;
               SafeStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
             } else {
               db.collection('config').doc('adminProfile').set(DEFAULT_ADMIN);
             }
-          }).catch(e => console.warn("Firestore: No se pudo verificar adminProfile inicial.", e));
+          }).catch(e => console.warn("Firestore adminProfile:", e));
 
+          // Asegurar usuarios iniciales (Jeampaul y Alexis)
           db.collection('config').doc('users').get().then(doc => {
             if (doc.exists && Array.isArray(doc.data().list) && doc.data().list.length > 0) {
-              this.users = doc.data().list;
+              let existingList = doc.data().list;
+              INITIAL_TECHNICIANS.forEach(initTech => {
+                const found = existingList.find(x => x.username.toLowerCase() === initTech.username.toLowerCase());
+                if (!found) existingList.push(initTech);
+              });
+              this.users = existingList;
               SafeStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
               this.renderTechOptionsInSelects();
             } else {
               db.collection('config').doc('users').set({ list: INITIAL_TECHNICIANS });
             }
-          }).catch(e => console.warn("Firestore: No se pudo verificar config/users inicial.", e));
+          }).catch(e => console.warn("Firestore users:", e));
 
-          // 1. Sincronización en vivo de Órdenes
+          // 1. Snapshot Órdenes
           db.collection('ordenes').doc('todas').onSnapshot((doc) => {
             if (doc.exists) {
               const data = doc.data();
               if (Array.isArray(data.tasks)) {
                 this.tasks = data.tasks;
-                this.tasks.forEach(t => {
-                  if (!Array.isArray(t.checklist)) t.checklist = this.getDefaultChecklistItems();
-                  if (!Array.isArray(t.evidence)) t.evidence = [];
-                });
                 SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
-                
                 if (this.currentUser) {
                   this.updateStats();
                   this.renderTasks();
@@ -1149,9 +1061,9 @@
                 }
               }
             }
-          }, (error) => console.error("Error sincronizando órdenes en tiempo real:", error));
+          }, e => console.error("Snapshot órdenes:", e));
 
-          // 2. Sincronización en vivo de Usuarios
+          // 2. Snapshot Usuarios
           db.collection('config').doc('users').onSnapshot((doc) => {
             if (doc.exists && Array.isArray(doc.data().list)) {
               this.users = doc.data().list;
@@ -1162,9 +1074,9 @@
                 this.renderTasks();
               }
             }
-          }, (error) => console.error("Error sincronizando usuarios en tiempo real:", error));
+          }, e => console.error("Snapshot users:", e));
 
-          // 3. Monitor de presencia global en Firestore
+          // 3. Snapshot Presencia (EN LÍNEA EN TIEMPO REAL)
           db.collection('presencia').onSnapshot((snapshot) => {
             snapshot.forEach(doc => {
               const data = doc.data();
@@ -1172,25 +1084,29 @@
               if (u) {
                 if (data.lastHeartbeat !== undefined) u.lastHeartbeat = data.lastHeartbeat;
                 if (data.photo) u.photo = data.photo;
-                if (data.firstLoginToday) u.firstLoginToday = data.firstLoginToday;
                 if (data.lastLogin) u.lastLogin = data.lastLogin;
               }
             });
             if (this.currentUser && this.currentUser.role === 'ADMIN') {
               this.renderTechniciansMonitor();
             }
-          }, (error) => console.error("Error en presencia:", error));
+          });
 
-          // 4. Sincronización en vivo de Notificaciones
+          // 4. Snapshot Notificaciones Reactivas
           db.collection('notificaciones').orderBy('timestamp', 'desc').limit(25).onSnapshot((snapshot) => {
             const list = [];
-            snapshot.forEach(doc => {
-              list.push({ id: doc.id, ...doc.data() });
-            });
+            snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
             this.notifications = list;
             this.updateNotificationsUI();
-          }, (error) => console.error("Error en notificaciones:", error));
+          }, e => console.error("Snapshot notificaciones:", e));
         }
+
+        // Listener para reactivar presencia en teléfonos al desbloquear
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden && this.currentUser) {
+            this.sendHeartbeat();
+          }
+        });
 
         const savedSession = SafeStorage.getItem('portonpro_session_v4');
         if (savedSession) {
@@ -1209,23 +1125,17 @@
 
       saveAdmin() {
         SafeStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
-        if (window.db) {
-          db.collection('config').doc('adminProfile').set(this.adminProfile).catch(e => console.error("Error guardando adminProfile:", e));
-        }
+        if (window.db) db.collection('config').doc('adminProfile').set(this.adminProfile).catch(e => console.error(e));
       }
 
       saveUsers() {
         SafeStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
-        if (window.db) {
-          db.collection('config').doc('users').set({ list: this.users }).catch(e => console.error("Error guardando users:", e));
-        }
+        if (window.db) db.collection('config').doc('users').set({ list: this.users }).catch(e => console.error(e));
       }
 
       saveTasks() {
         SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
-        if (window.db) {
-          db.collection('ordenes').doc('todas').set({ tasks: this.tasks }).catch(e => console.error("Error guardando órdenes:", e));
-        }
+        if (window.db) db.collection('ordenes').doc('todas').set({ tasks: this.tasks }).catch(e => console.error(e));
       }
 
       async addActivityNotification(techName, taskId, actionType, details) {
@@ -1239,7 +1149,7 @@
         };
 
         if (window.db) {
-          db.collection('notificaciones').add(notifData).catch(e => console.error("Error registrando notificación:", e));
+          db.collection('notificaciones').add(notifData).catch(e => console.error("Error notificación:", e));
         } else {
           this.notifications.unshift({ id: 'local_' + Date.now(), ...notifData });
           this.updateNotificationsUI();
@@ -1272,13 +1182,9 @@
 
           listContainer.innerHTML = this.notifications.map(n => {
             let statusColor = 'text-blue-600 bg-blue-50 border-blue-200';
-            if (n.actionType === 'REALIZADA') {
-              statusColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
-            } else if (n.actionType === 'NO_REALIZADA') {
-              statusColor = 'text-rose-700 bg-rose-50 border-rose-200';
-            } else if (n.actionType === 'EN_PROCESO') {
-              statusColor = 'text-amber-700 bg-amber-50 border-amber-200';
-            }
+            if (n.actionType === 'REALIZADA') statusColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
+            else if (n.actionType === 'NO_REALIZADA') statusColor = 'text-rose-700 bg-rose-50 border-rose-200';
+            else if (n.actionType === 'EN_PROCESO') statusColor = 'text-amber-700 bg-amber-50 border-amber-200';
 
             return `
               <div class="p-2.5 hover:bg-slate-50 transition">
@@ -1323,15 +1229,14 @@
       showLoginView() {
         document.getElementById('view-login').classList.remove('hidden');
         document.getElementById('view-dashboard').classList.add('hidden');
+        document.getElementById('chat-floating-button-container').classList.add('hidden');
+        document.getElementById('chat-window-modal').classList.add('hidden');
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+        if (this.chatUnsubscribe) { this.chatUnsubscribe(); this.chatUnsubscribe = null; }
       }
 
-      // Descarga garantizada de credenciales con reintentos antes de validar
       async syncUsersFromFirestoreWithRetry(maxRetries = 3) {
         if (!window.db) return false;
-        const startTime = Date.now();
-        console.log(`[Firestore Auth] Verificando catálogo de credenciales...`);
-
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
           try {
             const [snapUsers, snapAdmin] = await Promise.all([
@@ -1340,7 +1245,6 @@
             ]);
 
             let syncSuccess = false;
-
             if (snapUsers && snapUsers.exists) {
               const data = snapUsers.data();
               if (Array.isArray(data.list) && data.list.length > 0) {
@@ -1349,29 +1253,19 @@
                 syncSuccess = true;
               }
             }
-
             if (snapAdmin && snapAdmin.exists) {
               this.adminProfile = snapAdmin.data();
               SafeStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
               syncSuccess = true;
             }
-
-            if (syncSuccess) {
-              const elapsed = Date.now() - startTime;
-              console.log(`[Firestore Auth] Credenciales sincronizadas exitosamente en ${elapsed}ms.`);
-              return true;
-            }
+            if (syncSuccess) return true;
           } catch (err) {
-            console.warn(`[Firestore Auth] Intento ${attempt} no respondió:`, err);
-            await new Promise(resolve => setTimeout(resolve, attempt * 600));
+            await new Promise(r => setTimeout(r, attempt * 500));
           }
         }
-
-        console.error(`[Firestore Auth] No se pudo descargar del servidor tras ${maxRetries} intentos.`);
         return false;
       }
 
-      // Login robusto con sanitización e inmunidad a ventanas de incógnito y fallos de red
       async handleLogin(e) {
         e.preventDefault();
         const rawUser = document.getElementById('login-username').value;
@@ -1382,7 +1276,6 @@
         const btnSubmit = document.getElementById('btn-submit-login');
         const btnText = document.getElementById('btn-submit-text');
 
-        // Normalización y sanitización estricta
         const userVal = this.normalizeInput(rawUser).toLowerCase();
         const passVal = this.normalizeInput(rawPass);
 
@@ -1394,7 +1287,7 @@
 
         if (btnSubmit) {
           btnSubmit.disabled = true;
-          if (btnText) btnText.textContent = "Verificando credenciales...";
+          if (btnText) btnText.textContent = "Verificando...";
         }
 
         if (rememberChecked) {
@@ -1403,8 +1296,7 @@
           SafeStorage.removeItem('portonpro_remembered');
         }
 
-        // Descarga directa desde Firestore
-        const isOnlineFirestore = await this.syncUsersFromFirestoreWithRetry(3);
+        const isOnline = await this.syncUsersFromFirestoreWithRetry(3);
 
         if (btnSubmit) {
           btnSubmit.disabled = false;
@@ -1420,16 +1312,14 @@
 
         if (userVal === adminUserMatch && passVal === adminPassMatch) {
           errorAlert.classList.add('hidden');
-          if (!this.adminProfile.firstLoginToday) {
-            this.adminProfile.firstLoginToday = formattedTime;
-          }
+          if (!this.adminProfile.firstLoginToday) this.adminProfile.firstLoginToday = formattedTime;
           this.adminProfile.lastLogin = `${formattedTime} (En línea)`;
           this.saveAdmin();
           this.loginSuccess(this.adminProfile, true);
           return;
         }
 
-        // 2. Validar Técnico
+        // 2. Validar Técnicos
         const techIndex = this.users.findIndex(u => {
           const uName = this.normalizeInput(u.username).toLowerCase();
           const uPass = this.normalizeInput(u.password);
@@ -1441,14 +1331,10 @@
           if (!foundTech.active) {
             errorText.textContent = 'Tu cuenta de técnico está desactivada. Consulta al Administrador.';
             errorAlert.classList.remove('hidden');
-            if (window.lucide) lucide.createIcons();
             return;
           }
           errorAlert.classList.add('hidden');
 
-          if (!foundTech.firstLoginToday || foundTech.firstLoginToday.includes('Sin registro')) {
-            foundTech.firstLoginToday = formattedTime;
-          }
           foundTech.lastLogin = `${formattedTime} (En línea)`;
           foundTech.lastHeartbeat = Date.now();
           this.saveUsers();
@@ -1459,7 +1345,6 @@
               fullName: foundTech.fullName,
               lastHeartbeat: Date.now(),
               photo: foundTech.photo || '',
-              firstLoginToday: foundTech.firstLoginToday,
               lastLogin: foundTech.lastLogin
             }, { merge: true }).catch(e => console.error(e));
           }
@@ -1476,16 +1361,13 @@
           return;
         }
 
-        // 3. Si no coincidió y tampoco hubo respuesta de Firestore: Notificar error real de red
-        if (!isOnlineFirestore && (!this.users || this.users.length === 0)) {
-          errorText.textContent = 'Error de conexión con la base de datos. Verifica tu conexión a internet o intenta de nuevo.';
+        if (!isOnline && (!this.users || this.users.length === 0)) {
+          errorText.textContent = 'Error de conexión con la base de datos. Verifica tu conexión.';
           errorAlert.classList.remove('hidden');
-          if (window.lucide) lucide.createIcons();
           return;
         }
 
-        // 4. Error real de credenciales
-        errorText.textContent = 'Usuario o contraseña incorrectos. Verifica que no tengas mayúsculas activadas.';
+        errorText.textContent = 'Usuario o contraseña incorrectos. Verifica tus credenciales.';
         errorAlert.classList.remove('hidden');
         if (window.lucide) lucide.createIcons();
       }
@@ -1496,10 +1378,12 @@
 
         document.getElementById('view-login').classList.add('hidden');
         document.getElementById('view-dashboard').classList.remove('hidden');
+        document.getElementById('chat-floating-button-container').classList.remove('hidden');
 
+        // Latido activo cada 6 segundos
         this.sendHeartbeat();
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
-        this.heartbeatTimer = setInterval(() => this.sendHeartbeat(), 8000);
+        this.heartbeatTimer = setInterval(() => this.sendHeartbeat(), 6000);
 
         this.setupDashboardUI();
         this.renderTechOptionsInSelects();
@@ -1511,9 +1395,9 @@
           this.renderAdminAuditLog();
         }
 
-        if (notify) {
-          this.showToast(`Bienvenido, ${user.fullName}`, 'success');
-        }
+        this.initChatModule();
+
+        if (notify) this.showToast(`Bienvenido, ${user.fullName}`, 'success');
       }
 
       logout() {
@@ -1552,9 +1436,7 @@
         const now = Date.now();
         if (this.currentUser.role === 'TECNICO') {
           const techIndex = this.users.findIndex(u => u.username.toLowerCase() === this.currentUser.username.toLowerCase());
-          if (techIndex !== -1) {
-            this.users[techIndex].lastHeartbeat = now;
-          }
+          if (techIndex !== -1) this.users[techIndex].lastHeartbeat = now;
           if (window.db) {
             db.collection('presencia').doc(this.currentUser.username.toLowerCase()).set({
               username: this.currentUser.username,
@@ -1565,9 +1447,7 @@
             }, { merge: true }).catch(e => console.error(e));
           }
         }
-        if (this.currentUser.role === 'ADMIN') {
-          this.renderTechniciansMonitor();
-        }
+        if (this.currentUser.role === 'ADMIN') this.renderTechniciansMonitor();
       }
 
       togglePasswordVisibility(fieldId) {
@@ -1609,7 +1489,7 @@
           filterTech.classList.remove('hidden');
           filterTech.disabled = false;
           auditLogSection.classList.remove('hidden');
-          roleHint.textContent = 'Control de órdenes, seguimiento GPS y personal en vivo';
+          roleHint.textContent = 'Supervisión en vivo y control total';
 
           if (btnResetPending) btnResetPending.classList.remove('hidden');
           if (btnResetDone) btnResetDone.classList.remove('hidden');
@@ -1620,7 +1500,7 @@
           filterTech.classList.add('hidden');
           filterTech.disabled = true;
           auditLogSection.classList.add('hidden');
-          roleHint.textContent = 'Usa Waze/Maps para dirigirte al lugar y registra tus informes';
+          roleHint.textContent = 'Usa Waze/Maps y completa tus reportes';
 
           if (btnResetPending) btnResetPending.classList.add('hidden');
           if (btnResetDone) btnResetDone.classList.add('hidden');
@@ -1629,43 +1509,264 @@
 
         const banner = document.getElementById('dashboard-banner');
         if (isAdmin) {
-          banner.className = 'mb-5 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm bg-gradient-to-r from-slate-950 via-brand-dark to-slate-900 text-white border-brand-lime/40';
+          banner.className = 'mb-4 sm:mb-5 p-3.5 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm bg-gradient-to-r from-slate-950 via-brand-dark to-slate-900 text-white border-brand-lime/40';
           banner.innerHTML = `
-            <div class="flex items-center gap-3">
-              <div class="p-2 bg-brand-lime/20 rounded-xl border border-brand-lime/40 text-brand-lime shrink-0">
-                <i data-lucide="shield-check" class="w-5 h-5"></i>
-              </div>
-              <div>
-                <h3 class="font-extrabold text-sm text-white">Panel Central de Operaciones</h3>
-                <p class="text-xs text-slate-300 mt-0.5">Asigna órdenes, revisa rutas de navegación y audita los informes técnicos.</p>
-              </div>
+            <div>
+              <h3 class="font-extrabold text-xs sm:text-sm text-white">Panel Central de Operaciones</h3>
+              <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5">Asigna órdenes, supervisa técnicos en vivo y comunícate por chat.</p>
             </div>
-            <div class="flex items-center gap-2 mt-2.5 sm:mt-0">
-              <button onclick="app.openNewTaskModal()" class="text-xs font-bold bg-brand-lime hover:bg-brand-limeHover text-white px-3.5 py-1.5 rounded-xl flex items-center gap-1 shadow transition active:scale-95">
-                <i data-lucide="plus-circle" class="w-4 h-4"></i> Asignar Orden de Trabajo
+            <div class="mt-2 sm:mt-0">
+              <button onclick="app.openNewTaskModal()" class="text-xs font-bold bg-brand-lime hover:bg-brand-limeHover text-white px-3 py-1.5 rounded-xl flex items-center gap-1 shadow transition active:scale-95">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i> Asignar Orden
               </button>
             </div>
           `;
         } else {
-          banner.className = 'mb-5 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm bg-gradient-to-r from-slate-900 via-brand-dark to-slate-950 text-white border-brand-lime/40';
+          banner.className = 'mb-4 sm:mb-5 p-3.5 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm bg-gradient-to-r from-slate-900 via-brand-dark to-slate-950 text-white border-brand-lime/40';
           banner.innerHTML = `
-            <div class="flex items-center gap-3">
-              <div class="p-2 bg-brand-lime/20 rounded-xl border border-brand-lime/40 text-brand-lime shrink-0">
-                <i data-lucide="wrench" class="w-5 h-5"></i>
-              </div>
-              <div>
-                <h3 class="font-extrabold text-sm text-white">Bienvenido, ${this.currentUser.fullName}</h3>
-                <p class="text-xs text-slate-300 mt-0.5">Usa Waze o Maps para llegar y registra las fotos de evidencia.</p>
-              </div>
+            <div>
+              <h3 class="font-extrabold text-xs sm:text-sm text-white">Bienvenido, ${this.currentUser.fullName}</h3>
+              <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5">Revisa tus visitas asignadas y envía tus reportes técnicos con fotos.</p>
             </div>
-            <div class="mt-2.5 sm:mt-0 flex items-center gap-2">
-              <span class="inline-flex items-center gap-1.5 text-xs font-bold bg-brand-lime/20 text-brand-lime border border-brand-lime/40 px-3 py-1 rounded-full">
-                <span class="w-2 h-2 rounded-full bg-brand-lime animate-pulse"></span> Conectado
+            <div class="mt-2 sm:mt-0">
+              <span class="inline-flex items-center gap-1.5 text-xs font-bold bg-brand-lime/20 text-brand-lime border border-brand-lime/40 px-2.5 py-1 rounded-full">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Conectado
               </span>
             </div>
           `;
         }
 
+        if (window.lucide) lucide.createIcons();
+      }
+
+      // ==========================================
+      // LIGHTBOX DE ZOOM DE FOTO
+      // ==========================================
+      zoomWorkerPhoto(photoUrl, name) {
+        const modal = document.getElementById('modal-photo-zoom');
+        const img = document.getElementById('zoom-modal-img');
+        const initial = document.getElementById('zoom-modal-initial');
+        const nameElem = document.getElementById('zoom-modal-name');
+
+        nameElem.textContent = name || 'Trabajador';
+
+        if (photoUrl) {
+          img.src = photoUrl;
+          img.classList.remove('hidden');
+          initial.classList.add('hidden');
+        } else {
+          img.classList.add('hidden');
+          initial.classList.remove('hidden');
+          initial.textContent = (name || 'A').charAt(0);
+        }
+
+        modal.classList.remove('hidden');
+      }
+
+      closePhotoZoom() {
+        document.getElementById('modal-photo-zoom').classList.add('hidden');
+      }
+
+      // ==========================================
+      // SISTEMA DE CHAT PRIVADO INTERNO
+      // ==========================================
+      initChatModule() {
+        const isAdmin = this.currentUser.role === 'ADMIN';
+        const adminThreads = document.getElementById('chat-admin-threads');
+        const targetSelect = document.getElementById('chat-target-worker');
+        const chatTitle = document.getElementById('chat-header-title');
+
+        if (isAdmin) {
+          adminThreads.classList.remove('hidden');
+          const techWorkers = this.users.filter(u => u.username.toLowerCase() !== 'administrador');
+          targetSelect.innerHTML = techWorkers.map(t => `<option value="${t.fullName}">${t.fullName}</option>`).join('');
+          this.activeChatWorker = targetSelect.value || (techWorkers[0]?.fullName || 'Jeampaul');
+          chatTitle.textContent = `Chat: ${this.activeChatWorker}`;
+        } else {
+          adminThreads.classList.add('hidden');
+          this.activeChatWorker = this.currentUser.fullName;
+          chatTitle.textContent = 'Mensaje al Administrador';
+        }
+
+        this.subscribeChatMessages();
+      }
+
+      switchChatWorker(workerName) {
+        this.activeChatWorker = workerName;
+        document.getElementById('chat-header-title').textContent = `Chat: ${workerName}`;
+        this.subscribeChatMessages();
+      }
+
+      toggleChatWindow() {
+        const chatModal = document.getElementById('chat-window-modal');
+        chatModal.classList.toggle('hidden');
+        if (!chatModal.classList.contains('hidden')) {
+          this.scrollToChatBottom();
+          this.markMessagesAsRead();
+        }
+      }
+
+      subscribeChatMessages() {
+        if (!window.db) return;
+        if (this.chatUnsubscribe) { this.chatUnsubscribe(); }
+
+        const threadId = this.currentUser.role === 'ADMIN' ? this.activeChatWorker : this.currentUser.fullName;
+
+        this.chatUnsubscribe = db.collection('chats_internos')
+          .doc(threadId)
+          .collection('mensajes')
+          .orderBy('timestamp', 'asc')
+          .limit(80)
+          .onSnapshot(snapshot => {
+            const msgs = [];
+            let unreadCount = 0;
+            snapshot.forEach(doc => {
+              const data = doc.data();
+              msgs.push({ id: doc.id, ...data });
+              if (data.senderRole !== this.currentUser.role && !data.read) {
+                unreadCount++;
+              }
+            });
+            this.chatMessages = msgs;
+            this.renderChatMessages();
+
+            const badge = document.getElementById('chat-unread-badge');
+            if (unreadCount > 0) {
+              badge.textContent = unreadCount;
+              badge.classList.remove('hidden');
+            } else {
+              badge.classList.add('hidden');
+            }
+          }, err => console.error("Error en chat snapshot:", err));
+      }
+
+      renderChatMessages() {
+        const container = document.getElementById('chat-messages-container');
+        if (!container) return;
+
+        if (this.chatMessages.length === 0) {
+          container.innerHTML = `<div class="text-center py-8 text-slate-400 text-xs italic">Inicia una conversación privada segura.</div>`;
+          return;
+        }
+
+        container.innerHTML = this.chatMessages.map(m => {
+          const isMine = m.senderName === this.currentUser.fullName;
+          return `
+            <div class="flex flex-col ${isMine ? 'items-end' : 'items-start'}">
+              <span class="text-[9px] font-bold text-slate-400 mb-0.5 px-1">${m.senderName} &bull; ${m.time}</span>
+              <div class="max-w-[80%] rounded-2xl px-3 py-2 shadow-sm ${isMine ? 'bg-brand-dark text-white rounded-br-none border-b-2 border-brand-lime' : 'bg-white text-slate-800 rounded-bl-none border border-slate-200'}">
+                <p class="leading-relaxed whitespace-pre-wrap">${m.text}</p>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        this.scrollToChatBottom();
+      }
+
+      scrollToChatBottom() {
+        const container = document.getElementById('chat-messages-container');
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+        }
+      }
+
+      async handleSendMessage(e) {
+        e.preventDefault();
+        const input = document.getElementById('chat-input-text');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const threadId = this.currentUser.role === 'ADMIN' ? this.activeChatWorker : this.currentUser.fullName;
+
+        const msgObj = {
+          threadId: threadId,
+          text: text,
+          senderName: this.currentUser.fullName,
+          senderRole: this.currentUser.role,
+          recipient: this.currentUser.role === 'ADMIN' ? this.activeChatWorker : 'Administrador',
+          time: this.formatTime(new Date()),
+          timestamp: Date.now(),
+          read: false
+        };
+
+        input.value = '';
+
+        if (window.db) {
+          try {
+            await db.collection('chats_internos').doc(threadId).collection('mensajes').add(msgObj);
+            await db.collection('chats_internos').doc(threadId).set({
+              lastUpdate: Date.now(),
+              workerName: threadId
+            }, { merge: true });
+          } catch(err) {
+            console.error("Error al enviar mensaje:", err);
+            this.showToast("Error al enviar mensaje", "error");
+          }
+        }
+      }
+
+      markMessagesAsRead() {
+        if (!window.db || this.chatMessages.length === 0) return;
+        const threadId = this.currentUser.role === 'ADMIN' ? this.activeChatWorker : this.currentUser.fullName;
+
+        this.chatMessages.forEach(m => {
+          if (m.senderRole !== this.currentUser.role && !m.read && m.id) {
+            db.collection('chats_internos').doc(threadId).collection('mensajes').doc(m.id).update({ read: true }).catch(() => {});
+          }
+        });
+      }
+
+      // ==========================================
+      // MONITOR Y CONFIGURACIÓN (SÓLO CÍRCULO VERDE/GRIS)
+      // ==========================================
+      renderTechniciansMonitor() {
+        const grid = document.getElementById('technicians-status-grid');
+        const counter = document.getElementById('techs-online-counter');
+        if (!grid) return;
+
+        // Umbral de 60 segundos
+        const ONLINE_THRESHOLD_MS = 60 * 1000;
+        const now = Date.now();
+        let onlineCount = 0;
+
+        grid.innerHTML = this.users.map(u => {
+          const isOnline = (now - (u.lastHeartbeat || 0)) < ONLINE_THRESHOLD_MS;
+          if (isOnline) onlineCount++;
+
+          const assignedPending = this.tasks.filter(t => t.assignedTo === u.fullName && (t.status === 'PENDIENTE' || t.status === 'EN_PROCESO')).length;
+
+          return `
+            <div class="p-3 rounded-2xl border ${isOnline ? 'bg-brand-limeLight border-brand-limeBorder shadow-sm' : 'bg-slate-50 border-slate-200'} flex flex-col justify-between">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div onclick="app.zoomWorkerPhoto('${u.photo || ''}', '${u.fullName}')" class="cursor-pointer relative w-10 h-10 rounded-full overflow-hidden border-2 ${isOnline ? 'border-brand-lime' : 'border-slate-300'} bg-slate-200 shrink-0 flex items-center justify-center hover:opacity-90 transition" title="Haz clic para ampliar foto">
+                    ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<span class="font-bold text-xs text-slate-700">${u.fullName.charAt(0)}</span>`}
+                    <!-- Círculo indicador de conexión en la esquina del avatar -->
+                    <span class="w-3 h-3 rounded-full ${isOnline ? 'bg-emerald-500 ring-2 ring-white animate-pulse' : 'bg-slate-300'} absolute top-0 right-0"></span>
+                  </div>
+                  <div class="min-w-0 flex items-center gap-2">
+                    <h4 class="text-xs font-black text-slate-900 truncate">${u.fullName}</h4>
+                    <!-- Círculo visual sin letras de desconectado -->
+                    <span class="w-3 h-3 rounded-full ${isOnline ? 'bg-emerald-500 ring-2 ring-emerald-300 animate-pulse' : 'bg-slate-300'} shrink-0" title="${isOnline ? 'Conectado trabajando' : 'Sin conexión'}"></span>
+                  </div>
+                </div>
+                <span class="text-[10px] px-2 py-0.5 rounded-md font-extrabold ${assignedPending > 0 ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-600'} shrink-0">
+                  ${assignedPending} ptes
+                </span>
+              </div>
+
+              <div class="bg-white/80 rounded-xl p-2 border border-slate-200/70 text-[10px] space-y-0.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-500">Última Actividad:</span>
+                  <span class="font-bold ${isOnline ? 'text-emerald-600' : 'text-slate-700'}">${u.lastLogin || 'No registrado'}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        counter.textContent = `${onlineCount} En Línea`;
         if (window.lucide) lucide.createIcons();
       }
 
@@ -1681,7 +1782,7 @@
         const subtitle = document.getElementById('settings-modal-subtitle');
 
         if (isAdmin) {
-          subtitle.textContent = 'Gestión integral de personal, credenciales y perfil administrativo';
+          subtitle.textContent = 'Gestión integral de personal y credenciales';
           adminUsersSection.classList.remove('hidden');
           this.resetUserForm();
           this.renderUsersTable();
@@ -1746,10 +1847,8 @@
           this.renderMySettingsPhotoPreview();
           this.setupDashboardUI();
           this.renderTasks();
-          if (this.currentUser.role === 'ADMIN') {
-            this.renderTechniciansMonitor();
-          }
-          this.showToast('Foto de perfil actualizada y sincronizada', 'success');
+          if (this.currentUser.role === 'ADMIN') this.renderTechniciansMonitor();
+          this.showToast('Foto actualizada y sincronizada', 'success');
         };
         reader.readAsDataURL(file);
       }
@@ -1777,10 +1876,8 @@
         this.renderMySettingsPhotoPreview();
         this.setupDashboardUI();
         this.renderTasks();
-        if (this.currentUser.role === 'ADMIN') {
-          this.renderTechniciansMonitor();
-        }
-        this.showToast('Foto de perfil eliminada', 'info');
+        if (this.currentUser.role === 'ADMIN') this.renderTechniciansMonitor();
+        this.showToast('Foto eliminada', 'info');
       }
 
       handleChangeOwnPassword(e) {
@@ -1820,65 +1917,10 @@
         }
       }
 
-      renderTechniciansMonitor() {
-        const grid = document.getElementById('technicians-status-grid');
-        const counter = document.getElementById('techs-online-counter');
-        if (!grid) return;
-
-        const ONLINE_THRESHOLD_MS = 45 * 1000;
-        const now = Date.now();
-        let onlineCount = 0;
-
-        grid.innerHTML = this.users.map(u => {
-          const isOnline = (now - (u.lastHeartbeat || 0)) < ONLINE_THRESHOLD_MS;
-          if (isOnline) onlineCount++;
-
-          const assignedPending = this.tasks.filter(t => t.assignedTo === u.fullName && (t.status === 'PENDIENTE' || t.status === 'EN_PROCESO')).length;
-
-          return `
-            <div class="p-3 rounded-2xl border ${isOnline ? 'bg-brand-limeLight border-brand-limeBorder shadow-sm' : 'bg-slate-50 border-slate-200'} flex flex-col justify-between">
-              <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center gap-2.5 min-w-0">
-                  <div class="relative w-10 h-10 rounded-full overflow-hidden border-2 ${isOnline ? 'border-brand-lime' : 'border-slate-300'} bg-slate-200 shrink-0 flex items-center justify-center">
-                    ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<span class="font-bold text-xs text-slate-700">${u.fullName.charAt(0)}</span>`}
-                    <span class="w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-500 ring-2 ring-white animate-pulse' : 'bg-slate-400'} absolute top-0 right-0"></span>
-                  </div>
-                  <div class="min-w-0">
-                    <h4 class="text-xs font-black text-slate-900 truncate">${u.fullName}</h4>
-                    <p class="text-[11px] font-semibold flex items-center gap-1 ${isOnline ? 'text-emerald-600' : 'text-slate-500'}">
-                      <span class="w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-slate-400'}"></span>
-                      ${isOnline ? 'En línea ahora' : 'Desconectado'}
-                    </p>
-                  </div>
-                </div>
-                <span class="text-[10px] px-2 py-0.5 rounded-md font-extrabold ${assignedPending > 0 ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-600'} shrink-0">
-                  ${assignedPending} ptes
-                </span>
-              </div>
-
-              <div class="bg-white/80 rounded-xl p-2 border border-slate-200/70 text-[10px] space-y-0.5">
-                <div class="flex items-center justify-between">
-                  <span class="text-slate-500">Primer Ingreso:</span>
-                  <span class="font-bold text-slate-800">${u.firstLoginToday || 'Sin registro'}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span class="text-slate-500">Última Actividad:</span>
-                  <span class="font-bold ${isOnline ? 'text-emerald-600' : 'text-slate-700'}">${u.lastLogin || 'No registrado'}</span>
-                </div>
-              </div>
-            </div>
-          `;
-        }).join('');
-
-        counter.textContent = `${onlineCount} En Línea`;
-        if (window.lucide) lucide.createIcons();
-      }
-
       resetUserForm() {
         document.getElementById('manage-user-id').value = '';
-        document.getElementById('manage-user-photo').value = '';
         document.getElementById('manage-user-form').reset();
-        document.getElementById('btn-save-user').textContent = 'Guardar Trabajador';
+        document.getElementById('btn-save-user').textContent = 'Guardar';
         if (window.lucide) lucide.createIcons();
       }
 
@@ -1894,7 +1936,7 @@
         const specialty = this.normalizeInput(document.getElementById('manage-specialty').value);
 
         if (username === this.adminProfile.username.toLowerCase()) {
-          this.showToast('El usuario no puede llamarse igual al administrador', 'error');
+          this.showToast('El usuario no puede llamarse igual al admin', 'error');
           return;
         }
 
@@ -1945,24 +1987,18 @@
         tbody.innerHTML = this.users.map(u => {
           return `
             <tr class="hover:bg-slate-50 transition">
-              <td class="p-2">
+              <td class="p-1.5">
                 <div class="flex items-center gap-1.5">
-                  <div class="w-6 h-6 rounded-full border border-brand-lime overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center">
-                    ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<span class="font-bold text-[10px]">${u.fullName.charAt(0)}</span>`}
+                  <div onclick="app.zoomWorkerPhoto('${u.photo || ''}', '${u.fullName}')" class="cursor-pointer w-6 h-6 rounded-full border border-brand-lime overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center">
+                    ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<span class="font-bold text-[9px]">${u.fullName.charAt(0)}</span>`}
                   </div>
-                  <span class="font-bold text-slate-800">${u.fullName}</span>
+                  <span class="font-bold text-slate-800 truncate max-w-[90px]">${u.fullName}</span>
                 </div>
               </td>
-              <td class="p-2">
-                <span class="font-mono text-xs text-brand-dark font-bold">@${u.username}</span>
-                <span class="text-[10px] text-slate-500 block">Clave: ${u.password}</span>
+              <td class="p-1.5 font-mono text-[10px] text-slate-600">
+                <span>@${u.username}</span>
               </td>
-              <td class="p-2">
-                <button onclick="app.toggleUserStatus('${u.id}')" class="px-1.5 py-0.5 rounded text-[9px] font-bold ${u.active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}">
-                  ${u.active ? 'ACTIVO' : 'INACTIVO'}
-                </button>
-              </td>
-              <td class="p-2 text-right space-x-1">
+              <td class="p-1.5 text-right space-x-1">
                 <button onclick="app.editUser('${u.id}')" class="p-1 text-slate-600 hover:text-brand-limeHover" title="Editar"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
                 <button onclick="app.deleteUser('${u.id}')" class="p-1 text-slate-600 hover:text-rose-600" title="Eliminar"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
               </td>
@@ -1982,18 +2018,8 @@
         document.getElementById('manage-password').value = u.password;
         document.getElementById('manage-phone').value = u.phone;
         document.getElementById('manage-specialty').value = u.specialty || '';
-        document.getElementById('btn-save-user').textContent = 'Actualizar Datos';
+        document.getElementById('btn-save-user').textContent = 'Actualizar';
         if (window.lucide) lucide.createIcons();
-      }
-
-      toggleUserStatus(id) {
-        const u = this.users.find(x => x.id === id);
-        if (u) {
-          u.active = !u.active;
-          this.saveUsers();
-          this.renderUsersTable();
-          this.showToast(`Estado modificado`, 'info');
-        }
       }
 
       deleteUser(id) {
@@ -2027,14 +2053,13 @@
       resetFilters() {
         document.getElementById('filter-search').value = '';
         document.getElementById('filter-status').value = 'ALL';
-        document.getElementById('filter-priority').value = 'ALL';
         if (this.currentUser.role === 'ADMIN') document.getElementById('filter-tech').value = 'ALL';
         this.renderTasks();
       }
 
       async resetCategoryTasks(category) {
         if (this.currentUser.role !== 'ADMIN') {
-          this.showToast('Acción reservada exclusivamente para el Administrador', 'error');
+          this.showToast('Acción reservada al Administrador', 'error');
           return;
         }
 
@@ -2052,37 +2077,26 @@
           label = 'EN PROCESO';
         }
 
-        if (targets.length === 0) {
-          this.showToast(`No hay órdenes en la categoría ${label} para reiniciar`, 'info');
-          return;
-        }
-
-        const confirmMsg = `¿Deseas reiniciar ${targets.length} orden(es) de ${label} a estado PENDIENTE limpio?`;
-        if (!confirm(confirmMsg)) return;
+        if (targets.length === 0) return this.showToast(`No hay órdenes para reiniciar`, 'info');
+        if (!confirm(`¿Deseas reiniciar ${targets.length} orden(es) de ${label}?`)) return;
 
         targets.forEach(t => {
           t.status = 'PENDIENTE';
           t.observations = '';
           t.evidence = [];
           t.completedAt = null;
-          if (Array.isArray(t.checklist)) {
-            t.checklist.forEach(c => c.checked = false);
-          }
         });
 
         this.saveTasks();
         this.updateStats();
         this.renderTasks();
-        if (this.currentUser.role === 'ADMIN') this.renderAdminAuditLog();
         this.showToast(`Órdenes reiniciadas correctamente`, 'success');
       }
 
       renderTasks() {
         const search = document.getElementById('filter-search').value.toLowerCase();
         const statusFilter = document.getElementById('filter-status').value;
-        const priorityFilter = document.getElementById('filter-priority').value;
         const techFilter = document.getElementById('filter-tech').value;
-
         const container = document.getElementById('tasks-container');
         const emptyState = document.getElementById('empty-state');
         const countTag = document.getElementById('filtered-count');
@@ -2099,10 +2113,9 @@
             t.id.toLowerCase().includes(search);
 
           const matchStatus = statusFilter === 'ALL' || t.status === statusFilter;
-          const matchPriority = priorityFilter === 'ALL' || t.priority === priorityFilter;
           const matchTech = !isAdmin || techFilter === 'ALL' || t.assignedTo === techFilter;
 
-          return matchText && matchStatus && matchPriority && matchTech;
+          return matchText && matchStatus && matchTech;
         });
 
         countTag.textContent = filtered.length;
@@ -2116,128 +2129,86 @@
         emptyState.classList.add('hidden');
 
         container.innerHTML = filtered.map(t => {
-          let statusBadge = '';
-          let borderClass = 'border-slate-200';
+          let statusBadge = '<span class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-bold">⏳ Pendiente</span>';
+          let borderClass = 'border-amber-200';
 
-          if (t.status === 'PENDIENTE') {
-            statusBadge = '<span class="bg-amber-100 text-amber-800 text-[11px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> Pendiente</span>';
-            borderClass = 'border-amber-200 hover:border-amber-400';
-          } else if (t.status === 'EN_PROCESO') {
-            statusBadge = '<span class="bg-blue-100 text-blue-800 text-[11px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1"><i data-lucide="loader" class="w-3 h-3 animate-spin"></i> En Proceso</span>';
-            borderClass = 'border-blue-300 hover:border-blue-500';
+          if (t.status === 'EN_PROCESO') {
+            statusBadge = '<span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded-full font-bold">⚙️ En Proceso</span>';
+            borderClass = 'border-blue-300';
           } else if (t.status === 'REALIZADA') {
-            statusBadge = '<span class="bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder text-[11px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3 h-3"></i> Realizada</span>';
-            borderClass = 'border-brand-lime/40 hover:border-brand-lime';
+            statusBadge = '<span class="bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder text-[10px] px-2 py-0.5 rounded-full font-bold">✅ Realizada</span>';
+            borderClass = 'border-brand-lime/40';
           } else if (t.status === 'NO_REALIZADA') {
-            statusBadge = '<span class="bg-rose-100 text-rose-800 text-[11px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i> No Realizada</span>';
-            borderClass = 'border-rose-200 hover:border-rose-400';
+            statusBadge = '<span class="bg-rose-100 text-rose-800 text-[10px] px-2 py-0.5 rounded-full font-bold">❌ No Realizada</span>';
+            borderClass = 'border-rose-200';
           }
-
-          let prioTag = '';
-          if (t.priority === 'ALTA') prioTag = '<span class="text-[9px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">ALTA</span>';
-          if (t.priority === 'MEDIA') prioTag = '<span class="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">MEDIA</span>';
-          if (t.priority === 'BAJA') prioTag = '<span class="text-[9px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">BAJA</span>';
 
           const techObj = this.users.find(u => u.fullName === t.assignedTo);
           const techPhoto = techObj && techObj.photo ? techObj.photo : '';
 
           return `
-            <div class="bg-white rounded-2xl p-4 border ${borderClass} shadow-sm hover:shadow transition flex flex-col justify-between">
+            <div class="bg-white rounded-2xl p-3.5 border ${borderClass} shadow-sm flex flex-col justify-between">
               <div>
-                <div class="flex items-center justify-between mb-1.5">
-                  <div class="flex items-center gap-1.5">
-                    <span class="text-xs font-mono font-black text-slate-500">${t.id}</span>
-                    ${prioTag}
-                  </div>
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-mono font-black text-slate-500">${t.id}</span>
                   <div>${statusBadge}</div>
                 </div>
 
-                <h3 class="font-extrabold text-slate-900 text-sm leading-snug">${t.serviceType}</h3>
+                <h3 class="font-extrabold text-slate-900 text-xs sm:text-sm leading-snug">${t.serviceType}</h3>
                 <p class="text-xs font-bold text-brand-limeHover flex items-center gap-1 mt-0.5">
                   <i data-lucide="cpu" class="w-3.5 h-3.5"></i> ${t.equipment}
                 </p>
 
-                <div class="mt-2.5 space-y-1 text-xs text-slate-600">
-                  <div class="flex items-center gap-1.5 font-bold text-slate-800">
-                    <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
-                    <span class="truncate">${t.client}</span>
-                  </div>
-                  <div class="flex items-center gap-1.5">
-                    <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
-                    <span>${t.date}</span>
-                    <span class="text-slate-300">•</span>
-                    <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
-                    <span>${t.phone}</span>
-                  </div>
+                <div class="mt-2 space-y-0.5 text-xs text-slate-600">
+                  <p class="font-bold text-slate-800 truncate">👤 ${t.client} (${t.phone})</p>
+                  <p class="truncate text-slate-600">📍 ${t.address}</p>
                 </div>
 
-                <!-- CONTENEDOR DE DIRECCIÓN + BOTONES GPS -->
-                <div class="mt-2.5 p-2 bg-slate-50 border border-slate-200 rounded-xl">
-                  <div class="flex items-start gap-1.5 mb-1.5">
-                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5"></i>
-                    <span class="text-xs font-semibold text-slate-800 leading-tight">${t.address}</span>
-                  </div>
-                  <div class="flex items-center gap-1.5">
-                    <button type="button" onclick="app.openWazeNavigation('${t.address.replace(/'/g, "\\'")}')" class="flex-1 py-1 px-2 bg-cyan-600 hover:bg-cyan-700 active:scale-95 text-white text-[10px] font-bold rounded-lg flex items-center justify-center gap-1 shadow-sm transition">
-                      🚙 Waze
-                    </button>
-                    <button type="button" onclick="app.openGoogleMapsNavigation('${t.address.replace(/'/g, "\\'")}')" class="flex-1 py-1 px-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[10px] font-bold rounded-lg flex items-center justify-center gap-1 shadow-sm transition">
-                      📍 Maps
-                    </button>
-                  </div>
+                <div class="mt-2 flex items-center gap-1.5">
+                  <button type="button" onclick="app.openWazeNavigation('${t.address.replace(/'/g, "\\'")}')" class="flex-1 py-1 bg-cyan-600 hover:bg-cyan-700 text-white text-[10px] font-bold rounded-lg shadow-sm flex items-center justify-center gap-1">
+                    🚙 Waze
+                  </button>
+                  <button type="button" onclick="app.openGoogleMapsNavigation('${t.address.replace(/'/g, "\\'")}')" class="flex-1 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold rounded-lg shadow-sm flex items-center justify-center gap-1">
+                    📍 Maps
+                  </button>
                 </div>
 
-                <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span class="text-slate-500">Técnico:</span>
-                  <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-lg">
-                    <div class="w-4 h-4 rounded-full overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center border border-brand-lime">
+                <div class="mt-2.5 pt-2 border-t flex items-center justify-between text-xs">
+                  <span class="text-slate-500 text-[11px]">Técnico:</span>
+                  <div class="flex items-center gap-1.5 bg-slate-50 border px-2 py-0.5 rounded-lg">
+                    <div onclick="app.zoomWorkerPhoto('${techPhoto}', '${t.assignedTo}')" class="cursor-pointer w-4 h-4 rounded-full overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center border border-brand-lime" title="Ampliar">
                       ${techPhoto ? `<img src="${techPhoto}" class="w-full h-full object-cover">` : `<span class="text-[9px] font-bold">${t.assignedTo.charAt(0)}</span>`}
                     </div>
-                    <span class="font-bold text-slate-800">${t.assignedTo}</span>
+                    <span class="font-bold text-slate-800 text-[11px]">${t.assignedTo}</span>
                   </div>
                 </div>
 
                 ${t.observations ? `
-                  <div class="mt-2.5 p-2 rounded-xl text-xs ${t.status === 'NO_REALIZADA' ? 'bg-rose-50 text-rose-900 border border-rose-200' : 'bg-slate-50 text-slate-700 border border-slate-200'}">
-                    <p class="font-bold text-[9px] uppercase text-slate-500 mb-0.5">Detalles del técnico:</p>
-                    <p class="line-clamp-2 italic text-[11px]">"${t.observations}"</p>
-                  </div>
-                ` : ''}
-
-                ${Array.isArray(t.evidence) && t.evidence.length > 0 ? `
-                  <div class="mt-2 flex items-center gap-1 text-[11px] font-semibold text-slate-500">
-                    <i data-lucide="paperclip" class="w-3.5 h-3.5 text-brand-limeHover"></i>
-                    <span>${t.evidence.length} evidencia(s) adjunta(s)</span>
+                  <div class="mt-2 p-1.5 rounded-xl text-xs bg-slate-50 border text-slate-700 italic text-[11px] line-clamp-2">
+                    "${t.observations}"
                   </div>
                 ` : ''}
               </div>
 
-              <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-1.5">
-                <button onclick="app.viewOrderDetails('${t.id}')" class="text-xs text-slate-600 hover:text-slate-900 font-bold flex items-center gap-1 py-1 px-2 rounded-lg hover:bg-slate-100">
+              <div class="mt-3 pt-2 border-t flex items-center justify-between gap-1">
+                <button onclick="app.viewOrderDetails('${t.id}')" class="text-xs text-slate-600 hover:text-slate-900 font-bold flex items-center gap-1 py-1 px-1.5 rounded-lg">
                   <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Ficha
                 </button>
 
-                <div class="flex items-center gap-1.5">
-                  <!-- BOTÓN REGISTRAR / EDITAR INFORME -->
-                  <button onclick="app.openReportModal('${t.id}')" class="text-xs font-bold py-1 px-2.5 rounded-xl flex items-center gap-1 shadow-sm transition active:scale-95 ${
+                <div class="flex items-center gap-1">
+                  <button onclick="app.openReportModal('${t.id}')" class="text-xs font-bold py-1 px-2.5 rounded-xl shadow-sm transition active:scale-95 ${
                     t.status === 'REALIZADA'
                       ? 'bg-brand-lime hover:bg-brand-limeHover text-white'
                       : t.status === 'NO_REALIZADA'
                       ? 'bg-rose-600 hover:bg-rose-500 text-white'
                       : 'bg-brand-dark hover:bg-black text-white'
                   }">
-                    <i data-lucide="${t.status === 'REALIZADA' || t.status === 'NO_REALIZADA' ? 'edit-3' : 'check-square'}" class="w-3.5 h-3.5"></i>
-                    <span>${t.status === 'REALIZADA' || t.status === 'NO_REALIZADA' ? 'Editar Informe' : 'Registrar Informe'}</span>
+                    ${t.status === 'REALIZADA' || t.status === 'NO_REALIZADA' ? 'Editar Informe' : 'Registrar Informe'}
                   </button>
 
-                  <!-- BOTONES EDITAR Y ELIMINAR ORDEN (ADMIN) -->
                   ${isAdmin ? `
-                    <button onclick="app.openEditTaskModal('${t.id}')" class="p-1 text-slate-400 hover:text-brand-dark hover:bg-slate-100 rounded-lg transition" title="Modificar datos de la orden">
-                      <i data-lucide="file-edit" class="w-3.5 h-3.5"></i>
-                    </button>
-                    <button onclick="app.deleteTask('${t.id}')" class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Eliminar orden">
-                      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                    </button>
+                    <button onclick="app.openEditTaskModal('${t.id}')" class="p-1 text-slate-400 hover:text-brand-dark rounded-lg" title="Editar"><i data-lucide="file-edit" class="w-3.5 h-3.5"></i></button>
+                    <button onclick="app.deleteTask('${t.id}')" class="p-1 text-slate-400 hover:text-rose-600 rounded-lg" title="Eliminar"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                   ` : ''}
                 </div>
               </div>
@@ -2248,75 +2219,17 @@
         if (window.lucide) lucide.createIcons();
       }
 
-      renderAdminAuditLog() {
-        const tbody = document.getElementById('audit-log-tbody');
-        const counter = document.getElementById('audit-log-counter');
-        if (!tbody) return;
-
-        const reportedTasks = this.tasks.filter(t => t.completedAt || t.observations);
-        counter.textContent = `${reportedTasks.length} Informes`;
-
-        if (reportedTasks.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400 italic">Aún no hay informes de técnicos registrados.</td></tr>`;
-          return;
-        }
-
-        tbody.innerHTML = reportedTasks.map(t => {
-          const evidenceCount = Array.isArray(t.evidence) ? t.evidence.length : 0;
-          return `
-            <tr class="hover:bg-slate-50 transition">
-              <td class="p-2 font-semibold text-slate-700 whitespace-nowrap">${t.completedAt || 'En proceso'}</td>
-              <td class="p-2">
-                <span class="font-bold text-slate-900 block">${t.assignedTo}</span>
-                <span class="text-[9px] font-mono text-slate-400">${t.id}</span>
-              </td>
-              <td class="p-2">
-                <span class="font-bold text-slate-800 block">${t.client}</span>
-                <span class="text-[10px] text-slate-500 block truncate max-w-xs">${t.address}</span>
-              </td>
-              <td class="p-2">
-                <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold ${t.status === 'REALIZADA' ? 'bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder' : t.status === 'NO_REALIZADA' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}">
-                  ${t.status}
-                </span>
-              </td>
-              <td class="p-2 max-w-sm"><p class="text-xs text-slate-700 line-clamp-2">${t.observations || 'Sin detalle'}</p></td>
-              <td class="p-2 whitespace-nowrap">
-                ${evidenceCount > 0 ? `
-                  <button onclick="app.viewOrderDetails('${t.id}')" class="text-brand-limeHover font-bold flex items-center gap-1 hover:underline">
-                    <i data-lucide="eye" class="w-3.5 h-3.5"></i> Ver (${evidenceCount})
-                  </button>
-                ` : `<span class="text-slate-400">Sin archivos</span>`}
-              </td>
-            </tr>
-          `;
-        }).join('');
-
-        if (window.lucide) lucide.createIcons();
-      }
-
       openNewTaskModal() {
-        if (this.currentUser.role !== 'ADMIN') {
-          this.showToast('Sólo el Administrador puede crear órdenes', 'error');
-          return;
-        }
-
-        document.getElementById('form-modal-title').textContent = 'Asignar Nueva Orden de Trabajo';
+        if (this.currentUser.role !== 'ADMIN') return;
+        document.getElementById('form-modal-title').textContent = 'Nueva Orden de Trabajo';
         document.getElementById('task-id').value = '';
         document.getElementById('task-form').reset();
         document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
-
-        this.currentTaskModalChecklist = this.getDefaultChecklistItems();
-        this.renderTaskModalChecklist();
-
         document.getElementById('modal-task-form').classList.remove('hidden');
       }
 
       openEditTaskModal(id) {
-        if (this.currentUser.role !== 'ADMIN') {
-          this.showToast('Solo el Administrador puede modificar datos base de las órdenes', 'error');
-          return;
-        }
-
+        if (this.currentUser.role !== 'ADMIN') return;
         const t = this.tasks.find(x => x.id === id);
         if (!t) return;
 
@@ -2331,12 +2244,6 @@
         document.getElementById('task-priority').value = t.priority;
         document.getElementById('task-date').value = t.date;
         document.getElementById('task-instructions').value = t.instructions || '';
-
-        this.currentTaskModalChecklist = Array.isArray(t.checklist) && t.checklist.length > 0 
-          ? JSON.parse(JSON.stringify(t.checklist)) 
-          : this.getDefaultChecklistItems();
-        this.renderTaskModalChecklist();
-
         document.getElementById('modal-task-form').classList.remove('hidden');
       }
 
@@ -2344,68 +2251,9 @@
         document.getElementById('modal-task-form').classList.add('hidden');
       }
 
-      renderTaskModalChecklist() {
-        const container = document.getElementById('task-modal-checklist-container');
-        if (!container) return;
-
-        if (!this.currentTaskModalChecklist || this.currentTaskModalChecklist.length === 0) {
-          container.innerHTML = `<div class="text-center py-2 text-slate-400 italic text-xs">No hay puntos. Escribe uno abajo.</div>`;
-          return;
-        }
-
-        container.innerHTML = this.currentTaskModalChecklist.map((item) => `
-          <div class="flex items-center justify-between gap-2 p-1.5 bg-white rounded-lg border shadow-sm">
-            <span class="text-xs text-slate-700 flex-1 truncate">${item.label}</span>
-            <div class="flex items-center gap-1 shrink-0">
-              <button type="button" onclick="app.editTaskModalChecklistItem('${item.id}')" class="px-1 text-blue-600 text-xs font-bold">✏️</button>
-              <button type="button" onclick="app.deleteTaskModalChecklistItem('${item.id}')" class="px-1 text-rose-600 text-xs font-bold">✕</button>
-            </div>
-          </div>
-        `).join('');
-      }
-
-      addTaskModalChecklistItem() {
-        const input = document.getElementById('task-modal-new-item-input');
-        const text = input ? input.value.trim() : '';
-        if (!text) {
-          this.showToast('Ingresa un texto para el punto', 'error');
-          return;
-        }
-
-        if (!Array.isArray(this.currentTaskModalChecklist)) this.currentTaskModalChecklist = [];
-        this.currentTaskModalChecklist.push({
-          id: 'c_' + Date.now() + Math.random().toString(36).substring(2, 6),
-          label: text,
-          checked: false
-        });
-
-        input.value = '';
-        this.renderTaskModalChecklist();
-      }
-
-      editTaskModalChecklistItem(id) {
-        const item = this.currentTaskModalChecklist.find(c => c.id === id);
-        if (!item) return;
-
-        const newLabel = prompt('Modificar descripción:', item.label);
-        if (newLabel !== null && newLabel.trim() !== '') {
-          item.label = newLabel.trim();
-          this.renderTaskModalChecklist();
-        }
-      }
-
-      deleteTaskModalChecklistItem(id) {
-        this.currentTaskModalChecklist = this.currentTaskModalChecklist.filter(c => c.id !== id);
-        this.renderTaskModalChecklist();
-      }
-
       handleSaveTask(e) {
         e.preventDefault();
-        if (this.currentUser.role !== 'ADMIN') {
-          this.showToast('Operación no autorizada', 'error');
-          return;
-        }
-
+        if (this.currentUser.role !== 'ADMIN') return;
         const id = document.getElementById('task-id').value;
 
         if (id) {
@@ -2420,7 +2268,6 @@
             this.tasks[index].priority = document.getElementById('task-priority').value;
             this.tasks[index].date = document.getElementById('task-date').value;
             this.tasks[index].instructions = document.getElementById('task-instructions').value;
-            this.tasks[index].checklist = JSON.parse(JSON.stringify(this.currentTaskModalChecklist || this.getDefaultChecklistItems()));
             this.showToast('Orden modificada correctamente', 'success');
           }
         } else {
@@ -2437,219 +2284,66 @@
             date: document.getElementById('task-date').value,
             instructions: document.getElementById('task-instructions').value,
             status: 'PENDIENTE',
-            checklist: JSON.parse(JSON.stringify(this.currentTaskModalChecklist || this.getDefaultChecklistItems())),
             observations: '',
             evidence: [],
             completedAt: null
           };
           this.tasks.unshift(newTask);
-          this.showToast(`Nueva orden ${newTask.id} asignada a ${newTask.assignedTo}`, 'success');
+          this.showToast(`Nueva orden ${newTask.id} asignada`, 'success');
         }
 
         this.saveTasks();
         this.closeTaskModal();
         this.updateStats();
         this.renderTasks();
-        if (this.currentUser.role === 'ADMIN') this.renderTechniciansMonitor();
       }
 
       deleteTask(id) {
-        if (this.currentUser.role !== 'ADMIN') {
-          this.showToast('Solo el Administrador puede eliminar órdenes', 'error');
-          return;
-        }
-
-        const t = this.tasks.find(x => x.id === id);
-        if (!t) return;
-
+        if (this.currentUser.role !== 'ADMIN') return;
         if (!confirm(`¿Eliminar la orden ${id}?`)) return;
-
         this.tasks = this.tasks.filter(x => x.id !== id);
         this.saveTasks();
         this.updateStats();
         this.renderTasks();
-        if (this.currentUser.role === 'ADMIN') this.renderAdminAuditLog();
         this.showToast(`Orden eliminada`, 'info');
       }
 
       openReportModal(id) {
         const t = this.tasks.find(x => x.id === id);
-        if (!t) {
-          this.showToast('Orden no encontrada', 'error');
-          return;
-        }
+        if (!t) return;
         this.selectedTask = t;
 
-        document.getElementById('report-order-subtitle').textContent = `Orden #${t.id} • ${t.client}`;
+        document.getElementById('report-order-subtitle').textContent = `Orden #${t.id} - ${t.client}`;
         document.getElementById('rep-service').textContent = t.serviceType;
         document.getElementById('rep-equipment').textContent = t.equipment;
         document.getElementById('rep-address').textContent = t.address;
-        
-        const repInst = document.getElementById('rep-instruction');
-        if (repInst) repInst.textContent = t.instructions || 'Sin observaciones iniciales';
-        
         document.getElementById('rep-observations').value = t.observations || '';
 
         document.getElementById('rep-btn-waze').onclick = () => this.openWazeNavigation(t.address);
         document.getElementById('rep-btn-maps').onclick = () => this.openGoogleMapsNavigation(t.address);
 
-        if (Array.isArray(t.checklist) && t.checklist.length > 0) {
-          this.currentModalChecklist = JSON.parse(JSON.stringify(t.checklist));
-        } else {
-          this.currentModalChecklist = this.getDefaultChecklistItems();
-        }
-
-        this.currentReportEvidence = Array.isArray(t.evidence) ? JSON.parse(JSON.stringify(t.evidence)) : [];
+        this.currentReportEvidence = Array.isArray(t.evidence) ? [...t.evidence] : [];
         this.renderEvidenceGallery();
-
-        this.renderDynamicChecklist();
-        document.getElementById('new-checklist-item-input').value = '';
-
         this.setReportStatus(t.status === 'NO_REALIZADA' ? 'NO_REALIZADA' : 'REALIZADA');
         document.getElementById('modal-report').classList.remove('hidden');
-        if (window.lucide) lucide.createIcons();
-      }
-
-      renderDynamicChecklist() {
-        const container = document.getElementById('checklist-items-container');
-        if (!container) return;
-
-        if (this.currentModalChecklist.length === 0) {
-          container.innerHTML = `<div class="text-center py-2 text-slate-400 italic text-xs">No hay ítems en la lista.</div>`;
-          return;
-        }
-
-        container.innerHTML = this.currentModalChecklist.map((item) => {
-          return `
-            <div class="flex items-center justify-between gap-2 p-1.5 bg-white rounded-lg border">
-              <label class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer select-none">
-                <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="app.toggleChecklistItem('${item.id}', this.checked)" class="w-4 h-4 rounded text-brand-lime">
-                <span id="checklist-text-${item.id}" class="text-xs ${item.checked ? 'line-through text-slate-400' : 'text-slate-700'} font-medium truncate">${item.label}</span>
-              </label>
-              <div class="flex items-center gap-1 shrink-0">
-                <button type="button" onclick="app.editChecklistItemPrompt('${item.id}')" class="p-1 text-slate-400 hover:text-brand-limeHover"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
-                <button type="button" onclick="app.deleteChecklistItem('${item.id}')" class="p-1 text-slate-400 hover:text-rose-600"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
-              </div>
-            </div>
-          `;
-        }).join('');
-
-        if (window.lucide) lucide.createIcons();
-      }
-
-      toggleChecklistItem(id, isChecked) {
-        const item = this.currentModalChecklist.find(c => c.id === id);
-        if (item) {
-          item.checked = isChecked;
-          const textSpan = document.getElementById(`checklist-text-${id}`);
-          if (textSpan) {
-            if (isChecked) {
-              textSpan.classList.add('line-through', 'text-slate-400');
-              textSpan.classList.remove('text-slate-700');
-            } else {
-              textSpan.classList.remove('line-through', 'text-slate-400');
-              textSpan.classList.add('text-slate-700');
-            }
-          }
-        }
-      }
-
-      editChecklistItemPrompt(id) {
-        const item = this.currentModalChecklist.find(c => c.id === id);
-        if (!item) return;
-
-        const newLabel = prompt('Modificar descripción:', item.label);
-        if (newLabel !== null && newLabel.trim() !== '') {
-          item.label = newLabel.trim();
-          this.renderDynamicChecklist();
-        }
-      }
-
-      deleteChecklistItem(id) {
-        this.currentModalChecklist = this.currentModalChecklist.filter(c => c.id !== id);
-        this.renderDynamicChecklist();
-      }
-
-      addChecklistItem() {
-        const input = document.getElementById('new-checklist-item-input');
-        const text = input.value.trim();
-        if (!text) {
-          this.showToast('Escribe una descripción', 'error');
-          return;
-        }
-
-        this.currentModalChecklist.push({
-          id: 'c_' + Date.now() + Math.random().toString(36).substring(2, 6),
-          label: text,
-          checked: false
-        });
-
-        input.value = '';
-        this.renderDynamicChecklist();
-      }
-
-      handleUploadEvidence(e) {
-        const files = Array.from(e.target.files);
-        if (!files.length) return;
-
-        if (this.currentReportEvidence.length + files.length > 5) {
-          this.showToast('Máximo 5 archivos por informe', 'error');
-          return;
-        }
-
-        files.forEach(file => {
-          if (file.size > 8 * 1024 * 1024) {
-            this.showToast(`Archivo supera los 8MB permitidos`, 'error');
-            return;
-          }
-
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            const isVideo = file.type.startsWith('video/');
-            this.currentReportEvidence.push({
-              id: 'ev_' + Date.now() + Math.random().toString(36).substring(2, 6),
-              type: isVideo ? 'video' : 'image',
-              src: event.target.result,
-              name: file.name
-            });
-            this.renderEvidenceGallery();
-          };
-          reader.readAsDataURL(file);
-        });
-      }
-
-      removeEvidenceItem(id) {
-        this.currentReportEvidence = this.currentReportEvidence.filter(e => e.id !== id);
-        this.renderEvidenceGallery();
-      }
-
-      renderEvidenceGallery() {
-        const container = document.getElementById('rep-evidence-gallery');
-        if (!container) return;
-
-        if (this.currentReportEvidence.length === 0) {
-          container.innerHTML = `<p class="col-span-full text-slate-400 italic text-[11px]">No hay evidencias adjuntas.</p>`;
-          return;
-        }
-
-        container.innerHTML = this.currentReportEvidence.map(item => `
-          <div class="relative group rounded-xl overflow-hidden border border-slate-200 bg-slate-900 aspect-video flex items-center justify-center">
-            ${item.type === 'video' ? `
-              <video src="${item.src}" class="w-full h-full object-cover" controls></video>
-            ` : `
-              <img src="${item.src}" class="w-full h-full object-cover">
-            `}
-            <button type="button" onclick="app.removeEvidenceItem('${item.id}')" class="absolute top-1 right-1 p-0.5 bg-rose-600 text-white rounded-full text-[10px] shadow">
-              ✕
-            </button>
-          </div>
-        `).join('');
       }
 
       closeReportModal() {
         document.getElementById('modal-report').classList.add('hidden');
-        this.selectedTask = null;
-        this.currentReportEvidence = [];
+      }
+
+      setReportStatus(status) {
+        this.activeReportStatus = status;
+        const btnDone = document.getElementById('btn-choice-done');
+        const btnFailed = document.getElementById('btn-choice-failed');
+
+        if (status === 'REALIZADA') {
+          btnDone.className = 'py-2 px-2.5 rounded-xl border-2 flex items-center justify-center gap-1 font-bold text-xs bg-brand-limeLight text-brand-limeHover border-brand-lime shadow-sm';
+          btnFailed.className = 'py-2 px-2.5 rounded-xl border-2 flex items-center justify-center gap-1 font-bold text-xs text-slate-600 border-slate-200';
+        } else {
+          btnFailed.className = 'py-2 px-2.5 rounded-xl border-2 flex items-center justify-center gap-1 font-bold text-xs bg-rose-50 text-rose-800 border-rose-500 shadow-sm';
+          btnDone.className = 'py-2 px-2.5 rounded-xl border-2 flex items-center justify-center gap-1 font-bold text-xs text-slate-600 border-slate-200';
+        }
       }
 
       submitReport() {
@@ -2657,8 +2351,7 @@
         const observations = document.getElementById('rep-observations').value.trim();
 
         if (this.activeReportStatus === 'NO_REALIZADA' && !observations) {
-          this.showToast('Debes indicar obligatoriamente el motivo', 'error');
-          document.getElementById('rep-observations').focus();
+          this.showToast('Indica el motivo de no realización', 'error');
           return;
         }
 
@@ -2666,8 +2359,7 @@
         if (taskIndex !== -1) {
           this.tasks[taskIndex].status = this.activeReportStatus;
           this.tasks[taskIndex].observations = observations;
-          this.tasks[taskIndex].checklist = JSON.parse(JSON.stringify(this.currentModalChecklist));
-          this.tasks[taskIndex].evidence = JSON.parse(JSON.stringify(this.currentReportEvidence));
+          this.tasks[taskIndex].evidence = this.currentReportEvidence;
           this.tasks[taskIndex].completedAt = this.formatFullDateTime(new Date());
 
           this.addActivityNotification(this.currentUser.fullName, this.selectedTask.id, this.activeReportStatus, observations);
@@ -2675,11 +2367,6 @@
           this.saveTasks();
           this.updateStats();
           this.renderTasks();
-          if (this.currentUser.role === 'ADMIN') {
-            this.renderTechniciansMonitor();
-            this.renderAdminAuditLog();
-          }
-
           this.closeReportModal();
           this.showToast(`Informe guardado con éxito`, 'success');
         }
@@ -2691,9 +2378,8 @@
         if (taskIndex !== -1) {
           const obs = document.getElementById('rep-observations').value.trim();
           this.tasks[taskIndex].status = 'EN_PROCESO';
-          this.tasks[taskIndex].checklist = JSON.parse(JSON.stringify(this.currentModalChecklist));
           this.tasks[taskIndex].observations = obs;
-          this.tasks[taskIndex].evidence = JSON.parse(JSON.stringify(this.currentReportEvidence));
+          this.tasks[taskIndex].evidence = this.currentReportEvidence;
           this.tasks[taskIndex].completedAt = this.formatFullDateTime(new Date());
 
           this.addActivityNotification(this.currentUser.fullName, this.selectedTask.id, 'EN_PROCESO', obs || 'Trabajo iniciado');
@@ -2701,43 +2387,35 @@
           this.saveTasks();
           this.updateStats();
           this.renderTasks();
-          if (this.currentUser.role === 'ADMIN') this.renderAdminAuditLog();
-
           this.closeReportModal();
           this.showToast(`Orden guardada en proceso`, 'info');
         }
       }
 
-      setTaskPendingFromReport() {
-        if (!this.selectedTask) return;
-        const taskIndex = this.tasks.findIndex(t => t.id === this.selectedTask.id);
-        if (taskIndex !== -1) {
-          this.tasks[taskIndex].status = 'PENDIENTE';
-          this.tasks[taskIndex].checklist = JSON.parse(JSON.stringify(this.currentModalChecklist));
-          this.tasks[taskIndex].observations = document.getElementById('rep-observations').value.trim();
-          this.tasks[taskIndex].evidence = JSON.parse(JSON.stringify(this.currentReportEvidence));
-          this.tasks[taskIndex].completedAt = null;
-
-          this.addActivityNotification(this.currentUser.fullName, this.selectedTask.id, 'PENDIENTE', 'Regresada a pendiente');
-
-          this.saveTasks();
-          this.updateStats();
-          this.renderTasks();
-          if (this.currentUser.role === 'ADMIN') this.renderAdminAuditLog();
-
-          this.closeReportModal();
-          this.showToast(`Orden regresada a PENDIENTE`, 'info');
-        }
+      handleUploadEvidence(e) {
+        const files = Array.from(e.target.files);
+        files.forEach(file => {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            this.currentReportEvidence.push({
+              type: file.type.startsWith('video/') ? 'video' : 'image',
+              src: event.target.result
+            });
+            this.renderEvidenceGallery();
+          };
+          reader.readAsDataURL(file);
+        });
       }
 
-      insertQuickReason(reason) {
-        if (!reason) return;
-        const obsElem = document.getElementById('rep-observations');
-        if (obsElem.value.trim() === '') {
-          obsElem.value = reason;
-        } else {
-          obsElem.value += ` | ${reason}`;
-        }
+      renderEvidenceGallery() {
+        const container = document.getElementById('rep-evidence-gallery');
+        if (!container) return;
+        container.innerHTML = this.currentReportEvidence.map((item, index) => `
+          <div class="relative group rounded-xl overflow-hidden border border-slate-200 bg-slate-900 aspect-video flex items-center justify-center">
+            ${item.type === 'video' ? `<video src="${item.src}" class="w-full h-full object-cover"></video>` : `<img src="${item.src}" class="w-full h-full object-cover">`}
+            <button type="button" onclick="app.currentReportEvidence.splice(${index}, 1); app.renderEvidenceGallery();" class="absolute top-1 right-1 p-0.5 bg-rose-600 text-white rounded-full text-[10px]">✕</button>
+          </div>
+        `).join('');
       }
 
       viewOrderDetails(id) {
@@ -2746,67 +2424,25 @@
         this.selectedTask = t;
 
         document.getElementById('view-order-number').textContent = t.id;
-        document.getElementById('view-order-date').textContent = t.date;
         document.getElementById('view-client').textContent = t.client;
         document.getElementById('view-phone').textContent = t.phone;
         document.getElementById('view-address').textContent = t.address;
         document.getElementById('view-service').textContent = t.serviceType;
         document.getElementById('view-equipment').textContent = t.equipment;
         document.getElementById('view-technician').textContent = t.assignedTo;
-        document.getElementById('view-instructions').textContent = t.instructions || 'Sin observaciones iniciales.';
-
-        document.getElementById('view-btn-waze').onclick = () => this.openWazeNavigation(t.address);
-        document.getElementById('view-btn-maps').onclick = () => this.openGoogleMapsNavigation(t.address);
-
-        const techObj = this.users.find(u => u.fullName === t.assignedTo);
-        const photoElem = document.getElementById('view-technician-photo');
-        if (techObj && techObj.photo) {
-          photoElem.src = techObj.photo;
-          photoElem.classList.remove('hidden');
-        } else {
-          photoElem.classList.add('hidden');
-        }
+        document.getElementById('view-observations').textContent = t.observations || 'Sin informe registrado.';
 
         const badge = document.getElementById('view-order-badge');
-        const obsBox = document.getElementById('view-observations');
-
-        let checkSummary = '';
-        if (Array.isArray(t.checklist) && t.checklist.length > 0) {
-          const checkedCount = t.checklist.filter(c => c.checked).length;
-          const itemsList = t.checklist.map(c => `• ${c.checked ? '☑' : '☐'} ${c.label}`).join('\n');
-          checkSummary = `\n\n[Puntos de Inspección: ${checkedCount}/${t.checklist.length} revisados]\n${itemsList}`;
-        }
-
-        if (t.status === 'REALIZADA') {
-          badge.textContent = 'REALIZADA';
-          badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold uppercase inline-block bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder';
-          obsBox.className = 'p-2.5 rounded-xl border mt-0.5 whitespace-pre-line font-medium bg-emerald-50/60 border-emerald-200 text-emerald-950 text-xs';
-          obsBox.textContent = (t.observations ? t.observations : 'Servicio ejecutado a conformidad según especificaciones técnicas.') + checkSummary;
-        } else if (t.status === 'NO_REALIZADA') {
-          badge.textContent = 'NO REALIZADA';
-          badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold uppercase inline-block bg-rose-100 text-rose-800 border border-rose-300';
-          obsBox.className = 'p-2.5 rounded-xl border mt-0.5 whitespace-pre-line font-medium bg-rose-50 border-rose-200 text-rose-900 text-xs';
-          obsBox.textContent = `CAUSA DE NO REALIZACIÓN:\n${t.observations || 'Sin motivo detallado'}` + checkSummary;
-        } else {
-          badge.textContent = t.status === 'EN_PROCESO' ? 'EN PROCESO' : 'PENDIENTE';
-          badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold uppercase inline-block bg-amber-100 text-amber-800 border border-amber-300';
-          obsBox.className = 'p-2.5 rounded-xl border mt-0.5 whitespace-pre-line font-medium bg-slate-50 border-slate-200 text-slate-700 text-xs';
-          obsBox.textContent = (t.observations ? t.observations : 'Visita sin informe final todavía.') + checkSummary;
-        }
+        badge.textContent = t.status;
+        badge.className = `px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${t.status === 'REALIZADA' ? 'bg-emerald-100 text-emerald-800' : t.status === 'NO_REALIZADA' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}`;
 
         const evSection = document.getElementById('view-evidence-section');
         const evGallery = document.getElementById('view-evidence-gallery');
         if (Array.isArray(t.evidence) && t.evidence.length > 0) {
           evSection.classList.remove('hidden');
           evGallery.innerHTML = t.evidence.map(item => `
-            <div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-900 aspect-video flex items-center justify-center">
-              ${item.type === 'video' ? `
-                <video src="${item.src}" class="w-full h-full object-cover" controls></video>
-              ` : `
-                <a href="${item.src}" target="_blank" class="w-full h-full block">
-                  <img src="${item.src}" class="w-full h-full object-cover hover:opacity-90">
-                </a>
-              `}
+            <div class="rounded-xl overflow-hidden border aspect-video bg-black flex items-center justify-center">
+              ${item.type === 'video' ? `<video src="${item.src}" class="w-full h-full object-cover" controls></video>` : `<img src="${item.src}" class="w-full h-full object-cover">`}
             </div>
           `).join('');
         } else {
@@ -2818,34 +2454,6 @@
 
       closeViewModal() {
         document.getElementById('modal-view-order').classList.add('hidden');
-      }
-
-      setReportStatus(status) {
-        this.activeReportStatus = status;
-        const btnDone = document.getElementById('btn-choice-done');
-        const btnFailed = document.getElementById('btn-choice-failed');
-        const quickReasons = document.getElementById('quick-reasons-wrap');
-        const checklistSec = document.getElementById('section-checklist');
-        const obsBadge = document.getElementById('obs-required-badge');
-        const header = document.getElementById('report-modal-header');
-
-        if (status === 'REALIZADA') {
-          btnDone.className = 'py-2.5 px-3 rounded-xl border-2 flex items-center justify-center gap-1.5 font-bold transition bg-brand-limeLight text-brand-limeHover border-brand-lime shadow-sm';
-          btnFailed.className = 'py-2.5 px-3 rounded-xl border-2 flex items-center justify-center gap-1.5 font-bold transition text-slate-600 border-slate-200 hover:border-rose-400';
-          quickReasons.classList.add('hidden');
-          checklistSec.classList.remove('opacity-40', 'pointer-events-none');
-          obsBadge.textContent = '(Opcional)';
-          obsBadge.className = 'text-slate-400 font-normal';
-          header.className = 'bg-brand-dark text-white px-5 py-3.5 flex items-center justify-between border-b-2 border-brand-lime shrink-0';
-        } else {
-          btnFailed.className = 'py-2.5 px-3 rounded-xl border-2 flex items-center justify-center gap-1.5 font-bold transition bg-rose-50 text-rose-800 border-rose-500 shadow-sm';
-          btnDone.className = 'py-2.5 px-3 rounded-xl border-2 flex items-center justify-center gap-1.5 font-bold transition text-slate-600 border-slate-200 hover:border-brand-lime';
-          quickReasons.classList.remove('hidden');
-          checklistSec.classList.add('opacity-40', 'pointer-events-none');
-          obsBadge.textContent = '(OBLIGATORIO)';
-          obsBadge.className = 'text-rose-600 font-bold';
-          header.className = 'bg-rose-950 text-white px-5 py-3.5 flex items-center justify-between border-b-2 border-rose-500 shrink-0';
-        }
       }
     }
 
