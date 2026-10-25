@@ -38,7 +38,8 @@
       }
       .no-print { display: none !important; }
     }
-    /* Animación navideña: Nieve y Trineo con Reno */
+
+    /* Animación de Nieve */
     .snow-flake {
       position: fixed;
       top: -20px;
@@ -49,13 +50,15 @@
       animation: fallSnow linear infinite;
     }
     @keyframes fallSnow {
-      0% { transform: translateY(0) rotate(0deg); opacity: 0.9; }
+      0% { transform: translateY(0) rotate(0deg); opacity: 0.85; }
       100% { transform: translateY(105vh) rotate(360deg); opacity: 0.2; }
     }
+
+    /* Animación Trineo con Reno */
     .flying-sleigh-container {
       position: fixed;
-      top: 14%;
-      left: -220px;
+      top: 12%;
+      left: -240px;
       z-index: 9999;
       pointer-events: none;
       user-select: none;
@@ -64,21 +67,32 @@
     .flying-sleigh-inner {
       display: flex;
       align-items: center;
-      font-size: 32px;
+      font-size: 34px;
       animation: gallopMotion 1.2s ease-in-out infinite alternate;
-      filter: drop-shadow(0 6px 8px rgba(0,0,0,0.3));
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,0.35));
     }
     @keyframes flySleigh {
-      0% { left: -220px; transform: translateY(0); }
-      50% { transform: translateY(-30px); }
-      100% { left: 110vw; transform: translateY(15px); }
+      0% { left: -240px; transform: translateY(0); }
+      50% { transform: translateY(-28px); }
+      100% { left: 110vw; transform: translateY(14px); }
     }
     @keyframes gallopMotion {
       0% { transform: rotate(-4deg) translateY(0); }
       100% { transform: rotate(6deg) translateY(-8px); }
     }
+
+    /* Balanceo realista del Gorro Navideño */
+    .animated-santa-hat {
+      transform-origin: 130px 45px;
+      animation: swingHat 3.8s ease-in-out infinite alternate;
+    }
+    @keyframes swingHat {
+      0% { transform: rotate(0deg); }
+      50% { transform: rotate(4.5deg) translateY(-1px); }
+      100% { transform: rotate(-3.5deg) translateY(1px); }
+    }
   </style>
-  <!-- SDKs de Firebase -->
+  <!-- SDKs de Firebase Compatibles con Navegadores Estrictos -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
@@ -103,21 +117,51 @@
   <div id="view-login" class="flex-1 flex items-center justify-center p-4 sm:p-6 min-h-screen bg-gradient-to-br from-slate-950 via-brand-dark to-slate-900 relative z-10">
     <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
       <div class="bg-white p-6 sm:p-7 text-center border-b border-slate-100 flex flex-col items-center relative">
-        <div class="w-full max-w-[280px] py-1 relative">
-          <svg viewBox="0 0 420 170" class="w-full h-auto drop-shadow-sm select-none" xmlns="http://www.w3.org/2000/svg">
+        <div class="w-full max-w-[300px] py-2 relative">
+          <svg viewBox="0 0 420 185" class="w-full h-auto drop-shadow-sm select-none overflow-visible" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="hatRedGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#EF4444" />
+                <stop offset="45%" stop-color="#DC2626" />
+                <stop offset="100%" stop-color="#991B1B" />
+              </linearGradient>
+              <linearGradient id="furWhiteGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#FFFFFF" />
+                <stop offset="100%" stop-color="#E2E8F0" />
+              </linearGradient>
+              <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="2.5" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+
             <g stroke-linecap="round" stroke-linejoin="round">
-              <!-- Trazo Techo del Portón -->
-              <path d="M 22 80 L 135 34 L 135 22 L 148 22 L 148 40 L 222 79" fill="none" stroke="#111827" stroke-width="11" />
-              <line x1="228" y1="79" x2="410" y2="79" stroke="#71A832" stroke-width="9" />
-              <text x="18" y="128" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" fill="#111827" letter-spacing="0.5">SERVIPORTONES</text>
-              <line x1="18" y1="148" x2="135" y2="148" stroke="#71A832" stroke-width="6" />
-              <text x="144" y="152" font-family="system-ui, -apple-system, sans-serif" font-size="19" font-weight="900" fill="#71A832" letter-spacing="3.5">ELECTRICOS MARTINEZ</text>
+              <!-- Techo del Portón original -->
+              <path d="M 22 92 L 135 46 L 135 34 L 148 34 L 148 52 L 222 91" fill="none" stroke="#111827" stroke-width="11" />
+              <line x1="228" y1="91" x2="410" y2="91" stroke="#71A832" stroke-width="9" />
+              <text x="18" y="140" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" fill="#111827" letter-spacing="0.5">SERVIPORTONES</text>
+              <line x1="18" y1="160" x2="135" y2="160" stroke="#71A832" stroke-width="6" />
+              <text x="144" y="164" font-family="system-ui, -apple-system, sans-serif" font-size="19" font-weight="900" fill="#71A832" letter-spacing="3.5">ELECTRICOS MARTINEZ</text>
               
-              <!-- Decoración: Gorro Navideño Realista y Responsivo -->
-              <g id="logo-santa-hat" transform="translate(112, 0) rotate(10)">
-                <path d="M 5 35 Q 22 5 45 10 Q 32 30 42 35 Z" fill="#DC2626" />
-                <path d="M 3 34 Q 25 31 46 34 Q 45 40 25 40 Q 3 40 3 34 Z" fill="#F8FAFC" />
-                <circle cx="46" cy="11" r="5.5" fill="#F8FAFC" filter="drop-shadow(0 1px 2px rgba(0,0,0,0.25))" />
+              <!-- GORRO NAVIDEÑO 50% MÁS GRANDE, REALISTA Y ANIMADO -->
+              <g class="animated-santa-hat">
+                <!-- Cuerpo Rojo del Gorro con Caída Natural -->
+                <path d="M 88 50 C 95 24, 125 0, 162 4 C 182 7, 202 24, 208 42 C 211 48, 192 48, 168 47 C 132 46, 96 48, 88 50 Z" 
+                      fill="url(#hatRedGrad)" filter="url(#softGlow)" />
+                <!-- Pliegue de Tela Profundo -->
+                <path d="M 120 28 C 145 22, 175 32, 198 42 C 185 41, 150 38, 120 28 Z" 
+                      fill="#7F1D1D" opacity="0.45" />
+                <!-- Pompón colgante -->
+                <path d="M 200 38 Q 218 42, 222 55" fill="none" stroke="#DC2626" stroke-width="4.5" stroke-linecap="round"/>
+                <circle cx="225" cy="58" r="10.5" fill="url(#furWhiteGrad)" filter="url(#softGlow)" />
+                <!-- Ribete Blanco Esponjoso de la Base -->
+                <rect x="80" y="44" width="94" height="15" rx="7.5" fill="url(#furWhiteGrad)" filter="url(#softGlow)" />
+                <!-- Texturas esponjosas simuladas -->
+                <circle cx="90" cy="51" r="5" fill="#FFFFFF" opacity="0.9"/>
+                <circle cx="106" cy="51" r="5.5" fill="#FFFFFF" opacity="0.9"/>
+                <circle cx="124" cy="51" r="5.5" fill="#FFFFFF" opacity="0.9"/>
+                <circle cx="142" cy="51" r="5.5" fill="#FFFFFF" opacity="0.9"/>
+                <circle cx="158" cy="51" r="5" fill="#FFFFFF" opacity="0.9"/>
               </g>
             </g>
           </svg>
@@ -192,7 +236,7 @@
         </div>
 
         <div class="flex items-center space-x-2 sm:space-x-3">
-          <!-- Botón de Nueva Orden (Sólo visible para Administrador) -->
+          <!-- Botón de Nueva Orden (Sólo Administrador) -->
           <button id="btn-nav-new-order" onclick="app.openNewTaskModal()" class="hidden bg-brand-lime hover:bg-brand-limeHover text-white text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md shadow-brand-lime/20 transition active:scale-95">
             <i data-lucide="plus-circle" class="w-4 h-4"></i>
             <span>Nueva Orden</span>
@@ -205,7 +249,7 @@
               <span id="notif-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-pulse">0</span>
             </button>
 
-            <!-- Menú Desplegable de Notificaciones -->
+            <!-- Menú Desplegable -->
             <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden text-slate-800">
               <div class="p-3 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
                 <div class="flex items-center gap-2">
@@ -871,9 +915,9 @@
   <!-- JAVASCRIPT: LÓGICA COMPLETA DE LA APLICACIÓN             -->
   <!-- ======================================================== -->
   <script>
-    // Envoltorio para acceso seguro al almacenamiento en ventanas privadas e incógnito
+    // Capa de almacenamiento seguro sin errores en modo incógnito o Safari
     const SafeStorage = {
-      memory: {},
+      memStore: {},
       setItem(key, value) {
         try {
           localStorage.setItem(key, value);
@@ -881,25 +925,25 @@
           try {
             sessionStorage.setItem(key, value);
           } catch (e2) {
-            this.memory[key] = value;
+            this.memStore[key] = String(value);
           }
         }
       },
       getItem(key) {
         try {
-          const val = localStorage.getItem(key);
-          if (val !== null) return val;
+          const item = localStorage.getItem(key);
+          if (item !== null) return item;
         } catch (e) {}
         try {
-          const valSession = sessionStorage.getItem(key);
-          if (valSession !== null) return valSession;
+          const itemSession = sessionStorage.getItem(key);
+          if (itemSession !== null) return itemSession;
         } catch (e2) {}
-        return this.memory[key] || null;
+        return this.memStore[key] || null;
       },
       removeItem(key) {
         try { localStorage.removeItem(key); } catch (e) {}
         try { sessionStorage.removeItem(key); } catch (e2) {}
-        delete this.memory[key];
+        delete this.memStore[key];
       }
     };
 
@@ -1012,6 +1056,15 @@
         ];
       }
 
+      // Sanitización segura y tolerante de entradas
+      normalizeInput(val) {
+        if (!val) return '';
+        return String(val)
+          .trim()
+          .normalize('NFC')
+          .replace(/[\u200B-\u200D\uFEFF]/g, '');
+      }
+
       formatTime(dateObj = new Date()) {
         return dateObj.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true });
       }
@@ -1073,6 +1126,7 @@
       }
 
       async init() {
+        console.log("Inicializando ServiPortones App Engine...");
         this.initChristmasTheme();
 
         const savedAdmin = SafeStorage.getItem('portonpro_admin_v4');
@@ -1108,9 +1162,9 @@
           } catch(e) {}
         }
 
-        // Sincronización e inicialización garantizada en Firestore
+        // Sincronización transparente con Firestore
         if (window.db) {
-          // Inicializar perfil de administrador en Firestore si aún no existe
+          // Inicializar perfil administrativo
           db.collection('config').doc('adminProfile').get().then(doc => {
             if (doc.exists) {
               this.adminProfile = doc.data();
@@ -1118,9 +1172,9 @@
             } else {
               db.collection('config').doc('adminProfile').set(DEFAULT_ADMIN);
             }
-          }).catch(e => console.error("Error al leer adminProfile en Firestore:", e));
+          }).catch(e => console.warn("Firestore: No se pudo verificar adminProfile inicial.", e));
 
-          // Inicializar lista de usuarios en Firestore si aún no existe
+          // Inicializar catálogo de usuarios
           db.collection('config').doc('users').get().then(doc => {
             if (doc.exists && Array.isArray(doc.data().list) && doc.data().list.length > 0) {
               this.users = doc.data().list;
@@ -1129,7 +1183,7 @@
             } else {
               db.collection('config').doc('users').set({ list: INITIAL_TECHNICIANS });
             }
-          }).catch(e => console.error("Error al leer config/users en Firestore:", e));
+          }).catch(e => console.warn("Firestore: No se pudo verificar config/users inicial.", e));
 
           // 1. Sincronización en vivo de Órdenes
           db.collection('ordenes').doc('todas').onSnapshot((doc) => {
@@ -1153,7 +1207,7 @@
                 }
               }
             }
-          }, (error) => console.error("Error sincronizando órdenes:", error));
+          }, (error) => console.error("Error sincronizando órdenes en tiempo real:", error));
 
           // 2. Sincronización en vivo de Usuarios
           db.collection('config').doc('users').onSnapshot((doc) => {
@@ -1166,7 +1220,7 @@
                 this.renderTasks();
               }
             }
-          }, (error) => console.error("Error sincronizando usuarios:", error));
+          }, (error) => console.error("Error sincronizando usuarios en tiempo real:", error));
 
           // 3. Monitor de presencia global en Firestore
           db.collection('presencia').onSnapshot((snapshot) => {
@@ -1214,21 +1268,21 @@
       saveAdmin() {
         SafeStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
         if (window.db) {
-          db.collection('config').doc('adminProfile').set(this.adminProfile).catch(e => console.error(e));
+          db.collection('config').doc('adminProfile').set(this.adminProfile).catch(e => console.error("Error guardando adminProfile:", e));
         }
       }
 
       saveUsers() {
         SafeStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
         if (window.db) {
-          db.collection('config').doc('users').set({ list: this.users }).catch(e => console.error(e));
+          db.collection('config').doc('users').set({ list: this.users }).catch(e => console.error("Error guardando users:", e));
         }
       }
 
       saveTasks() {
         SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
         if (window.db) {
-          db.collection('ordenes').doc('todas').set({ tasks: this.tasks }).catch(e => console.error(e));
+          db.collection('ordenes').doc('todas').set({ tasks: this.tasks }).catch(e => console.error("Error guardando órdenes:", e));
         }
       }
 
@@ -1243,7 +1297,7 @@
         };
 
         if (window.db) {
-          db.collection('notificaciones').add(notifData).catch(e => console.error("Error al registrar notificación:", e));
+          db.collection('notificaciones').add(notifData).catch(e => console.error("Error registrando notificación:", e));
         } else {
           this.notifications.unshift({ id: 'local_' + Date.now(), ...notifData });
           this.updateNotificationsUI();
@@ -1330,19 +1384,82 @@
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
       }
 
-      // Autenticación directa y en tiempo real con Firestore con fallback e inmunidad a ventanas de incógnito
+      // Descarga garantizada de usuarios con reintentos antes de evaluar credenciales
+      async syncUsersFromFirestoreWithRetry(maxRetries = 3) {
+        if (!window.db) return false;
+        const startTime = Date.now();
+        console.log(`[Firestore Auth] Iniciando sincronización de credenciales...`);
+
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            console.log(`[Firestore Auth] Intento ${attempt} de ${maxRetries}...`);
+            
+            // Intentar leer prioritariamente del servidor
+            const [snapUsers, snapAdmin] = await Promise.all([
+              db.collection('config').doc('users').get({ source: 'server' }).catch(() => db.collection('config').doc('users').get()),
+              db.collection('config').doc('adminProfile').get({ source: 'server' }).catch(() => db.collection('config').doc('adminProfile').get())
+            ]);
+
+            let syncSuccess = false;
+
+            if (snapUsers && snapUsers.exists) {
+              const data = snapUsers.data();
+              if (Array.isArray(data.list) && data.list.length > 0) {
+                this.users = data.list;
+                SafeStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
+                console.log(`[Firestore Auth] Éxito: ${this.users.length} técnicos sincronizados.`);
+                syncSuccess = true;
+              }
+            }
+
+            if (snapAdmin && snapAdmin.exists) {
+              this.adminProfile = snapAdmin.data();
+              SafeStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
+              console.log(`[Firestore Auth] Éxito: Perfil administrativo sincronizado.`);
+              syncSuccess = true;
+            }
+
+            if (syncSuccess) {
+              const elapsed = Date.now() - startTime;
+              console.log(`[Firestore Auth] Sincronización completada en ${elapsed}ms.`);
+              return true;
+            }
+
+          } catch (err) {
+            console.warn(`[Firestore Auth] Advertencia en intento ${attempt}:`, err);
+            // Pausa con retroceso exponencial antes del siguiente intento
+            await new Promise(resolve => setTimeout(resolve, attempt * 600));
+          }
+        }
+
+        console.error(`[Firestore Auth] No fue posible descargar credenciales actualizadas tras ${maxRetries} intentos.`);
+        return false;
+      }
+
+      // Inicio de sesión robusto con detección de fallos de red
       async handleLogin(e) {
         e.preventDefault();
-        const userVal = document.getElementById('login-username').value.trim().toLowerCase();
-        const passVal = document.getElementById('login-password').value.trim();
+        const rawUser = document.getElementById('login-username').value;
+        const rawPass = document.getElementById('login-password').value;
         const rememberChecked = document.getElementById('login-remember').checked;
         const errorAlert = document.getElementById('login-error-alert');
+        const errorText = document.getElementById('login-error-text');
         const btnSubmit = document.getElementById('btn-submit-login');
         const btnText = document.getElementById('btn-submit-text');
 
+        // Sanitización estricta sin espacios accidentales
+        const userVal = this.normalizeInput(rawUser).toLowerCase();
+        const passVal = this.normalizeInput(rawPass);
+
+        if (!userVal || !passVal) {
+          errorText.textContent = "Por favor ingresa usuario y contraseña.";
+          errorAlert.classList.remove('hidden');
+          return;
+        }
+
         if (btnSubmit) {
           btnSubmit.disabled = true;
-          if (btnText) btnText.textContent = "Verificando...";
+          if (btnText) btnText.textContent = "Conectando con el servidor...";
         }
 
         if (rememberChecked) {
@@ -1351,32 +1468,8 @@
           SafeStorage.removeItem('portonpro_remembered');
         }
 
-        // Descarga directa desde Firestore con Timeout para garantizar sincronización sin bloqueos
-        if (window.db) {
-          try {
-            const fetchPromise = Promise.all([
-              db.collection('config').doc('users').get({ source: 'server' }).catch(() => db.collection('config').doc('users').get()),
-              db.collection('config').doc('adminProfile').get({ source: 'server' }).catch(() => db.collection('config').doc('adminProfile').get())
-            ]);
-
-            const timeoutPromise = new Promise(resolve => setTimeout(resolve, 3500));
-            const result = await Promise.race([fetchPromise, timeoutPromise]);
-
-            if (result && Array.isArray(result)) {
-              const [snapUsers, snapAdmin] = result;
-              if (snapUsers && snapUsers.exists && Array.isArray(snapUsers.data().list)) {
-                this.users = snapUsers.data().list;
-                SafeStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
-              }
-              if (snapAdmin && snapAdmin.exists) {
-                this.adminProfile = snapAdmin.data();
-                SafeStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
-              }
-            }
-          } catch (err) {
-            console.warn("Validación local por error de conexión o restricción de permisos:", err);
-          }
-        }
+        // 1. Descargar credenciales frescas de Firestore asegurando que la conexión exista
+        const isOnlineFirestore = await this.syncUsersFromFirestoreWithRetry(3);
 
         if (btnSubmit) {
           btnSubmit.disabled = false;
@@ -1386,8 +1479,11 @@
         const now = new Date();
         const formattedTime = this.formatTime(now);
 
-        // 1. Validar Administrador
-        if (userVal === this.adminProfile.username.toLowerCase() && passVal === this.adminProfile.password) {
+        // 2. Verificar Administrador
+        const adminUserMatch = this.normalizeInput(this.adminProfile.username).toLowerCase();
+        const adminPassMatch = this.normalizeInput(this.adminProfile.password);
+
+        if (userVal === adminUserMatch && passVal === adminPassMatch) {
           errorAlert.classList.add('hidden');
           if (!this.adminProfile.firstLoginToday) {
             this.adminProfile.firstLoginToday = formattedTime;
@@ -1398,13 +1494,19 @@
           return;
         }
 
-        // 2. Validar Técnico
-        const techIndex = this.users.findIndex(u => u.username.toLowerCase() === userVal && u.password === passVal);
+        // 3. Verificar Técnico
+        const techIndex = this.users.findIndex(u => {
+          const uName = this.normalizeInput(u.username).toLowerCase();
+          const uPass = this.normalizeInput(u.password);
+          return uName === userVal && uPass === passVal;
+        });
+
         if (techIndex !== -1) {
           const foundTech = this.users[techIndex];
           if (!foundTech.active) {
-            document.getElementById('login-error-text').textContent = 'Tu cuenta de técnico está desactivada. Consulta al Administrador.';
+            errorText.textContent = 'Tu cuenta de técnico está desactivada. Consulta al Administrador.';
             errorAlert.classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
             return;
           }
           errorAlert.classList.add('hidden');
@@ -1439,7 +1541,16 @@
           return;
         }
 
-        document.getElementById('login-error-text').textContent = 'Usuario o contraseña incorrectos. Por favor verifica tus credenciales.';
+        // 4. Si falló la validación y tampoco hubo sincronización con Firestore: Error real de conexión
+        if (!isOnlineFirestore && (!this.users || this.users.length === 0)) {
+          errorText.textContent = 'Error de conexión con la base de datos. Verifica tu conexión a internet o intenta de nuevo.';
+          errorAlert.classList.remove('hidden');
+          if (window.lucide) lucide.createIcons();
+          return;
+        }
+
+        // 5. Error legítimo de credenciales
+        errorText.textContent = 'Usuario o contraseña incorrectos. Verifica que no tengas mayúsculas activadas.';
         errorAlert.classList.remove('hidden');
         if (window.lucide) lucide.createIcons();
       }
@@ -1841,11 +1952,11 @@
         if (this.currentUser.role !== 'ADMIN') return;
 
         const id = document.getElementById('manage-user-id').value;
-        const fullName = document.getElementById('manage-fullname').value.trim();
-        const username = document.getElementById('manage-username').value.trim().toLowerCase();
-        const password = document.getElementById('manage-password').value.trim();
-        const phone = document.getElementById('manage-phone').value.trim();
-        const specialty = document.getElementById('manage-specialty').value.trim();
+        const fullName = this.normalizeInput(document.getElementById('manage-fullname').value);
+        const username = this.normalizeInput(document.getElementById('manage-username').value).toLowerCase();
+        const password = this.normalizeInput(document.getElementById('manage-password').value);
+        const phone = this.normalizeInput(document.getElementById('manage-phone').value);
+        const specialty = this.normalizeInput(document.getElementById('manage-specialty').value);
 
         if (username === this.adminProfile.username.toLowerCase()) {
           this.showToast('El usuario no puede llamarse igual al administrador', 'error');
