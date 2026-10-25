@@ -2106,7 +2106,7 @@
           this.configureRemoteAudio();
 
           const callDoc = db.collection('webrtc_calls').doc(targetWorker);
-          this.currentCallData = { id: targetWorker, threadId: targetWorker, sessionId: callSessionId, caller: this.currentUser.fullName || this.currentUser.username, callerRole: this.currentUser.role, recipient: this.currentUser.role === 'admin' ? targetWorker : 'Administrador', wasAnswered: false, connectedAt: null };
+          this.currentCallData = { id: targetWorker, threadId: targetWorker, sessionId: callSessionId, callSessionId, caller: this.currentUser.fullName || this.currentUser.username, callerRole: this.currentUser.role, recipient: this.currentUser.role === 'admin' ? targetWorker : 'Administrador', wasAnswered: false, connectedAt: null };
           console.info('[CALL] Sesión de llamada', { sessionId: callSessionId, role: this.currentUser.role, side: 'caller' });
           const callerCandidates = callDoc.collection('callerCandidates');
 
@@ -2115,7 +2115,7 @@
               const candidateData = event.candidate.toJSON();
               if (callSessionId) candidateData.callSessionId = callSessionId;
               this.callIceCounters.generated++;
-              console.info('[CALL] ICE generado', { sessionId: this.currentCallData?.sessionId, count: this.callIceCounters.generated, role: this.currentUser.role, type: event.candidate.type, protocol: event.candidate.protocol, usernameFragment: event.candidate.usernameFragment || null, sdpMid: event.candidate.sdpMid });
+              console.info('[CALL] ICE generado', { callSessionId: this.currentCallData?.callSessionId || this.currentCallData?.sessionId || null, currentSessionId: this.currentCallData?.sessionId || null, count: this.callIceCounters.generated, role: this.currentUser.role, type: event.candidate.type, protocol: event.candidate.protocol, usernameFragment: event.candidate.usernameFragment || null, sdpMid: event.candidate.sdpMid });
               callerCandidates.add(candidateData).then(() => console.info('[CALL] ICE enviado al canal de señalización', { count: this.callIceCounters.generated, side: 'caller' })).catch(error => console.error('[CALL] Error enviando ICE del llamante:', error));
             } else { console.info('[CALL] ICE gathering completado', { role: this.currentUser.role, generatedCount: this.callIceCounters.generated }); }
           };
@@ -2170,9 +2170,9 @@
                 const candidate = change.doc.data();
                 this.callIceCounters.received++;
                 const candidateUfrag = candidate.usernameFragment || candidate.candidate?.match(/(?:^|\s)ufrag\s+([^\s]+)/)?.[1] || null;
-                const sessionMatches = !candidate.callSessionId || candidate.callSessionId === this.currentCallData?.sessionId;
-                console.info('[CALL] ICE recibido', { sessionId: this.currentCallData?.sessionId, candidateSessionId: candidate.callSessionId || null, count: this.callIceCounters.received, type: candidate.candidate ? new RTCIceCandidate(candidate).type : null, protocol: candidate.candidate ? new RTCIceCandidate(candidate).protocol : null, usernameFragment: candidateUfrag, sessionMatches });
-                if (sessionMatches) this.addRemoteIceCandidate(candidate);
+                const sessionMatches = !!candidate.callSessionId && candidate.callSessionId === this.currentCallData?.sessionId;
+                console.info('[CALL] ICE recibido', { callSessionId: this.currentCallData?.callSessionId || this.currentCallData?.sessionId || null, candidateSessionId: candidate.callSessionId || null, currentSessionId: this.currentCallData?.sessionId || null, count: this.callIceCounters.received, type: candidate.candidate ? new RTCIceCandidate(candidate).type : null, protocol: candidate.candidate ? new RTCIceCandidate(candidate).protocol : null, usernameFragment: candidateUfrag, sessionMatches });
+                this.addRemoteIceCandidate(candidate);
               }
             });
           }, error => console.error('[CALL] Error recibiendo candidatos ICE:', error)));
@@ -2219,7 +2219,10 @@
             : normalizedId === normalizedMyName && callerRole === 'admin';
           if (data.status !== 'calling' || !isForMe || !recentEnough || this.lastIncomingCallId === id) return;
           console.info('[CALL] Llamada entrante detectada', { id, caller: data.caller, callerRole, recipient: data.recipient });
-          this.currentCallData = { id, ...data };
+          const callSessionId = data.callSessionId || data.sessionId || null;
+          this.currentCallData = { id, ...data, callSessionId, sessionId: callSessionId };
+          console.info('[CALL] Sesión entrante normalizada', { callSessionId, currentSessionId: this.currentCallData.sessionId, hasSessionId: !!callSessionId });
+          if (!callSessionId) console.error('[CALL] La llamada entrante no tiene callSessionId; no se puede verificar de forma segura la pertenencia de sus ICE candidates.');
           this.lastIncomingCallId = id;
           this.triggerIncomingCallAlert(isAdmin ? (data.caller || 'Trabajador') : 'Administrador (Don Martínez)');
         };
@@ -2319,7 +2322,7 @@
               const candidateData = event.candidate.toJSON();
               if (this.currentCallData?.sessionId) candidateData.callSessionId = this.currentCallData.sessionId;
               this.callIceCounters.generated++;
-              console.info('[CALL] ICE generado', { sessionId: this.currentCallData?.sessionId, count: this.callIceCounters.generated, role: this.currentUser.role, type: event.candidate.type, protocol: event.candidate.protocol, usernameFragment: event.candidate.usernameFragment || null, sdpMid: event.candidate.sdpMid });
+              console.info('[CALL] ICE generado', { callSessionId: this.currentCallData?.callSessionId || this.currentCallData?.sessionId || null, currentSessionId: this.currentCallData?.sessionId || null, count: this.callIceCounters.generated, role: this.currentUser.role, type: event.candidate.type, protocol: event.candidate.protocol, usernameFragment: event.candidate.usernameFragment || null, sdpMid: event.candidate.sdpMid });
               calleeCandidates.add(candidateData).then(() => console.info('[CALL] ICE enviado al canal de señalización', { count: this.callIceCounters.generated, side: 'callee' })).catch(error => console.error('[CALL] Error enviando ICE del receptor:', error));
             } else { console.info('[CALL] ICE gathering completado', { role: this.currentUser.role, generatedCount: this.callIceCounters.generated }); }
           };
@@ -2355,9 +2358,9 @@
                 const candidate = change.doc.data();
                 this.callIceCounters.received++;
                 const candidateUfrag = candidate.usernameFragment || candidate.candidate?.match(/(?:^|\s)ufrag\s+([^\s]+)/)?.[1] || null;
-                const sessionMatches = !candidate.callSessionId || candidate.callSessionId === this.currentCallData?.sessionId;
-                console.info('[CALL] ICE recibido', { sessionId: this.currentCallData?.sessionId, candidateSessionId: candidate.callSessionId || null, count: this.callIceCounters.received, type: candidate.candidate ? new RTCIceCandidate(candidate).type : null, protocol: candidate.candidate ? new RTCIceCandidate(candidate).protocol : null, usernameFragment: candidateUfrag, sessionMatches });
-                if (sessionMatches) this.addRemoteIceCandidate(candidate);
+                const sessionMatches = !!candidate.callSessionId && candidate.callSessionId === this.currentCallData?.sessionId;
+                console.info('[CALL] ICE recibido', { callSessionId: this.currentCallData?.callSessionId || this.currentCallData?.sessionId || null, candidateSessionId: candidate.callSessionId || null, currentSessionId: this.currentCallData?.sessionId || null, count: this.callIceCounters.received, type: candidate.candidate ? new RTCIceCandidate(candidate).type : null, protocol: candidate.candidate ? new RTCIceCandidate(candidate).protocol : null, usernameFragment: candidateUfrag, sessionMatches });
+                this.addRemoteIceCandidate(candidate);
               }
             });
           }, error => console.error('[CALL] Error recibiendo candidatos ICE:', error)));
@@ -2481,21 +2484,35 @@
       }
 
       async addRemoteIceCandidate(candidateData) {
-        if (!this.peerConnection || !candidateData) { console.warn('[CALL] ICE recibido pero no agregado: falta PeerConnection o candidato'); return; }
-        if (candidateData.callSessionId && this.currentCallData?.sessionId && candidateData.callSessionId !== this.currentCallData.sessionId) { console.warn('[CALL] ICE recibido pero descartado: sesión distinta'); return; }
-        if (!this.peerConnection.remoteDescription) { this.pendingIceCandidates.push(candidateData); console.info('[CALL] ICE en cola hasta aplicar descripción remota', { queued: this.pendingIceCandidates.length }); return; }
-        const { callSessionId, ...iceCandidate } = candidateData;
+        const currentSessionId = this.currentCallData?.sessionId || null;
+        const callSessionId = this.currentCallData?.callSessionId || currentSessionId;
+        const candidateSessionId = candidateData?.callSessionId || null;
+        const correlation = { callSessionId, candidateSessionId, currentSessionId };
+        if (!this.peerConnection || !candidateData) { console.warn('[CALL] ICE recibido pero no agregado: falta PeerConnection o candidato', correlation); return; }
+        if (!currentSessionId || !candidateSessionId || candidateSessionId !== currentSessionId) {
+          console.warn('[CALL] ICE descartado: candidato sin sessionId verificable o de otra llamada', { ...correlation, reason: !currentSessionId ? 'no hay sesión activa identificada' : !candidateSessionId ? 'candidateSessionId ausente' : 'sesión distinta' });
+          return;
+        }
+        if (!this.peerConnection.remoteDescription) {
+          this.pendingIceCandidates.push(candidateData);
+          console.info('[CALL] ICE en cola hasta aplicar descripción remota', { ...correlation, queued: this.pendingIceCandidates.length, remoteDescription: false, iceConnectionState: this.peerConnection.iceConnectionState });
+          return;
+        }
+        const { callSessionId: _candidateSessionId, ...iceCandidate } = candidateData;
         try {
           await this.peerConnection.addIceCandidate(new RTCIceCandidate(iceCandidate));
           this.callIceCounters.added++;
           const parsedCandidate = iceCandidate.candidate ? new RTCIceCandidate(iceCandidate) : null;
-          console.info('[CALL] ICE agregado', { sessionId: this.currentCallData?.sessionId, candidateSessionId: candidateData.callSessionId || null, count: this.callIceCounters.added, type: parsedCandidate?.type || null, protocol: parsedCandidate?.protocol || null, usernameFragment: iceCandidate.usernameFragment || iceCandidate.candidate?.match(/(?:^|\s)ufrag\s+([^\s]+)/)?.[1] || null, sdpMid: iceCandidate.sdpMid });
+          console.info('[CALL] ICE agregado', { callSessionId, candidateSessionId, currentSessionId, count: this.callIceCounters.added, type: parsedCandidate?.type || null, protocol: parsedCandidate?.protocol || null, usernameFragment: iceCandidate.usernameFragment || iceCandidate.candidate?.match(/(?:^|\s)ufrag\s+([^\s]+)/)?.[1] || null, sdpMid: iceCandidate.sdpMid });
         } catch (error) { console.warn('[CALL] Error al agregar ICE', { name: error?.name, message: error?.message, sdpMid: iceCandidate.sdpMid }, error); }
       }
 
       async flushPendingIceCandidates() {
         const queued = this.pendingIceCandidates.splice(0);
+        const before = this.callIceCounters?.added || 0;
+        console.info('[CALL] Vaciando cola ICE', { callSessionId: this.currentCallData?.callSessionId || this.currentCallData?.sessionId || null, currentSessionId: this.currentCallData?.sessionId || null, queued: queued.length, remoteDescription: !!this.peerConnection?.remoteDescription });
         for (const candidate of queued) await this.addRemoteIceCandidate(candidate);
+        console.info('[CALL] Cola ICE procesada', { queued: queued.length, added: (this.callIceCounters?.added || 0) - before, remaining: this.pendingIceCandidates.length, iceConnectionState: this.peerConnection?.iceConnectionState });
       }
 
       openVoiceCallModal({ name, status, isIncoming }) {
