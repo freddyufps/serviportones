@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>ServiPortones Eléctricos Martínez - Gestión Operativa y Control de Personal</title>
   
-  <!-- Configuración PWA Nativa (Manifest, Theme Color y Soporte Móvil) -->
+  <!-- Configuración PWA Nativa -->
   <meta name="theme-color" content="#111827">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,7 +16,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Leaflet CSS y JS para Mapa Satelital/Calles sin costo -->
+  <!-- Leaflet CSS y JS para Mapa Satelital/Calles -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
@@ -50,7 +50,6 @@
       .no-print { display: none !important; }
     }
 
-    /* Animación de Circuito y Flujo Eléctrico de Automatismos */
     .electric-energy-line {
       stroke-dasharray: 45, 180;
       animation: energyFlow 3.2s linear infinite;
@@ -68,7 +67,6 @@
       100% { filter: drop-shadow(0 0 8px rgba(113, 168, 50, 0.85)); opacity: 1; }
     }
 
-    /* Micro-partículas tecnológicas */
     .tech-particle {
       position: fixed;
       width: 3px;
@@ -154,14 +152,41 @@
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen font-sans flex flex-col antialiased selection:bg-brand-lime selection:text-white relative">
 
-  <!-- ======================================================== -->
-  <!-- CONTENEDOR FLOTANTE DE NOTIFICACIONES EMERGENTES (TOASTS) -->
-  <!-- ======================================================== -->
+  <!-- CONTENEDOR FLOTANTE DE NOTIFICACIONES EMERGENTES -->
   <div id="toast-notification-stack" class="fixed top-3 right-3 sm:top-4 sm:right-4 z-[99999] flex flex-col gap-2.5 max-w-[92vw] sm:max-w-sm w-full pointer-events-none"></div>
 
-  <!-- ========================================== -->
-  <!-- 1. VISTA DE INICIO DE SESIÓN (LOGIN)       -->
-  <!-- ========================================== -->
+  <!-- MODAL DE LLAMADA DE VOZ WEBRTC -->
+  <div id="modal-voice-call" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[100000] hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl flex flex-col items-center zoom-photo-enter text-white">
+      <div class="relative w-24 h-24 rounded-full border-4 border-brand-lime bg-slate-800 flex items-center justify-center mb-4 overflow-hidden shadow-lg">
+        <img id="call-user-photo" src="" class="w-full h-full object-cover hidden" alt="">
+        <span id="call-user-initial" class="text-3xl font-black text-brand-lime">📞</span>
+        <span class="w-4 h-4 rounded-full bg-emerald-500 absolute top-1 right-1 ring-2 ring-slate-900 animate-pulse"></span>
+      </div>
+
+      <h3 id="call-user-name" class="text-base font-black truncate max-w-xs">Usuario</h3>
+      <p id="call-status-label" class="text-xs font-semibold text-brand-lime mt-1">Conectando llamada...</p>
+      <p id="call-duration-timer" class="text-xs font-mono text-slate-400 mt-0.5 hidden">00:00</p>
+
+      <div class="flex items-center justify-center gap-4 mt-6">
+        <button id="btn-accept-call" onclick="app.acceptIncomingCall()" class="hidden p-4 bg-emerald-600 hover:bg-emerald-500 rounded-full shadow-lg text-white active:scale-95 transition" title="Aceptar Llamada">
+          <i data-lucide="phone-call" class="w-6 h-6"></i>
+        </button>
+
+        <button id="btn-mute-call" onclick="app.toggleMuteCall()" class="p-3.5 bg-slate-800 hover:bg-slate-700 rounded-full text-slate-200 active:scale-95 transition" title="Silenciar">
+          <i data-lucide="mic" id="btn-mute-icon" class="w-5 h-5"></i>
+        </button>
+
+        <button onclick="app.endVoiceCall()" class="p-4 bg-rose-600 hover:bg-rose-500 rounded-full shadow-lg text-white active:scale-95 transition" title="Colgar">
+          <i data-lucide="phone-off" class="w-6 h-6"></i>
+        </button>
+      </div>
+
+      <audio id="remote-audio-stream" autoplay class="hidden"></audio>
+    </div>
+  </div>
+
+  <!-- VISTA DE LOGIN -->
   <div id="view-login" class="flex-1 flex items-center justify-center p-3 sm:p-6 min-h-screen bg-gradient-to-br from-slate-950 via-brand-dark to-slate-900 relative z-10">
     <div class="w-full max-w-sm sm:max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden mx-auto">
       <div class="bg-white p-5 sm:p-7 text-center border-b border-slate-100 flex flex-col items-center relative">
@@ -224,9 +249,7 @@
     </div>
   </div>
 
-  <!-- ========================================== -->
-  <!-- 2. VISTA PRINCIPAL (USUARIO CONECTADO)     -->
-  <!-- ========================================== -->
+  <!-- VISTA PRINCIPAL (DASHBOARD) -->
   <div id="view-dashboard" class="hidden flex-1 flex flex-col relative z-10 w-full overflow-x-hidden">
     <header class="bg-brand-dark text-white sticky top-0 z-40 shadow-md border-b-2 border-brand-lime">
       <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
@@ -248,26 +271,23 @@
         </div>
 
         <div class="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
-          <!-- Botón de GPS (Solo Administrador) -->
           <button id="btn-nav-admin-gps" onclick="app.openAdminGpsModal()" class="hidden bg-cyan-700 hover:bg-cyan-600 text-white text-xs font-bold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl flex items-center gap-1 shadow transition active:scale-95" title="Monitoreo GPS">
             <i data-lucide="map-pin" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-200"></i>
             <span class="hidden md:inline">GPS</span>
           </button>
 
-          <!-- Botón de Nueva Orden (Admin) -->
           <button id="btn-nav-new-order" onclick="app.openNewTaskModal()" class="hidden bg-brand-lime hover:bg-brand-limeHover text-white text-xs font-bold px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl flex items-center gap-1 shadow-md transition active:scale-95">
             <i data-lucide="plus-circle" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
             <span class="hidden xs:inline">Nueva Orden</span>
           </button>
 
-          <!-- CAMPANA DE NOTIFICACIONES (TIEMPO REAL) -->
+          <!-- CAMPANA DE NOTIFICACIONES -->
           <div class="relative" id="notifications-wrapper">
             <button id="btn-notifications-toggle" onclick="app.toggleNotificationsPanel()" class="p-1.5 sm:p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl transition flex items-center relative" title="Notificaciones de actividad">
               <i data-lucide="bell" id="bell-icon" class="w-4 h-4 text-brand-lime transition-transform"></i>
               <span id="notif-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-pulse">0</span>
             </button>
 
-            <!-- Menú Desplegable de Notificaciones con Scroll Interno y Responsive -->
             <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-[88vw] sm:w-80 md:w-96 max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden text-slate-800">
               <div class="p-3 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
                 <div class="flex items-center gap-2">
@@ -469,9 +489,7 @@
     </footer>
   </div>
 
-  <!-- ======================================================== -->
-  <!-- MODAL ZOOM ELEGANTE DE FOTOGRAFÍA (LIGHTBOX)             -->
-  <!-- ======================================================== -->
+  <!-- MODAL ZOOM DE FOTO -->
   <div id="modal-photo-zoom" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-5" onclick="app.closePhotoZoom()">
     <div class="relative max-w-sm sm:max-w-md w-full bg-slate-900/95 border border-slate-700/80 rounded-3xl p-4 shadow-2xl flex flex-col items-center zoom-photo-enter" onclick="event.stopPropagation()">
       <button onclick="app.closePhotoZoom()" class="absolute top-3 right-3 text-slate-400 hover:text-white bg-slate-800/80 p-1.5 rounded-full shadow transition" title="Cerrar">
@@ -486,9 +504,7 @@
     </div>
   </div>
 
-  <!-- ======================================================== -->
-  <!-- MODAL GPS SATELITAL DE TRABAJADORES (ADMIN)              -->
-  <!-- ======================================================== -->
+  <!-- MODAL GPS SATELITAL (ADMIN) -->
   <div id="modal-admin-gps" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-2 sm:p-4">
     <div class="bg-white rounded-3xl max-w-4xl w-full h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
       <div class="bg-brand-dark text-white p-3.5 sm:p-4 flex items-center justify-between border-b-2 border-cyan-500 shrink-0">
@@ -527,13 +543,11 @@
     </div>
   </div>
 
-  <!-- ======================================================== -->
-  <!-- SISTEMA DE CHAT PRIVADO PROFESIONAL ESTILO MESSENGER/APP -->
-  <!-- ======================================================== -->
+  <!-- SISTEMA DE CHAT PRIVADO PROFESIONAL ESTILO MESSENGER/APP MÓVIL -->
   <div id="chat-floating-button-container" class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 hidden">
     <button onclick="app.toggleChatWindow()" class="relative p-3.5 sm:p-4 bg-brand-dark hover:bg-black text-white rounded-full shadow-2xl border-2 border-brand-lime flex items-center justify-center active:scale-95 transition" title="Chat Interno">
       <i data-lucide="message-square" class="w-5 h-5 sm:w-6 sm:h-6 text-brand-lime"></i>
-      <span id="chat-unread-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white font-black text-[9px] w-5 h-5 rounded-full flex items-center justify-center animate-bounce">0</span>
+      <span id="chat-unread-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-bounce">0</span>
     </button>
   </div>
 
@@ -549,19 +563,46 @@
           <p id="chat-typing-indicator" class="text-[10px] text-brand-lime font-semibold truncate hidden">Escribiendo...</p>
         </div>
       </div>
-      <div class="flex items-center gap-1">
+      
+      <!-- Menú de Opciones del Chat / Conversación -->
+      <div class="flex items-center gap-1.5">
+        <button onclick="app.startVoiceCall()" class="p-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition active:scale-95 flex items-center gap-1 text-[11px] font-bold" title="Llamar">
+          <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">Llamar</span>
+        </button>
+
+        <div class="relative">
+          <button onclick="app.toggleChatOptionsMenu()" class="p-1.5 text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition">
+            <i data-lucide="more-vertical" class="w-4 h-4"></i>
+          </button>
+          <div id="chat-conversation-options-dropdown" class="hidden absolute right-0 mt-1 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl text-xs py-1.5 z-50 text-slate-200">
+            <button onclick="app.archiveCurrentConversation()" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex items-center gap-2">
+              🗂 Archivar conversación
+            </button>
+            <button onclick="app.clearCurrentConversation()" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex items-center gap-2 text-amber-400">
+              🧹 Vaciar conversación
+            </button>
+            <button onclick="app.deleteCurrentConversation()" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex items-center gap-2 text-rose-400 border-t border-slate-800 mt-1 pt-1.5">
+              ❌ Eliminar conversación
+            </button>
+          </div>
+        </div>
+
         <button onclick="app.toggleChatWindow()" class="text-slate-400 hover:text-white p-1 rounded-lg">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
     </div>
 
-    <!-- Contenedor Dividido: Sidebar (Conversaciones) + Ventana de Mensajes -->
+    <!-- Contenedor Dividido: Sidebar + Ventana de Mensajes -->
     <div class="flex-1 flex overflow-hidden relative">
       <!-- SIDEBAR DE CONVERSACIONES (MESSENGER) -->
       <div id="chat-sidebar" class="w-full sm:w-60 md:w-64 bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 overflow-y-auto chat-scroll z-20">
-        <div class="p-2.5 border-b border-slate-200 bg-white sticky top-0 z-10">
+        <div class="p-2.5 border-b border-slate-200 bg-white sticky top-0 z-10 flex items-center justify-between">
           <span class="text-[10px] font-black uppercase tracking-wider text-slate-500">Conversaciones</span>
+          <button onclick="app.toggleShowArchivedChats()" id="btn-toggle-archived" class="text-[10px] font-bold text-slate-400 hover:text-slate-800">
+            Ver Archivados
+          </button>
         </div>
         <div id="chat-conversations-list" class="divide-y divide-slate-100 flex-1">
           <div class="text-center py-6 text-slate-400 text-xs italic">Cargando chats...</div>
@@ -570,7 +611,6 @@
 
       <!-- ÁREA DE MENSAJES Y ENVÍO -->
       <div id="chat-conversation-area" class="flex-1 flex flex-col bg-white overflow-hidden min-w-0 w-full">
-        <!-- Barra Móvil para volver a la lista -->
         <div id="chat-mobile-back-bar" class="p-2 bg-slate-100 border-b flex items-center justify-between sm:hidden shrink-0">
           <button onclick="app.showMobileChatSidebar()" class="text-xs font-bold text-brand-dark flex items-center gap-1">
             ← Chats
@@ -579,7 +619,7 @@
         </div>
 
         <!-- Contenedor de Mensajes -->
-        <div id="chat-messages-container" class="flex-1 p-3.5 overflow-y-auto space-y-2 text-xs chat-scroll bg-slate-50/50">
+        <div id="chat-messages-container" class="flex-1 p-3.5 overflow-y-auto space-y-2.5 text-xs chat-scroll bg-slate-50/50">
           <div class="text-center py-8 text-slate-400 text-xs italic">Selecciona o inicia una conversación...</div>
         </div>
 
@@ -594,9 +634,7 @@
     </div>
   </div>
 
-  <!-- ======================================================== -->
-  <!-- MODAL: AJUSTES, FOTOS Y PREFERENCIAS                     -->
-  <!-- ======================================================== -->
+  <!-- MODAL: AJUSTES, FOTOS Y PREFERENCIAS -->
   <div id="modal-settings" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
       <div class="bg-brand-dark text-white px-4 sm:px-5 py-3 sm:py-3.5 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
@@ -613,8 +651,6 @@
       </div>
 
       <div class="p-4 space-y-3.5 overflow-y-auto flex-1 text-xs sm:text-sm">
-        
-        <!-- PREFERENCIAS DE SONIDO Y NOTIFICACIONES -->
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
           <div class="flex items-center justify-between">
             <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
@@ -745,9 +781,7 @@
     </div>
   </div>
 
-  <!-- ======================================================== -->
-  <!-- MODAL: ASIGNAR / EDITAR ORDEN (ADMIN)                    -->
-  <!-- ======================================================== -->
+  <!-- MODAL: ASIGNAR / EDITAR ORDEN (ADMIN) -->
   <div id="modal-task-form" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
       <div class="bg-brand-dark text-white px-4 sm:px-5 py-3 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
@@ -823,9 +857,7 @@
     </div>
   </div>
 
-  <!-- ======================================================== -->
-  <!-- MODAL: REPORTE TÉCNICO (CON FOTOS Y ESTADOS)             -->
-  <!-- ======================================================== -->
+  <!-- MODAL: REPORTE TÉCNICO -->
   <div id="modal-report" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
       <div id="report-modal-header" class="bg-brand-dark text-white px-4 sm:px-5 py-3 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
@@ -848,7 +880,6 @@
           <p class="truncate"><span class="text-slate-500 font-bold">Dirección:</span> <span id="rep-address" class="font-semibold text-slate-800"></span></p>
         </div>
 
-        <!-- Botones de GPS -->
         <div class="flex items-center gap-2">
           <button type="button" id="rep-btn-waze" class="flex-1 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl text-xs shadow-sm flex items-center justify-center gap-1">
             🚙 Waze
@@ -858,7 +889,6 @@
           </button>
         </div>
 
-        <!-- Selector de Resultado -->
         <div>
           <label class="block text-xs font-black uppercase tracking-wider text-slate-800 mb-1">
             Resultado de la Visita *
@@ -873,7 +903,6 @@
           </div>
         </div>
 
-        <!-- Observaciones / Detalles -->
         <div>
           <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
             Detalles / Observaciones *
@@ -881,7 +910,6 @@
           <textarea id="rep-observations" rows="3" placeholder="Describe detalladamente el trabajo realizado o motivo..." class="w-full px-2.5 py-1.5 border rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-brand-lime"></textarea>
         </div>
 
-        <!-- Evidencias Multimedia -->
         <div>
           <label class="cursor-pointer px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl inline-flex items-center gap-1.5 shadow">
             <i data-lucide="camera" class="w-3.5 h-3.5 text-brand-lime"></i> Subir Fotos
@@ -905,9 +933,7 @@
     </div>
   </div>
 
-  <!-- ======================================================== -->
-  <!-- MODAL: FICHA DE ORDEN / IMPRIMIR                         -->
-  <!-- ======================================================== -->
+  <!-- MODAL: FICHA DE ORDEN / IMPRIMIR -->
   <div id="modal-view-order" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div id="printable-order-modal" class="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 flex flex-col max-h-[92vh] overflow-hidden my-auto">
       <div class="border-b p-3.5 sm:p-4 flex justify-between items-start shrink-0">
@@ -947,17 +973,14 @@
     </div>
   </div>
 
-  <!-- Toast Pequeño Anterior -->
+  <!-- Toast -->
   <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-950 text-white px-3.5 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2 text-xs">
     <div id="toast-icon"></div>
     <span id="toast-message" class="font-semibold"></span>
   </div>
 
-  <!-- ======================================================== -->
-  <!-- JAVASCRIPT: LÓGICA DE LA APLICACIÓN                      -->
-  <!-- ======================================================== -->
+  <!-- JAVASCRIPT: LÓGICA DE LA APLICACIÓN -->
   <script>
-    // Capa de Almacenamiento Seguro (SafeStorage)
     const SafeStorage = {
       memStore: {},
       setItem(key, value) {
@@ -985,7 +1008,6 @@
       }
     };
 
-    // MOTOR ACÚSTICO PROFESIONAL CON WEB AUDIO API
     const SoundEngine = {
       ctx: null,
       getCtx() {
@@ -1097,29 +1119,33 @@
           if (!ctx) return;
           const now = ctx.currentTime;
 
-          [0, 0.1, 0.2].forEach(delay => {
+          [0, 0.15, 0.3].forEach(delay => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
             osc.type = 'sine';
 
-            osc.frequency.setValueAtTime(800, now + delay);
-            osc.frequency.linearRampToValueAtTime(1000, now + delay + 0.08);
+            osc.frequency.setValueAtTime(750, now + delay);
+            osc.frequency.linearRampToValueAtTime(1050, now + delay + 0.09);
 
             gain.gain.setValueAtTime(0.001, now + delay);
-            gain.gain.linearRampToValueAtTime(0.2, now + delay + 0.01);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.09);
+            gain.gain.linearRampToValueAtTime(0.25, now + delay + 0.015);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.12);
 
             osc.connect(gain);
             gain.connect(ctx.destination);
 
             osc.start(now + delay);
-            osc.stop(now + delay + 0.1);
+            osc.stop(now + delay + 0.13);
           });
         } catch (e) {
           console.warn("Audio Context bloqueado:", e);
         }
       }
     };
+
+    window.addEventListener('pointerdown', () => {
+      SoundEngine.getCtx();
+    }, { once: true });
 
     const INITIAL_TASKS = [
       {
@@ -1158,9 +1184,12 @@
         this.activeChatWorker = 'Jeampaul';
         this.chatUnsubscribe = null;
         this.chatThreadsUnsubscribe = null;
-        this.globalMessagesUnsubscribe = null;
         this.conversations = {};
         this.typingTimeout = null;
+        this.showArchived = false;
+
+        // Listeners Globales dedicados por técnico
+        this.dedicatedWorkerUnsubscribes = {};
 
         // Estado del GPS
         this.gpsWatchId = null;
@@ -1169,6 +1198,15 @@
         this.adminMapMarkers = {};
         this.gpsLocationsUnsubscribe = null;
         this.locationsData = {};
+
+        // Estado WebRTC (Llamadas de Voz)
+        this.peerConnection = null;
+        this.localStream = null;
+        this.callUnsubscribe = null;
+        this.currentCallData = null;
+        this.callTimerInterval = null;
+        this.callSeconds = 0;
+        this.isMuted = false;
 
         // Preferencias de Notificación
         this.prefs = {
@@ -1181,7 +1219,6 @@
         this.processedEventIds = new Set();
         this.isTasksInitialLoad = true;
         this.isNotifsInitialLoad = true;
-        this.isGlobalChatInitialLoad = true;
         this.appStartTime = Date.now();
 
         this.init();
@@ -1212,7 +1249,6 @@
         this.showToast('Preferencia guardada', 'info');
       }
 
-      // Solicitud de Permisos Notification API del Sistema Operativo
       async requestNativeNotificationPermission() {
         if (!("Notification" in window)) {
           this.showToast("Tu navegador no soporta notificaciones nativas", "error");
@@ -1235,7 +1271,6 @@
         }
       }
 
-      // Disparador de Notificación Nativa del Sistema (Funciona en segundo plano)
       sendNativeNotification({ title, body, workerName }) {
         if (!("Notification" in window) || Notification.permission !== "granted") return;
 
@@ -1404,7 +1439,6 @@
         }
 
         if (window.db) {
-          // Listener de usuarios
           db.collection('users').onSnapshot((snapshot) => {
             const list = [];
             snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
@@ -1418,6 +1452,7 @@
               this.renderTechniciansMonitor();
               this.renderConversationsSidebar();
               this.renderTasks();
+              this.setupMultiWorkerChatListeners();
             } else if (this.currentUser && this.currentUser.role === 'worker') {
               const myUpdated = list.find(u => String(u.username || '').toLowerCase() === this.currentUser.username.toLowerCase());
               if (myUpdated && myUpdated.photo !== this.currentUser.photo) {
@@ -1428,7 +1463,6 @@
             }
           }, err => console.error("Snapshot users error:", err));
 
-          // Snapshot Órdenes
           db.collection('ordenes').doc('todas').onSnapshot((doc) => {
             if (doc.exists && Array.isArray(doc.data().tasks)) {
               const incomingTasks = doc.data().tasks;
@@ -1471,7 +1505,6 @@
             }
           }, e => console.error("Snapshot órdenes:", e));
 
-          // Snapshot Presencia
           db.collection('presencia').onSnapshot((snapshot) => {
             snapshot.forEach(doc => {
               const data = doc.data();
@@ -1488,7 +1521,6 @@
             }
           });
 
-          // Snapshot Notificaciones
           db.collection('notificaciones').orderBy('timestamp', 'desc').limit(30).onSnapshot((snapshot) => {
             const list = [];
             snapshot.forEach(doc => {
@@ -1503,9 +1535,9 @@
                 this.triggerBellAttention();
 
                 this.showPopupNotification({
-                  title: `🔔 Actualización de Estado (${data.actionType})`,
-                  subtitle: `${data.techName} &bull; ${data.taskId}`,
-                  details: data.details || 'Informe registrado',
+                  title: `🔔 Actualización (${data.actionType})`,
+                  subtitle: `${data.techName} &bull; ${data.taskId || ''}`,
+                  details: data.details || 'Aviso en sistema',
                   type: 'general',
                   icon: '🔔',
                   onClick: () => this.toggleNotificationsPanel()
@@ -1663,9 +1695,11 @@
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
         if (this.chatUnsubscribe) { this.chatUnsubscribe(); this.chatUnsubscribe = null; }
         if (this.chatThreadsUnsubscribe) { this.chatThreadsUnsubscribe(); this.chatThreadsUnsubscribe = null; }
-        if (this.globalMessagesUnsubscribe) { this.globalMessagesUnsubscribe(); this.globalMessagesUnsubscribe = null; }
+        if (this.callUnsubscribe) { this.callUnsubscribe(); this.callUnsubscribe = null; }
         if (this.gpsLocationsUnsubscribe) { this.gpsLocationsUnsubscribe(); this.gpsLocationsUnsubscribe = null; }
+        this.clearDedicatedWorkerChatListeners();
         this.stopGpsSharing();
+        this.endVoiceCall();
       }
 
       async handleLogin(e) {
@@ -1787,8 +1821,8 @@
           this.renderAdminAuditLog();
         }
 
-        // Iniciar Chat y Listener Global de Mensajes
         this.initChatModule();
+        this.listenIncomingVoiceCalls();
 
         if (notify) this.showToast(`Bienvenido, ${user.fullName}`, 'success');
       }
@@ -1892,7 +1926,7 @@
           banner.innerHTML = `
             <div>
               <h3 class="font-extrabold text-xs sm:text-sm text-white">Panel Central de Operaciones</h3>
-              <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5">Asigna órdenes, supervisa técnicos en mapa GPS y comunícate por chat.</p>
+              <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5">Asigna órdenes, supervisa técnicos en mapa GPS y comunícate por chat y voz.</p>
             </div>
             <div class="mt-2 sm:mt-0 flex items-center gap-2">
               <button onclick="app.openAdminGpsModal()" class="text-xs font-bold bg-cyan-700 hover:bg-cyan-600 text-white px-3 py-1.5 rounded-xl flex items-center gap-1 shadow transition active:scale-95">
@@ -1908,9 +1942,12 @@
           banner.innerHTML = `
             <div>
               <h3 class="font-extrabold text-xs sm:text-sm text-white">Bienvenido, ${this.currentUser.fullName || this.currentUser.username}</h3>
-              <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5">Revisa tus visitas asignadas y comparte tu posición para asistirte en campo.</p>
+              <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5">Revisa tus visitas asignadas, comparte posición o llama al administrador.</p>
             </div>
             <div class="mt-2 sm:mt-0 flex items-center gap-2">
+              <button onclick="app.startVoiceCall()" class="text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1 shadow transition active:scale-95">
+                <i data-lucide="phone" class="w-3.5 h-3.5"></i> Llamar Admin
+              </button>
               <button id="btn-worker-toggle-gps" onclick="app.toggleWorkerGps()" class="text-xs font-bold px-3 py-1.5 rounded-xl border flex items-center gap-1.5 shadow transition active:scale-95 bg-slate-800 text-slate-200 border-slate-700 hover:border-cyan-400">
                 <span class="w-2 h-2 rounded-full bg-slate-400" id="worker-gps-dot"></span>
                 <span id="worker-gps-label">📍 Activar GPS</span>
@@ -1947,9 +1984,6 @@
         document.getElementById('modal-photo-zoom').classList.add('hidden');
       }
 
-      // ==========================================
-      // GEOLOCALIZACIÓN Y GPS EN TIEMPO REAL
-      // ==========================================
       toggleWorkerGps() {
         if (this.isGpsSharing) {
           this.stopGpsSharing();
@@ -2152,9 +2186,251 @@
         window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
       }
 
-      // ========================================================
-      // CHAT ESTILO MESSENGER CON LISTENER GLOBAL collectionGroup
-      // ========================================================
+      async startVoiceCall() {
+        const targetWorker = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
+        
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          this.localStream = stream;
+
+          this.openVoiceCallModal({
+            name: this.currentUser.role === 'admin' ? targetWorker : 'Administrador',
+            status: 'Llamando...',
+            isIncoming: false
+          });
+
+          if (this.prefs.sound) SoundEngine.playCallAlertSound();
+
+          this.peerConnection = new RTCPeerConnection({
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+          });
+
+          this.localStream.getTracks().forEach(track => this.peerConnection.addTrack(track, this.localStream));
+
+          this.peerConnection.ontrack = event => {
+            const remoteAudio = document.getElementById('remote-audio-stream');
+            if (remoteAudio && event.streams[0]) {
+              remoteAudio.srcObject = event.streams[0];
+            }
+          };
+
+          const callDoc = db.collection('webrtc_calls').doc(targetWorker);
+          const callerCandidates = callDoc.collection('callerCandidates');
+
+          this.peerConnection.onicecandidate = event => {
+            if (event.candidate) {
+              callerCandidates.add(event.candidate.toJSON());
+            }
+          };
+
+          const offer = await this.peerConnection.createOffer();
+          await this.peerConnection.setLocalDescription(offer);
+
+          await callDoc.set({
+            caller: this.currentUser.fullName || this.currentUser.username,
+            callerRole: this.currentUser.role,
+            recipient: this.currentUser.role === 'admin' ? targetWorker : 'Administrador',
+            status: 'calling',
+            offer: { type: offer.type, sdp: offer.sdp },
+            timestamp: Date.now()
+          });
+
+          callDoc.onSnapshot(async doc => {
+            if (doc.exists) {
+              const data = doc.data();
+              if (data.status === 'answered' && data.answer && !this.peerConnection.currentRemoteDescription) {
+                const answerDesc = new RTCSessionDescription(data.answer);
+                await this.peerConnection.setRemoteDescription(answerDesc);
+                this.onCallConnected();
+              } else if (data.status === 'rejected' || data.status === 'ended') {
+                this.endVoiceCall(false);
+              }
+            }
+          });
+
+          callDoc.collection('calleeCandidates').onSnapshot(snap => {
+            snap.docChanges().forEach(change => {
+              if (change.type === 'added') {
+                this.peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+              }
+            });
+          });
+
+        } catch (err) {
+          console.error("Error al iniciar llamada WebRTC:", err);
+          this.showToast("No se pudo acceder al micrófono", "error");
+          this.endVoiceCall(false);
+        }
+      }
+
+      listenIncomingVoiceCalls() {
+        if (!window.db) return;
+        const myName = this.currentUser.fullName || this.currentUser.username;
+        const isAdmin = this.currentUser.role === 'admin';
+
+        const query = isAdmin
+          ? db.collection('webrtc_calls').where('recipient', '==', 'Administrador').where('status', '==', 'calling')
+          : db.collection('webrtc_calls').doc(myName);
+
+        if (isAdmin) {
+          query.onSnapshot(snap => {
+            snap.docChanges().forEach(change => {
+              if (change.type === 'added' || change.type === 'modified') {
+                const data = change.doc.data();
+                if (data.status === 'calling' && (Date.now() - data.timestamp < 45000)) {
+                  this.currentCallData = { id: change.doc.id, ...data };
+                  this.triggerIncomingCallAlert(data.caller);
+                }
+              }
+            });
+          });
+        } else {
+          query.onSnapshot(doc => {
+            if (doc.exists) {
+              const data = doc.data();
+              if (data.status === 'calling' && data.callerRole === 'admin' && (Date.now() - data.timestamp < 45000)) {
+                this.currentCallData = { id: doc.id, ...data };
+                this.triggerIncomingCallAlert('Administrador (Don Martínez)');
+              }
+            }
+          });
+        }
+      }
+
+      triggerIncomingCallAlert(callerName) {
+        if (this.prefs.sound) SoundEngine.playCallAlertSound();
+        this.openVoiceCallModal({
+          name: callerName,
+          status: 'Llamada Entrante...',
+          isIncoming: true
+        });
+      }
+
+      async acceptIncomingCall() {
+        if (!this.currentCallData) return;
+
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          this.localStream = stream;
+
+          this.peerConnection = new RTCPeerConnection({
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+          });
+
+          this.localStream.getTracks().forEach(track => this.peerConnection.addTrack(track, this.localStream));
+
+          this.peerConnection.ontrack = event => {
+            const remoteAudio = document.getElementById('remote-audio-stream');
+            if (remoteAudio && event.streams[0]) {
+              remoteAudio.srcObject = event.streams[0];
+            }
+          };
+
+          const callDoc = db.collection('webrtc_calls').doc(this.currentCallData.id);
+          const calleeCandidates = callDoc.collection('calleeCandidates');
+
+          this.peerConnection.onicecandidate = event => {
+            if (event.candidate) {
+              calleeCandidates.add(event.candidate.toJSON());
+            }
+          };
+
+          await this.peerConnection.setRemoteDescription(new RTCSessionDescription(this.currentCallData.offer));
+          const answer = await this.peerConnection.createAnswer();
+          await this.peerConnection.setLocalDescription(answer);
+
+          await callDoc.update({
+            status: 'answered',
+            answer: { type: answer.type, sdp: answer.sdp }
+          });
+
+          callDoc.collection('callerCandidates').onSnapshot(snap => {
+            snap.docChanges().forEach(change => {
+              if (change.type === 'added') {
+                this.peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+              }
+            });
+          });
+
+          this.onCallConnected();
+
+        } catch (err) {
+          console.error("Error al aceptar llamada:", err);
+          this.endVoiceCall();
+        }
+      }
+
+      openVoiceCallModal({ name, status, isIncoming }) {
+        document.getElementById('call-user-name').textContent = name;
+        document.getElementById('call-status-label').textContent = status;
+        document.getElementById('modal-voice-call').classList.remove('hidden');
+
+        const btnAccept = document.getElementById('btn-accept-call');
+        if (isIncoming) {
+          btnAccept.classList.remove('hidden');
+        } else {
+          btnAccept.classList.add('hidden');
+        }
+      }
+
+      onCallConnected() {
+        document.getElementById('call-status-label').textContent = 'Conectado';
+        document.getElementById('btn-accept-call').classList.add('hidden');
+        const timerElem = document.getElementById('call-duration-timer');
+        timerElem.classList.remove('hidden');
+
+        this.callSeconds = 0;
+        clearInterval(this.callTimerInterval);
+        this.callTimerInterval = setInterval(() => {
+          this.callSeconds++;
+          const mins = String(Math.floor(this.callSeconds / 60)).padStart(2, '0');
+          const secs = String(this.callSeconds % 60).padStart(2, '0');
+          timerElem.textContent = `${mins}:${secs}`;
+        }, 1000);
+      }
+
+      toggleMuteCall() {
+        if (!this.localStream) return;
+        this.isMuted = !this.isMuted;
+        this.localStream.getAudioTracks().forEach(t => t.enabled = !this.isMuted);
+
+        const icon = document.getElementById('btn-mute-icon');
+        const btn = document.getElementById('btn-mute-call');
+        if (this.isMuted) {
+          btn.className = "p-3.5 bg-rose-800 text-white rounded-full transition";
+          icon.setAttribute('data-lucide', 'mic-off');
+        } else {
+          btn.className = "p-3.5 bg-slate-800 text-slate-200 rounded-full transition";
+          icon.setAttribute('data-lucide', 'mic');
+        }
+        if (window.lucide) lucide.createIcons();
+      }
+
+      endVoiceCall(notifyServer = true) {
+        clearInterval(this.callTimerInterval);
+        this.callSeconds = 0;
+
+        if (this.localStream) {
+          this.localStream.getTracks().forEach(t => t.stop());
+          this.localStream = null;
+        }
+
+        if (this.peerConnection) {
+          this.peerConnection.close();
+          this.peerConnection = null;
+        }
+
+        if (notifyServer && window.db && this.currentCallData?.id) {
+          db.collection('webrtc_calls').doc(this.currentCallData.id).update({
+            status: 'ended'
+          }).catch(() => {});
+        }
+
+        document.getElementById('modal-voice-call').classList.add('hidden');
+        document.getElementById('call-duration-timer').classList.add('hidden');
+        this.currentCallData = null;
+      }
+
       initChatModule() {
         const isAdmin = this.currentUser.role === 'admin';
         const sidebar = document.getElementById('chat-sidebar');
@@ -2172,74 +2448,77 @@
           this.activeChatWorker = this.currentUser.fullName || this.currentUser.username;
         }
 
-        // Iniciar escucha del hilo activo
         this.subscribeChatMessages();
-
-        // LISTENER GLOBAL DE MENSAJES (ESCUCHA TODAS LAS CONVERSACIONES SIMULTÁNEAMENTE)
-        this.subscribeGlobalMessages();
       }
 
-      // LISTENER GLOBAL: DETECTA MENSAJES DE CUALQUIER TRABAJADOR EN TIEMPO REAL
-      subscribeGlobalMessages() {
-        if (!window.db || this.globalMessagesUnsubscribe) return;
+      setupMultiWorkerChatListeners() {
+        if (!window.db || this.currentUser.role !== 'admin') return;
 
-        this.globalMessagesUnsubscribe = db.collectionGroup('mensajes')
-          .orderBy('timestamp', 'desc')
-          .limit(15)
-          .onSnapshot(snapshot => {
-            snapshot.docChanges().forEach(change => {
-              if (change.type === 'added') {
-                const data = change.doc.data();
-                const msgId = change.doc.id;
+        this.workers.forEach(w => {
+          const wName = w.fullName || w.username;
+          if (this.dedicatedWorkerUnsubscribes[wName]) return;
 
-                const isFromOther = data.senderRole !== this.currentUser.role;
-                const isForMe = (this.currentUser.role === 'admin' && data.recipient === 'Administrador') ||
-                                (this.currentUser.role === 'worker' && data.threadId === (this.currentUser.fullName || this.currentUser.username));
+          console.log(`[GLOBAL CHAT] Listener iniciado para: ${wName}`);
 
-                // Alerta únicamente para mensajes nuevos recibidos en tiempo real
-                if (isFromOther && isForMe && !this.isGlobalChatInitialLoad && data.timestamp > this.appStartTime && !this.processedEventIds.has(msgId)) {
-                  this.processedEventIds.add(msgId);
+          const unsub = db.collection('chats_internos')
+            .doc(wName)
+            .collection('mensajes')
+            .orderBy('timestamp', 'desc')
+            .limit(10)
+            .onSnapshot(snap => {
+              snap.docChanges().forEach(change => {
+                if (change.type === 'added') {
+                  const data = change.doc.data();
+                  const msgId = change.doc.id;
 
-                  const senderWorkerName = data.senderRole === 'worker' ? data.senderName : 'Administrador';
+                  console.log(`[GLOBAL CHAT] Mensaje detectado en ${wName}:`, data);
 
-                  // 1. Sonido elegante
-                  if (this.prefs.sound) SoundEngine.playMessageSound();
-                  
-                  // 2. Destello visual en campana
-                  this.triggerBellAttention();
+                  const isFromWorker = data.senderRole === 'worker';
+                  const isNewEvent = data.timestamp > this.appStartTime && !this.processedEventIds.has(msgId);
 
-                  // 3. Notificación nativa del Sistema Operativo (Notification API)
-                  this.sendNativeNotification({
-                    title: `💬 Mensaje de ${data.senderName}`,
-                    body: data.text,
-                    workerName: data.senderRole === 'worker' ? data.senderName : null
-                  });
+                  if (isFromWorker && isNewEvent) {
+                    this.processedEventIds.add(msgId);
+                    console.log(`[GLOBAL CHAT] Remitente: ${data.senderName}`);
 
-                  // 4. Registrar en el historial de la campana
-                  this.addActivityNotification(data.senderName, '', 'MENSAJE', data.text, 'chat');
-
-                  // 5. Notificación flotante emergente en la app (Click abre directamente el chat correspondiente)
-                  this.showPopupNotification({
-                    title: '💬 NUEVO MENSAJE',
-                    subtitle: `${data.senderName} te envió un mensaje`,
-                    details: data.text,
-                    type: 'chat',
-                    icon: '💬',
-                    onClick: () => {
-                      if (this.currentUser.role === 'admin') {
-                        this.openDirectWorkerChat(data.senderName);
-                      } else {
-                        const chatModal = document.getElementById('chat-window-modal');
-                        if (chatModal.classList.contains('hidden')) this.toggleChatWindow();
-                      }
+                    if (this.prefs.sound) {
+                      SoundEngine.playMessageSound();
+                      console.log('[GLOBAL CHAT] Sonido reproducido');
                     }
-                  });
-                }
-              }
-            });
 
-            this.isGlobalChatInitialLoad = false;
-          }, err => console.warn("Aviso colección group mensajes:", err));
+                    this.triggerBellAttention();
+
+                    this.sendNativeNotification({
+                      title: `💬 Mensaje de ${data.senderName}`,
+                      body: data.text,
+                      workerName: wName
+                    });
+
+                    this.addActivityNotification(data.senderName, '', 'MENSAJE', data.text, 'chat');
+                    console.log('[GLOBAL CHAT] Campana actualizada');
+
+                    this.showPopupNotification({
+                      title: '💬 NUEVO MENSAJE',
+                      subtitle: `${data.senderName} te envió un mensaje`,
+                      details: data.text,
+                      type: 'chat',
+                      icon: '💬',
+                      onClick: () => this.openDirectWorkerChat(wName)
+                    });
+                    console.log('[GLOBAL CHAT] Notificación mostrada');
+                  }
+                }
+              });
+            }, err => console.warn(`Error listener ${wName}:`, err));
+
+          this.dedicatedWorkerUnsubscribes[wName] = unsub;
+        });
+      }
+
+      clearDedicatedWorkerChatListeners() {
+        Object.keys(this.dedicatedWorkerUnsubscribes).forEach(k => {
+          this.dedicatedWorkerUnsubscribes[k]();
+        });
+        this.dedicatedWorkerUnsubscribes = {};
       }
 
       subscribeAllChatThreads() {
@@ -2264,7 +2543,6 @@
         const ONLINE_THRESHOLD_MS = 60 * 1000;
         const now = Date.now();
 
-        // Ordenar trabajadores: los que tengan mensajes más recientes arriba
         const sortedWorkers = [...this.workers].sort((a, b) => {
           const nameA = a.fullName || a.username;
           const nameB = b.fullName || b.username;
@@ -2273,7 +2551,19 @@
           return timeB - timeA;
         });
 
-        listElem.innerHTML = sortedWorkers.map(w => {
+        const filtered = sortedWorkers.filter(w => {
+          const wName = w.fullName || w.username;
+          const thread = this.conversations[wName];
+          if (this.showArchived) return thread && thread.archived;
+          return !(thread && thread.archived);
+        });
+
+        if (filtered.length === 0) {
+          listElem.innerHTML = `<p class="p-4 text-center text-slate-400 italic text-[11px]">No hay conversaciones ${this.showArchived ? 'archivadas' : ''}.</p>`;
+          return;
+        }
+
+        listElem.innerHTML = filtered.map(w => {
           const wName = w.fullName || w.username;
           const thread = this.conversations[wName] || {};
           const isSelected = this.activeChatWorker === wName;
@@ -2305,12 +2595,18 @@
         }).join('');
       }
 
+      toggleShowArchivedChats() {
+        this.showArchived = !this.showArchived;
+        const btn = document.getElementById('btn-toggle-archived');
+        if (btn) btn.textContent = this.showArchived ? 'Ver Activas' : 'Ver Archivadas';
+        this.renderConversationsSidebar();
+      }
+
       selectChatConversation(wName) {
         this.activeChatWorker = wName;
         document.getElementById('chat-header-title').textContent = `Chat: ${wName}`;
         document.getElementById('chat-mobile-active-name').textContent = wName;
 
-        // En móvil ocultar sidebar para dar paso a la pantalla completa de conversación
         if (window.innerWidth < 640) {
           document.getElementById('chat-sidebar').classList.add('hidden');
         }
@@ -2339,6 +2635,70 @@
         }
       }
 
+      toggleChatOptionsMenu() {
+        const menu = document.getElementById('chat-conversation-options-dropdown');
+        if (menu) menu.classList.toggle('hidden');
+      }
+
+      async archiveCurrentConversation() {
+        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
+        this.toggleChatOptionsMenu();
+
+        if (window.db && threadId) {
+          await db.collection('chats_internos').doc(threadId).set({ archived: true }, { merge: true });
+          this.showToast("Conversación archivada", "info");
+        }
+      }
+
+      async clearCurrentConversation() {
+        this.toggleChatOptionsMenu();
+        if (!confirm("¿Deseas vaciar todos los mensajes de esta conversación?")) return;
+
+        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
+        if (window.db && threadId) {
+          const snap = await db.collection('chats_internos').doc(threadId).collection('mensajes').get();
+          snap.forEach(d => d.ref.delete());
+          await db.collection('chats_internos').doc(threadId).update({ lastMessage: 'Conversación vaciada' });
+          this.showToast("Conversación vaciada", "success");
+        }
+      }
+
+      async deleteCurrentConversation() {
+        this.toggleChatOptionsMenu();
+        if (!confirm("¿Deseas eliminar completamente esta conversación y su historial?")) return;
+
+        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
+        if (window.db && threadId) {
+          const snap = await db.collection('chats_internos').doc(threadId).collection('mensajes').get();
+          snap.forEach(d => d.ref.delete());
+          await db.collection('chats_internos').doc(threadId).delete();
+          this.showToast("Conversación eliminada", "info");
+        }
+      }
+
+      async deleteMessageForMe(msgId) {
+        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
+        if (window.db && threadId && msgId) {
+          const myKey = `hiddenFor_${this.currentUser.role}`;
+          await db.collection('chats_internos').doc(threadId).collection('mensajes').doc(msgId).update({ [myKey]: true });
+          this.showToast("Mensaje eliminado para ti", "info");
+        }
+      }
+
+      async deleteMessageForEveryone(msgId) {
+        if (!confirm("¿Eliminar este mensaje para todos?")) return;
+        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
+        if (window.db && threadId && msgId) {
+          await db.collection('chats_internos').doc(threadId).collection('mensajes').doc(msgId).delete();
+          this.showToast("Mensaje eliminado para todos", "info");
+        }
+      }
+
+      copyMessageText(text) {
+        navigator.clipboard.writeText(text);
+        this.showToast("Mensaje copiado al portapapeles", "success");
+      }
+
       handleTypingInput() {
         const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
         const myRole = this.currentUser.role;
@@ -2363,7 +2723,6 @@
 
         const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
 
-        // Listener del hilo para ver si la contraparte está escribiendo
         db.collection('chats_internos').doc(threadId).onSnapshot(doc => {
           if (doc.exists) {
             const data = doc.data();
@@ -2381,7 +2740,6 @@
           }
         });
 
-        // Listener de mensajes del hilo activo
         this.chatUnsubscribe = db.collection('chats_internos')
           .doc(threadId)
           .collection('mensajes')
@@ -2394,13 +2752,15 @@
             snapshot.forEach(doc => {
               const data = doc.data();
               const msgId = doc.id;
-              msgs.push({ id: msgId, ...data });
+              
+              const myHiddenKey = `hiddenFor_${this.currentUser.role}`;
+              if (!data[myHiddenKey]) {
+                msgs.push({ id: msgId, ...data });
+              }
 
               const isFromOther = data.senderRole !== this.currentUser.role;
               if (isFromOther && data.status !== 'read') {
                 unreadCount++;
-
-                // Actualizar estado a delivered
                 if (data.status === 'sent') {
                   db.collection('chats_internos').doc(threadId).collection('mensajes').doc(msgId).update({
                     status: 'delivered'
@@ -2435,7 +2795,6 @@
         container.innerHTML = this.chatMessages.map(m => {
           const isMine = m.senderName === myName;
 
-          // Indicadores de estado tipo WhatsApp con colores específicos
           let statusTick = '';
           if (isMine) {
             if (m.status === 'read') {
@@ -2448,12 +2807,18 @@
           }
 
           return `
-            <div class="flex flex-col ${isMine ? 'items-end' : 'items-start'}">
+            <div class="flex flex-col ${isMine ? 'items-end' : 'items-start'} group relative">
               <span class="text-[9px] font-bold text-slate-400 mb-0.5 px-1">${m.senderName} &bull; ${m.time}</span>
-              <div class="max-w-[85%] sm:max-w-[78%] rounded-2xl px-3.5 py-2 shadow-sm ${isMine ? 'bg-brand-dark text-white rounded-br-none border-b-2 border-brand-lime' : 'bg-white text-slate-800 rounded-bl-none border border-slate-200'}">
+              <div class="max-w-[85%] sm:max-w-[78%] rounded-2xl px-3.5 py-2 shadow-sm relative ${isMine ? 'bg-brand-dark text-white rounded-br-none border-b-2 border-brand-lime' : 'bg-white text-slate-800 rounded-bl-none border border-slate-200'}">
                 <p class="leading-relaxed whitespace-pre-wrap text-xs sm:text-sm">${m.text}</p>
-                <div class="text-[9px] text-right mt-0.5 opacity-80 flex items-center justify-end">
+                <div class="text-[9px] text-right mt-0.5 opacity-80 flex items-center justify-end gap-1">
                   ${isMine ? statusTick : ''}
+                </div>
+
+                <div class="hidden group-hover:flex items-center gap-1.5 absolute -top-3 ${isMine ? 'left-2' : 'right-2'} bg-slate-800/90 rounded-lg p-1 text-[10px] text-white shadow-md">
+                  <button type="button" onclick="app.copyMessageText('${m.text.replace(/'/g, "\\'")}')" class="hover:text-brand-lime" title="Copiar">📋</button>
+                  <button type="button" onclick="app.deleteMessageForMe('${m.id}')" class="hover:text-amber-400" title="Eliminar para mí">🗑</button>
+                  ${isMine ? `<button type="button" onclick="app.deleteMessageForEveryone('${m.id}')" class="hover:text-rose-400" title="Eliminar para todos">✕</button>` : ''}
                 </div>
               </div>
             </div>
@@ -2499,6 +2864,7 @@
               lastTime: this.formatTime(new Date()),
               lastTimestamp: Date.now(),
               workerName: threadId,
+              archived: false,
               typing: { [this.currentUser.role]: false }
             };
 
@@ -2985,46 +3351,6 @@
                 </div>
               </div>
             </div>
-          `;
-        }).join('');
-
-        if (window.lucide) lucide.createIcons();
-      }
-
-      renderAdminAuditLog() {
-        const tbody = document.getElementById('audit-log-tbody');
-        const counter = document.getElementById('audit-log-counter');
-        if (!tbody) return;
-
-        const reportedTasks = this.tasks.filter(t => t.completedAt || t.observations);
-        counter.textContent = `${reportedTasks.length} Informes`;
-
-        if (reportedTasks.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-slate-400 italic">No hay informes registrados.</td></tr>`;
-          return;
-        }
-
-        tbody.innerHTML = reportedTasks.map(t => {
-          const evidenceCount = Array.isArray(t.evidence) ? t.evidence.length : 0;
-          return `
-            <tr class="hover:bg-slate-50 transition">
-              <td class="p-2 font-semibold text-slate-700 whitespace-nowrap text-[11px]">${t.completedAt || 'En proceso'}</td>
-              <td class="p-2 font-bold text-slate-900">${t.assignedTo}</td>
-              <td class="p-2 font-bold text-slate-800">${t.client}</td>
-              <td class="p-2">
-                <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold ${t.status === 'REALIZADA' ? 'bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder' : t.status === 'NO_REALIZADA' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}">
-                  ${t.status}
-                </span>
-              </td>
-              <td class="p-2 max-w-xs truncate text-[11px]">${t.observations || 'Sin detalle'}</td>
-              <td class="p-2 whitespace-nowrap">
-                ${evidenceCount > 0 ? `
-                  <button onclick="app.viewOrderDetails('${t.id}')" class="text-brand-limeHover font-bold flex items-center gap-1 hover:underline">
-                    <i data-lucide="eye" class="w-3.5 h-3.5"></i> Ver (${evidenceCount})
-                  </button>
-                ` : `<span class="text-slate-400">Sin archivos</span>`}
-              </td>
-            </tr>
           `;
         }).join('');
 
