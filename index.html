@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ServiPortones Eléctricos Martínez - Gestión Operativa y Control de Personal</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -102,15 +102,23 @@
   <!-- ========================================== -->
   <div id="view-login" class="flex-1 flex items-center justify-center p-4 sm:p-6 min-h-screen bg-gradient-to-br from-slate-950 via-brand-dark to-slate-900 relative z-10">
     <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
-      <div class="bg-white p-6 sm:p-7 text-center border-b border-slate-100 flex flex-col items-center">
-        <div class="w-full max-w-[280px] py-1">
+      <div class="bg-white p-6 sm:p-7 text-center border-b border-slate-100 flex flex-col items-center relative">
+        <div class="w-full max-w-[280px] py-1 relative">
           <svg viewBox="0 0 420 170" class="w-full h-auto drop-shadow-sm select-none" xmlns="http://www.w3.org/2000/svg">
             <g stroke-linecap="round" stroke-linejoin="round">
+              <!-- Trazo Techo del Portón -->
               <path d="M 22 80 L 135 34 L 135 22 L 148 22 L 148 40 L 222 79" fill="none" stroke="#111827" stroke-width="11" />
               <line x1="228" y1="79" x2="410" y2="79" stroke="#71A832" stroke-width="9" />
               <text x="18" y="128" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" fill="#111827" letter-spacing="0.5">SERVIPORTONES</text>
               <line x1="18" y1="148" x2="135" y2="148" stroke="#71A832" stroke-width="6" />
               <text x="144" y="152" font-family="system-ui, -apple-system, sans-serif" font-size="19" font-weight="900" fill="#71A832" letter-spacing="3.5">ELECTRICOS MARTINEZ</text>
+              
+              <!-- Decoración: Gorro Navideño Realista y Responsivo -->
+              <g id="logo-santa-hat" transform="translate(112, 0) rotate(10)">
+                <path d="M 5 35 Q 22 5 45 10 Q 32 30 42 35 Z" fill="#DC2626" />
+                <path d="M 3 34 Q 25 31 46 34 Q 45 40 25 40 Q 3 40 3 34 Z" fill="#F8FAFC" />
+                <circle cx="46" cy="11" r="5.5" fill="#F8FAFC" filter="drop-shadow(0 1px 2px rgba(0,0,0,0.25))" />
+              </g>
             </g>
           </svg>
         </div>
@@ -151,7 +159,7 @@
 
         <button type="submit" id="btn-submit-login" class="w-full py-3 bg-brand-dark hover:bg-black text-white font-bold rounded-xl text-sm border-b-4 border-brand-lime shadow-lg active:scale-[0.98] transition flex items-center justify-center gap-2 mt-2">
           <i data-lucide="log-in" class="w-4 h-4 text-brand-lime"></i>
-          <span>Iniciar Sesión</span>
+          <span id="btn-submit-text">Iniciar Sesión</span>
         </button>
 
         <p class="text-center text-[11px] text-slate-400 pt-2">
@@ -863,6 +871,38 @@
   <!-- JAVASCRIPT: LÓGICA COMPLETA DE LA APLICACIÓN             -->
   <!-- ======================================================== -->
   <script>
+    // Envoltorio para acceso seguro al almacenamiento en ventanas privadas e incógnito
+    const SafeStorage = {
+      memory: {},
+      setItem(key, value) {
+        try {
+          localStorage.setItem(key, value);
+        } catch (e) {
+          try {
+            sessionStorage.setItem(key, value);
+          } catch (e2) {
+            this.memory[key] = value;
+          }
+        }
+      },
+      getItem(key) {
+        try {
+          const val = localStorage.getItem(key);
+          if (val !== null) return val;
+        } catch (e) {}
+        try {
+          const valSession = sessionStorage.getItem(key);
+          if (valSession !== null) return valSession;
+        } catch (e2) {}
+        return this.memory[key] || null;
+      },
+      removeItem(key) {
+        try { localStorage.removeItem(key); } catch (e) {}
+        try { sessionStorage.removeItem(key); } catch (e2) {}
+        delete this.memory[key];
+      }
+    };
+
     const DEFAULT_ADMIN = {
       username: 'administrador',
       password: 'PortoneselectricosMartinez',
@@ -948,8 +988,8 @@
       constructor() {
         this.currentUser = null;
         this.adminProfile = DEFAULT_ADMIN;
-        this.users = [];
-        this.tasks = [];
+        this.users = INITIAL_TECHNICIANS;
+        this.tasks = INITIAL_TASKS;
         this.notifications = [];
         this.selectedTask = null;
         this.activeReportStatus = 'REALIZADA';
@@ -998,7 +1038,6 @@
         window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
       }
 
-      // Animación Navideña Activa
       initChristmasTheme() {
         if (document.getElementById('christmas-container')) return;
 
@@ -1033,26 +1072,20 @@
         document.body.appendChild(container);
       }
 
-      init() {
+      async init() {
         this.initChristmasTheme();
 
-        const savedAdmin = localStorage.getItem('portonpro_admin_v4');
+        const savedAdmin = SafeStorage.getItem('portonpro_admin_v4');
         if (savedAdmin) {
           try { this.adminProfile = JSON.parse(savedAdmin); } catch(e) { this.adminProfile = DEFAULT_ADMIN; }
-        } else {
-          this.adminProfile = DEFAULT_ADMIN;
-          this.saveAdmin();
         }
 
-        const savedUsers = localStorage.getItem('portonpro_users_v4');
+        const savedUsers = SafeStorage.getItem('portonpro_users_v4');
         if (savedUsers) {
           try { this.users = JSON.parse(savedUsers); } catch(e) { this.users = INITIAL_TECHNICIANS; }
-        } else {
-          this.users = INITIAL_TECHNICIANS;
-          this.saveUsers();
         }
 
-        const savedTasks = localStorage.getItem('portonpro_tasks_v4');
+        const savedTasks = SafeStorage.getItem('portonpro_tasks_v4');
         if (savedTasks) {
           try {
             this.tasks = JSON.parse(savedTasks);
@@ -1063,11 +1096,9 @@
           } catch(e) {
             this.tasks = INITIAL_TASKS;
           }
-        } else {
-          this.tasks = INITIAL_TASKS;
         }
 
-        const remembered = localStorage.getItem('portonpro_remembered');
+        const remembered = SafeStorage.getItem('portonpro_remembered');
         if (remembered) {
           try {
             const remObj = JSON.parse(remembered);
@@ -1077,8 +1108,30 @@
           } catch(e) {}
         }
 
-        // Sincronización en vivo con Firestore
+        // Sincronización e inicialización garantizada en Firestore
         if (window.db) {
+          // Inicializar perfil de administrador en Firestore si aún no existe
+          db.collection('config').doc('adminProfile').get().then(doc => {
+            if (doc.exists) {
+              this.adminProfile = doc.data();
+              SafeStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
+            } else {
+              db.collection('config').doc('adminProfile').set(DEFAULT_ADMIN);
+            }
+          }).catch(e => console.error("Error al leer adminProfile en Firestore:", e));
+
+          // Inicializar lista de usuarios en Firestore si aún no existe
+          db.collection('config').doc('users').get().then(doc => {
+            if (doc.exists && Array.isArray(doc.data().list) && doc.data().list.length > 0) {
+              this.users = doc.data().list;
+              SafeStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
+              this.renderTechOptionsInSelects();
+            } else {
+              db.collection('config').doc('users').set({ list: INITIAL_TECHNICIANS });
+            }
+          }).catch(e => console.error("Error al leer config/users en Firestore:", e));
+
+          // 1. Sincronización en vivo de Órdenes
           db.collection('ordenes').doc('todas').onSnapshot((doc) => {
             if (doc.exists) {
               const data = doc.data();
@@ -1088,7 +1141,7 @@
                   if (!Array.isArray(t.checklist)) t.checklist = this.getDefaultChecklistItems();
                   if (!Array.isArray(t.evidence)) t.evidence = [];
                 });
-                localStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
+                SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
                 
                 if (this.currentUser) {
                   this.updateStats();
@@ -1102,35 +1155,20 @@
             }
           }, (error) => console.error("Error sincronizando órdenes:", error));
 
+          // 2. Sincronización en vivo de Usuarios
           db.collection('config').doc('users').onSnapshot((doc) => {
-            if (doc.exists) {
-              const data = doc.data();
-              if (Array.isArray(data.list) && data.list.length > 0) {
-                data.list.forEach(remoteUser => {
-                  const local = this.users.find(u => u.username.toLowerCase() === remoteUser.username.toLowerCase());
-                  if (local && local.lastHeartbeat > (remoteUser.lastHeartbeat || 0)) {
-                    remoteUser.lastHeartbeat = local.lastHeartbeat;
-                  }
-                });
-
-                this.users = data.list;
-                localStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
-
-                if (this.currentUser && this.currentUser.role === 'ADMIN') {
-                  this.renderTechniciansMonitor();
-                  this.renderTasks();
-                } else if (this.currentUser && this.currentUser.role === 'TECNICO') {
-                  const myUpdated = this.users.find(u => u.username.toLowerCase() === this.currentUser.username.toLowerCase());
-                  if (myUpdated && myUpdated.photo !== this.currentUser.photo) {
-                    this.currentUser.photo = myUpdated.photo;
-                    localStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
-                    this.setupDashboardUI();
-                  }
-                }
+            if (doc.exists && Array.isArray(doc.data().list)) {
+              this.users = doc.data().list;
+              SafeStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
+              this.renderTechOptionsInSelects();
+              if (this.currentUser && this.currentUser.role === 'ADMIN') {
+                this.renderTechniciansMonitor();
+                this.renderTasks();
               }
             }
-          }, (error) => console.error("Error en config users:", error));
+          }, (error) => console.error("Error sincronizando usuarios:", error));
 
+          // 3. Monitor de presencia global en Firestore
           db.collection('presencia').onSnapshot((snapshot) => {
             snapshot.forEach(doc => {
               const data = doc.data();
@@ -1147,6 +1185,7 @@
             }
           }, (error) => console.error("Error en presencia:", error));
 
+          // 4. Sincronización en vivo de Notificaciones
           db.collection('notificaciones').orderBy('timestamp', 'desc').limit(25).onSnapshot((snapshot) => {
             const list = [];
             snapshot.forEach(doc => {
@@ -1157,7 +1196,7 @@
           }, (error) => console.error("Error en notificaciones:", error));
         }
 
-        const savedSession = localStorage.getItem('portonpro_session_v4');
+        const savedSession = SafeStorage.getItem('portonpro_session_v4');
         if (savedSession) {
           try {
             const user = JSON.parse(savedSession);
@@ -1173,21 +1212,21 @@
       }
 
       saveAdmin() {
-        localStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
+        SafeStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
         if (window.db) {
           db.collection('config').doc('adminProfile').set(this.adminProfile).catch(e => console.error(e));
         }
       }
 
       saveUsers() {
-        localStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
+        SafeStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
         if (window.db) {
           db.collection('config').doc('users').set({ list: this.users }).catch(e => console.error(e));
         }
       }
 
       saveTasks() {
-        localStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
+        SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
         if (window.db) {
           db.collection('ordenes').doc('todas').set({ tasks: this.tasks }).catch(e => console.error(e));
         }
@@ -1291,7 +1330,7 @@
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
       }
 
-      // Login asíncrono con verificación directa en Firestore
+      // Autenticación directa y en tiempo real con Firestore con fallback e inmunidad a ventanas de incógnito
       async handleLogin(e) {
         e.preventDefault();
         const userVal = document.getElementById('login-username').value.trim().toLowerCase();
@@ -1299,46 +1338,55 @@
         const rememberChecked = document.getElementById('login-remember').checked;
         const errorAlert = document.getElementById('login-error-alert');
         const btnSubmit = document.getElementById('btn-submit-login');
+        const btnText = document.getElementById('btn-submit-text');
 
         if (btnSubmit) {
           btnSubmit.disabled = true;
-          btnSubmit.innerHTML = `<span>Verificando credenciales...</span>`;
+          if (btnText) btnText.textContent = "Verificando...";
         }
 
         if (rememberChecked) {
-          localStorage.setItem('portonpro_remembered', JSON.stringify({ u: userVal, p: passVal }));
+          SafeStorage.setItem('portonpro_remembered', JSON.stringify({ u: userVal, p: passVal }));
         } else {
-          localStorage.removeItem('portonpro_remembered');
+          SafeStorage.removeItem('portonpro_remembered');
         }
 
-        // Descarga fresca de Firestore para garantizar que reconozca a cualquier usuario nuevo
+        // Descarga directa desde Firestore con Timeout para garantizar sincronización sin bloqueos
         if (window.db) {
           try {
-            const snapUsers = await db.collection('config').doc('users').get();
-            if (snapUsers.exists && Array.isArray(snapUsers.data().list)) {
-              this.users = snapUsers.data().list;
-              localStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
-            }
-            const snapAdmin = await db.collection('config').doc('adminProfile').get();
-            if (snapAdmin.exists) {
-              this.adminProfile = snapAdmin.data();
-              localStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
+            const fetchPromise = Promise.all([
+              db.collection('config').doc('users').get({ source: 'server' }).catch(() => db.collection('config').doc('users').get()),
+              db.collection('config').doc('adminProfile').get({ source: 'server' }).catch(() => db.collection('config').doc('adminProfile').get())
+            ]);
+
+            const timeoutPromise = new Promise(resolve => setTimeout(resolve, 3500));
+            const result = await Promise.race([fetchPromise, timeoutPromise]);
+
+            if (result && Array.isArray(result)) {
+              const [snapUsers, snapAdmin] = result;
+              if (snapUsers && snapUsers.exists && Array.isArray(snapUsers.data().list)) {
+                this.users = snapUsers.data().list;
+                SafeStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
+              }
+              if (snapAdmin && snapAdmin.exists) {
+                this.adminProfile = snapAdmin.data();
+                SafeStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
+              }
             }
           } catch (err) {
-            console.warn("Validando localmente...", err);
+            console.warn("Validación local por error de conexión o restricción de permisos:", err);
           }
         }
 
         if (btnSubmit) {
           btnSubmit.disabled = false;
-          btnSubmit.innerHTML = `<i data-lucide="log-in" class="w-4 h-4 text-brand-lime"></i><span>Iniciar Sesión</span>`;
-          if (window.lucide) lucide.createIcons();
+          if (btnText) btnText.textContent = "Iniciar Sesión";
         }
 
         const now = new Date();
         const formattedTime = this.formatTime(now);
 
-        // 1. Administrador
+        // 1. Validar Administrador
         if (userVal === this.adminProfile.username.toLowerCase() && passVal === this.adminProfile.password) {
           errorAlert.classList.add('hidden');
           if (!this.adminProfile.firstLoginToday) {
@@ -1350,7 +1398,7 @@
           return;
         }
 
-        // 2. Técnico
+        // 2. Validar Técnico
         const techIndex = this.users.findIndex(u => u.username.toLowerCase() === userVal && u.password === passVal);
         if (techIndex !== -1) {
           const foundTech = this.users[techIndex];
@@ -1398,7 +1446,7 @@
 
       loginSuccess(user, notify = true) {
         this.currentUser = user;
-        localStorage.setItem('portonpro_session_v4', JSON.stringify(user));
+        SafeStorage.setItem('portonpro_session_v4', JSON.stringify(user));
 
         document.getElementById('view-login').classList.add('hidden');
         document.getElementById('view-dashboard').classList.remove('hidden');
@@ -1447,7 +1495,7 @@
         }
 
         this.currentUser = null;
-        localStorage.removeItem('portonpro_session_v4');
+        SafeStorage.removeItem('portonpro_session_v4');
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
         this.showLoginView();
         this.showToast('Sesión cerrada correctamente', 'info');
@@ -1631,7 +1679,7 @@
         reader.onload = (event) => {
           const base64Data = event.target.result;
           this.currentUser.photo = base64Data;
-          localStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
+          SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
 
           if (this.currentUser.role === 'ADMIN') {
             this.adminProfile.photo = base64Data;
@@ -1662,7 +1710,7 @@
 
       removeOwnPhoto() {
         this.currentUser.photo = '';
-        localStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
+        SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
 
         if (this.currentUser.role === 'ADMIN') {
           this.adminProfile.photo = '';
@@ -1708,7 +1756,7 @@
           this.adminProfile.password = newPass;
           this.saveAdmin();
           this.currentUser.password = newPass;
-          localStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
+          SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
           this.showToast('Contraseña actualizada con éxito', 'success');
           this.closeSettingsModal();
         } else {
@@ -1720,13 +1768,12 @@
           this.users[techIndex].password = newPass;
           this.saveUsers();
           this.currentUser.password = newPass;
-          localStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
+          SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
           this.showToast('Contraseña actualizada con éxito', 'success');
           this.closeSettingsModal();
         }
       }
 
-      // MONITOR DE TÉCNICOS: Umbral ajustado para conexión visual en vivo
       renderTechniciansMonitor() {
         const grid = document.getElementById('technicians-status-grid');
         const counter = document.getElementById('techs-online-counter');
@@ -2137,7 +2184,7 @@
                     <span>${t.status === 'REALIZADA' || t.status === 'NO_REALIZADA' ? 'Editar Informe' : 'Registrar Informe'}</span>
                   </button>
 
-                  <!-- BOTONES EDITAR Y ELIMINAR ORDEN (ADMIN) -->
+                  <!-- BOTONES EDITAR Y ELIMINAR ORDEN: VISIBLES SÓLO PARA EL ADMINISTRADOR -->
                   ${isAdmin ? `
                     <button onclick="app.openEditTaskModal('${t.id}')" class="p-1 text-slate-400 hover:text-brand-dark hover:bg-slate-100 rounded-lg transition" title="Modificar datos de la orden">
                       <i data-lucide="file-edit" class="w-3.5 h-3.5"></i>
