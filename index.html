@@ -39,60 +39,44 @@
       .no-print { display: none !important; }
     }
 
-    /* Animación de Nieve */
-    .snow-flake {
+    /* Animación de Circuito y Flujo Eléctrico de Automatismos */
+    .electric-energy-line {
+      stroke-dasharray: 45, 180;
+      animation: energyFlow 3.2s linear infinite;
+    }
+    @keyframes energyFlow {
+      0% { stroke-dashoffset: 225; }
+      100% { stroke-dashoffset: 0; }
+    }
+
+    .tech-pulse-glow {
+      animation: circuitGlow 3.6s ease-in-out infinite alternate;
+    }
+    @keyframes circuitGlow {
+      0% { filter: drop-shadow(0 0 1px rgba(113, 168, 50, 0.2)); opacity: 0.92; }
+      100% { filter: drop-shadow(0 0 7px rgba(113, 168, 50, 0.85)); opacity: 1; }
+    }
+
+    /* Micro-partículas flotantes de telemetría/señal */
+    .tech-particle {
       position: fixed;
-      top: -20px;
-      color: #94a3b8;
-      user-select: none;
+      width: 3px;
+      height: 3px;
+      background: #71A832;
+      border-radius: 50%;
       pointer-events: none;
       z-index: 9998;
-      animation: fallSnow linear infinite;
+      opacity: 0.45;
+      animation: floatTechParticle linear infinite;
     }
-    @keyframes fallSnow {
-      0% { transform: translateY(0) rotate(0deg); opacity: 0.85; }
-      100% { transform: translateY(105vh) rotate(360deg); opacity: 0.2; }
-    }
-
-    /* Animación Trineo con Reno */
-    .flying-sleigh-container {
-      position: fixed;
-      top: 12%;
-      left: -240px;
-      z-index: 9999;
-      pointer-events: none;
-      user-select: none;
-      animation: flySleigh 26s linear infinite;
-    }
-    .flying-sleigh-inner {
-      display: flex;
-      align-items: center;
-      font-size: 34px;
-      animation: gallopMotion 1.2s ease-in-out infinite alternate;
-      filter: drop-shadow(0 6px 10px rgba(0,0,0,0.35));
-    }
-    @keyframes flySleigh {
-      0% { left: -240px; transform: translateY(0); }
-      50% { transform: translateY(-28px); }
-      100% { left: 110vw; transform: translateY(14px); }
-    }
-    @keyframes gallopMotion {
-      0% { transform: rotate(-4deg) translateY(0); }
-      100% { transform: rotate(6deg) translateY(-8px); }
-    }
-
-    /* Balanceo realista del Gorro Navideño */
-    .animated-santa-hat {
-      transform-origin: 130px 45px;
-      animation: swingHat 3.8s ease-in-out infinite alternate;
-    }
-    @keyframes swingHat {
-      0% { transform: rotate(0deg); }
-      50% { transform: rotate(4.5deg) translateY(-1px); }
-      100% { transform: rotate(-3.5deg) translateY(1px); }
+    @keyframes floatTechParticle {
+      0% { transform: translateY(105vh) scale(0.6); opacity: 0; }
+      20% { opacity: 0.6; }
+      80% { opacity: 0.6; }
+      100% { transform: translateY(-20px) scale(1.1); opacity: 0; }
     }
   </style>
-  <!-- SDKs de Firebase Compatibles con Navegadores Estrictos -->
+  <!-- SDKs de Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
@@ -117,52 +101,18 @@
   <div id="view-login" class="flex-1 flex items-center justify-center p-4 sm:p-6 min-h-screen bg-gradient-to-br from-slate-950 via-brand-dark to-slate-900 relative z-10">
     <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
       <div class="bg-white p-6 sm:p-7 text-center border-b border-slate-100 flex flex-col items-center relative">
-        <div class="w-full max-w-[300px] py-2 relative">
-          <svg viewBox="0 0 420 185" class="w-full h-auto drop-shadow-sm select-none overflow-visible" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="hatRedGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#EF4444" />
-                <stop offset="45%" stop-color="#DC2626" />
-                <stop offset="100%" stop-color="#991B1B" />
-              </linearGradient>
-              <linearGradient id="furWhiteGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color="#FFFFFF" />
-                <stop offset="100%" stop-color="#E2E8F0" />
-              </linearGradient>
-              <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="2.5" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-              </filter>
-            </defs>
-
+        <div class="w-full max-w-[280px] py-1 relative">
+          <svg viewBox="0 0 420 170" class="w-full h-auto drop-shadow-sm select-none" xmlns="http://www.w3.org/2000/svg">
             <g stroke-linecap="round" stroke-linejoin="round">
-              <!-- Techo del Portón original -->
-              <path d="M 22 92 L 135 46 L 135 34 L 148 34 L 148 52 L 222 91" fill="none" stroke="#111827" stroke-width="11" />
-              <line x1="228" y1="91" x2="410" y2="91" stroke="#71A832" stroke-width="9" />
-              <text x="18" y="140" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" fill="#111827" letter-spacing="0.5">SERVIPORTONES</text>
-              <line x1="18" y1="160" x2="135" y2="160" stroke="#71A832" stroke-width="6" />
-              <text x="144" y="164" font-family="system-ui, -apple-system, sans-serif" font-size="19" font-weight="900" fill="#71A832" letter-spacing="3.5">ELECTRICOS MARTINEZ</text>
-              
-              <!-- GORRO NAVIDEÑO 50% MÁS GRANDE, REALISTA Y ANIMADO -->
-              <g class="animated-santa-hat">
-                <!-- Cuerpo Rojo del Gorro con Caída Natural -->
-                <path d="M 88 50 C 95 24, 125 0, 162 4 C 182 7, 202 24, 208 42 C 211 48, 192 48, 168 47 C 132 46, 96 48, 88 50 Z" 
-                      fill="url(#hatRedGrad)" filter="url(#softGlow)" />
-                <!-- Pliegue de Tela Profundo -->
-                <path d="M 120 28 C 145 22, 175 32, 198 42 C 185 41, 150 38, 120 28 Z" 
-                      fill="#7F1D1D" opacity="0.45" />
-                <!-- Pompón colgante -->
-                <path d="M 200 38 Q 218 42, 222 55" fill="none" stroke="#DC2626" stroke-width="4.5" stroke-linecap="round"/>
-                <circle cx="225" cy="58" r="10.5" fill="url(#furWhiteGrad)" filter="url(#softGlow)" />
-                <!-- Ribete Blanco Esponjoso de la Base -->
-                <rect x="80" y="44" width="94" height="15" rx="7.5" fill="url(#furWhiteGrad)" filter="url(#softGlow)" />
-                <!-- Texturas esponjosas simuladas -->
-                <circle cx="90" cy="51" r="5" fill="#FFFFFF" opacity="0.9"/>
-                <circle cx="106" cy="51" r="5.5" fill="#FFFFFF" opacity="0.9"/>
-                <circle cx="124" cy="51" r="5.5" fill="#FFFFFF" opacity="0.9"/>
-                <circle cx="142" cy="51" r="5.5" fill="#FFFFFF" opacity="0.9"/>
-                <circle cx="158" cy="51" r="5" fill="#FFFFFF" opacity="0.9"/>
-              </g>
+              <!-- Techo estructural del automatismo -->
+              <path d="M 22 80 L 135 34 L 135 22 L 148 22 L 148 40 L 222 79" fill="none" stroke="#111827" stroke-width="11" />
+              <!-- Cremallera verde base -->
+              <line x1="228" y1="79" x2="410" y2="79" stroke="#71A832" stroke-width="9" />
+              <!-- Línea animada de pulso de energía -->
+              <line x1="228" y1="79" x2="410" y2="79" stroke="#b3d88b" stroke-width="9" class="electric-energy-line tech-pulse-glow" />
+              <text x="18" y="128" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" fill="#111827" letter-spacing="0.5">SERVIPORTONES</text>
+              <line x1="18" y1="148" x2="135" y2="148" stroke="#71A832" stroke-width="6" />
+              <text x="144" y="152" font-family="system-ui, -apple-system, sans-serif" font-size="19" font-weight="900" fill="#71A832" letter-spacing="3.5">ELECTRICOS MARTINEZ</text>
             </g>
           </svg>
         </div>
@@ -226,6 +176,7 @@
               <g stroke-linecap="round" stroke-linejoin="round">
                 <path d="M 22 80 L 135 34 L 135 22 L 148 22 L 148 40 L 222 79" fill="none" stroke="#111827" stroke-width="12" />
                 <line x1="228" y1="79" x2="410" y2="79" stroke="#71A832" stroke-width="10" />
+                <line x1="228" y1="79" x2="410" y2="79" stroke="#b3d88b" stroke-width="10" class="electric-energy-line tech-pulse-glow" />
                 <text x="18" y="128" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" fill="#111827">SERVIPORTONES</text>
                 <line x1="18" y1="148" x2="135" y2="148" stroke="#71A832" stroke-width="7" />
                 <text x="144" y="152" font-family="system-ui, -apple-system, sans-serif" font-size="19" font-weight="900" fill="#71A832" letter-spacing="3">ELECTRICOS MARTINEZ</text>
@@ -236,7 +187,6 @@
         </div>
 
         <div class="flex items-center space-x-2 sm:space-x-3">
-          <!-- Botón de Nueva Orden (Sólo Administrador) -->
           <button id="btn-nav-new-order" onclick="app.openNewTaskModal()" class="hidden bg-brand-lime hover:bg-brand-limeHover text-white text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md shadow-brand-lime/20 transition active:scale-95">
             <i data-lucide="plus-circle" class="w-4 h-4"></i>
             <span>Nueva Orden</span>
@@ -249,7 +199,7 @@
               <span id="notif-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-pulse">0</span>
             </button>
 
-            <!-- Menú Desplegable -->
+            <!-- Menú Desplegable de Notificaciones -->
             <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden text-slate-800">
               <div class="p-3 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
                 <div class="flex items-center gap-2">
@@ -822,6 +772,7 @@
             <g stroke-linecap="round" stroke-linejoin="round">
               <path d="M 22 80 L 135 34 L 135 22 L 148 22 L 148 40 L 222 79" fill="none" stroke="#111827" stroke-width="12" />
               <line x1="228" y1="79" x2="410" y2="79" stroke="#71A832" stroke-width="10" />
+              <line x1="228" y1="79" x2="410" y2="79" stroke="#b3d88b" stroke-width="10" class="electric-energy-line tech-pulse-glow" />
               <text x="18" y="128" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" fill="#111827">SERVIPORTONES</text>
               <line x1="18" y1="148" x2="135" y2="148" stroke="#71A832" stroke-width="7" />
               <text x="144" y="152" font-family="system-ui, -apple-system, sans-serif" font-size="19" font-weight="900" fill="#71A832" letter-spacing="3">ELECTRICOS MARTINEZ</text>
@@ -915,7 +866,7 @@
   <!-- JAVASCRIPT: LÓGICA COMPLETA DE LA APLICACIÓN             -->
   <!-- ======================================================== -->
   <script>
-    // Capa de almacenamiento seguro sin errores en modo incógnito o Safari
+    // Capa de almacenamiento seguro sin bloqueos en ventanas privadas o Safari
     const SafeStorage = {
       memStore: {},
       setItem(key, value) {
@@ -1091,35 +1042,28 @@
         window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
       }
 
-      initChristmasTheme() {
-        if (document.getElementById('christmas-container')) return;
+      // Micro-partículas tecnológicas modernas de automatismos (Reemplazo elegante de nieve)
+      initTechTheme() {
+        if (document.getElementById('tech-particles-container')) return;
 
         const container = document.createElement('div');
-        container.id = 'christmas-container';
+        container.id = 'tech-particles-container';
         container.style.position = 'fixed';
         container.style.top = '0';
         container.style.left = '0';
         container.style.width = '100vw';
         container.style.height = '100vh';
         container.style.pointerEvents = 'none';
-        container.style.zIndex = '9999';
+        container.style.zIndex = '9998';
         container.style.overflow = 'hidden';
 
-        const sleighWrapper = document.createElement('div');
-        sleighWrapper.className = 'flying-sleigh-container';
-        sleighWrapper.innerHTML = `<div class="flying-sleigh-inner">🛷✨🦌</div>`;
-        container.appendChild(sleighWrapper);
-
-        const chars = ['❄', '❅', '•', '✻', '❆'];
-        for (let i = 0; i < 35; i++) {
-          const flake = document.createElement('div');
-          flake.className = 'snow-flake';
-          flake.textContent = chars[Math.floor(Math.random() * chars.length)];
-          flake.style.left = Math.random() * 98 + 'vw';
-          flake.style.animationDuration = (Math.random() * 7 + 5) + 's';
-          flake.style.animationDelay = (Math.random() * 8) + 's';
-          flake.style.fontSize = (Math.random() * 16 + 10) + 'px';
-          container.appendChild(flake);
+        for (let i = 0; i < 24; i++) {
+          const particle = document.createElement('div');
+          particle.className = 'tech-particle';
+          particle.style.left = Math.random() * 98 + 'vw';
+          particle.style.animationDuration = (Math.random() * 8 + 6) + 's';
+          particle.style.animationDelay = (Math.random() * 8) + 's';
+          container.appendChild(particle);
         }
 
         document.body.appendChild(container);
@@ -1127,7 +1071,7 @@
 
       async init() {
         console.log("Inicializando ServiPortones App Engine...");
-        this.initChristmasTheme();
+        this.initTechTheme();
 
         const savedAdmin = SafeStorage.getItem('portonpro_admin_v4');
         if (savedAdmin) {
@@ -1164,7 +1108,6 @@
 
         // Sincronización transparente con Firestore
         if (window.db) {
-          // Inicializar perfil administrativo
           db.collection('config').doc('adminProfile').get().then(doc => {
             if (doc.exists) {
               this.adminProfile = doc.data();
@@ -1174,7 +1117,6 @@
             }
           }).catch(e => console.warn("Firestore: No se pudo verificar adminProfile inicial.", e));
 
-          // Inicializar catálogo de usuarios
           db.collection('config').doc('users').get().then(doc => {
             if (doc.exists && Array.isArray(doc.data().list) && doc.data().list.length > 0) {
               this.users = doc.data().list;
@@ -1384,17 +1326,14 @@
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
       }
 
-      // Descarga garantizada de usuarios con reintentos antes de evaluar credenciales
+      // Descarga garantizada de credenciales con reintentos antes de validar
       async syncUsersFromFirestoreWithRetry(maxRetries = 3) {
         if (!window.db) return false;
         const startTime = Date.now();
-        console.log(`[Firestore Auth] Iniciando sincronización de credenciales...`);
+        console.log(`[Firestore Auth] Verificando catálogo de credenciales...`);
 
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
           try {
-            console.log(`[Firestore Auth] Intento ${attempt} de ${maxRetries}...`);
-            
-            // Intentar leer prioritariamente del servidor
             const [snapUsers, snapAdmin] = await Promise.all([
               db.collection('config').doc('users').get({ source: 'server' }).catch(() => db.collection('config').doc('users').get()),
               db.collection('config').doc('adminProfile').get({ source: 'server' }).catch(() => db.collection('config').doc('adminProfile').get())
@@ -1407,7 +1346,6 @@
               if (Array.isArray(data.list) && data.list.length > 0) {
                 this.users = data.list;
                 SafeStorage.setItem('portonpro_users_v4', JSON.stringify(this.users));
-                console.log(`[Firestore Auth] Éxito: ${this.users.length} técnicos sincronizados.`);
                 syncSuccess = true;
               }
             }
@@ -1415,28 +1353,25 @@
             if (snapAdmin && snapAdmin.exists) {
               this.adminProfile = snapAdmin.data();
               SafeStorage.setItem('portonpro_admin_v4', JSON.stringify(this.adminProfile));
-              console.log(`[Firestore Auth] Éxito: Perfil administrativo sincronizado.`);
               syncSuccess = true;
             }
 
             if (syncSuccess) {
               const elapsed = Date.now() - startTime;
-              console.log(`[Firestore Auth] Sincronización completada en ${elapsed}ms.`);
+              console.log(`[Firestore Auth] Credenciales sincronizadas exitosamente en ${elapsed}ms.`);
               return true;
             }
-
           } catch (err) {
-            console.warn(`[Firestore Auth] Advertencia en intento ${attempt}:`, err);
-            // Pausa con retroceso exponencial antes del siguiente intento
+            console.warn(`[Firestore Auth] Intento ${attempt} no respondió:`, err);
             await new Promise(resolve => setTimeout(resolve, attempt * 600));
           }
         }
 
-        console.error(`[Firestore Auth] No fue posible descargar credenciales actualizadas tras ${maxRetries} intentos.`);
+        console.error(`[Firestore Auth] No se pudo descargar del servidor tras ${maxRetries} intentos.`);
         return false;
       }
 
-      // Inicio de sesión robusto con detección de fallos de red
+      // Login robusto con sanitización e inmunidad a ventanas de incógnito y fallos de red
       async handleLogin(e) {
         e.preventDefault();
         const rawUser = document.getElementById('login-username').value;
@@ -1447,7 +1382,7 @@
         const btnSubmit = document.getElementById('btn-submit-login');
         const btnText = document.getElementById('btn-submit-text');
 
-        // Sanitización estricta sin espacios accidentales
+        // Normalización y sanitización estricta
         const userVal = this.normalizeInput(rawUser).toLowerCase();
         const passVal = this.normalizeInput(rawPass);
 
@@ -1459,7 +1394,7 @@
 
         if (btnSubmit) {
           btnSubmit.disabled = true;
-          if (btnText) btnText.textContent = "Conectando con el servidor...";
+          if (btnText) btnText.textContent = "Verificando credenciales...";
         }
 
         if (rememberChecked) {
@@ -1468,7 +1403,7 @@
           SafeStorage.removeItem('portonpro_remembered');
         }
 
-        // 1. Descargar credenciales frescas de Firestore asegurando que la conexión exista
+        // Descarga directa desde Firestore
         const isOnlineFirestore = await this.syncUsersFromFirestoreWithRetry(3);
 
         if (btnSubmit) {
@@ -1479,7 +1414,7 @@
         const now = new Date();
         const formattedTime = this.formatTime(now);
 
-        // 2. Verificar Administrador
+        // 1. Validar Administrador
         const adminUserMatch = this.normalizeInput(this.adminProfile.username).toLowerCase();
         const adminPassMatch = this.normalizeInput(this.adminProfile.password);
 
@@ -1494,7 +1429,7 @@
           return;
         }
 
-        // 3. Verificar Técnico
+        // 2. Validar Técnico
         const techIndex = this.users.findIndex(u => {
           const uName = this.normalizeInput(u.username).toLowerCase();
           const uPass = this.normalizeInput(u.password);
@@ -1541,7 +1476,7 @@
           return;
         }
 
-        // 4. Si falló la validación y tampoco hubo sincronización con Firestore: Error real de conexión
+        // 3. Si no coincidió y tampoco hubo respuesta de Firestore: Notificar error real de red
         if (!isOnlineFirestore && (!this.users || this.users.length === 0)) {
           errorText.textContent = 'Error de conexión con la base de datos. Verifica tu conexión a internet o intenta de nuevo.';
           errorAlert.classList.remove('hidden');
@@ -1549,7 +1484,7 @@
           return;
         }
 
-        // 5. Error legítimo de credenciales
+        // 4. Error real de credenciales
         errorText.textContent = 'Usuario o contraseña incorrectos. Verifica que no tengas mayúsculas activadas.';
         errorAlert.classList.remove('hidden');
         if (window.lucide) lucide.createIcons();
@@ -2295,7 +2230,7 @@
                     <span>${t.status === 'REALIZADA' || t.status === 'NO_REALIZADA' ? 'Editar Informe' : 'Registrar Informe'}</span>
                   </button>
 
-                  <!-- BOTONES EDITAR Y ELIMINAR ORDEN: VISIBLES SÓLO PARA EL ADMINISTRADOR -->
+                  <!-- BOTONES EDITAR Y ELIMINAR ORDEN (ADMIN) -->
                   ${isAdmin ? `
                     <button onclick="app.openEditTaskModal('${t.id}')" class="p-1 text-slate-400 hover:text-brand-dark hover:bg-slate-100 rounded-lg transition" title="Modificar datos de la orden">
                       <i data-lucide="file-edit" class="w-3.5 h-3.5"></i>
