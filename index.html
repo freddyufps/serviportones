@@ -5,10 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>ServiPortones Eléctricos Martínez - Gestión Operativa y Control de Personal</title>
   
+  <!-- Configuración PWA Nativa -->
   <meta name="theme-color" content="#111827">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ServiPortones">
+  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22ServiPortones%20Mart%C3%ADnez%22%2C%22short_name%22%3A%22ServiPortones%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23111827%22%2C%22theme_color%22%3A%22%23111827%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fcdn-icons-png.flaticon.com%2F512%2F1048%2F1048953.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -116,6 +118,18 @@
       0% { transform: translateX(0); opacity: 1; }
       100% { transform: translateX(115%); opacity: 0; }
     }
+
+    .bell-ring-active {
+      animation: bellShake 1.2s ease-in-out infinite alternate;
+    }
+    @keyframes bellShake {
+      0% { transform: rotate(0); }
+      20% { transform: rotate(14deg); }
+      40% { transform: rotate(-14deg); }
+      60% { transform: rotate(8deg); }
+      80% { transform: rotate(-8deg); }
+      100% { transform: rotate(0); }
+    }
   </style>
 
   <!-- SDKs de Firebase -->
@@ -138,16 +152,17 @@
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen font-sans flex flex-col antialiased selection:bg-brand-lime selection:text-white relative">
 
-  <!-- CONTENEDOR FLOTANTE DE NOTIFICACIONES EMERGENTES INTERNAS (TOASTS) -->
-  <div id="toast-notification-stack" class="fixed top-3 right-3 sm:top-4 sm:right-4 z-[99999] flex flex-col gap-2 max-w-[94vw] sm:max-w-sm w-full pointer-events-none"></div>
+  <!-- CONTENEDOR FLOTANTE DE NOTIFICACIONES EMERGENTES -->
+  <div id="toast-notification-stack" class="fixed top-3 right-3 sm:top-4 sm:right-4 z-[99999] flex flex-col gap-2.5 max-w-[92vw] sm:max-w-sm w-full pointer-events-none"></div>
 
-  <!-- ELEMENTO DE AUDIO REMOTO WEBRTC (Garantizado para streaming) -->
-  <audio id="remote-audio-stream" autoplay playsinline style="position: absolute; width: 1px; height: 1px; opacity: 0.01; pointer-events: none;"></audio>
+  <!-- ELEMENTO DE AUDIO REMOTO WEBRTC (Evita display:none para reproducción garantizada) -->
+  <audio id="remote-audio-stream" autoplay playsinline style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;"></audio>
 
   <!-- MODAL DE LLAMADA DE VOZ WEBRTC -->
   <div id="modal-voice-call" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[100000] hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl flex flex-col items-center zoom-photo-enter text-white">
       <div class="relative w-24 h-24 rounded-full border-4 border-brand-lime bg-slate-800 flex items-center justify-center mb-4 overflow-hidden shadow-lg">
+        <img id="call-user-photo" src="" class="w-full h-full object-cover hidden" alt="">
         <span id="call-user-initial" class="text-3xl font-black text-brand-lime">📞</span>
         <span class="w-4 h-4 rounded-full bg-emerald-500 absolute top-1 right-1 ring-2 ring-slate-900 animate-pulse"></span>
       </div>
@@ -227,6 +242,10 @@
           <i data-lucide="log-in" class="w-4 h-4 text-brand-lime"></i>
           <span id="btn-submit-text">Iniciar Sesión</span>
         </button>
+
+        <p class="text-center text-[10px] sm:text-[11px] text-slate-400 pt-1">
+          Acceso privado para el personal técnico y administrativo.
+        </p>
       </form>
     </div>
   </div>
@@ -262,6 +281,27 @@
             <i data-lucide="plus-circle" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
             <span class="hidden xs:inline">Nueva Orden</span>
           </button>
+
+          <!-- CAMPANA DE NOTIFICACIONES -->
+          <div class="relative" id="notifications-wrapper">
+            <button id="btn-notifications-toggle" onclick="app.toggleNotificationsPanel()" class="p-1.5 sm:p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl transition flex items-center relative" title="Notificaciones de actividad">
+              <i data-lucide="bell" id="bell-icon" class="w-4 h-4 text-brand-lime transition-transform"></i>
+              <span id="notif-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-pulse">0</span>
+            </button>
+
+            <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-[88vw] sm:w-80 md:w-96 max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden text-slate-800">
+              <div class="p-3 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="bell" class="w-4 h-4 text-brand-lime"></i>
+                  <span class="text-xs font-bold uppercase tracking-wider">Centro de Notificaciones</span>
+                </div>
+                <button onclick="app.clearNotifications()" class="text-[10px] text-slate-400 hover:text-white underline">Limpiar</button>
+              </div>
+              <div id="notifications-list" class="max-h-64 sm:max-h-80 overflow-y-auto divide-y divide-slate-100 text-xs chat-scroll">
+                <div class="p-4 text-center text-slate-400 italic">No hay novedades recientes</div>
+              </div>
+            </div>
+          </div>
 
           <button id="btn-nav-settings" onclick="app.openSettingsModal()" class="p-1.5 sm:p-2 sm:px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl transition flex items-center gap-1.5 shadow-sm" title="Ajustes y Personal">
             <i data-lucide="settings" class="w-4 h-4 text-brand-lime"></i>
@@ -532,8 +572,7 @@
           <span class="hidden sm:inline">Llamar</span>
         </button>
 
-        <!-- Opciones avanzadas de conversación (SOLO ADMINISTRADOR) -->
-        <div class="relative" id="chat-admin-actions-container">
+        <div class="relative">
           <button onclick="app.toggleChatOptionsMenu()" class="p-1.5 text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition">
             <i data-lucide="more-vertical" class="w-4 h-4"></i>
           </button>
@@ -575,13 +614,13 @@
       <div id="chat-conversation-area" class="flex-1 flex flex-col bg-white overflow-hidden min-w-0 w-full">
         <div id="chat-mobile-back-bar" class="p-2 bg-slate-100 border-b flex items-center justify-between sm:hidden shrink-0">
           <button onclick="app.showMobileChatSidebar()" class="text-xs font-bold text-brand-dark flex items-center gap-1">
-            ← Volver
+            ← Chats
           </button>
           <span id="chat-mobile-active-name" class="text-xs font-bold text-slate-700 truncate">Chat Activo</span>
         </div>
 
         <!-- Contenedor de Mensajes -->
-        <div id="chat-messages-container" class="flex-1 p-3 overflow-y-auto space-y-2 text-xs chat-scroll bg-slate-50/50">
+        <div id="chat-messages-container" class="flex-1 p-3.5 overflow-y-auto space-y-2.5 text-xs chat-scroll bg-slate-50/50">
           <div class="text-center py-8 text-slate-400 text-xs italic">Selecciona o inicia una conversación...</div>
         </div>
 
@@ -596,15 +635,15 @@
     </div>
   </div>
 
-  <!-- MODAL: AJUSTES, FOTOS Y CONFIGURACIÓN -->
+  <!-- MODAL: AJUSTES, FOTOS Y PREFERENCIAS -->
   <div id="modal-settings" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
       <div class="bg-brand-dark text-white px-4 sm:px-5 py-3 sm:py-3.5 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
         <div class="flex items-center gap-2">
           <i data-lucide="settings" class="w-5 h-5 text-brand-lime"></i>
           <div>
-            <h3 class="text-xs sm:text-sm font-bold">Configuración y Seguridad</h3>
-            <p id="settings-modal-subtitle" class="text-[10px] sm:text-[11px] text-slate-300">Administración de credenciales y personal</p>
+            <h3 class="text-xs sm:text-sm font-bold">Configuración y Alertas</h3>
+            <p id="settings-modal-subtitle" class="text-[10px] sm:text-[11px] text-slate-300">Administración de credenciales y notificaciones</p>
           </div>
         </div>
         <button onclick="app.closeSettingsModal()" class="text-slate-400 hover:text-white p-1">
@@ -613,13 +652,16 @@
       </div>
 
       <div class="p-4 space-y-3.5 overflow-y-auto flex-1 text-xs sm:text-sm">
-        
-        <!-- PREFERENCIAS DE SONIDO Y NOTIFICACIONES INTERNAS -->
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
-          <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-            <i data-lucide="bell" class="w-4 h-4 text-brand-limeHover"></i>
-            <span>Sonidos y Alertas Flotantes</span>
-          </h4>
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+              <i data-lucide="bell" class="w-4 h-4 text-brand-limeHover"></i>
+              <span>Alertas y Notificaciones</span>
+            </h4>
+            <button type="button" onclick="app.requestNativeNotificationPermission()" class="text-[10px] font-bold text-cyan-700 bg-cyan-100 px-2 py-0.5 rounded hover:bg-cyan-200">
+              🔔 Notificaciones Nativas
+            </button>
+          </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
             <label class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer select-none">
               <input type="checkbox" id="pref-sound" onchange="app.updatePref('sound', this.checked)" class="w-4 h-4 rounded text-brand-lime focus:ring-brand-lime border-slate-300">
@@ -632,6 +674,10 @@
             <label class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer select-none">
               <input type="checkbox" id="pref-chat-badge" onchange="app.updatePref('chatBadge', this.checked)" class="w-4 h-4 rounded text-brand-lime focus:ring-brand-lime border-slate-300">
               <span class="text-xs font-semibold text-slate-700">🔴 Contador de chat</span>
+            </label>
+            <label class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer select-none">
+              <input type="checkbox" id="pref-notif-badge" onchange="app.updatePref('notifBadge', this.checked)" class="w-4 h-4 rounded text-brand-lime focus:ring-brand-lime border-slate-300">
+              <span class="text-xs font-semibold text-slate-700">🔔 Contador campana</span>
             </label>
           </div>
         </div>
@@ -736,7 +782,7 @@
     </div>
   </div>
 
-  <!-- MODAL: ASIGNAR / EDITAR ORDEN (ADMIN) CON CHECKLIST DINÁMICO -->
+  <!-- MODAL: ASIGNAR / EDITAR ORDEN (ADMIN) -->
   <div id="modal-task-form" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
       <div class="bg-brand-dark text-white px-4 sm:px-5 py-3 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
@@ -797,17 +843,6 @@
           </div>
         </div>
 
-        <!-- SECCIÓN: CHECKLIST TÉCNICO DINÁMICO DEL PORTÓN (ADMINISTRADOR) -->
-        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-[11px] font-black uppercase text-slate-800 tracking-wider">Checklist Técnico del Portón</span>
-            <button type="button" onclick="app.addChecklistItemAdmin()" class="px-2 py-0.5 bg-brand-lime hover:bg-brand-limeHover text-white text-[10px] font-bold rounded-lg shadow-sm flex items-center gap-1">
-              ➕ Agregar Ítem
-            </button>
-          </div>
-          <div id="admin-checklist-items-container" class="space-y-1.5 max-h-36 overflow-y-auto"></div>
-        </div>
-
         <div>
           <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Instrucciones</label>
           <textarea id="task-instructions" rows="2" placeholder="Indicaciones para el técnico..." class="w-full px-2.5 py-1.5 border rounded-lg"></textarea>
@@ -823,7 +858,7 @@
     </div>
   </div>
 
-  <!-- MODAL: REPORTE TÉCNICO CON CHECKLIST Y NOVEDADES EN CAMPO -->
+  <!-- MODAL: REPORTE TÉCNICO -->
   <div id="modal-report" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
       <div id="report-modal-header" class="bg-brand-dark text-white px-4 sm:px-5 py-3 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
@@ -853,23 +888,6 @@
           <button type="button" id="rep-btn-maps" class="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm flex items-center justify-center gap-1">
             📍 Maps
           </button>
-        </div>
-
-        <!-- CHECKLIST TÉCNICO OFICIAL (Solo verificación del técnico) -->
-        <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-          <span class="block text-[11px] font-black uppercase text-slate-700 mb-1.5">Checklist Técnico del Portón</span>
-          <div id="rep-checklist-container" class="space-y-1.5"></div>
-        </div>
-
-        <!-- NOVEDADES EN CAMPO / HALLAZGOS TÉCNICOS (CREADOS POR EL TÉCNICO) -->
-        <div class="bg-amber-50/60 p-2.5 rounded-xl border border-amber-200">
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="text-[11px] font-black uppercase text-amber-900 tracking-wider">Hallazgos Técnicos / Novedades en Campo</span>
-            <button type="button" onclick="app.addWorkerFinding()" class="px-2 py-0.5 bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold rounded-lg shadow-sm flex items-center gap-1">
-              ➕ Agregar Novedad
-            </button>
-          </div>
-          <div id="rep-findings-container" class="space-y-1.5"></div>
         </div>
 
         <div>
@@ -934,16 +952,6 @@
           <p><b class="text-slate-500">Dirección:</b> <span id="view-address" class="font-semibold"></span></p>
           <p><b class="text-slate-500">Servicio:</b> <span id="view-service"></span> (<span id="view-equipment"></span>)</p>
           <p><b class="text-slate-500">Técnico:</b> <span id="view-technician" class="font-bold text-slate-900"></span></p>
-        </div>
-
-        <div class="p-2.5 bg-slate-50 border rounded-xl" id="view-checklist-section">
-          <p class="font-bold text-slate-500 mb-1 text-[10px] uppercase">Puntos de Verificación Técnico:</p>
-          <div id="view-checklist-list" class="space-y-1 text-xs"></div>
-        </div>
-
-        <div class="p-2.5 bg-amber-50/70 border border-amber-200 rounded-xl hidden" id="view-findings-section">
-          <p class="font-bold text-amber-900 mb-1 text-[10px] uppercase">Novedades en Campo Registradas:</p>
-          <div id="view-findings-list" class="space-y-1 text-xs"></div>
         </div>
 
         <div class="p-2.5 bg-slate-50 border rounded-xl">
@@ -1050,6 +1058,62 @@
         }
       },
 
+      playOrderSound() {
+        try {
+          const ctx = this.getCtx();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+
+          [0, 0.14].forEach((delay, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+
+            const freq = idx === 0 ? 523.25 : 783.99;
+            osc.frequency.setValueAtTime(freq, now + delay);
+
+            gain.gain.setValueAtTime(0.001, now + delay);
+            gain.gain.linearRampToValueAtTime(0.3, now + delay + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.45);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.start(now + delay);
+            osc.stop(now + delay + 0.5);
+          });
+        } catch (e) {
+          console.warn("Audio Context bloqueado:", e);
+        }
+      },
+
+      playGeneralNotificationSound() {
+        try {
+          const ctx = this.getCtx();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+
+          osc.frequency.setValueAtTime(659.25, now);
+          osc.frequency.exponentialRampToValueAtTime(987.77, now + 0.18);
+
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.2, now + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.45);
+        } catch (e) {
+          console.warn("Audio Context bloqueado:", e);
+        }
+      },
+
       playCallAlertSound() {
         try {
           const ctx = this.getCtx();
@@ -1084,14 +1148,6 @@
       SoundEngine.getCtx();
     }, { once: true });
 
-    const INITIAL_CHECKLIST_TEMPLATE = [
-      'Engrase de cremallera / tornillo sin fin',
-      'Verificación y alineación de fotocélulas',
-      'Calibración y prueba de finales de carrera',
-      'Ajuste de embrague y fuerza de impacto',
-      'Revisión de tarjeta electrónica y fusibles'
-    ];
-
     const INITIAL_TASKS = [
       {
         id: 'ORD-101',
@@ -1105,9 +1161,7 @@
         date: '2026-10-25',
         instructions: 'Revisión periódica. Verificar tensión de cremallera y finales de carrera.',
         status: 'PENDIENTE',
-        checklist: [...INITIAL_CHECKLIST_TEMPLATE],
-        completedChecklist: [],
-        findings: [],
+        checklist: [],
         observations: '',
         evidence: [],
         completedAt: null
@@ -1120,16 +1174,11 @@
         this.users = [];
         this.workers = [];
         this.tasks = INITIAL_TASKS;
+        this.notifications = [];
         this.selectedTask = null;
         this.activeReportStatus = 'REALIZADA';
         this.heartbeatTimer = null;
         this.currentReportEvidence = [];
-        
-        // Estado del Checklist al editar/crear orden (Admin)
-        this.currentEditingChecklist = [];
-
-        // Estado de Hallazgos en Campo del Técnico
-        this.currentWorkerFindings = [];
         
         // Estado del Chat y Conversaciones
         this.chatMessages = [];
@@ -1151,7 +1200,7 @@
         this.gpsLocationsUnsubscribe = null;
         this.locationsData = {};
 
-        // Estado WebRTC
+        // Estado WebRTC (Llamadas de Voz)
         this.peerConnection = null;
         this.localStream = null;
         this.callUnsubscribe = null;
@@ -1160,14 +1209,17 @@
         this.callSeconds = 0;
         this.isMuted = false;
 
-        // Preferencias internas de Notificación
+        // Preferencias de Notificación
         this.prefs = {
           sound: true,
           popup: true,
-          chatBadge: true
+          chatBadge: true,
+          notifBadge: true
         };
 
         this.processedEventIds = new Set();
+        this.isTasksInitialLoad = true;
+        this.isNotifsInitialLoad = true;
         this.appStartTime = Date.now();
 
         this.init();
@@ -1183,6 +1235,7 @@
         document.getElementById('pref-sound').checked = this.prefs.sound;
         document.getElementById('pref-popup').checked = this.prefs.popup;
         document.getElementById('pref-chat-badge').checked = this.prefs.chatBadge;
+        document.getElementById('pref-notif-badge').checked = this.prefs.notifBadge;
       }
 
       updatePref(key, value) {
@@ -1191,7 +1244,54 @@
         if (key === 'chatBadge' && !value) {
           document.getElementById('chat-unread-badge').classList.add('hidden');
         }
+        if (key === 'notifBadge' && !value) {
+          document.getElementById('notif-badge').classList.add('hidden');
+        }
         this.showToast('Preferencia guardada', 'info');
+      }
+
+      async requestNativeNotificationPermission() {
+        if (!("Notification" in window)) {
+          this.showToast("Tu navegador no soporta notificaciones nativas", "error");
+          return;
+        }
+
+        try {
+          const perm = await Notification.requestPermission();
+          if (perm === "granted") {
+            this.showToast("Notificaciones nativas concedidas", "success");
+            new Notification("ServiPortones", {
+              body: "Notificaciones del sistema activas correctamente.",
+              icon: "https://cdn-icons-png.flaticon.com/512/1048/1048953.png"
+            });
+          } else {
+            this.showToast("Permiso de notificaciones no concedido", "info");
+          }
+        } catch(e) {
+          console.warn("Error permiso notificaciones:", e);
+        }
+      }
+
+      sendNativeNotification({ title, body, workerName }) {
+        if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+        try {
+          const notif = new Notification(title || "ServiPortones", {
+            body: body || "Nuevo aviso en la plataforma",
+            icon: "https://cdn-icons-png.flaticon.com/512/1048/1048953.png",
+            tag: workerName || "general"
+          });
+
+          notif.onclick = () => {
+            window.focus();
+            if (workerName) {
+              this.openDirectWorkerChat(workerName);
+            }
+            notif.close();
+          };
+        } catch (e) {
+          console.warn("Fallo notificación nativa:", e);
+        }
       }
 
       showPopupNotification({ title, subtitle, details, type, icon, onClick }) {
@@ -1205,12 +1305,13 @@
         card.id = toastId;
         card.className = "pointer-events-auto bg-slate-900/95 text-white border border-slate-700/80 rounded-2xl shadow-2xl p-3.5 popup-slide-in backdrop-blur-md flex items-start gap-3 relative overflow-hidden transition cursor-pointer hover:border-brand-lime";
 
-        let badgeBg = "bg-cyan-500/20 text-cyan-400 border border-cyan-500/40";
+        let badgeBg = "bg-brand-lime/20 text-brand-lime border border-brand-lime/40";
+        if (type === 'chat') badgeBg = "bg-cyan-500/20 text-cyan-400 border border-cyan-500/40";
         if (type === 'order') badgeBg = "bg-amber-500/20 text-amber-400 border border-amber-500/40";
 
         card.innerHTML = `
           <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${badgeBg} font-black text-sm">
-            ${icon || '💬'}
+            ${icon || '🔔'}
           </div>
           <div class="flex-1 min-w-0 pr-4">
             <div class="flex items-center justify-between gap-1">
@@ -1251,6 +1352,19 @@
           elem.classList.remove('popup-slide-in');
           elem.classList.add('popup-slide-out');
           setTimeout(() => elem.remove(), 320);
+        }
+      }
+
+      triggerBellAttention() {
+        const icon = document.getElementById('bell-icon');
+        const badge = document.getElementById('notif-badge');
+        if (icon) {
+          icon.classList.add('bell-ring-active', 'text-amber-400');
+          setTimeout(() => icon.classList.remove('bell-ring-active', 'text-amber-400'), 3000);
+        }
+        if (badge) {
+          badge.classList.add('ring-4', 'ring-rose-300');
+          setTimeout(() => badge.classList.remove('ring-4', 'ring-rose-300'), 2500);
         }
       }
 
@@ -1352,7 +1466,34 @@
 
           db.collection('ordenes').doc('todas').onSnapshot((doc) => {
             if (doc.exists && Array.isArray(doc.data().tasks)) {
-              this.tasks = doc.data().tasks;
+              const incomingTasks = doc.data().tasks;
+              
+              if (!this.isTasksInitialLoad && incomingTasks.length > this.tasks.length) {
+                const latestTask = incomingTasks[0];
+                if (latestTask && !this.processedEventIds.has(latestTask.id)) {
+                  this.processedEventIds.add(latestTask.id);
+
+                  if (this.prefs.sound) SoundEngine.playOrderSound();
+                  this.triggerBellAttention();
+
+                  this.sendNativeNotification({
+                    title: "📋 Nueva Orden de Trabajo",
+                    body: `${latestTask.client} - ${latestTask.serviceType}`
+                  });
+
+                  this.showPopupNotification({
+                    title: '📋 Nueva Orden de Trabajo',
+                    subtitle: `${latestTask.client} &bull; ${latestTask.serviceType}`,
+                    details: `Equipo: ${latestTask.equipment} | Técnico: ${latestTask.assignedTo}`,
+                    type: 'order',
+                    icon: '📋',
+                    onClick: () => this.viewOrderDetails(latestTask.id)
+                  });
+                }
+              }
+
+              this.isTasksInitialLoad = false;
+              this.tasks = incomingTasks;
               SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
               if (this.currentUser) {
                 this.updateStats();
@@ -1380,6 +1521,35 @@
               this.renderConversationsSidebar();
             }
           });
+
+          db.collection('notificaciones').orderBy('timestamp', 'desc').limit(30).onSnapshot((snapshot) => {
+            const list = [];
+            snapshot.forEach(doc => {
+              const data = doc.data();
+              const notifId = doc.id;
+              list.push({ id: notifId, ...data });
+
+              if (!this.isNotifsInitialLoad && data.timestamp > this.appStartTime && !this.processedEventIds.has(notifId)) {
+                this.processedEventIds.add(notifId);
+
+                if (this.prefs.sound) SoundEngine.playGeneralNotificationSound();
+                this.triggerBellAttention();
+
+                this.showPopupNotification({
+                  title: `🔔 Actualización (${data.actionType})`,
+                  subtitle: `${data.techName} &bull; ${data.taskId || ''}`,
+                  details: data.details || 'Aviso en sistema',
+                  type: 'general',
+                  icon: '🔔',
+                  onClick: () => this.toggleNotificationsPanel()
+                });
+              }
+            });
+
+            this.isNotifsInitialLoad = false;
+            this.notifications = list;
+            this.updateNotificationsUI();
+          }, e => console.error("Snapshot notificaciones:", e));
         }
 
         document.addEventListener('visibilitychange', () => {
@@ -1406,6 +1576,99 @@
       saveTasks() {
         SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
         if (window.db) db.collection('ordenes').doc('todas').set({ tasks: this.tasks }).catch(e => console.error(e));
+      }
+
+      async addActivityNotification(techName, taskId, actionType, details, type = 'order') {
+        const notifData = {
+          techName: techName,
+          taskId: taskId || '',
+          actionType: actionType,
+          details: details || '',
+          type: type,
+          time: this.formatTime(new Date()),
+          timestamp: Date.now(),
+          read: false
+        };
+
+        if (window.db) {
+          db.collection('notificaciones').add(notifData).catch(e => console.error("Error notificación:", e));
+        } else {
+          this.notifications.unshift({ id: 'local_' + Date.now(), ...notifData });
+          this.updateNotificationsUI();
+        }
+      }
+
+      toggleNotificationsPanel() {
+        const dd = document.getElementById('notifications-dropdown');
+        if (dd) dd.classList.toggle('hidden');
+      }
+
+      clearNotifications() {
+        if (window.db) {
+          db.collection('notificaciones').get().then(snapshot => {
+            snapshot.forEach(doc => doc.ref.delete());
+          });
+        }
+        this.notifications = [];
+        this.updateNotificationsUI();
+      }
+
+      updateNotificationsUI() {
+        const badge = document.getElementById('notif-badge');
+        const listContainer = document.getElementById('notifications-list');
+        if (!badge || !listContainer) return;
+
+        const unreadNotifs = this.notifications.filter(n => !n.read).length;
+
+        if (unreadNotifs > 0 && this.prefs.notifBadge) {
+          badge.textContent = unreadNotifs > 9 ? '+9' : unreadNotifs;
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+
+        if (this.notifications.length > 0) {
+          listContainer.innerHTML = this.notifications.map(n => {
+            let statusColor = 'text-blue-600 bg-blue-50 border-blue-200';
+            if (n.actionType === 'REALIZADA') statusColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
+            else if (n.actionType === 'NO_REALIZADA') statusColor = 'text-rose-700 bg-rose-50 border-rose-200';
+            else if (n.actionType === 'EN_PROCESO') statusColor = 'text-amber-700 bg-amber-50 border-amber-200';
+            else if (n.actionType === 'MENSAJE') statusColor = 'text-cyan-700 bg-cyan-50 border-cyan-200';
+
+            return `
+              <div class="p-2.5 hover:bg-slate-50 transition cursor-pointer ${!n.read ? 'bg-amber-50/40' : ''}" onclick="app.markNotificationAsRead('${n.id}', '${n.type || 'order'}', '${n.taskId || ''}', '${n.techName || ''}')">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="font-bold text-slate-800 text-[11px] flex items-center gap-1.5">
+                    ${!n.read ? '<span class="w-1.5 h-1.5 rounded-full bg-brand-lime"></span>' : ''}
+                    ${n.techName}
+                  </span>
+                  <span class="text-[10px] text-slate-400 font-mono">${n.time}</span>
+                </div>
+                <div class="flex items-center gap-1.5 mb-1">
+                  ${n.taskId ? `<span class="font-mono text-[10px] font-extrabold text-slate-600 bg-slate-100 px-1 py-0.5 rounded">${n.taskId}</span>` : ''}
+                  <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded border ${statusColor}">
+                    ${n.actionType || 'AVISO'}
+                  </span>
+                </div>
+                ${n.details ? `<p class="text-[10px] text-slate-600 truncate italic">"${n.details}"</p>` : ''}
+              </div>
+            `;
+          }).join('');
+        } else {
+          listContainer.innerHTML = `<div class="p-4 text-center text-slate-400 italic">No hay novedades recientes</div>`;
+        }
+        if (window.lucide) lucide.createIcons();
+      }
+
+      markNotificationAsRead(notifId, type, taskId, techName) {
+        if (window.db && notifId) {
+          db.collection('notificaciones').doc(notifId).update({ read: true }).catch(() => {});
+        }
+        if (type === 'chat' && techName) {
+          this.openDirectWorkerChat(techName);
+        } else if (taskId) {
+          this.viewOrderDetails(taskId);
+        }
       }
 
       showToast(message, type = 'info') {
@@ -1559,6 +1822,7 @@
           this.renderAdminAuditLog();
         }
 
+        // Activación completa de chat y listeners para todos los usuarios
         this.initChatModule();
         this.setupMultiWorkerChatListeners();
         this.listenIncomingVoiceCalls();
@@ -1628,13 +1892,6 @@
         const filterTech = document.getElementById('filter-tech');
         const auditLogSection = document.getElementById('section-admin-audit-log');
         const roleHint = document.getElementById('role-hint-text');
-
-        // Permisos en Chat: ocultar menú de acciones completas para trabajadores
-        const chatAdminActions = document.getElementById('chat-admin-actions-container');
-        if (chatAdminActions) {
-          if (isAdmin) chatAdminActions.classList.remove('hidden');
-          else chatAdminActions.classList.add('hidden');
-        }
 
         const btnResetPending = document.getElementById('btn-reset-pending');
         const btnResetDone = document.getElementById('btn-reset-done');
@@ -1730,6 +1987,9 @@
         document.getElementById('modal-photo-zoom').classList.add('hidden');
       }
 
+      // ==========================================
+      // GEOLOCALIZACIÓN Y GPS EN TIEMPO REAL
+      // ==========================================
       toggleWorkerGps() {
         if (this.isGpsSharing) {
           this.stopGpsSharing();
@@ -1933,7 +2193,7 @@
       }
 
       // ========================================================
-      // SISTEMA WEBRTC AUDIO BIDIRECCIONAL ESTABILIZADO
+      // SISTEMA WEBRTC AUDIO BIDIRECCIONAL CON SEÑALIZACIÓN EN FIRESTORE
       // ========================================================
       async startVoiceCall() {
         const targetWorker = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
@@ -1957,25 +2217,24 @@
 
           this.localStream.getTracks().forEach(track => {
             this.peerConnection.addTrack(track, this.localStream);
-            console.log("[CALL] Track agregado");
+            console.log("[CALL] Track agregado:", track.kind);
           });
 
           this.peerConnection.ontrack = event => {
-            console.log("[CALL] Audio remoto conectado");
+            console.log("[CALL] Audio remoto conectado", event.streams);
             const remoteAudio = document.getElementById('remote-audio-stream');
             if (remoteAudio && event.streams[0]) {
               remoteAudio.srcObject = event.streams[0];
               remoteAudio.volume = 1.0;
               remoteAudio.muted = false;
-              remoteAudio.play().then(() => {
-                console.log("[CALL] Reproduciendo audio remoto");
-              }).catch(e => console.warn("[CALL] Error reproducción audio:", e));
+              remoteAudio.play().catch(e => console.warn("[CALL] Error reproducción audio:", e));
             }
           };
 
           const callDoc = db.collection('webrtc_calls').doc(targetWorker);
           const callerCandidates = callDoc.collection('callerCandidates');
 
+          // Limpiar candidatos previos
           callerCandidates.get().then(snap => snap.forEach(d => d.ref.delete())).catch(() => {});
           callDoc.collection('calleeCandidates').get().then(snap => snap.forEach(d => d.ref.delete())).catch(() => {});
 
@@ -1998,6 +2257,7 @@
           });
           console.log("[CALL] Oferta enviada");
 
+          // Cola de candidatos para evitar error antes de setRemoteDescription
           let calleeCandQueue = [];
 
           callDoc.collection('calleeCandidates').onSnapshot(snap => {
@@ -2043,6 +2303,7 @@
         const myName = (this.currentUser.fullName || this.currentUser.username || '').trim();
         const isAdmin = this.currentUser.role === 'admin';
 
+        // Escucha directa en memoria sin consultas compuestas propensas a fallos
         this.callUnsubscribe = db.collection('webrtc_calls').onSnapshot(snap => {
           snap.docChanges().forEach(change => {
             if (change.type === 'added' || change.type === 'modified') {
@@ -2050,11 +2311,13 @@
               const isRecent = (Date.now() - (data.timestamp || 0) < 60000);
 
               if (isAdmin) {
+                // Admin recibe llamadas de cualquier trabajador con destino Administrador
                 if (data.recipient === 'Administrador' && data.status === 'calling' && isRecent) {
                   this.currentCallData = { id: change.doc.id, ...data };
                   this.triggerIncomingCallAlert(data.caller);
                 }
               } else {
+                // Trabajador recibe llamadas dirigidas a su nombre o docId
                 if ((change.doc.id === myName || data.recipient === myName) && data.status === 'calling' && data.callerRole === 'admin' && isRecent) {
                   this.currentCallData = { id: change.doc.id, ...data };
                   this.triggerIncomingCallAlert('Administrador (Don Martínez)');
@@ -2088,19 +2351,17 @@
 
           this.localStream.getTracks().forEach(track => {
             this.peerConnection.addTrack(track, this.localStream);
-            console.log("[CALL] Track agregado");
+            console.log("[CALL] Track agregado:", track.kind);
           });
 
           this.peerConnection.ontrack = event => {
-            console.log("[CALL] Audio remoto conectado");
+            console.log("[CALL] Audio remoto conectado", event.streams);
             const remoteAudio = document.getElementById('remote-audio-stream');
             if (remoteAudio && event.streams[0]) {
               remoteAudio.srcObject = event.streams[0];
               remoteAudio.volume = 1.0;
               remoteAudio.muted = false;
-              remoteAudio.play().then(() => {
-                console.log("[CALL] Reproduciendo audio remoto");
-              }).catch(e => console.warn("[CALL] Error reproducción audio:", e));
+              remoteAudio.play().catch(e => console.warn("[CALL] Error reproducción audio:", e));
             }
           };
 
@@ -2234,10 +2495,11 @@
         this.subscribeChatMessages();
       }
 
+      // AUDITORÍA Y MONITOREO DE TODOS LOS TRABAJADORES SIMULTÁNEAMENTE
       setupMultiWorkerChatListeners() {
         if (!window.db || !this.currentUser) return;
 
-        console.log("[GLOBAL CHAT] Listener iniciado");
+        console.log("[GLOBAL CHAT] Listener iniciado para:", this.currentUser.fullName || this.currentUser.username);
 
         if (this.currentUser.role === 'admin') {
           this.workers.forEach(w => {
@@ -2274,19 +2536,37 @@
                 if (this.processedEventIds.has(msgId)) return;
                 this.processedEventIds.add(msgId);
 
-                console.log(`[GLOBAL CHAT] Mensaje detectado:`, data);
+                console.log(`[GLOBAL CHAT] Mensaje detectado en hilo ${threadId}:`, data);
 
                 const isFromOther = data.senderRole !== this.currentUser.role;
 
                 if (isFromOther) {
+                  console.log(`[GLOBAL CHAT] Remitente: ${data.senderName}`);
+
+                  // 1. Sonido Inmediato
                   if (this.prefs.sound) {
                     SoundEngine.playMessageSound();
                     console.log('[GLOBAL CHAT] Sonido reproducido');
                   }
 
+                  // 2. Destello en Campana
+                  this.triggerBellAttention();
+
+                  // 3. Notificación Nativa del Sistema
+                  this.sendNativeNotification({
+                    title: `💬 Mensaje de ${data.senderName}`,
+                    body: data.text,
+                    workerName: this.currentUser.role === 'admin' ? threadId : null
+                  });
+
+                  // 4. Agregar a Historial de Campana
+                  this.addActivityNotification(data.senderName, '', 'MENSAJE', data.text, 'chat');
+                  console.log('[GLOBAL CHAT] Campana actualizada');
+
+                  // 5. Notificación Emergente Flotante
                   this.showPopupNotification({
                     title: '💬 NUEVO MENSAJE',
-                    subtitle: `${data.senderName}`,
+                    subtitle: `${data.senderName} te envió un mensaje`,
                     details: data.text,
                     type: 'chat',
                     icon: '💬',
@@ -2299,8 +2579,7 @@
                       }
                     }
                   });
-                  console.log('[GLOBAL CHAT] Popup mostrado');
-                  console.log('[GLOBAL CHAT] Conversación actualizada');
+                  console.log('[GLOBAL CHAT] Notificación mostrada');
                 }
               }
             });
@@ -2432,13 +2711,11 @@
       }
 
       toggleChatOptionsMenu() {
-        if (this.currentUser.role !== 'admin') return;
         const menu = document.getElementById('chat-conversation-options-dropdown');
         if (menu) menu.classList.toggle('hidden');
       }
 
       async archiveCurrentConversation() {
-        if (this.currentUser.role !== 'admin') return;
         const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
         this.toggleChatOptionsMenu();
 
@@ -2449,7 +2726,6 @@
       }
 
       async clearCurrentConversation() {
-        if (this.currentUser.role !== 'admin') return;
         this.toggleChatOptionsMenu();
         if (!confirm("¿Deseas vaciar todos los mensajes de esta conversación?")) return;
 
@@ -2463,7 +2739,6 @@
       }
 
       async deleteCurrentConversation() {
-        if (this.currentUser.role !== 'admin') return;
         this.toggleChatOptionsMenu();
         if (!confirm("¿Deseas eliminar completamente esta conversación y su historial?")) return;
 
@@ -2496,7 +2771,7 @@
 
       copyMessageText(text) {
         navigator.clipboard.writeText(text);
-        this.showToast("Mensaje copiado", "success");
+        this.showToast("Mensaje copiado al portapapeles", "success");
       }
 
       handleTypingInput() {
@@ -2592,8 +2867,6 @@
         }
 
         const myName = this.currentUser.fullName || this.currentUser.username;
-        const isAdmin = this.currentUser.role === 'admin';
-
         container.innerHTML = this.chatMessages.map(m => {
           const isMine = m.senderName === myName;
 
@@ -2608,14 +2881,10 @@
             }
           }
 
-          // Permisos de borrado en mensaje:
-          // Admin puede borrar cualquiera. Trabajador sólo los que él mismo envió.
-          const canDelete = isAdmin || isMine;
-
           return `
             <div class="flex flex-col ${isMine ? 'items-end' : 'items-start'} group relative">
               <span class="text-[9px] font-bold text-slate-400 mb-0.5 px-1">${m.senderName} &bull; ${m.time}</span>
-              <div class="max-w-[82%] sm:max-w-[78%] rounded-2xl px-3.5 py-2 shadow-sm relative ${isMine ? 'bg-brand-dark text-white rounded-br-none border-b-2 border-brand-lime' : 'bg-white text-slate-800 rounded-bl-none border border-slate-200'}">
+              <div class="max-w-[85%] sm:max-w-[78%] rounded-2xl px-3.5 py-2 shadow-sm relative ${isMine ? 'bg-brand-dark text-white rounded-br-none border-b-2 border-brand-lime' : 'bg-white text-slate-800 rounded-bl-none border border-slate-200'}">
                 <p class="leading-relaxed whitespace-pre-wrap text-xs sm:text-sm">${m.text}</p>
                 <div class="text-[9px] text-right mt-0.5 opacity-80 flex items-center justify-end gap-1">
                   ${isMine ? statusTick : ''}
@@ -2623,8 +2892,8 @@
 
                 <div class="hidden group-hover:flex items-center gap-1.5 absolute -top-3 ${isMine ? 'left-2' : 'right-2'} bg-slate-800/90 rounded-lg p-1 text-[10px] text-white shadow-md z-30">
                   <button type="button" onclick="app.copyMessageText('${m.text.replace(/'/g, "\\'")}')" class="hover:text-brand-lime" title="Copiar">📋</button>
-                  ${canDelete ? `<button type="button" onclick="app.deleteMessageForMe('${m.id}')" class="hover:text-amber-400" title="Eliminar para mí">🗑</button>` : ''}
-                  ${isMine || isAdmin ? `<button type="button" onclick="app.deleteMessageForEveryone('${m.id}')" class="hover:text-rose-400" title="Eliminar para todos">✕</button>` : ''}
+                  <button type="button" onclick="app.deleteMessageForMe('${m.id}')" class="hover:text-amber-400" title="Eliminar para mí">🗑</button>
+                  ${isMine ? `<button type="button" onclick="app.deleteMessageForEveryone('${m.id}')" class="hover:text-rose-400" title="Eliminar para todos">✕</button>` : ''}
                 </div>
               </div>
             </div>
@@ -2929,20 +3198,12 @@
         if (window.lucide) lucide.createIcons();
       }
 
-      // ==========================================
-      // CHECKLIST DINÁMICO (ADMINISTRADOR)
-      // ==========================================
       openNewTaskModal() {
         if (this.currentUser.role !== 'admin') return;
         document.getElementById('form-modal-title').textContent = 'Nueva Orden de Trabajo';
         document.getElementById('task-id').value = '';
         document.getElementById('task-form').reset();
         document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
-        
-        // Checklist base por defecto
-        this.currentEditingChecklist = [...INITIAL_CHECKLIST_TEMPLATE];
-        this.renderAdminChecklistEditor();
-
         document.getElementById('modal-task-form').classList.remove('hidden');
       }
 
@@ -2962,53 +3223,7 @@
         document.getElementById('task-priority').value = t.priority;
         document.getElementById('task-date').value = t.date;
         document.getElementById('task-instructions').value = t.instructions || '';
-
-        this.currentEditingChecklist = Array.isArray(t.checklist) ? [...t.checklist] : [...INITIAL_CHECKLIST_TEMPLATE];
-        this.renderAdminChecklistEditor();
-
         document.getElementById('modal-task-form').classList.remove('hidden');
-      }
-
-      addChecklistItemAdmin() {
-        const itemText = prompt("Ingresa el nuevo ítem para el Checklist Técnico:");
-        if (itemText && itemText.trim()) {
-          this.currentEditingChecklist.push(itemText.trim());
-          this.renderAdminChecklistEditor();
-        }
-      }
-
-      editChecklistItemAdmin(index) {
-        const current = this.currentEditingChecklist[index];
-        const updated = prompt("Editar ítem del Checklist:", current);
-        if (updated && updated.trim()) {
-          this.currentEditingChecklist[index] = updated.trim();
-          this.renderAdminChecklistEditor();
-        }
-      }
-
-      deleteChecklistItemAdmin(index) {
-        this.currentEditingChecklist.splice(index, 1);
-        this.renderAdminChecklistEditor();
-      }
-
-      renderAdminChecklistEditor() {
-        const container = document.getElementById('admin-checklist-items-container');
-        if (!container) return;
-
-        if (this.currentEditingChecklist.length === 0) {
-          container.innerHTML = `<p class="text-[11px] text-slate-400 italic">No hay ítems configurados. Pulsa "Agregar Ítem".</p>`;
-          return;
-        }
-
-        container.innerHTML = this.currentEditingChecklist.map((item, idx) => `
-          <div class="flex items-center justify-between p-1.5 bg-white rounded-lg border border-slate-200">
-            <span class="text-xs font-semibold text-slate-700 truncate pr-2">☑ ${item}</span>
-            <div class="flex items-center gap-1 shrink-0">
-              <button type="button" onclick="app.editChecklistItemAdmin(${idx})" class="p-1 text-slate-500 hover:text-brand-dark" title="Editar">✏️</button>
-              <button type="button" onclick="app.deleteChecklistItemAdmin(${idx})" class="p-1 text-slate-500 hover:text-rose-600" title="Eliminar">🗑️</button>
-            </div>
-          </div>
-        `).join('');
       }
 
       closeTaskModal() {
@@ -3032,7 +3247,6 @@
             this.tasks[index].priority = document.getElementById('task-priority').value;
             this.tasks[index].date = document.getElementById('task-date').value;
             this.tasks[index].instructions = document.getElementById('task-instructions').value;
-            this.tasks[index].checklist = [...this.currentEditingChecklist];
             this.showToast('Orden modificada correctamente', 'success');
           }
         } else {
@@ -3048,9 +3262,6 @@
             priority: document.getElementById('task-priority').value,
             date: document.getElementById('task-date').value,
             instructions: document.getElementById('task-instructions').value,
-            checklist: [...this.currentEditingChecklist],
-            completedChecklist: [],
-            findings: [],
             status: 'PENDIENTE',
             observations: '',
             evidence: [],
@@ -3076,9 +3287,6 @@
         this.showToast(`Orden eliminada`, 'info');
       }
 
-      // ==========================================
-      // REPORTE TÉCNICO: CHECKLIST Y NOVEDADES EN CAMPO
-      // ==========================================
       openReportModal(id) {
         const t = this.tasks.find(x => x.id === id);
         if (!t) return;
@@ -3093,56 +3301,10 @@
         document.getElementById('rep-btn-waze').onclick = () => this.openWazeNavigation(t.address);
         document.getElementById('rep-btn-maps').onclick = () => this.openGoogleMapsNavigation(t.address);
 
-        // Checklist oficial (solo marcar completado, sin modificar texto)
-        const checklistItems = Array.isArray(t.checklist) && t.checklist.length > 0 ? t.checklist : INITIAL_CHECKLIST_TEMPLATE;
-        const completedItems = Array.isArray(t.completedChecklist) ? t.completedChecklist : [];
-        const chkContainer = document.getElementById('rep-checklist-container');
-        
-        chkContainer.innerHTML = checklistItems.map((item, idx) => `
-          <label class="flex items-center gap-2 p-1.5 bg-white rounded-lg border border-slate-200 cursor-pointer select-none">
-            <input type="checkbox" value="${item}" ${completedItems.includes(item) ? 'checked' : ''} class="w-4 h-4 rounded text-brand-lime focus:ring-brand-lime border-slate-300 rep-check-input">
-            <span class="text-xs text-slate-700">${item}</span>
-          </label>
-        `).join('');
-
-        // Hallazgos y novedades en campo del técnico
-        this.currentWorkerFindings = Array.isArray(t.findings) ? [...t.findings] : [];
-        this.renderWorkerFindings();
-
         this.currentReportEvidence = Array.isArray(t.evidence) ? [...t.evidence] : [];
         this.renderEvidenceGallery();
         this.setReportStatus(t.status === 'NO_REALIZADA' ? 'NO_REALIZADA' : 'REALIZADA');
         document.getElementById('modal-report').classList.remove('hidden');
-      }
-
-      addWorkerFinding() {
-        const finding = prompt("Describe la novedad o hallazgo técnico en campo (Ej: Cableado sulfatado, brazo golpeado, motor con ingreso de agua):");
-        if (finding && finding.trim()) {
-          this.currentWorkerFindings.push(finding.trim());
-          this.renderWorkerFindings();
-        }
-      }
-
-      deleteWorkerFinding(index) {
-        this.currentWorkerFindings.splice(index, 1);
-        this.renderWorkerFindings();
-      }
-
-      renderWorkerFindings() {
-        const container = document.getElementById('rep-findings-container');
-        if (!container) return;
-
-        if (this.currentWorkerFindings.length === 0) {
-          container.innerHTML = `<p class="text-[11px] text-amber-700 italic">No hay novedades registradas. Usa "➕ Agregar Novedad" si encuentras anomalías.</p>`;
-          return;
-        }
-
-        container.innerHTML = this.currentWorkerFindings.map((f, idx) => `
-          <div class="flex items-center justify-between p-1.5 bg-white rounded-lg border border-amber-300">
-            <span class="text-xs font-semibold text-amber-950 truncate pr-2">⚠️ ${f}</span>
-            <button type="button" onclick="app.deleteWorkerFinding(${idx})" class="p-1 text-slate-400 hover:text-rose-600" title="Eliminar novedad">🗑️</button>
-          </div>
-        `).join('');
       }
 
       closeReportModal() {
@@ -3174,15 +3336,13 @@
 
         const taskIndex = this.tasks.findIndex(t => t.id === this.selectedTask.id);
         if (taskIndex !== -1) {
-          // Extraer ítems de checklist completados por el técnico
-          const checked = Array.from(document.querySelectorAll('.rep-check-input:checked')).map(el => el.value);
-
           this.tasks[taskIndex].status = this.activeReportStatus;
           this.tasks[taskIndex].observations = observations;
-          this.tasks[taskIndex].completedChecklist = checked;
-          this.tasks[taskIndex].findings = this.currentWorkerFindings;
           this.tasks[taskIndex].evidence = this.currentReportEvidence;
           this.tasks[taskIndex].completedAt = this.formatFullDateTime(new Date());
+
+          const myName = this.currentUser.fullName || this.currentUser.username;
+          this.addActivityNotification(myName, this.selectedTask.id, this.activeReportStatus, observations, 'order');
 
           this.saveTasks();
           this.updateStats();
@@ -3197,14 +3357,13 @@
         const taskIndex = this.tasks.findIndex(t => t.id === this.selectedTask.id);
         if (taskIndex !== -1) {
           const obs = document.getElementById('rep-observations').value.trim();
-          const checked = Array.from(document.querySelectorAll('.rep-check-input:checked')).map(el => el.value);
-
           this.tasks[taskIndex].status = 'EN_PROCESO';
           this.tasks[taskIndex].observations = obs;
-          this.tasks[taskIndex].completedChecklist = checked;
-          this.tasks[taskIndex].findings = this.currentWorkerFindings;
           this.tasks[taskIndex].evidence = this.currentReportEvidence;
           this.tasks[taskIndex].completedAt = this.formatFullDateTime(new Date());
+
+          const myName = this.currentUser.fullName || this.currentUser.username;
+          this.addActivityNotification(myName, this.selectedTask.id, 'EN_PROCESO', obs || 'Trabajo iniciado', 'order');
 
           this.saveTasks();
           this.updateStats();
@@ -3242,67 +3401,3 @@
 
       viewOrderDetails(id) {
         const t = this.tasks.find(x => x.id === id);
-        if (!t) return;
-        this.selectedTask = t;
-
-        document.getElementById('view-order-number').textContent = t.id;
-        document.getElementById('view-client').textContent = t.client;
-        document.getElementById('view-phone').textContent = t.phone;
-        document.getElementById('view-address').textContent = t.address;
-        document.getElementById('view-service').textContent = t.serviceType;
-        document.getElementById('view-equipment').textContent = t.equipment;
-        document.getElementById('view-technician').textContent = t.assignedTo;
-        document.getElementById('view-observations').textContent = t.observations || 'Sin informe registrado.';
-
-        const badge = document.getElementById('view-order-badge');
-        badge.textContent = t.status;
-        badge.className = `px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${t.status === 'REALIZADA' ? 'bg-emerald-100 text-emerald-800' : t.status === 'NO_REALIZADA' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}`;
-
-        // Checklist en la Ficha
-        const chkList = document.getElementById('view-checklist-list');
-        const checklistItems = Array.isArray(t.checklist) && t.checklist.length > 0 ? t.checklist : INITIAL_CHECKLIST_TEMPLATE;
-        const completed = Array.isArray(t.completedChecklist) ? t.completedChecklist : [];
-
-        chkList.innerHTML = checklistItems.map(item => {
-          const isDone = completed.includes(item);
-          return `<div class="flex items-center gap-1.5"><span class="${isDone ? 'text-emerald-600 font-bold' : 'text-slate-400'}">${isDone ? '☑' : '☐'}</span> <span class="${isDone ? 'text-slate-900 font-medium' : 'text-slate-500'}">${item}</span></div>`;
-        }).join('');
-
-        // Novedades en la Ficha
-        const findingsSection = document.getElementById('view-findings-section');
-        const findingsList = document.getElementById('view-findings-list');
-        if (Array.isArray(t.findings) && t.findings.length > 0) {
-          findingsSection.classList.remove('hidden');
-          findingsList.innerHTML = t.findings.map(f => `<div class="text-amber-900 font-semibold">• ${f}</div>`).join('');
-        } else {
-          findingsSection.classList.add('hidden');
-        }
-
-        const evSection = document.getElementById('view-evidence-section');
-        const evGallery = document.getElementById('view-evidence-gallery');
-        if (Array.isArray(t.evidence) && t.evidence.length > 0) {
-          evSection.classList.remove('hidden');
-          evGallery.innerHTML = t.evidence.map(item => `
-            <div class="rounded-xl overflow-hidden border aspect-video bg-black flex items-center justify-center">
-              ${item.type === 'video' ? `<video src="${item.src}" class="w-full h-full object-cover" controls></video>` : `<img src="${item.src}" class="w-full h-full object-cover">`}
-            </div>
-          `).join('');
-        } else {
-          evSection.classList.add('hidden');
-        }
-
-        document.getElementById('modal-view-order').classList.remove('hidden');
-      }
-
-      closeViewModal() {
-        document.getElementById('modal-view-order').classList.add('hidden');
-      }
-    }
-
-    let app;
-    window.addEventListener('DOMContentLoaded', () => {
-      app = new PortonProApp();
-    });
-  </script>
-</body>
-</html>
