@@ -2068,16 +2068,18 @@
 
       async startVoiceCall() {
         const targetWorker = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
-        console.info('[CALL] Iniciando llamada', { role: this.currentUser.role, caller: this.currentUser.fullName || this.currentUser.username, documentId: targetWorker });
+        const callSessionId = window.crypto?.randomUUID?.() || `call-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+        console.info('[CALL] Iniciando llamada', { sessionId: callSessionId, role: this.currentUser.role, caller: this.currentUser.fullName || this.currentUser.username, documentId: targetWorker });
         let callStage = 'getUserMedia';
         
         try {
-          console.info('[CALL] getUserMedia iniciado', { role: this.currentUser.role });
+          console.info('[CALL] getUserMedia iniciado', { sessionId: callSessionId, role: this.currentUser.role });
           const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
           callStage = 'configurar stream local';
           this.localStream = stream;
+          console.log('[CALL] Micrófono obtenido');
           console.log('[CALL] Stream local obtenido', { active: stream.active });
-          console.log('[CALL] Audio tracks encontrados:', stream.getAudioTracks().length);
+          console.log('[CALL] Cantidad de tracks locales:', stream.getAudioTracks().length);
           console.log('[CALL] Detalle audio tracks', stream.getAudioTracks().map(track => ({ label: track.label, enabled: track.enabled, muted: track.muted, readyState: track.readyState })));
           this.pendingIceCandidates = [];
           this.callIceCounters = { generated: 0, received: 0, added: 0 };
@@ -2089,7 +2091,6 @@
             isIncoming: false
           });
 
-          if (this.prefs.sound) SoundEngine.playCallAlertSound();
 
           callStage = 'crear RTCPeerConnection';
           this.peerConnection = new RTCPeerConnection({
@@ -2099,14 +2100,13 @@
           console.info('[CALL] audio tracks locales:', this.localStream.getAudioTracks().length);
           this.localStream.getTracks().forEach(track => {
             this.peerConnection.addTrack(track, this.localStream);
-            console.log('[CALL] Track agregado al PeerConnection', { kind: track.kind, enabled: track.enabled, muted: track.muted, readyState: track.readyState });
+            console.log('[CALL] Track agregado', { kind: track.kind, enabled: track.enabled, muted: track.muted, readyState: track.readyState });
           });
           console.info('[CALL] audio tracks en PeerConnection después de addTrack:', this.peerConnection.getSenders().filter(sender => sender.track?.kind === 'audio').length);
           this.configureRemoteAudio();
 
           const callDoc = db.collection('webrtc_calls').doc(targetWorker);
-          const callSessionId = window.crypto?.randomUUID?.() || `call-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-          this.currentCallData = { id: targetWorker, sessionId: callSessionId, caller: this.currentUser.fullName || this.currentUser.username };
+          this.currentCallData = { id: targetWorker, threadId: targetWorker, sessionId: callSessionId, caller: this.currentUser.fullName || this.currentUser.username, callerRole: this.currentUser.role, recipient: this.currentUser.role === 'admin' ? targetWorker : 'Administrador', wasAnswered: false, connectedAt: null };
           console.info('[CALL] Sesión de llamada', { sessionId: callSessionId, role: this.currentUser.role, side: 'caller' });
           const callerCandidates = callDoc.collection('callerCandidates');
 
@@ -2115,7 +2115,7 @@
               const candidateData = event.candidate.toJSON();
               if (callSessionId) candidateData.callSessionId = callSessionId;
               this.callIceCounters.generated++;
-              console.info('[CALL] ICE generado', { count: this.callIceCounters.generated, role: this.currentUser.role, type: event.candidate.type, protocol: event.candidate.protocol, sdpMid: event.candidate.sdpMid });
+              console.info('[CALL] ICE generado', { sessionId: this.currentCallData?.sessionId, count: this.callIceCounters.generated, role: this.currentUser.role, type: event.candidate.type, protocol: event.candidate.protocol, sdpMid: event.candidate.sdpMid });
               callerCandidates.add(candidateData).then(() => console.info('[CALL] ICE enviado al canal de señalización', { count: this.callIceCounters.generated, side: 'caller' })).catch(error => console.error('[CALL] Error enviando ICE del llamante:', error));
             } else { console.info('[CALL] ICE gathering completado', { role: this.currentUser.role, generatedCount: this.callIceCounters.generated }); }
           };
@@ -2124,7 +2124,7 @@
           console.info('[CALL] createOffer iniciado');
           console.info('[CALL] audio tracks locales antes de createOffer:', this.localStream.getAudioTracks().length);
           const offer = await this.peerConnection.createOffer();
-          console.info('[CALL] createOffer completado', { type: offer.type, hasSdp: !!offer.sdp, audioLines: (offer.sdp || '').split(/\r?\n/).filter(line => /^m=audio|^a=(sendrecv|sendonly|recvonly|inactive)$/.test(line)) });
+          console.info('[CALL] Oferta creada', { type: offer.type, hasSdp: !!offer.sdp, audioLines: (offer.sdp || '').split(/\r?\n/).filter(line => /^m=audio|^a=(sendrecv|sendonly|recvonly|inactive)$/.test(line)) });
           callStage = 'setLocalDescription oferta';
           await this.peerConnection.setLocalDescription(offer);
           console.info('[CALL] setLocalDescription OK', { side: 'caller', type: this.peerConnection.localDescription?.type });
@@ -2145,6 +2145,7 @@
               const data = doc.data();
               if (data.callSessionId && this.currentCallData?.sessionId && data.callSessionId !== this.currentCallData.sessionId) return;
               if (data.status === 'answered' && data.answer && !this.peerConnection.currentRemoteDescription) {
+                if (this.currentCallData) this.currentCallData.wasAnswered = true;
                 const answerDesc = new RTCSessionDescription(data.answer);
                 await this.peerConnection.setRemoteDescription(answerDesc);
                 console.info('[CALL] setRemoteDescription OK', { side: 'caller', type: this.peerConnection.remoteDescription?.type, audioTransceivers: this.peerConnection.getTransceivers().filter(item => item.receiver?.track?.kind === 'audio').map(item => ({ mid: item.mid, direction: item.direction, currentDirection: item.currentDirection, trackState: item.receiver.track.readyState, trackMuted: item.receiver.track.muted })) });
@@ -2163,7 +2164,7 @@
               if (change.type === 'added') {
                 const candidate = change.doc.data();
                 this.callIceCounters.received++;
-                console.info('[CALL] ICE recibido', { count: this.callIceCounters.received, type: candidate.candidate ? new RTCIceCandidate(candidate).type : null, sessionMatches: !candidate.callSessionId || candidate.callSessionId === this.currentCallData?.sessionId });
+                console.info('[CALL] ICE recibido', { sessionId: this.currentCallData?.sessionId, count: this.callIceCounters.received, type: candidate.candidate ? new RTCIceCandidate(candidate).type : null, sessionMatches: !candidate.callSessionId || candidate.callSessionId === this.currentCallData?.sessionId });
                 if (!candidate.callSessionId || !this.currentCallData?.sessionId || candidate.callSessionId === this.currentCallData.sessionId) this.addRemoteIceCandidate(candidate);
               }
             });
@@ -2268,10 +2269,11 @@
         let callStage = 'getUserMedia';
 
         try {
-          console.info('[CALL] getUserMedia iniciado', { role: this.currentUser.role, direction: 'incoming' });
+          console.info('[CALL] getUserMedia iniciado', { sessionId: this.currentCallData.sessionId, role: this.currentUser.role, direction: 'incoming' });
           const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
+          console.log('[CALL] Micrófono obtenido');
           console.log('[CALL] Stream local obtenido', { active: stream.active });
-          console.log('[CALL] Audio tracks encontrados:', stream.getAudioTracks().length);
+          console.log('[CALL] Cantidad de tracks locales:', stream.getAudioTracks().length);
           console.log('[CALL] Detalle audio tracks', stream.getAudioTracks().map(track => ({ label: track.label, enabled: track.enabled, muted: track.muted, readyState: track.readyState })));
           if (!this.currentCallData) { stream.getTracks().forEach(track => track.stop()); console.info('[CALL] Stream liberado: la llamada terminó antes de completar getUserMedia'); return; }
           callStage = 'configurar stream local';
@@ -2288,7 +2290,7 @@
           console.info('[CALL] audio tracks locales:', this.localStream.getAudioTracks().length);
           this.localStream.getTracks().forEach(track => {
             this.peerConnection.addTrack(track, this.localStream);
-            console.log('[CALL] Track agregado al PeerConnection', { kind: track.kind, enabled: track.enabled, muted: track.muted, readyState: track.readyState });
+            console.log('[CALL] Track agregado', { kind: track.kind, enabled: track.enabled, muted: track.muted, readyState: track.readyState });
           });
           console.info('[CALL] audio tracks en PeerConnection después de addTrack:', this.peerConnection.getSenders().filter(sender => sender.track?.kind === 'audio').length);
           this.configureRemoteAudio();
@@ -2310,7 +2312,7 @@
               const candidateData = event.candidate.toJSON();
               if (this.currentCallData?.sessionId) candidateData.callSessionId = this.currentCallData.sessionId;
               this.callIceCounters.generated++;
-              console.info('[CALL] ICE generado', { count: this.callIceCounters.generated, role: this.currentUser.role, type: event.candidate.type, protocol: event.candidate.protocol, sdpMid: event.candidate.sdpMid });
+              console.info('[CALL] ICE generado', { sessionId: this.currentCallData?.sessionId, count: this.callIceCounters.generated, role: this.currentUser.role, type: event.candidate.type, protocol: event.candidate.protocol, sdpMid: event.candidate.sdpMid });
               calleeCandidates.add(candidateData).then(() => console.info('[CALL] ICE enviado al canal de señalización', { count: this.callIceCounters.generated, side: 'callee' })).catch(error => console.error('[CALL] Error enviando ICE del receptor:', error));
             } else { console.info('[CALL] ICE gathering completado', { role: this.currentUser.role, generatedCount: this.callIceCounters.generated }); }
           };
@@ -2323,7 +2325,7 @@
           callStage = 'createAnswer';
           console.info('[CALL] createAnswer iniciado');
           const answer = await this.peerConnection.createAnswer();
-          console.info('[CALL] createAnswer completado', { type: answer.type, hasSdp: !!answer.sdp, audioLines: (answer.sdp || '').split(/\r?\n/).filter(line => /^m=audio|^a=(sendrecv|sendonly|recvonly|inactive)$/.test(line)) });
+          console.info('[CALL] Respuesta creada', { type: answer.type, hasSdp: !!answer.sdp, audioLines: (answer.sdp || '').split(/\r?\n/).filter(line => /^m=audio|^a=(sendrecv|sendonly|recvonly|inactive)$/.test(line)) });
           callStage = 'setLocalDescription respuesta';
           await this.peerConnection.setLocalDescription(answer);
           console.info('[CALL] setLocalDescription OK', { side: 'callee', type: this.peerConnection.localDescription?.type });
@@ -2333,6 +2335,7 @@
             status: 'answered',
             answer: { type: answer.type, sdp: answer.sdp }
           });
+          if (this.currentCallData) this.currentCallData.wasAnswered = true;
           console.log('[CALL] Respuesta enviada');
           document.getElementById('btn-accept-call')?.classList.add('hidden');
           await this.flushPendingIceCandidates();
@@ -2344,7 +2347,7 @@
               if (change.type === 'added') {
                 const candidate = change.doc.data();
                 this.callIceCounters.received++;
-                console.info('[CALL] ICE recibido', { count: this.callIceCounters.received, type: candidate.candidate ? new RTCIceCandidate(candidate).type : null, sessionMatches: !candidate.callSessionId || candidate.callSessionId === this.currentCallData?.sessionId });
+                console.info('[CALL] ICE recibido', { sessionId: this.currentCallData?.sessionId, count: this.callIceCounters.received, type: candidate.candidate ? new RTCIceCandidate(candidate).type : null, sessionMatches: !candidate.callSessionId || candidate.callSessionId === this.currentCallData?.sessionId });
                 if (!candidate.callSessionId || !this.currentCallData?.sessionId || candidate.callSessionId === this.currentCallData.sessionId) this.addRemoteIceCandidate(candidate);
               }
             });
@@ -2361,23 +2364,25 @@
 
       configureRemoteAudio() {
         const audio = document.getElementById('remote-audio-stream'); if (!audio) { console.error('[CALL] Elemento de audio remoto no encontrado'); return; }
+        const peerConnection = this.peerConnection;
         audio.autoplay = true; audio.playsInline = true; audio.volume = 1;
         const audioStyle = getComputedStyle(audio);
         console.info('[CALL] Elemento audio verificado', { display: audioStyle.display, visibility: audioStyle.visibility, muted: audio.muted, playsInline: audio.playsInline });
         this.peerConnection.ontrack = async event => {
-          console.info('[CALL] ontrack ejecutado', { kind: event.track?.kind, readyState: event.track?.readyState, streamCount: event.streams?.length || 0 });
+          console.info('[CALL] ontrack ejecutado', { sessionId: this.currentCallData?.sessionId, kind: event.track?.kind, readyState: event.track?.readyState, streamCount: event.streams?.length || 0 });
           if (event.streams && event.streams[0]) audio.srcObject = event.streams[0];
           else if (event.track) { const stream = new MediaStream(); stream.addTrack(event.track); audio.srcObject = stream; }
           const remoteTracks = audio.srcObject?.getAudioTracks?.() || [];
+          console.info('[CALL] Audio remoto conectado');
           console.info('[CALL] stream remoto recibido', { active: audio.srcObject?.active, streamCount: event.streams?.length || 0 });
-          console.info('[CALL] audio tracks remotas:', remoteTracks.length, remoteTracks.map(track => ({ kind: track.kind, enabled: track.enabled, muted: track.muted, readyState: track.readyState }))); 
+          console.info('[CALL] pistas remotas recibidas:', remoteTracks.length, remoteTracks.map(track => ({ kind: track.kind, enabled: track.enabled, muted: track.muted, readyState: track.readyState }))); 
           console.info('[CALL] srcObject asignado', !!audio.srcObject);
           console.info('[CALL] muted:', audio.muted);
           console.info('[CALL] playsInline:', audio.playsInline);
           const remoteAudioStyle = getComputedStyle(audio);
           console.info('[CALL] Estilo calculado del audio', { display: remoteAudioStyle.display, visibility: remoteAudioStyle.visibility });
           try {
-            console.info('[CALL] play() ejecutado');
+            console.info('[CALL] audio.play ejecutado');
             await audio.play();
             document.getElementById('btn-enable-remote-audio')?.classList.add('hidden');
             console.log('[CALL] audio reproduciéndose');
@@ -2389,8 +2394,8 @@
         };
         console.info('[CALL] ontrack registrado antes de recibir descripción remota', { registered: typeof this.peerConnection.ontrack === 'function', signalingState: this.peerConnection.signalingState });
         this.peerConnection.oniceconnectionstatechange = () => {
-          const state = this.peerConnection?.iceConnectionState;
-          console.log('[CALL] iceConnectionState', state);
+          const state = peerConnection?.iceConnectionState;
+          console.log('[CALL] iceConnectionState', state, { sessionId: this.currentCallData?.sessionId });
           if (state === 'connected' || state === 'completed') console.info('[CALL] ICE alcanzó estado', state);
           if (state === 'connected' || state === 'completed') this.onCallConnected();
           else if (state === 'failed') {
@@ -2399,9 +2404,9 @@
             console.error('[CALL] ICE alcanzó estado failed; revisar candidatos generados, recibidos y agregados en ambos extremos.');
           }
         };
-        this.peerConnection.onconnectionstatechange = () => console.log('[CALL] connectionState', this.peerConnection?.connectionState, { signalingState: this.peerConnection?.signalingState, iceConnectionState: this.peerConnection?.iceConnectionState });
-        this.peerConnection.onsignalingstatechange = () => console.log('[CALL] Estado señalización', this.peerConnection?.signalingState);
-        this.peerConnection.onicegatheringstatechange = () => console.log('[CALL] Estado ICE gathering', this.peerConnection?.iceGatheringState);
+        peerConnection.onconnectionstatechange = () => console.log('[CALL] connectionState', peerConnection?.connectionState, { sessionId: this.currentCallData?.sessionId, signalingState: peerConnection?.signalingState, iceConnectionState: peerConnection?.iceConnectionState });
+        peerConnection.onsignalingstatechange = () => console.log('[CALL] signalingState', peerConnection?.signalingState, { sessionId: this.currentCallData?.sessionId });
+        peerConnection.onicegatheringstatechange = () => console.log('[CALL] Estado ICE gathering', peerConnection?.iceGatheringState, { sessionId: this.currentCallData?.sessionId });
         this.peerConnection.onicecandidateerror = event => console.warn('[CALL] Error ICE:', event.errorCode, event.errorText);
       }
 
@@ -2423,7 +2428,7 @@
         try {
           await this.peerConnection.addIceCandidate(new RTCIceCandidate(iceCandidate));
           this.callIceCounters.added++;
-          console.info('[CALL] ICE agregado', { count: this.callIceCounters.added, type: iceCandidate.candidate ? new RTCIceCandidate(iceCandidate).type : null, sdpMid: iceCandidate.sdpMid });
+          console.info('[CALL] ICE agregado', { sessionId: this.currentCallData?.sessionId, count: this.callIceCounters.added, type: iceCandidate.candidate ? new RTCIceCandidate(iceCandidate).type : null, sdpMid: iceCandidate.sdpMid });
         } catch (error) { console.warn('[CALL] Error al agregar ICE', { name: error?.name, message: error?.message, sdpMid: iceCandidate.sdpMid }, error); }
       }
 
@@ -2448,6 +2453,7 @@
 
       onCallConnected() {
         if (this.callTimerInterval) return;
+        if (this.currentCallData) this.currentCallData.connectedAt = Date.now();
         document.getElementById('call-status-label').textContent = 'Conectado';
         document.getElementById('btn-accept-call').classList.add('hidden');
         const timerElem = document.getElementById('call-duration-timer');
@@ -2480,9 +2486,36 @@
         if (window.lucide) lucide.createIcons();
       }
 
+      async saveCallHistory(callData, durationSeconds) {
+        if (!window.db || !callData?.id) return;
+        const threadId = callData.threadId || callData.id;
+        const callerName = callData.caller || callData.callerName || 'Usuario';
+        const callerRole = callData.callerRole || 'worker';
+        const callDate = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const callTime = this.formatTime(new Date());
+        const callOutcome = callData.connectedAt ? 'completed' : callData.wasAnswered ? 'failed' : 'missed';
+        const summary = callOutcome === 'completed' ? `📞 Llamada • ${durationSeconds}s` : callOutcome === 'missed' ? '📞 Llamada perdida' : '📞 Llamada sin conexión';
+        const record = {
+          type: 'call',
+          text: summary,
+          callId: callData.sessionId || `call-${callData.id}-${Date.now()}`,
+          callerName, callerRole, callOutcome, durationSeconds: Math.max(0, Number(durationSeconds || 0)),
+          callDate, senderName: callerName, senderRole: callerRole, recipient: callData.recipient || '',
+          time: callTime, timestamp: Date.now(), status: 'read'
+        };
+        try {
+          await db.collection('chats_internos').doc(threadId).collection('mensajes').doc(`call_${record.callId}`).set(record, { merge: true });
+          await db.collection('chats_internos').doc(threadId).set({ lastMessage: summary, lastTime: callTime, lastTimestamp: record.timestamp, workerName: threadId }, { merge: true });
+          console.info('[CALL] Registro guardado en conversación', { threadId, callId: record.callId, callOutcome });
+        } catch (error) { console.error('[CALL] No se pudo guardar el historial de llamada:', error); }
+      }
+
       endVoiceCall(notifyServer = true) {
         console.info('[CALL] Finalizando llamada', { notifyServer, callId: this.currentCallData?.id, sessionId: this.currentCallData?.sessionId });
         console.info('[CALL] Conteo ICE al finalizar', { ...(this.callIceCounters || {}) });
+        const endedCallData = this.currentCallData ? { ...this.currentCallData } : null;
+        const endedDurationSeconds = endedCallData?.connectedAt ? Math.max(this.callSeconds, Math.round((Date.now() - endedCallData.connectedAt) / 1000)) : 0;
+        if (notifyServer && endedCallData?.id) this.saveCallHistory(endedCallData, endedDurationSeconds);
         this.stopIncomingCallRingtone();
         clearInterval(this.callTimerInterval);
         this.callTimerInterval = null;
@@ -2560,6 +2593,7 @@
                 const msgId = change.doc.id;
                 if (baselineIds.has(msgId)) return;
                 const data = change.doc.data();
+                if (data.type === 'call') return;
                 const fromOther = isAdmin ? data.senderRole === 'worker' : data.senderRole === 'admin';
                 if (!fromOther) return;
                 this.notifyIncomingChatMessage(wName, msgId, data);
@@ -2586,6 +2620,7 @@
               snap.docChanges().forEach(change => {
                 if (change.type !== 'added' || baselineIds.has(change.doc.id)) return;
                 const data = change.doc.data();
+                if (data.type === 'call') return;
                 const fromOther = isAdmin ? data.senderRole === 'worker' : data.senderRole === 'admin';
                 if (!fromOther) return;
                 this.notifyIncomingChatMessage(wName, change.doc.id, data);
@@ -2961,6 +2996,14 @@
         const myName = this.currentUser.fullName || this.currentUser.username;
         container.innerHTML = this.chatMessages.map(m => {
           const isMine = m.senderName === myName;
+          let messageText = m.text || '';
+          if (m.type === 'call') {
+            const isCaller = m.callerName === myName && m.callerRole === this.currentUser.role;
+            const title = m.callOutcome === 'missed' ? '📞 Llamada perdida' : m.callOutcome === 'failed' ? '📞 Llamada sin conexión' : (isCaller ? '📞 Llamada saliente' : '📞 Llamada recibida');
+            const seconds = Math.max(0, Number(m.durationSeconds || 0));
+            const duration = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+            messageText = `${title}${m.callOutcome === 'completed' ? `\nDuración: ${duration}` : ''}\nFecha: ${m.callDate || '—'}`;
+          }
 
           let statusTick = '';
           if (isMine) {
@@ -2977,7 +3020,7 @@
             <div class="flex flex-col ${isMine ? 'items-end' : 'items-start'} group relative">
               <span class="text-[9px] font-bold text-slate-400 mb-0.5 px-1">${m.senderName} &bull; ${m.time}</span>
               <div class="max-w-[85%] sm:max-w-[78%] rounded-2xl px-3.5 py-2 shadow-sm relative ${isMine ? 'bg-brand-dark text-white rounded-br-none border-b-2 border-brand-lime' : 'bg-white text-slate-800 rounded-bl-none border border-slate-200'}">
-                <p class="leading-relaxed whitespace-pre-wrap text-xs sm:text-sm">${this.escapeHtml(m.text)}</p>
+                <p class="leading-relaxed whitespace-pre-wrap text-xs sm:text-sm">${this.escapeHtml(messageText)}</p>
                 <div class="text-[9px] text-right mt-0.5 opacity-80 flex items-center justify-end gap-1">
                   ${isMine ? statusTick : ''}
                 </div>
