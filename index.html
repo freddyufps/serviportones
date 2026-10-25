@@ -155,6 +155,7 @@
 
       <h3 id="call-user-name" class="text-base font-black truncate max-w-xs">Usuario</h3>
       <p id="call-status-label" class="text-xs font-semibold text-brand-lime mt-1">Conectando llamada...</p>
+      <button id="btn-enable-remote-audio" type="button" onclick="app.resumeRemoteAudio()" class="hidden mt-2 px-3 py-1.5 rounded-lg bg-cyan-700 text-white text-[11px] font-bold">🔊 Activar audio</button>
       <p id="call-duration-timer" class="text-xs font-mono text-slate-400 mt-0.5 hidden">00:00</p>
 
       <div class="flex items-center justify-center gap-4 mt-6">
@@ -777,11 +778,9 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
             <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Tipo de Servicio *</label>
-            <select id="task-service-type" required class="w-full px-2.5 py-1.5 border rounded-lg bg-white"></select>
-            <div id="service-type-admin-controls" class="hidden mt-1 flex flex-wrap gap-1">
-              <button type="button" onclick="app.addServiceType()" class="text-[10px] font-bold text-brand-limeHover">➕ Agregar Tipo de Servicio</button>
-              <button type="button" onclick="app.editServiceType()" class="text-[10px] font-bold text-slate-600">✏️ Editar Tipo de Servicio</button>
-              <button type="button" onclick="app.deleteServiceType()" class="text-[10px] font-bold text-rose-600">🗑️ Eliminar Tipo de Servicio</button>
+            <div class="flex items-center gap-1.5">
+              <select id="task-service-type" required class="min-w-0 flex-1 px-2.5 py-1.5 border rounded-lg bg-white"></select>
+              <button id="btn-manage-service-types" type="button" onclick="app.openServiceManager()" class="hidden w-9 h-9 shrink-0 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 font-black text-lg" title="Administrar tipos de servicio" aria-label="Administrar tipos de servicio">➕</button>
             </div>
           </div>
           <div>
@@ -810,11 +809,9 @@
         </div>
 
         <section id="task-checklist-admin-section" class="hidden rounded-xl border border-slate-200 bg-slate-50 p-2.5">
-          <h4 class="text-[11px] font-extrabold uppercase text-slate-700">Checklist técnico del portón</h4>
-          <div id="task-checklist-admin-list" class="mt-1 space-y-1"></div>
-          <button type="button" onclick="app.addChecklistItem()" class="mt-1 text-[10px] font-bold text-brand-limeHover">➕ Agregar Ítem</button>
-          <span class="mx-1 text-slate-300">|</span><button type="button" onclick="app.editChecklistItem()" class="text-[10px] font-bold text-slate-600">✏️ Editar Ítem</button>
-          <span class="mx-1 text-slate-300">|</span><button type="button" onclick="app.deleteChecklistItem()" class="text-[10px] font-bold text-rose-600">🗑️ Eliminar Ítem</button>
+          <h4 class="text-[11px] font-extrabold uppercase tracking-wider text-slate-700">CHECKLIST TÉCNICO DEL PORTÓN</h4>
+          <div id="task-checklist-admin-list" class="mt-2 space-y-1.5"></div>
+          <button type="button" onclick="app.addChecklistItem()" class="mt-2 w-full rounded-lg border border-dashed border-slate-300 py-2 text-[11px] font-bold text-brand-limeHover hover:bg-white">➕ Agregar Nuevo Punto</button>
         </section>
         <div>
           <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Instrucciones</label>
@@ -828,6 +825,25 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div id="modal-service-manager" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-950/60 backdrop-blur-sm p-3" onclick="if(event.target===this) app.closeServiceManager()" role="dialog" aria-modal="true" aria-labelledby="service-manager-title">
+    <div class="w-full max-w-md max-h-[88vh] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-200 bg-brand-dark px-4 py-3 text-white"><div><h3 id="service-manager-title" class="text-sm font-extrabold">Tipos de Servicio</h3><p class="mt-0.5 text-[10px] text-slate-300">Administra las opciones para órdenes nuevas.</p></div><button type="button" onclick="app.closeServiceManager()" class="rounded-lg p-1 text-slate-300 hover:bg-slate-800 hover:text-white" aria-label="Cerrar">✕</button></div>
+      <div class="space-y-3 overflow-y-auto p-4">
+        <form onsubmit="app.saveServiceTypeModal(event)" class="flex items-center gap-2"><input id="service-type-manager-input" type="text" maxlength="80" required placeholder="Nombre del tipo de servicio" class="min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-brand-lime focus:outline-none focus:ring-2 focus:ring-brand-lime/30"><button id="service-type-manager-submit" type="submit" class="rounded-xl bg-brand-dark px-3 py-2 text-xs font-bold text-white hover:bg-black">Agregar</button></form>
+        <button id="service-type-cancel-edit" type="button" onclick="app.cancelServiceTypeEdit()" class="hidden text-[11px] font-semibold text-slate-500 underline">Cancelar edición</button>
+        <div><p class="mb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Servicios disponibles</p><div id="service-type-manager-list" class="divide-y divide-slate-100 rounded-xl border border-slate-200"></div></div>
+      </div>
+      <div class="border-t border-slate-200 bg-slate-50 p-3 text-right"><button type="button" onclick="app.closeServiceManager()" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700">Cerrar</button></div>
+    </div>
+  </div>
+
+  <div id="modal-managed-item" class="fixed inset-0 z-[80] hidden items-center justify-center bg-slate-950/60 backdrop-blur-sm p-3" onclick="if(event.target===this) app.closeManagedItemModal()" role="dialog" aria-modal="true" aria-labelledby="managed-item-title">
+    <div class="w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
+      <div class="flex items-center justify-between border-b border-slate-200 bg-brand-dark px-4 py-3 text-white"><h3 id="managed-item-title" class="text-sm font-extrabold">Agregar punto</h3><button type="button" onclick="app.closeManagedItemModal()" class="rounded-lg p-1 text-slate-300 hover:bg-slate-800 hover:text-white" aria-label="Cerrar">✕</button></div>
+      <form onsubmit="app.saveManagedItem(event)" class="space-y-3 p-4"><label id="managed-item-label" for="managed-item-input" class="block text-[11px] font-bold text-slate-700">Texto</label><textarea id="managed-item-input" rows="3" maxlength="500" required class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-brand-lime focus:outline-none focus:ring-2 focus:ring-brand-lime/30"></textarea><div class="flex justify-end gap-2"><button type="button" onclick="app.closeManagedItemModal()" class="rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold text-slate-600">Cancelar</button><button id="managed-item-save" type="submit" class="rounded-xl bg-brand-dark px-4 py-2 text-xs font-bold text-white">Guardar</button></div></form>
     </div>
   </div>
 
@@ -854,8 +870,6 @@
           <p class="truncate"><span class="text-slate-500 font-bold">Dirección:</span> <span id="rep-address" class="font-semibold text-slate-800"></span></p>
         </div>
 
-        <section id="report-checklist-section" class="hidden rounded-xl border border-slate-200 bg-white p-2.5"><h4 class="text-[11px] font-extrabold uppercase text-slate-700">Checklist técnico</h4><div id="report-checklist-list" class="mt-1 space-y-1"></div></section>
-        <section class="rounded-xl border border-amber-200 bg-amber-50/60 p-2.5"><div class="flex items-center justify-between gap-2"><h4 class="text-[11px] font-extrabold uppercase text-slate-700">Novedades encontradas en campo</h4><button type="button" onclick="app.addFieldFinding()" class="px-2 py-1 rounded-lg bg-brand-dark text-white text-[10px] font-bold">➕ Agregar Novedad</button></div><div id="report-findings-list" class="mt-1 space-y-1"></div></section>
         <div class="flex items-center gap-2">
           <button type="button" id="rep-btn-waze" class="flex-1 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl text-xs shadow-sm flex items-center justify-center gap-1">
             🚙 Waze
@@ -878,6 +892,9 @@
             </button>
           </div>
         </div>
+
+        <section id="report-checklist-section" class="hidden rounded-xl border border-slate-200 bg-white p-2.5"><h4 class="text-[11px] font-extrabold uppercase text-slate-700">Checklist técnico</h4><div id="report-checklist-list" class="mt-1 space-y-1"></div></section>
+        <section class="rounded-xl border border-amber-200 bg-amber-50/60 p-2.5"><div class="flex items-center justify-between gap-2"><h4 class="text-[11px] font-extrabold uppercase text-slate-700">Novedades encontradas en campo</h4><button id="btn-add-field-finding" type="button" onclick="app.addFieldFinding()" class="px-2 py-1 rounded-lg bg-brand-dark text-white text-[10px] font-bold">➕ Agregar Novedad</button></div><div id="report-findings-list" class="mt-1 space-y-1"></div></section>
 
         <div>
           <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
@@ -997,10 +1014,11 @@
         return this.ctx;
       },
 
-      playMessageSound() {
+      async playMessageSound() {
         try {
           const ctx = this.getCtx();
           if (!ctx) return;
+          if (ctx.state === 'suspended') await ctx.resume();
           const now = ctx.currentTime;
 
           const osc1 = ctx.createOscillator();
@@ -1089,10 +1107,11 @@
         }
       },
 
-      playCallAlertSound() {
+      async playCallAlertSound() {
         try {
           const ctx = this.getCtx();
           if (!ctx) return;
+          if (ctx.state === 'suspended') await ctx.resume();
           const now = ctx.currentTime;
 
           [0, 0.15, 0.3].forEach(delay => {
@@ -1119,9 +1138,20 @@
       }
     };
 
-    window.addEventListener('pointerdown', () => {
-      SoundEngine.getCtx();
-    }, { once: true });
+    const unlockNotificationAudio = () => {
+      const context = SoundEngine.getCtx();
+      if (context && context.state === 'running') {
+        window.removeEventListener('pointerdown', unlockNotificationAudio);
+        window.removeEventListener('touchstart', unlockNotificationAudio);
+        window.removeEventListener('click', unlockNotificationAudio);
+      }
+    };
+    window.addEventListener('pointerdown', unlockNotificationAudio, { passive: true });
+    window.addEventListener('touchstart', unlockNotificationAudio, { passive: true });
+    window.addEventListener('click', unlockNotificationAudio, { passive: true });
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && SoundEngine.ctx?.state === 'suspended') SoundEngine.ctx.resume().catch(error => console.warn('No se pudo reactivar el sonido:', error));
+    });
 
     const INITIAL_TASKS = [
       {
@@ -1154,15 +1184,25 @@
         this.activeReportStatus = 'REALIZADA';
         this.heartbeatTimer = null;
         this.currentReportEvidence = [];
-        this.checklistTemplate = this.readStoredList('portonpro_checklist_template_v1', ['Engrase de cremallera', 'Fotocélulas', 'Calibración finales de carrera']);
+        this.checklistTemplate = this.readStoredList('portonpro_checklist_template_v1', ['Engrase de cremallera', 'Fotocélulas', 'Calibración finales de carrera', 'Verificar batería de respaldo']);
+        this.activeChecklistDraft = [];
+        this.checklistDraftDirty = false;
+        this.serviceTypeEditingIndex = null;
+        this.serviceMenuOpenIndex = null;
+        this.managedItemMode = null;
+        this.managedItemIndex = null;
         this.serviceTypes = this.readStoredList('portonpro_service_types_v1', ['Mantenimiento Preventivo', 'Instalación', 'Reparación', 'Programación']);
         
         // Estado del Chat y Conversaciones
         this.chatMessages = [];
         this.activeChatWorker = 'Jeampaul';
         this.chatUnsubscribe = null;
+        this.chatThreadUnsubscribe = null;
         this.chatThreadsUnsubscribe = null;
         this.conversations = {};
+        this.chatActivityRanks = {};
+        this.chatActivitySequence = 0;
+        this.workerUnreadCount = null;
         this.typingTimeout = null;
         this.showArchived = false;
 
@@ -1181,6 +1221,8 @@
         this.peerConnection = null;
         this.localStream = null;
         this.callUnsubscribe = null;
+        this.callSignalingUnsubscribes = [];
+        this.pendingIceCandidates = [];
         this.currentCallData = null;
         this.callTimerInterval = null;
         this.callSeconds = 0;
@@ -1197,7 +1239,6 @@
         this.processedEventIds = new Set();
         this.isTasksInitialLoad = true;
         this.isNotifsInitialLoad = true;
-        this.appStartTime = Date.now();
 
         this.init();
       }
@@ -1486,6 +1527,7 @@
         document.getElementById('chat-window-modal').classList.add('hidden');
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
         if (this.chatUnsubscribe) { this.chatUnsubscribe(); this.chatUnsubscribe = null; }
+        if (this.chatThreadUnsubscribe) { this.chatThreadUnsubscribe(); this.chatThreadUnsubscribe = null; }
         if (this.chatThreadsUnsubscribe) { this.chatThreadsUnsubscribe(); this.chatThreadsUnsubscribe = null; }
         if (this.callUnsubscribe) { this.callUnsubscribe(); this.callUnsubscribe = null; }
         if (this.gpsLocationsUnsubscribe) { this.gpsLocationsUnsubscribe(); this.gpsLocationsUnsubscribe = null; }
@@ -1985,6 +2027,8 @@
           const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
           console.log('[CALL] Micrófono obtenido');
           this.localStream = stream;
+          this.pendingIceCandidates = [];
+          this.callSignalingUnsubscribes = [];
 
           this.openVoiceCallModal({
             name: this.currentUser.role === 'admin' ? targetWorker : 'Administrador',
@@ -2022,27 +2066,28 @@
             timestamp: Date.now()
           });
           console.log('[CALL] Oferta enviada');
-          callDoc.onSnapshot(async doc => {
+          this.callSignalingUnsubscribes.push(callDoc.onSnapshot(async doc => {
             if (doc.exists) {
               const data = doc.data();
               if (data.status === 'answered' && data.answer && !this.peerConnection.currentRemoteDescription) {
                 const answerDesc = new RTCSessionDescription(data.answer);
                 await this.peerConnection.setRemoteDescription(answerDesc);
                 console.log('[CALL] Respuesta recibida');
+                await this.flushPendingIceCandidates();
                 this.onCallConnected();
               } else if (data.status === 'rejected' || data.status === 'ended') {
                 this.endVoiceCall(false);
               }
             }
-          });
+          }, error => console.error('[CALL] Error de señalización:', error)));
 
-          callDoc.collection('calleeCandidates').onSnapshot(snap => {
+          this.callSignalingUnsubscribes.push(callDoc.collection('calleeCandidates').onSnapshot(snap => {
             snap.docChanges().forEach(change => {
               if (change.type === 'added') {
-                this.peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+                this.addRemoteIceCandidate(change.doc.data());
               }
             });
-          });
+          }, error => console.error('[CALL] Error recibiendo candidatos ICE:', error)));
 
         } catch (err) {
           console.error("Error al iniciar llamada WebRTC:", err);
@@ -2053,38 +2098,30 @@
 
       listenIncomingVoiceCalls() {
         if (!window.db) return;
+        if (this.callUnsubscribe) { this.callUnsubscribe(); this.callUnsubscribe = null; }
         const myName = this.currentUser.fullName || this.currentUser.username;
         const isAdmin = this.currentUser.role === 'admin';
-
-        const query = isAdmin
-          ? db.collection('webrtc_calls').where('recipient', '==', 'Administrador').where('status', '==', 'calling')
-          : db.collection('webrtc_calls').doc(myName);
-
-        if (isAdmin) {
-          query.onSnapshot(snap => {
-            snap.docChanges().forEach(change => {
-              if (change.type === 'added' || change.type === 'modified') {
-                const data = change.doc.data();
-                if (data.status === 'calling' && (Date.now() - data.timestamp < 45000) && this.lastIncomingCallId !== change.doc.id) {
-                  this.currentCallData = { id: change.doc.id, ...data };
-                  this.lastIncomingCallId = change.doc.id;
-                  this.triggerIncomingCallAlert(data.caller);
-                }
-              }
-            });
-          });
-        } else {
-          query.onSnapshot(doc => {
-            if (doc.exists) {
-              const data = doc.data();
-              if (data.status === 'calling' && data.callerRole === 'admin' && (Date.now() - data.timestamp < 45000) && this.lastIncomingCallId !== doc.id) {
-                this.currentCallData = { id: doc.id, ...data };
-                this.lastIncomingCallId = doc.id;
-                this.triggerIncomingCallAlert('Administrador (Don Martínez)');
-              }
-            }
-          });
-        }
+        const calls = db.collection('webrtc_calls');
+        const onCall = (id, data) => {
+          const ageMs = Date.now() - Number(data.timestamp || 0);
+          const recentEnough = Number.isFinite(ageMs) && Math.abs(ageMs) <= 2 * 60 * 1000;
+          const isForMe = isAdmin
+            ? data.recipient === 'Administrador' && data.callerRole === 'worker'
+            : id === myName && data.callerRole === 'admin';
+          if (data.status !== 'calling' || !isForMe || !recentEnough || this.lastIncomingCallId === id) return;
+          this.currentCallData = { id, ...data };
+          this.lastIncomingCallId = id;
+          this.triggerIncomingCallAlert(isAdmin ? data.caller : 'Administrador (Don Martínez)');
+        };
+        this.callUnsubscribe = isAdmin
+          ? calls.onSnapshot(snapshot => {
+              snapshot.docChanges().forEach(change => {
+                if (change.type === 'added' || change.type === 'modified') onCall(change.doc.id, change.doc.data());
+              });
+            }, error => console.error('[CALL] Error escuchando llamadas entrantes:', error))
+          : calls.doc(myName).onSnapshot(doc => {
+              if (doc.exists) onCall(doc.id, doc.data());
+            }, error => console.error('[CALL] Error escuchando llamada entrante:', error));
       }
 
       triggerIncomingCallAlert(callerName) {
@@ -2103,6 +2140,8 @@
           const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
           console.log('[CALL] Micrófono obtenido');
           this.localStream = stream;
+          this.pendingIceCandidates = [];
+          this.callSignalingUnsubscribes = [];
 
           this.peerConnection = new RTCPeerConnection({
             iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
@@ -2128,14 +2167,16 @@
             status: 'answered',
             answer: { type: answer.type, sdp: answer.sdp }
           });
+          console.log('[CALL] Respuesta enviada');
+          await this.flushPendingIceCandidates();
 
-          callDoc.collection('callerCandidates').onSnapshot(snap => {
+          this.callSignalingUnsubscribes.push(callDoc.collection('callerCandidates').onSnapshot(snap => {
             snap.docChanges().forEach(change => {
               if (change.type === 'added') {
-                this.peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+                this.addRemoteIceCandidate(change.doc.data());
               }
             });
-          });
+          }, error => console.error('[CALL] Error recibiendo candidatos ICE:', error)));
 
           this.onCallConnected();
 
@@ -2152,10 +2193,39 @@
           if (event.streams && event.streams[0]) audio.srcObject = event.streams[0];
           else if (event.track) { const stream = new MediaStream(); stream.addTrack(event.track); audio.srcObject = stream; }
           console.log('[CALL] Audio remoto conectado');
-          try { await audio.play(); console.log('[CALL] Audio reproduciéndose'); }
-          catch (e) { console.warn('[CALL] Autoplay bloqueado; se requiere interacción con la llamada.', e); }
+          try {
+            await audio.play();
+            document.getElementById('btn-enable-remote-audio')?.classList.add('hidden');
+            console.log('[CALL] Audio reproduciéndose');
+          } catch (e) {
+            document.getElementById('btn-enable-remote-audio')?.classList.remove('hidden');
+            console.warn('[CALL] Autoplay bloqueado; toca Activar audio para habilitar la salida.', e);
+          }
         };
         this.peerConnection.oniceconnectionstatechange = () => console.log('[CALL] ICE:', this.peerConnection?.iceConnectionState);
+        this.peerConnection.onicecandidateerror = event => console.warn('[CALL] Error ICE:', event.errorCode, event.errorText);
+      }
+
+      async resumeRemoteAudio() {
+        const audio = document.getElementById('remote-audio-stream');
+        if (!audio?.srcObject) return;
+        try {
+          await audio.play();
+          document.getElementById('btn-enable-remote-audio')?.classList.add('hidden');
+          console.log('[CALL] Audio reproduciéndose');
+        } catch (error) { console.warn('[CALL] No se pudo iniciar el audio remoto:', error); }
+      }
+
+      async addRemoteIceCandidate(candidateData) {
+        if (!this.peerConnection || !candidateData) return;
+        if (!this.peerConnection.remoteDescription) { this.pendingIceCandidates.push(candidateData); return; }
+        try { await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidateData)); }
+        catch (error) { console.warn('[CALL] No se pudo agregar candidato ICE:', error); }
+      }
+
+      async flushPendingIceCandidates() {
+        const queued = this.pendingIceCandidates.splice(0);
+        for (const candidate of queued) await this.addRemoteIceCandidate(candidate);
       }
 
       openVoiceCallModal({ name, status, isIncoming }) {
@@ -2217,6 +2287,9 @@
           this.peerConnection.close();
           this.peerConnection = null;
         }
+        this.callSignalingUnsubscribes.forEach(unsubscribe => { try { unsubscribe(); } catch (_) {} });
+        this.callSignalingUnsubscribes = [];
+        this.pendingIceCandidates = [];
 
         if (notifyServer && window.db && this.currentCallData?.id) {
           db.collection('webrtc_calls').doc(this.currentCallData.id).update({
@@ -2226,6 +2299,9 @@
 
         document.getElementById('modal-voice-call').classList.add('hidden');
         document.getElementById('call-duration-timer').classList.add('hidden');
+        const remoteAudio = document.getElementById('remote-audio-stream');
+        if (remoteAudio) { remoteAudio.pause(); remoteAudio.srcObject = null; }
+        document.getElementById('btn-enable-remote-audio')?.classList.add('hidden');
         this.currentCallData = null;
       }
 
@@ -2260,18 +2336,54 @@
         const names = isAdmin ? this.workers.map(w => w.fullName || w.username) : [this.currentUser.fullName || this.currentUser.username];
         names.forEach(wName => {
           if (this.dedicatedWorkerUnsubscribes[wName]) return;
-          this.dedicatedWorkerUnsubscribes[wName] = db.collection('chats_internos').doc(wName).collection('mensajes').orderBy('timestamp', 'desc').limit(10).onSnapshot(snap => {
-            snap.docChanges().forEach(change => {
-              if (change.type !== 'added') return;
-              const data = change.doc.data(), msgId = change.doc.id;
-              const fromOther = isAdmin ? data.senderRole === 'worker' : data.senderRole === 'admin';
-              if (!fromOther || Number(data.timestamp) <= this.appStartTime || this.processedEventIds.has(msgId)) return;
-              this.processedEventIds.add(msgId);
-              if (this.prefs.sound) SoundEngine.playMessageSound();
-              this.showPopupNotification({ title: (data.senderName || wName) + ' te envió un mensaje', details: data.text || '', type: 'chat', icon: '💬', onClick: () => this.openDirectWorkerChat(wName) });
-              if (isAdmin) this.renderConversationsSidebar();
-            });
-          }, err => console.warn('Error listener de chat ' + wName + ':', err));
+          const query = db.collection('chats_internos').doc(wName).collection('mensajes').orderBy('timestamp', 'asc');
+          let cancelled = false, unsubscribe = null, baselineIds = new Set(), firstSnapshot = true;
+          this.dedicatedWorkerUnsubscribes[wName] = () => { cancelled = true; if (unsubscribe) unsubscribe(); };
+          const attach = () => {
+            if (cancelled) return;
+            unsubscribe = query.onSnapshot(snap => {
+              snap.docChanges().forEach(change => {
+                if (change.type !== 'added') return;
+                const msgId = change.doc.id;
+                if (baselineIds.has(msgId)) return;
+                const data = change.doc.data();
+                const fromOther = isAdmin ? data.senderRole === 'worker' : data.senderRole === 'admin';
+                if (!fromOther) return;
+                this.chatActivityRanks[wName] = ++this.chatActivitySequence;
+                if (this.prefs.sound) SoundEngine.playMessageSound();
+                this.showPopupNotification({ title: (data.senderName || wName) + ' te envió un mensaje', details: data.text || '', type: 'chat', icon: '💬', onClick: () => this.openDirectWorkerChat(wName) });
+                if (isAdmin) this.renderConversationsSidebar();
+              });
+              if (firstSnapshot) { firstSnapshot = false; baselineIds.clear(); }
+            }, error => console.error('[CHAT] Error escuchando mensajes de ' + wName + ':', error));
+          };
+          query.get().then(snapshot => {
+            if (cancelled) return;
+            snapshot.forEach(doc => baselineIds.add(doc.id));
+            attach();
+          }).catch(error => {
+            console.warn('[CHAT] No se pudo cargar la línea base de mensajes; se omitirá solo la primera lectura:', error);
+            if (cancelled) return;
+            let ignoreFirstSnapshot = true;
+            unsubscribe = query.onSnapshot(snap => {
+              if (ignoreFirstSnapshot) {
+                snap.docChanges().forEach(change => { if (change.type === 'added') baselineIds.add(change.doc.id); });
+                ignoreFirstSnapshot = false;
+                baselineIds.clear();
+                return;
+              }
+              snap.docChanges().forEach(change => {
+                if (change.type !== 'added' || baselineIds.has(change.doc.id)) return;
+                const data = change.doc.data();
+                const fromOther = isAdmin ? data.senderRole === 'worker' : data.senderRole === 'admin';
+                if (!fromOther) return;
+                this.chatActivityRanks[wName] = ++this.chatActivitySequence;
+                if (this.prefs.sound) SoundEngine.playMessageSound();
+                this.showPopupNotification({ title: (data.senderName || wName) + ' te envió un mensaje', details: data.text || '', type: 'chat', icon: '💬', onClick: () => this.openDirectWorkerChat(wName) });
+                if (isAdmin) this.renderConversationsSidebar();
+              });
+            }, listenError => console.error('[CHAT] Error escuchando mensajes de ' + wName + ':', listenError));
+          });
         });
       }
 
@@ -2290,7 +2402,12 @@
           .onSnapshot(snap => {
             const convs = {};
             snap.forEach(doc => {
-              convs[doc.id] = doc.data();
+              const data = doc.data();
+              const previous = this.conversations[doc.id];
+              if (previous && (previous.lastTimestamp !== data.lastTimestamp || previous.lastMessage !== data.lastMessage)) {
+                this.chatActivityRanks[doc.id] = ++this.chatActivitySequence;
+              }
+              convs[doc.id] = data;
             });
             this.conversations = convs;
             this.renderConversationsSidebar();
@@ -2307,8 +2424,11 @@
         const sortedWorkers = [...this.workers].sort((a, b) => {
           const nameA = a.fullName || a.username;
           const nameB = b.fullName || b.username;
-          const timeA = this.conversations[nameA]?.lastTimestamp || 0;
-          const timeB = this.conversations[nameB]?.lastTimestamp || 0;
+          const rankA = this.chatActivityRanks[nameA] || 0;
+          const rankB = this.chatActivityRanks[nameB] || 0;
+          if (rankA !== rankB) return rankB - rankA;
+          const timeA = Number(this.conversations[nameA]?.lastTimestamp || 0);
+          const timeB = Number(this.conversations[nameB]?.lastTimestamp || 0);
           return timeB - timeA;
         });
 
@@ -2450,7 +2570,7 @@
       async deleteMessageForEveryone(msgId) {
         const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
         const message = this.chatMessages.find(m => m.id === msgId);
-        if (this.currentUser.role !== 'admin' && (!message || message.senderName !== (this.currentUser.fullName || this.currentUser.username))) return;
+        if (this.currentUser.role !== 'admin' && (!message || message.senderRole !== 'worker' || message.senderName !== (this.currentUser.fullName || this.currentUser.username))) return;
         if (!confirm("¿Eliminar este mensaje para todos?")) return;
         if (window.db && threadId && msgId) {
           await db.collection('chats_internos').doc(threadId).collection('mensajes').doc(msgId).delete();
@@ -2487,11 +2607,20 @@
 
         const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
 
-        db.collection('chats_internos').doc(threadId).onSnapshot(doc => {
+        if (this.chatThreadUnsubscribe) this.chatThreadUnsubscribe();
+        this.chatThreadUnsubscribe = db.collection('chats_internos').doc(threadId).onSnapshot(doc => {
           if (doc.exists) {
             const data = doc.data();
             const otherRole = this.currentUser.role === 'admin' ? 'worker' : 'admin';
             const isOtherTyping = data.typing && data.typing[otherRole];
+            if (this.currentUser.role === 'worker') {
+              this.workerUnreadCount = Number(data.unreadByWorker || 0);
+              const badge = document.getElementById('chat-unread-badge');
+              if (badge) {
+                badge.textContent = this.workerUnreadCount > 99 ? '99+' : String(this.workerUnreadCount);
+                badge.classList.toggle('hidden', !this.workerUnreadCount || !this.prefs.chatBadge);
+              }
+            }
             const typingElem = document.getElementById('chat-typing-indicator');
             if (typingElem) {
               if (isOtherTyping) {
@@ -2537,12 +2666,15 @@
             this.renderChatMessages();
 
             const badge = document.getElementById('chat-unread-badge');
-            if (unreadCount > 0 && this.prefs.chatBadge) {
-              badge.textContent = unreadCount;
+            const badgeCount = this.currentUser.role === 'worker' && this.workerUnreadCount !== null ? this.workerUnreadCount : unreadCount;
+            if (badgeCount > 0 && this.prefs.chatBadge) {
+              badge.textContent = badgeCount > 99 ? '99+' : String(badgeCount);
               badge.classList.remove('hidden');
             } else {
               badge.classList.add('hidden');
             }
+            const chatWindow = document.getElementById('chat-window-modal');
+            if (chatWindow && !chatWindow.classList.contains('hidden') && !document.hidden) this.markMessagesAsRead();
           }, err => console.error("Error chat snapshot:", err));
       }
 
@@ -2579,7 +2711,7 @@
                   ${isMine ? statusTick : ''}
                 </div>
 
-                <div class="hidden group-hover:flex items-center gap-1.5 absolute -top-3 ${isMine ? 'left-2' : 'right-2'} bg-slate-800/90 rounded-lg p-1 text-[10px] text-white shadow-md">
+                <div class="flex sm:hidden sm:group-hover:flex items-center gap-1.5 absolute -top-3 ${isMine ? 'left-2' : 'right-2'} bg-slate-800/90 rounded-lg p-1 text-[10px] text-white shadow-md">
                   <button type="button" onclick="app.copyMessageText('${m.text.replace(/'/g, "\\'")}')" class="hover:text-brand-lime" title="Copiar">📋</button>
                   ${isMine || this.currentUser.role === 'admin' ? `<button type="button" onclick="app.deleteMessageForEveryone('${m.id}')" class="hover:text-rose-400" title="${this.currentUser.role === 'admin' ? 'Eliminar para todos' : 'Eliminar mensaje enviado por mí'}">✕</button>` : ''}
                 </div>
@@ -3121,38 +3253,211 @@
       }
 
       readStoredList(key, fallback) {
-        try { const value = JSON.parse(SafeStorage.getItem(key) || 'null'); return Array.isArray(value) ? value : fallback; } catch (_) { return fallback; }
+        try { const value = JSON.parse(SafeStorage.getItem(key) || 'null'); return Array.isArray(value) && value.length ? value : fallback; } catch (_) { return fallback; }
       }
       escapeHtml(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
       renderChecklistAdminEditor() {
-        const section=document.getElementById('task-checklist-admin-section'), list=document.getElementById('task-checklist-admin-list'); if(!section||!list)return;
-        section.classList.toggle('hidden',this.currentUser?.role!=='admin');
-        list.innerHTML=this.checklistTemplate.map(x=>'<div class="text-[11px]">☑ '+this.escapeHtml(x)+'</div>').join('')||'<p class="text-[10px] text-slate-400">Sin ítems configurados.</p>';
+        const section = document.getElementById('task-checklist-admin-section');
+        const list = document.getElementById('task-checklist-admin-list');
+        if (!section || !list) return;
+        section.classList.toggle('hidden', this.currentUser?.role !== 'admin');
+        const items = Array.isArray(this.activeChecklistDraft) ? this.activeChecklistDraft : [];
+        list.innerHTML = items.map((entry, index) => {
+          const item = typeof entry === 'string' ? { label: entry, done: false } : entry;
+          return `<div class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2"><span class="text-emerald-600">☑</span><span class="min-w-0 flex-1 text-[11px] font-medium text-slate-700">${this.escapeHtml(item.label)}</span><button type="button" onclick="app.editChecklistItem(${index})" class="rounded-md p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900" title="Editar punto" aria-label="Editar punto">✏️</button><button type="button" onclick="app.deleteChecklistItem(${index})" class="rounded-md p-1 text-rose-600 hover:bg-rose-50" title="Eliminar punto" aria-label="Eliminar punto">🗑️</button></div>`;
+        }).join('') || '<p class="rounded-lg border border-dashed border-slate-300 bg-white p-3 text-center text-[11px] text-slate-400">Aún no hay puntos en este checklist.</p>';
       }
-      saveChecklistTemplate() { SafeStorage.setItem('portonpro_checklist_template_v1',JSON.stringify(this.checklistTemplate));this.renderChecklistAdminEditor(); }
-      addChecklistItem() { if(this.currentUser?.role!=='admin')return;const value=prompt('Nombre del nuevo ítem:');if(value?.trim()){this.checklistTemplate.push(value.trim());this.saveChecklistTemplate();} }
-      editChecklistItem() { if(this.currentUser?.role!=='admin'||!this.checklistTemplate.length)return;const index=Number(prompt('Número del ítem a editar (1-'+this.checklistTemplate.length+'):'))-1;if(!Number.isInteger(index)||index<0||index>=this.checklistTemplate.length)return;const value=prompt('Editar ítem:',this.checklistTemplate[index]);if(value?.trim()){this.checklistTemplate[index]=value.trim();this.saveChecklistTemplate();} }
-      deleteChecklistItem() { if(this.currentUser?.role!=='admin'||!this.checklistTemplate.length)return;const index=Number(prompt('Número del ítem a eliminar (1-'+this.checklistTemplate.length+'):'))-1;if(Number.isInteger(index)&&index>=0&&index<this.checklistTemplate.length){this.checklistTemplate.splice(index,1);this.saveChecklistTemplate();} }
+
+      openServiceManager() {
+        if (this.currentUser?.role !== 'admin') return;
+        this.serviceTypeEditingIndex = null;
+        this.serviceMenuOpenIndex = null;
+        const input = document.getElementById('service-type-manager-input');
+        input.value = '';
+        document.getElementById('service-type-manager-submit').textContent = 'Agregar';
+        document.getElementById('service-type-cancel-edit').classList.add('hidden');
+        this.renderServiceTypeManager();
+        const modal = document.getElementById('modal-service-manager');
+        modal.classList.remove('hidden'); modal.classList.add('flex');
+        setTimeout(() => input.focus(), 40);
+      }
+
+      closeServiceManager() {
+        const modal = document.getElementById('modal-service-manager');
+        modal.classList.add('hidden'); modal.classList.remove('flex');
+        this.serviceTypeEditingIndex = null; this.serviceMenuOpenIndex = null;
+      }
+
+      renderServiceTypeManager() {
+        const list = document.getElementById('service-type-manager-list');
+        if (!list) return;
+        list.innerHTML = this.serviceTypes.map((type, index) => `<div class="relative flex items-center gap-2 px-3 py-2.5"><span class="min-w-0 flex-1 text-xs font-semibold text-slate-700">${this.escapeHtml(type)}</span><button type="button" onclick="app.toggleServiceTypeMenu(${index})" class="rounded-lg p-1 text-slate-500 hover:bg-slate-100" aria-label="Opciones de ${this.escapeHtml(type)}">⋮</button>${this.serviceMenuOpenIndex === index ? `<div class="absolute right-2 top-10 z-10 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl"><button type="button" onclick="app.editServiceTypeModal(${index})" class="block w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50">✏️ Editar</button><button type="button" onclick="app.deleteServiceTypeModal(${index})" class="block w-full px-3 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50">🗑️ Eliminar</button></div>` : ''}</div>`).join('') || '<p class="p-4 text-center text-xs text-slate-400">No hay tipos de servicio.</p>';
+      }
+
+      toggleServiceTypeMenu(index) {
+        if (this.currentUser?.role !== 'admin') return;
+        this.serviceMenuOpenIndex = this.serviceMenuOpenIndex === index ? null : index;
+        this.renderServiceTypeManager();
+      }
+
+      editServiceTypeModal(index) {
+        if (this.currentUser?.role !== 'admin' || !this.serviceTypes[index]) return;
+        this.serviceTypeEditingIndex = index;
+        this.serviceMenuOpenIndex = null;
+        const input = document.getElementById('service-type-manager-input');
+        input.value = this.serviceTypes[index];
+        document.getElementById('service-type-manager-submit').textContent = 'Guardar cambio';
+        document.getElementById('service-type-cancel-edit').classList.remove('hidden');
+        this.renderServiceTypeManager();
+        input.focus();
+      }
+
+      cancelServiceTypeEdit() {
+        this.serviceTypeEditingIndex = null;
+        document.getElementById('service-type-manager-input').value = '';
+        document.getElementById('service-type-manager-submit').textContent = 'Agregar';
+        document.getElementById('service-type-cancel-edit').classList.add('hidden');
+      }
+
+      saveServiceTypeModal(event) {
+        event.preventDefault();
+        if (this.currentUser?.role !== 'admin') return;
+        const value = document.getElementById('service-type-manager-input').value.trim();
+        if (!value) return;
+        const editing = this.serviceTypeEditingIndex;
+        if (this.serviceTypes.some((type, index) => type.toLocaleLowerCase() === value.toLocaleLowerCase() && index !== editing)) {
+          return this.showToast('Ese tipo de servicio ya existe', 'info');
+        }
+        if (editing === null) this.serviceTypes.push(value);
+        else this.serviceTypes[editing] = value;
+        SafeStorage.setItem('portonpro_service_types_v1', JSON.stringify(this.serviceTypes));
+        this.renderServiceTypeOptions(value);
+        this.cancelServiceTypeEdit();
+        this.renderServiceTypeManager();
+        this.showToast(editing === null ? 'Tipo de servicio agregado' : 'Tipo de servicio actualizado', 'success');
+      }
+
+      deleteServiceTypeModal(index) {
+        if (this.currentUser?.role !== 'admin' || index < 0 || index >= this.serviceTypes.length) return;
+        const removed = this.serviceTypes[index];
+        this.serviceTypes.splice(index, 1);
+        if (!this.serviceTypes.length) this.serviceTypes.push('Mantenimiento Preventivo');
+        const selected = document.getElementById('task-service-type')?.value;
+        const next = selected === removed ? this.serviceTypes[0] : selected;
+        SafeStorage.setItem('portonpro_service_types_v1', JSON.stringify(this.serviceTypes));
+        this.renderServiceTypeOptions(next);
+        this.serviceMenuOpenIndex = null;
+        this.renderServiceTypeManager();
+        this.showToast('Opción eliminada; las órdenes guardadas no cambian', 'info');
+      }
+
       renderServiceTypeOptions(selected) {
-        const select=document.getElementById('task-service-type'), controls=document.getElementById('service-type-admin-controls');if(!select)return;
-        const values=[...new Set([...this.serviceTypes,...(selected&&!this.serviceTypes.includes(selected)?[selected]:[])])];
-        select.innerHTML=values.map(x=>'<option value="'+this.escapeHtml(x)+'">'+this.escapeHtml(x)+'</option>').join('');if(selected)select.value=selected;if(controls)controls.classList.toggle('hidden',this.currentUser?.role!=='admin');
+        const select = document.getElementById('task-service-type');
+        const manageButton = document.getElementById('btn-manage-service-types');
+        if (!select) return;
+        const values = [...new Set([...this.serviceTypes, ...(selected && !this.serviceTypes.includes(selected) ? [selected] : [])])];
+        select.innerHTML = values.map(value => `<option value="${this.escapeHtml(value)}">${this.escapeHtml(value)}</option>`).join('');
+        if (selected) select.value = selected;
+        if (manageButton) manageButton.classList.toggle('hidden', this.currentUser?.role !== 'admin');
       }
-      saveServiceTypes() { SafeStorage.setItem('portonpro_service_types_v1',JSON.stringify(this.serviceTypes));this.renderServiceTypeOptions(document.getElementById('task-service-type')?.value||''); }
-      addServiceType() { if(this.currentUser?.role!=='admin')return;const value=prompt('Nuevo tipo de servicio:');if(!value?.trim())return;if(this.serviceTypes.includes(value.trim()))return this.showToast('Ese tipo ya existe','info');this.serviceTypes.push(value.trim());this.saveServiceTypes();document.getElementById('task-service-type').value=value.trim(); }
-      editServiceType() { if(this.currentUser?.role!=='admin')return;const select=document.getElementById('task-service-type'),old=select?.value,index=this.serviceTypes.indexOf(old);if(index<0)return this.showToast('Las órdenes anteriores conservan su tipo de servicio','info');const value=prompt('Editar tipo de servicio:',old);if(value?.trim()){this.serviceTypes[index]=value.trim();this.saveServiceTypes();select.value=value.trim();} }
-      deleteServiceType() { if(this.currentUser?.role!=='admin')return;const select=document.getElementById('task-service-type'),value=select?.value;if(!value||!this.serviceTypes.includes(value)||!confirm('¿Eliminar '+value+' de las opciones futuras?'))return;this.serviceTypes=this.serviceTypes.filter(x=>x!==value);if(!this.serviceTypes.length)this.serviceTypes=['Mantenimiento Preventivo'];select.value=this.serviceTypes[0];this.saveServiceTypes(); }
+
+      openManagedItemModal(mode, index = null) {
+        if (mode === 'finding' && index !== null) return;
+        if (mode === 'checklist' && this.currentUser?.role !== 'admin') return;
+        if (mode === 'finding' && this.currentUser?.role !== 'worker') return;
+        this.managedItemMode = mode; this.managedItemIndex = index;
+        const title = document.getElementById('managed-item-title');
+        const label = document.getElementById('managed-item-label');
+        const input = document.getElementById('managed-item-input');
+        const existing = index === null ? null : mode === 'checklist' ? this.activeChecklistDraft[index] : this.selectedTask?.fieldFindings?.[index];
+        const value = typeof existing === 'string' ? existing : existing?.label || existing?.text || '';
+        title.textContent = mode === 'finding' ? (index === null ? 'Agregar novedad' : 'Editar novedad') : (index === null ? 'Agregar punto al checklist' : 'Editar punto del checklist');
+        label.textContent = mode === 'finding' ? 'Describe el hallazgo técnico' : 'Nombre del punto';
+        input.value = value;
+        input.placeholder = mode === 'finding' ? 'Ej.: Cable deteriorado, cliente ausente...' : 'Ej.: Verificar batería de respaldo';
+        const modal = document.getElementById('modal-managed-item');
+        modal.classList.remove('hidden'); modal.classList.add('flex');
+        setTimeout(() => input.focus(), 40);
+      }
+
+      closeManagedItemModal() {
+        const modal = document.getElementById('modal-managed-item');
+        modal.classList.add('hidden'); modal.classList.remove('flex');
+        this.managedItemMode = null; this.managedItemIndex = null;
+      }
+
+      saveManagedItem(event) {
+        event.preventDefault();
+        const value = document.getElementById('managed-item-input').value.trim();
+        if (!value) return;
+        if (this.managedItemMode === 'checklist' && this.currentUser?.role === 'admin') {
+          const index = this.managedItemIndex;
+          if (index === null) this.activeChecklistDraft.push({ label: value, done: false });
+          else {
+            const old = this.activeChecklistDraft[index];
+            this.activeChecklistDraft[index] = typeof old === 'string' ? { label: value, done: false } : { ...old, label: value };
+          }
+          this.checklistDraftDirty = true;
+          this.renderChecklistAdminEditor();
+        } else if (this.managedItemMode === 'finding' && this.currentUser?.role === 'worker' && this.selectedTask) {
+          if (!Array.isArray(this.selectedTask.fieldFindings)) this.selectedTask.fieldFindings = [];
+          const index = this.managedItemIndex;
+          const finding = { text: value, authorName: this.currentUser.fullName || this.currentUser.username, authorRole: 'worker', createdAt: Date.now() };
+          if (index !== null) return;
+          this.selectedTask.fieldFindings.push(finding);
+          this.saveTasks(); this.renderFieldFindings();
+        }
+        this.closeManagedItemModal();
+      }
+
+      addChecklistItem() { if (this.currentUser?.role === 'admin') this.openManagedItemModal('checklist'); }
+      editChecklistItem(index) { if (this.currentUser?.role === 'admin') this.openManagedItemModal('checklist', index); }
+      deleteChecklistItem(index) {
+        if (this.currentUser?.role !== 'admin' || !Array.isArray(this.activeChecklistDraft)) return;
+        if (index < 0 || index >= this.activeChecklistDraft.length) return;
+        this.activeChecklistDraft.splice(index, 1); this.checklistDraftDirty = true; this.renderChecklistAdminEditor();
+      }
+
       renderReportChecklist() {
-        const items=Array.isArray(this.selectedTask?.checklist)?this.selectedTask.checklist:[],section=document.getElementById('report-checklist-section'),list=document.getElementById('report-checklist-list');if(section)section.classList.toggle('hidden',!items.length);if(!list)return;
-        list.innerHTML=items.map((entry,index)=>{const item=typeof entry==='string'?{label:entry,done:false}:entry;return '<label class="flex items-center gap-2 text-[11px]"><input type="checkbox" '+(item.done?'checked':'')+(this.currentUser?.role==='admin'?' disabled':'')+' onchange="app.setChecklistItem('+index+',this.checked)"><span>'+this.escapeHtml(item.label)+'</span></label>';}).join('');
+        const items = Array.isArray(this.selectedTask?.checklist) ? this.selectedTask.checklist : [];
+        const section = document.getElementById('report-checklist-section');
+        const list = document.getElementById('report-checklist-list');
+        if (section) section.classList.toggle('hidden', !items.length);
+        if (!list) return;
+        list.innerHTML = items.map((entry, index) => {
+          const item = typeof entry === 'string' ? { label: entry, done: false } : entry;
+          return `<label class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs"><input type="checkbox" ${item.done ? 'checked' : ''} ${this.currentUser?.role === 'admin' ? 'disabled' : ''} onchange="app.setChecklistItem(${index},this.checked)" class="mt-0.5 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"><span class="leading-relaxed text-slate-800">${this.escapeHtml(item.label)}</span></label>`;
+        }).join('');
       }
-      setChecklistItem(index,checked) { if(!this.selectedTask||this.currentUser?.role==='admin')return;const item=this.selectedTask.checklist?.[index];if(typeof item==='string')this.selectedTask.checklist[index]={label:item,done:checked};else if(item)item.done=checked;this.saveTasks(); }
+
+      setChecklistItem(index, checked) {
+        if (!this.selectedTask || this.currentUser?.role !== 'worker') return;
+        const item = this.selectedTask.checklist?.[index];
+        if (typeof item === 'string') this.selectedTask.checklist[index] = { label: item, done: checked };
+        else if (item) item.done = checked;
+        this.saveTasks();
+      }
+
       renderFieldFindings() {
-        const list=document.getElementById('report-findings-list');if(!list)return;const entries=Array.isArray(this.selectedTask?.fieldFindings)?this.selectedTask.fieldFindings:[],myName=this.currentUser?.fullName||this.currentUser?.username;
-        list.innerHTML=entries.map((item,index)=>'<div class="flex gap-2 bg-white border rounded-lg px-2 py-1 text-[11px]"><span class="flex-1">'+this.escapeHtml(item.text)+' — '+this.escapeHtml(item.authorName||'Técnico')+'</span>'+(this.currentUser?.role==='admin'||item.authorName===myName?'<button type="button" onclick="app.deleteFieldFinding('+index+')" class="text-rose-600">🗑</button>':'')+'</div>').join('')||'<p class="text-[10px] text-slate-400">Sin novedades registradas.</p>';
+        const addButton = document.getElementById('btn-add-field-finding');
+        if (addButton) addButton.classList.toggle('hidden', this.currentUser?.role !== 'worker');
+        const list = document.getElementById('report-findings-list');
+        if (!list) return;
+        const entries = Array.isArray(this.selectedTask?.fieldFindings) ? this.selectedTask.fieldFindings : [];
+        const myName = this.currentUser?.fullName || this.currentUser?.username;
+        list.innerHTML = entries.map((item, index) => {
+          const canDelete = this.currentUser?.role === 'admin' || (item.authorRole === 'worker' && item.authorName === myName);
+          return `<div class="flex items-start gap-2 rounded-xl border border-amber-100 bg-white px-3 py-2 text-xs"><span class="min-w-0 flex-1 leading-relaxed text-slate-700">${this.escapeHtml(item.text)} <span class="text-slate-400">— ${this.escapeHtml(item.authorName || 'Técnico')}</span></span>${canDelete ? `<button type="button" onclick="app.deleteFieldFinding(${index})" class="rounded-md p-1 text-rose-600 hover:bg-rose-50" title="Eliminar novedad" aria-label="Eliminar novedad">🗑️</button>` : ''}</div>`;
+        }).join('') || '<p class="rounded-lg border border-dashed border-slate-300 bg-white p-3 text-center text-[11px] text-slate-400">Sin novedades registradas.</p>';
       }
-      addFieldFinding() { if(!this.selectedTask)return;const value=prompt('Novedad encontrada en campo:');if(!value?.trim())return;this.selectedTask.fieldFindings=this.selectedTask.fieldFindings||[];this.selectedTask.fieldFindings.push({text:value.trim(),authorName:this.currentUser.fullName||this.currentUser.username,createdAt:Date.now()});this.saveTasks();this.renderFieldFindings(); }
-      deleteFieldFinding(index) { const item=this.selectedTask?.fieldFindings?.[index],name=this.currentUser?.fullName||this.currentUser?.username;if(!item||(this.currentUser.role!=='admin'&&item.authorName!==name))return;this.selectedTask.fieldFindings.splice(index,1);this.saveTasks();this.renderFieldFindings(); }
+
+      addFieldFinding() { if (this.currentUser?.role === 'worker' && this.selectedTask) this.openManagedItemModal('finding'); }
+      deleteFieldFinding(index) {
+        const item = this.selectedTask?.fieldFindings?.[index];
+        const name = this.currentUser?.fullName || this.currentUser?.username;
+        if (this.currentUser?.role !== 'worker' || !item || item.authorRole !== 'worker' || item.authorName !== name) return;
+        this.selectedTask.fieldFindings.splice(index, 1); this.saveTasks(); this.renderFieldFindings();
+      }
 
       openNewTaskModal() {
         if (this.currentUser.role !== 'admin') return;
@@ -3160,6 +3465,8 @@
         document.getElementById('task-id').value = '';
         document.getElementById('task-form').reset();
         this.renderServiceTypeOptions(this.serviceTypes[0]);
+        this.activeChecklistDraft = this.checklistTemplate.map(label => ({ label, done: false }));
+        this.checklistDraftDirty = false;
         this.renderChecklistAdminEditor();
         document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
         document.getElementById('modal-task-form').classList.remove('hidden');
@@ -3176,12 +3483,14 @@
         document.getElementById('task-phone').value = t.phone;
         document.getElementById('task-address').value = t.address;
         this.renderServiceTypeOptions(t.serviceType);
-        this.renderChecklistAdminEditor();
         document.getElementById('task-equipment').value = t.equipment;
         document.getElementById('task-assigned-to').value = t.assignedTo;
         document.getElementById('task-priority').value = t.priority;
         document.getElementById('task-date').value = t.date;
         document.getElementById('task-instructions').value = t.instructions || '';
+        this.activeChecklistDraft = Array.isArray(t.checklist) ? t.checklist.map(entry => typeof entry === 'string' ? { label: entry, done: false } : { ...entry }) : [];
+        this.checklistDraftDirty = false;
+        this.renderChecklistAdminEditor();
         document.getElementById('modal-task-form').classList.remove('hidden');
       }
 
@@ -3206,6 +3515,7 @@
             this.tasks[index].priority = document.getElementById('task-priority').value;
             this.tasks[index].date = document.getElementById('task-date').value;
             this.tasks[index].instructions = document.getElementById('task-instructions').value;
+            if (this.checklistDraftDirty) this.tasks[index].checklist = this.activeChecklistDraft.map(item => ({ ...item }));
             this.showToast('Orden modificada correctamente', 'success');
           }
         } else {
@@ -3221,7 +3531,7 @@
             priority: document.getElementById('task-priority').value,
             date: document.getElementById('task-date').value,
             instructions: document.getElementById('task-instructions').value,
-            checklist: this.checklistTemplate.map(label => ({ label, done: false })),
+            checklist: this.activeChecklistDraft.map(item => ({ ...item })),
             fieldFindings: [],
             status: 'PENDIENTE',
             observations: '',
@@ -3229,6 +3539,8 @@
             completedAt: null
           };
           this.tasks.unshift(newTask);
+          this.checklistTemplate = this.activeChecklistDraft.map(item => item.label);
+          SafeStorage.setItem('portonpro_checklist_template_v1', JSON.stringify(this.checklistTemplate));
           this.showToast(`Nueva orden ${newTask.id} asignada`, 'success');
         }
 
