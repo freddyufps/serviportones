@@ -882,7 +882,7 @@
       }
 
       normalizeInput(val) {
-        if (!val) return '';
+        if (!val && val !== 0) return '';
         return String(val).trim().normalize('NFC').replace(/[\u200B-\u200D\uFEFF]/g, '');
       }
 
@@ -948,26 +948,12 @@
 
         // Sincronización en tiempo real desde Firestore
         if (window.db) {
-          const defaultDocs = [
-            { id: 'admin', data: { username: 'administrador', password: '123456789', role: 'admin', active: true, fullName: 'Administrador (Don Martínez)', phone: '315 889 4521', photo: '' } },
-            { id: 'tech-1', data: { username: 'Jeampaul', password: '123', role: 'worker', active: true, fullName: 'Jeampaul', phone: '315 889 4521', specialty: 'Motores Corredizos', photo: '' } },
-            { id: 'tech-2', data: { username: 'Alexis', password: '123', role: 'worker', active: true, fullName: 'Alexis', phone: '310 442 1290', specialty: 'Brazos Batientes', photo: '' } }
-          ];
-
-          defaultDocs.forEach(d => {
-            db.collection('users').doc(d.id).get().then(docSnap => {
-              if (!docSnap.exists) {
-                db.collection('users').doc(d.id).set(d.data);
-              }
-            }).catch(err => console.warn(`Inicializando users/${d.id}:`, err));
-          });
-
-          // Listener de la colección 'users'
+          // Listener reactivo de la colección 'users'
           db.collection('users').onSnapshot((snapshot) => {
             const list = [];
             snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
             this.users = list;
-            this.workers = list.filter(u => u.role === 'worker');
+            this.workers = list.filter(u => String(u.role).toLowerCase() === 'worker');
 
             this.renderTechOptionsInSelects();
             this.renderUsersTable();
@@ -976,7 +962,7 @@
               this.renderTechniciansMonitor();
               this.renderTasks();
             } else if (this.currentUser && this.currentUser.role === 'worker') {
-              const myUpdated = list.find(u => u.username.toLowerCase() === this.currentUser.username.toLowerCase());
+              const myUpdated = list.find(u => String(u.username || '').toLowerCase() === this.currentUser.username.toLowerCase());
               if (myUpdated && myUpdated.photo !== this.currentUser.photo) {
                 this.currentUser.photo = myUpdated.photo;
                 SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
@@ -1005,7 +991,7 @@
           db.collection('presencia').onSnapshot((snapshot) => {
             snapshot.forEach(doc => {
               const data = doc.data();
-              const u = this.users.find(x => x.username.toLowerCase() === doc.id.toLowerCase());
+              const u = this.users.find(x => String(x.username || '').toLowerCase() === doc.id.toLowerCase());
               if (u) {
                 if (data.lastHeartbeat !== undefined) u.lastHeartbeat = data.lastHeartbeat;
                 if (data.photo) u.photo = data.photo;
@@ -1150,6 +1136,9 @@
         if (this.chatUnsubscribe) { this.chatUnsubscribe(); this.chatUnsubscribe = null; }
       }
 
+      // ========================================================
+      // AUTENTICACIÓN FIRESTORE (users) CON REGISTRO DETALLADO
+      // ========================================================
       async handleLogin(e) {
         e.preventDefault();
         const rawUser = document.getElementById('login-username').value;
@@ -1160,8 +1149,13 @@
         const btnSubmit = document.getElementById('btn-submit-login');
         const btnText = document.getElementById('btn-submit-text');
 
-        const userVal = this.normalizeInput(rawUser);
+        // Sanitización estricta sin espacios
+        const userVal = this.normalizeInput(rawUser).toLowerCase();
         const passVal = this.normalizeInput(rawPass);
+
+        console.log("=== INICIO DE VALIDACIÓN DE LOGIN ===");
+        console.log("Usuario ingresado:", userVal);
+        console.log("Contraseña ingresada:", passVal);
 
         if (!userVal || !passVal) {
           errorText.textContent = "Por favor ingresa usuario y contraseña.";
@@ -1184,19 +1178,47 @@
 
         if (window.db) {
           try {
-            const snapshot = await db.collection('users').get({ source: 'server' }).catch(() => db.collection('users').get());
-            if (!snapshot.empty) {
-              snapshot.forEach(doc => {
-                const uData = doc.data();
-                const dbUser = this.normalizeInput(uData.username).toLowerCase();
-                const dbPass = this.normalizeInput(uData.password);
-                if (dbUser === userVal.toLowerCase() && dbPass === passVal) {
-                  authenticatedUser = { id: doc.id, ...uData };
-                }
-              });
-            }
+            console.log("[Login Debug] Consultando colección 'users' en Firestore...");
+            const snapshot = await db.collection('users').get();
+            console.log(`[Login Debug] Documentos obtenidos en Firestore: ${snapshot.size}`);
+
+            snapshot.forEach(doc => {
+              const uData = doc.data();
+              const dbDocId = doc.id;
+              
+              // Sanitización segura convirtiendo valores a string
+              const dbUser = String(uData.username !== undefined ? uData.username : '').trim().toLowerCase();
+              const dbPass = String(uData.password !== undefined ? uData.password : '').trim();
+              const isActive = (uData.active !== false); // active = true por defecto si no es falso explícito
+
+              const userMatch = (dbUser === userVal);
+              const passMatch = (dbPass === passVal);
+              const isMatch = (userMatch && passMatch);
+
+              console.log(`--- [Evaluando Documento: ${dbDocId}] ---`);
+              console.log("Usuario ingresado:", userVal);
+              console.log("Contraseña ingresada:", passVal);
+              console.log("Usuario Firestore:", dbUser);
+              console.log("Contraseña Firestore:", dbPass);
+              console.log("Resultado de comparación:", isMatch, "| Estado active:", isActive);
+
+              if (isMatch) {
+                authenticatedUser = { 
+                  id: doc.id, 
+                  ...uData,
+                  username: uData.username || userVal,
+                  fullName: uData.fullName || uData.username || userVal,
+                  role: String(uData.role || 'worker').toLowerCase().trim(),
+                  active: isActive
+                };
+              }
+            });
           } catch (err) {
-            console.error("Error al consultar users en Firestore:", err);
+            console.error("[Login Debug] Error crítico al consultar Firestore:", err);
+            errorText.textContent = "Error de conexión con Firestore. Revisa tu red.";
+            errorAlert.classList.remove('hidden');
+            if (btnSubmit) { btnSubmit.disabled = false; if (btnText) btnText.textContent = "Iniciar Sesión"; }
+            return;
           }
         }
 
@@ -1206,6 +1228,8 @@
         }
 
         if (authenticatedUser) {
+          console.log("[Login Debug] Usuario autenticado con éxito:", authenticatedUser);
+
           if (authenticatedUser.active === false) {
             errorText.textContent = 'Esta cuenta está desactivada. Consulta al Administrador.';
             errorAlert.classList.remove('hidden');
@@ -1229,7 +1253,7 @@
           const sessionObj = {
             id: authenticatedUser.id,
             username: authenticatedUser.username,
-            fullName: authenticatedUser.fullName || authenticatedUser.username,
+            fullName: authenticatedUser.fullName,
             role: authenticatedUser.role === 'admin' ? 'admin' : 'worker',
             phone: authenticatedUser.phone || '',
             photo: authenticatedUser.photo || ''
@@ -1239,6 +1263,7 @@
           return;
         }
 
+        console.warn("[Login Debug] Ningún documento coincidió con las credenciales ingresadas.");
         errorText.textContent = 'Usuario o contraseña incorrectos en Firestore.';
         errorAlert.classList.remove('hidden');
         if (window.lucide) lucide.createIcons();
@@ -1561,6 +1586,7 @@
         });
       }
 
+      // MONITOR DE PERSONAL: VISUALIZACIÓN AUTOMÁTICA DE TODOS LOS "worker"
       renderTechniciansMonitor() {
         const grid = document.getElementById('technicians-status-grid');
         const counter = document.getElementById('techs-online-counter');
@@ -1710,7 +1736,7 @@
         if (window.db && this.currentUser.id) {
           try {
             const userDoc = await db.collection('users').doc(this.currentUser.id).get();
-            if (userDoc.exists && userDoc.data().password === currentPass) {
+            if (userDoc.exists && String(userDoc.data().password).trim() === currentPass) {
               await db.collection('users').doc(this.currentUser.id).update({ password: newPass });
               this.currentUser.password = newPass;
               SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
@@ -2012,46 +2038,6 @@
                 </div>
               </div>
             </div>
-          `;
-        }).join('');
-
-        if (window.lucide) lucide.createIcons();
-      }
-
-      renderAdminAuditLog() {
-        const tbody = document.getElementById('audit-log-tbody');
-        const counter = document.getElementById('audit-log-counter');
-        if (!tbody) return;
-
-        const reportedTasks = this.tasks.filter(t => t.completedAt || t.observations);
-        counter.textContent = `${reportedTasks.length} Informes`;
-
-        if (reportedTasks.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-slate-400 italic">No hay informes registrados.</td></tr>`;
-          return;
-        }
-
-        tbody.innerHTML = reportedTasks.map(t => {
-          const evidenceCount = Array.isArray(t.evidence) ? t.evidence.length : 0;
-          return `
-            <tr class="hover:bg-slate-50 transition">
-              <td class="p-2 font-semibold text-slate-700 whitespace-nowrap text-[11px]">${t.completedAt || 'En proceso'}</td>
-              <td class="p-2 font-bold text-slate-900">${t.assignedTo}</td>
-              <td class="p-2 font-bold text-slate-800">${t.client}</td>
-              <td class="p-2">
-                <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold ${t.status === 'REALIZADA' ? 'bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder' : t.status === 'NO_REALIZADA' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}">
-                  ${t.status}
-                </span>
-              </td>
-              <td class="p-2 max-w-xs truncate text-[11px]">${t.observations || 'Sin detalle'}</td>
-              <td class="p-2 whitespace-nowrap">
-                ${evidenceCount > 0 ? `
-                  <button onclick="app.viewOrderDetails('${t.id}')" class="text-brand-limeHover font-bold flex items-center gap-1 hover:underline">
-                    <i data-lucide="eye" class="w-3.5 h-3.5"></i> Ver (${evidenceCount})
-                  </button>
-                ` : `<span class="text-slate-400">Sin archivos</span>`}
-              </td>
-            </tr>
           `;
         }).join('');
 
