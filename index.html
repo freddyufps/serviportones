@@ -5,12 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>ServiPortones Eléctricos Martínez - Gestión Operativa y Control de Personal</title>
   
-  <!-- Configuración PWA Nativa -->
   <meta name="theme-color" content="#111827">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ServiPortones">
-  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22ServiPortones%20Mart%C3%ADnez%22%2C%22short_name%22%3A%22ServiPortones%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23111827%22%2C%22theme_color%22%3A%22%23111827%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fcdn-icons-png.flaticon.com%2F512%2F1048%2F1048953.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -118,18 +116,6 @@
       0% { transform: translateX(0); opacity: 1; }
       100% { transform: translateX(115%); opacity: 0; }
     }
-
-    .bell-ring-active {
-      animation: bellShake 1.2s ease-in-out infinite alternate;
-    }
-    @keyframes bellShake {
-      0% { transform: rotate(0); }
-      20% { transform: rotate(14deg); }
-      40% { transform: rotate(-14deg); }
-      60% { transform: rotate(8deg); }
-      80% { transform: rotate(-8deg); }
-      100% { transform: rotate(0); }
-    }
   </style>
 
   <!-- SDKs de Firebase -->
@@ -152,14 +138,16 @@
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen font-sans flex flex-col antialiased selection:bg-brand-lime selection:text-white relative">
 
-  <!-- CONTENEDOR FLOTANTE DE NOTIFICACIONES EMERGENTES -->
-  <div id="toast-notification-stack" class="fixed top-3 right-3 sm:top-4 sm:right-4 z-[99999] flex flex-col gap-2.5 max-w-[92vw] sm:max-w-sm w-full pointer-events-none"></div>
+  <!-- CONTENEDOR FLOTANTE DE NOTIFICACIONES EMERGENTES INTERNAS (TOASTS) -->
+  <div id="toast-notification-stack" class="fixed top-3 right-3 sm:top-4 sm:right-4 z-[99999] flex flex-col gap-2 max-w-[94vw] sm:max-w-sm w-full pointer-events-none"></div>
+
+  <!-- ELEMENTO DE AUDIO REMOTO WEBRTC (Con reproducción activa) -->
+  <audio id="remote-audio-stream" autoplay playsinline style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;"></audio>
 
   <!-- MODAL DE LLAMADA DE VOZ WEBRTC -->
   <div id="modal-voice-call" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[100000] hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl flex flex-col items-center zoom-photo-enter text-white">
       <div class="relative w-24 h-24 rounded-full border-4 border-brand-lime bg-slate-800 flex items-center justify-center mb-4 overflow-hidden shadow-lg">
-        <img id="call-user-photo" src="" class="w-full h-full object-cover hidden" alt="">
         <span id="call-user-initial" class="text-3xl font-black text-brand-lime">📞</span>
         <span class="w-4 h-4 rounded-full bg-emerald-500 absolute top-1 right-1 ring-2 ring-slate-900 animate-pulse"></span>
       </div>
@@ -181,8 +169,6 @@
           <i data-lucide="phone-off" class="w-6 h-6"></i>
         </button>
       </div>
-
-      <audio id="remote-audio-stream" autoplay class="hidden"></audio>
     </div>
   </div>
 
@@ -241,10 +227,6 @@
           <i data-lucide="log-in" class="w-4 h-4 text-brand-lime"></i>
           <span id="btn-submit-text">Iniciar Sesión</span>
         </button>
-
-        <p class="text-center text-[10px] sm:text-[11px] text-slate-400 pt-1">
-          Acceso privado para el personal técnico y administrativo.
-        </p>
       </form>
     </div>
   </div>
@@ -280,27 +262,6 @@
             <i data-lucide="plus-circle" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
             <span class="hidden xs:inline">Nueva Orden</span>
           </button>
-
-          <!-- CAMPANA DE NOTIFICACIONES -->
-          <div class="relative" id="notifications-wrapper">
-            <button id="btn-notifications-toggle" onclick="app.toggleNotificationsPanel()" class="p-1.5 sm:p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl transition flex items-center relative" title="Notificaciones de actividad">
-              <i data-lucide="bell" id="bell-icon" class="w-4 h-4 text-brand-lime transition-transform"></i>
-              <span id="notif-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-pulse">0</span>
-            </button>
-
-            <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-[88vw] sm:w-80 md:w-96 max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden text-slate-800">
-              <div class="p-3 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
-                <div class="flex items-center gap-2">
-                  <i data-lucide="bell" class="w-4 h-4 text-brand-lime"></i>
-                  <span class="text-xs font-bold uppercase tracking-wider">Centro de Notificaciones</span>
-                </div>
-                <button onclick="app.clearNotifications()" class="text-[10px] text-slate-400 hover:text-white underline">Limpiar</button>
-              </div>
-              <div id="notifications-list" class="max-h-64 sm:max-h-80 overflow-y-auto divide-y divide-slate-100 text-xs chat-scroll">
-                <div class="p-4 text-center text-slate-400 italic">No hay novedades recientes</div>
-              </div>
-            </div>
-          </div>
 
           <button id="btn-nav-settings" onclick="app.openSettingsModal()" class="p-1.5 sm:p-2 sm:px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl transition flex items-center gap-1.5 shadow-sm" title="Ajustes y Personal">
             <i data-lucide="settings" class="w-4 h-4 text-brand-lime"></i>
@@ -543,7 +504,7 @@
     </div>
   </div>
 
-  <!-- SISTEMA DE CHAT PRIVADO PROFESIONAL ESTILO MESSENGER/APP MÓVIL -->
+  <!-- SISTEMA DE CHAT PRIVADO PROFESIONAL ESTILO MESSENGER/APP MÓVIL (PANTALLA COMPLETA EN CELULARES) -->
   <div id="chat-floating-button-container" class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 hidden">
     <button onclick="app.toggleChatWindow()" class="relative p-3.5 sm:p-4 bg-brand-dark hover:bg-black text-white rounded-full shadow-2xl border-2 border-brand-lime flex items-center justify-center active:scale-95 transition" title="Chat Interno">
       <i data-lucide="message-square" class="w-5 h-5 sm:w-6 sm:h-6 text-brand-lime"></i>
@@ -613,13 +574,13 @@
       <div id="chat-conversation-area" class="flex-1 flex flex-col bg-white overflow-hidden min-w-0 w-full">
         <div id="chat-mobile-back-bar" class="p-2 bg-slate-100 border-b flex items-center justify-between sm:hidden shrink-0">
           <button onclick="app.showMobileChatSidebar()" class="text-xs font-bold text-brand-dark flex items-center gap-1">
-            ← Chats
+            ← Volver
           </button>
           <span id="chat-mobile-active-name" class="text-xs font-bold text-slate-700 truncate">Chat Activo</span>
         </div>
 
         <!-- Contenedor de Mensajes -->
-        <div id="chat-messages-container" class="flex-1 p-3.5 overflow-y-auto space-y-2.5 text-xs chat-scroll bg-slate-50/50">
+        <div id="chat-messages-container" class="flex-1 p-3 overflow-y-auto space-y-2 text-xs chat-scroll bg-slate-50/50">
           <div class="text-center py-8 text-slate-400 text-xs italic">Selecciona o inicia una conversación...</div>
         </div>
 
@@ -634,15 +595,15 @@
     </div>
   </div>
 
-  <!-- MODAL: AJUSTES, FOTOS Y PREFERENCIAS -->
+  <!-- MODAL: AJUSTES, FOTOS Y CONFIGURACIÓN -->
   <div id="modal-settings" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
       <div class="bg-brand-dark text-white px-4 sm:px-5 py-3 sm:py-3.5 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
         <div class="flex items-center gap-2">
           <i data-lucide="settings" class="w-5 h-5 text-brand-lime"></i>
           <div>
-            <h3 class="text-xs sm:text-sm font-bold">Configuración y Alertas</h3>
-            <p id="settings-modal-subtitle" class="text-[10px] sm:text-[11px] text-slate-300">Administración de credenciales y notificaciones</p>
+            <h3 class="text-xs sm:text-sm font-bold">Configuración y Seguridad</h3>
+            <p id="settings-modal-subtitle" class="text-[10px] sm:text-[11px] text-slate-300">Administración de credenciales y personal</p>
           </div>
         </div>
         <button onclick="app.closeSettingsModal()" class="text-slate-400 hover:text-white p-1">
@@ -651,16 +612,13 @@
       </div>
 
       <div class="p-4 space-y-3.5 overflow-y-auto flex-1 text-xs sm:text-sm">
+        
+        <!-- PREFERENCIAS DE SONIDO Y NOTIFICACIONES INTERNAS -->
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
-          <div class="flex items-center justify-between">
-            <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-              <i data-lucide="bell" class="w-4 h-4 text-brand-limeHover"></i>
-              <span>Alertas y Notificaciones</span>
-            </h4>
-            <button type="button" onclick="app.requestNativeNotificationPermission()" class="text-[10px] font-bold text-cyan-700 bg-cyan-100 px-2 py-0.5 rounded hover:bg-cyan-200">
-              🔔 Notificaciones Nativas
-            </button>
-          </div>
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+            <i data-lucide="bell" class="w-4 h-4 text-brand-limeHover"></i>
+            <span>Sonidos y Alertas Flotantes</span>
+          </h4>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
             <label class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer select-none">
               <input type="checkbox" id="pref-sound" onchange="app.updatePref('sound', this.checked)" class="w-4 h-4 rounded text-brand-lime focus:ring-brand-lime border-slate-300">
@@ -673,10 +631,6 @@
             <label class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer select-none">
               <input type="checkbox" id="pref-chat-badge" onchange="app.updatePref('chatBadge', this.checked)" class="w-4 h-4 rounded text-brand-lime focus:ring-brand-lime border-slate-300">
               <span class="text-xs font-semibold text-slate-700">🔴 Contador de chat</span>
-            </label>
-            <label class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer select-none">
-              <input type="checkbox" id="pref-notif-badge" onchange="app.updatePref('notifBadge', this.checked)" class="w-4 h-4 rounded text-brand-lime focus:ring-brand-lime border-slate-300">
-              <span class="text-xs font-semibold text-slate-700">🔔 Contador campana</span>
             </label>
           </div>
         </div>
@@ -1057,62 +1011,6 @@
         }
       },
 
-      playOrderSound() {
-        try {
-          const ctx = this.getCtx();
-          if (!ctx) return;
-          const now = ctx.currentTime;
-
-          [0, 0.14].forEach((delay, idx) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'triangle';
-
-            const freq = idx === 0 ? 523.25 : 783.99;
-            osc.frequency.setValueAtTime(freq, now + delay);
-
-            gain.gain.setValueAtTime(0.001, now + delay);
-            gain.gain.linearRampToValueAtTime(0.3, now + delay + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.45);
-
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-
-            osc.start(now + delay);
-            osc.stop(now + delay + 0.5);
-          });
-        } catch (e) {
-          console.warn("Audio Context bloqueado:", e);
-        }
-      },
-
-      playGeneralNotificationSound() {
-        try {
-          const ctx = this.getCtx();
-          if (!ctx) return;
-          const now = ctx.currentTime;
-
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sine';
-
-          osc.frequency.setValueAtTime(659.25, now);
-          osc.frequency.exponentialRampToValueAtTime(987.77, now + 0.18);
-
-          gain.gain.setValueAtTime(0.001, now);
-          gain.gain.linearRampToValueAtTime(0.2, now + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
-
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-
-          osc.start(now);
-          osc.stop(now + 0.45);
-        } catch (e) {
-          console.warn("Audio Context bloqueado:", e);
-        }
-      },
-
       playCallAlertSound() {
         try {
           const ctx = this.getCtx();
@@ -1173,7 +1071,6 @@
         this.users = [];
         this.workers = [];
         this.tasks = INITIAL_TASKS;
-        this.notifications = [];
         this.selectedTask = null;
         this.activeReportStatus = 'REALIZADA';
         this.heartbeatTimer = null;
@@ -1199,7 +1096,7 @@
         this.gpsLocationsUnsubscribe = null;
         this.locationsData = {};
 
-        // Estado WebRTC (Llamadas de Voz)
+        // Estado WebRTC
         this.peerConnection = null;
         this.localStream = null;
         this.callUnsubscribe = null;
@@ -1208,17 +1105,14 @@
         this.callSeconds = 0;
         this.isMuted = false;
 
-        // Preferencias de Notificación
+        // Preferencias internas de Notificación
         this.prefs = {
           sound: true,
           popup: true,
-          chatBadge: true,
-          notifBadge: true
+          chatBadge: true
         };
 
         this.processedEventIds = new Set();
-        this.isTasksInitialLoad = true;
-        this.isNotifsInitialLoad = true;
         this.appStartTime = Date.now();
 
         this.init();
@@ -1234,7 +1128,6 @@
         document.getElementById('pref-sound').checked = this.prefs.sound;
         document.getElementById('pref-popup').checked = this.prefs.popup;
         document.getElementById('pref-chat-badge').checked = this.prefs.chatBadge;
-        document.getElementById('pref-notif-badge').checked = this.prefs.notifBadge;
       }
 
       updatePref(key, value) {
@@ -1243,54 +1136,7 @@
         if (key === 'chatBadge' && !value) {
           document.getElementById('chat-unread-badge').classList.add('hidden');
         }
-        if (key === 'notifBadge' && !value) {
-          document.getElementById('notif-badge').classList.add('hidden');
-        }
         this.showToast('Preferencia guardada', 'info');
-      }
-
-      async requestNativeNotificationPermission() {
-        if (!("Notification" in window)) {
-          this.showToast("Tu navegador no soporta notificaciones nativas", "error");
-          return;
-        }
-
-        try {
-          const perm = await Notification.requestPermission();
-          if (perm === "granted") {
-            this.showToast("Notificaciones nativas concedidas", "success");
-            new Notification("ServiPortones", {
-              body: "Notificaciones del sistema activas correctamente.",
-              icon: "https://cdn-icons-png.flaticon.com/512/1048/1048953.png"
-            });
-          } else {
-            this.showToast("Permiso de notificaciones no concedido", "info");
-          }
-        } catch(e) {
-          console.warn("Error permiso notificaciones:", e);
-        }
-      }
-
-      sendNativeNotification({ title, body, workerName }) {
-        if (!("Notification" in window) || Notification.permission !== "granted") return;
-
-        try {
-          const notif = new Notification(title || "ServiPortones", {
-            body: body || "Nuevo aviso en la plataforma",
-            icon: "https://cdn-icons-png.flaticon.com/512/1048/1048953.png",
-            tag: workerName || "general"
-          });
-
-          notif.onclick = () => {
-            window.focus();
-            if (workerName) {
-              this.openDirectWorkerChat(workerName);
-            }
-            notif.close();
-          };
-        } catch (e) {
-          console.warn("Fallo notificación nativa:", e);
-        }
       }
 
       showPopupNotification({ title, subtitle, details, type, icon, onClick }) {
@@ -1304,13 +1150,12 @@
         card.id = toastId;
         card.className = "pointer-events-auto bg-slate-900/95 text-white border border-slate-700/80 rounded-2xl shadow-2xl p-3.5 popup-slide-in backdrop-blur-md flex items-start gap-3 relative overflow-hidden transition cursor-pointer hover:border-brand-lime";
 
-        let badgeBg = "bg-brand-lime/20 text-brand-lime border border-brand-lime/40";
-        if (type === 'chat') badgeBg = "bg-cyan-500/20 text-cyan-400 border border-cyan-500/40";
+        let badgeBg = "bg-cyan-500/20 text-cyan-400 border border-cyan-500/40";
         if (type === 'order') badgeBg = "bg-amber-500/20 text-amber-400 border border-amber-500/40";
 
         card.innerHTML = `
           <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${badgeBg} font-black text-sm">
-            ${icon || '🔔'}
+            ${icon || '💬'}
           </div>
           <div class="flex-1 min-w-0 pr-4">
             <div class="flex items-center justify-between gap-1">
@@ -1351,19 +1196,6 @@
           elem.classList.remove('popup-slide-in');
           elem.classList.add('popup-slide-out');
           setTimeout(() => elem.remove(), 320);
-        }
-      }
-
-      triggerBellAttention() {
-        const icon = document.getElementById('bell-icon');
-        const badge = document.getElementById('notif-badge');
-        if (icon) {
-          icon.classList.add('bell-ring-active', 'text-amber-400');
-          setTimeout(() => icon.classList.remove('bell-ring-active', 'text-amber-400'), 3000);
-        }
-        if (badge) {
-          badge.classList.add('ring-4', 'ring-rose-300');
-          setTimeout(() => badge.classList.remove('ring-4', 'ring-rose-300'), 2500);
         }
       }
 
@@ -1465,34 +1297,7 @@
 
           db.collection('ordenes').doc('todas').onSnapshot((doc) => {
             if (doc.exists && Array.isArray(doc.data().tasks)) {
-              const incomingTasks = doc.data().tasks;
-              
-              if (!this.isTasksInitialLoad && incomingTasks.length > this.tasks.length) {
-                const latestTask = incomingTasks[0];
-                if (latestTask && !this.processedEventIds.has(latestTask.id)) {
-                  this.processedEventIds.add(latestTask.id);
-
-                  if (this.prefs.sound) SoundEngine.playOrderSound();
-                  this.triggerBellAttention();
-
-                  this.sendNativeNotification({
-                    title: "📋 Nueva Orden de Trabajo",
-                    body: `${latestTask.client} - ${latestTask.serviceType}`
-                  });
-
-                  this.showPopupNotification({
-                    title: '📋 Nueva Orden de Trabajo',
-                    subtitle: `${latestTask.client} &bull; ${latestTask.serviceType}`,
-                    details: `Equipo: ${latestTask.equipment} | Técnico: ${latestTask.assignedTo}`,
-                    type: 'order',
-                    icon: '📋',
-                    onClick: () => this.viewOrderDetails(latestTask.id)
-                  });
-                }
-              }
-
-              this.isTasksInitialLoad = false;
-              this.tasks = incomingTasks;
+              this.tasks = doc.data().tasks;
               SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
               if (this.currentUser) {
                 this.updateStats();
@@ -1520,35 +1325,6 @@
               this.renderConversationsSidebar();
             }
           });
-
-          db.collection('notificaciones').orderBy('timestamp', 'desc').limit(30).onSnapshot((snapshot) => {
-            const list = [];
-            snapshot.forEach(doc => {
-              const data = doc.data();
-              const notifId = doc.id;
-              list.push({ id: notifId, ...data });
-
-              if (!this.isNotifsInitialLoad && data.timestamp > this.appStartTime && !this.processedEventIds.has(notifId)) {
-                this.processedEventIds.add(notifId);
-
-                if (this.prefs.sound) SoundEngine.playGeneralNotificationSound();
-                this.triggerBellAttention();
-
-                this.showPopupNotification({
-                  title: `🔔 Actualización (${data.actionType})`,
-                  subtitle: `${data.techName} &bull; ${data.taskId || ''}`,
-                  details: data.details || 'Aviso en sistema',
-                  type: 'general',
-                  icon: '🔔',
-                  onClick: () => this.toggleNotificationsPanel()
-                });
-              }
-            });
-
-            this.isNotifsInitialLoad = false;
-            this.notifications = list;
-            this.updateNotificationsUI();
-          }, e => console.error("Snapshot notificaciones:", e));
         }
 
         document.addEventListener('visibilitychange', () => {
@@ -1575,99 +1351,6 @@
       saveTasks() {
         SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
         if (window.db) db.collection('ordenes').doc('todas').set({ tasks: this.tasks }).catch(e => console.error(e));
-      }
-
-      async addActivityNotification(techName, taskId, actionType, details, type = 'order') {
-        const notifData = {
-          techName: techName,
-          taskId: taskId || '',
-          actionType: actionType,
-          details: details || '',
-          type: type,
-          time: this.formatTime(new Date()),
-          timestamp: Date.now(),
-          read: false
-        };
-
-        if (window.db) {
-          db.collection('notificaciones').add(notifData).catch(e => console.error("Error notificación:", e));
-        } else {
-          this.notifications.unshift({ id: 'local_' + Date.now(), ...notifData });
-          this.updateNotificationsUI();
-        }
-      }
-
-      toggleNotificationsPanel() {
-        const dd = document.getElementById('notifications-dropdown');
-        if (dd) dd.classList.toggle('hidden');
-      }
-
-      clearNotifications() {
-        if (window.db) {
-          db.collection('notificaciones').get().then(snapshot => {
-            snapshot.forEach(doc => doc.ref.delete());
-          });
-        }
-        this.notifications = [];
-        this.updateNotificationsUI();
-      }
-
-      updateNotificationsUI() {
-        const badge = document.getElementById('notif-badge');
-        const listContainer = document.getElementById('notifications-list');
-        if (!badge || !listContainer) return;
-
-        const unreadNotifs = this.notifications.filter(n => !n.read).length;
-
-        if (unreadNotifs > 0 && this.prefs.notifBadge) {
-          badge.textContent = unreadNotifs > 9 ? '+9' : unreadNotifs;
-          badge.classList.remove('hidden');
-        } else {
-          badge.classList.add('hidden');
-        }
-
-        if (this.notifications.length > 0) {
-          listContainer.innerHTML = this.notifications.map(n => {
-            let statusColor = 'text-blue-600 bg-blue-50 border-blue-200';
-            if (n.actionType === 'REALIZADA') statusColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
-            else if (n.actionType === 'NO_REALIZADA') statusColor = 'text-rose-700 bg-rose-50 border-rose-200';
-            else if (n.actionType === 'EN_PROCESO') statusColor = 'text-amber-700 bg-amber-50 border-amber-200';
-            else if (n.actionType === 'MENSAJE') statusColor = 'text-cyan-700 bg-cyan-50 border-cyan-200';
-
-            return `
-              <div class="p-2.5 hover:bg-slate-50 transition cursor-pointer ${!n.read ? 'bg-amber-50/40' : ''}" onclick="app.markNotificationAsRead('${n.id}', '${n.type || 'order'}', '${n.taskId || ''}', '${n.techName || ''}')">
-                <div class="flex items-center justify-between mb-1">
-                  <span class="font-bold text-slate-800 text-[11px] flex items-center gap-1.5">
-                    ${!n.read ? '<span class="w-1.5 h-1.5 rounded-full bg-brand-lime"></span>' : ''}
-                    ${n.techName}
-                  </span>
-                  <span class="text-[10px] text-slate-400 font-mono">${n.time}</span>
-                </div>
-                <div class="flex items-center gap-1.5 mb-1">
-                  ${n.taskId ? `<span class="font-mono text-[10px] font-extrabold text-slate-600 bg-slate-100 px-1 py-0.5 rounded">${n.taskId}</span>` : ''}
-                  <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded border ${statusColor}">
-                    ${n.actionType || 'AVISO'}
-                  </span>
-                </div>
-                ${n.details ? `<p class="text-[10px] text-slate-600 truncate italic">"${n.details}"</p>` : ''}
-              </div>
-            `;
-          }).join('');
-        } else {
-          listContainer.innerHTML = `<div class="p-4 text-center text-slate-400 italic">No hay novedades recientes</div>`;
-        }
-        if (window.lucide) lucide.createIcons();
-      }
-
-      markNotificationAsRead(notifId, type, taskId, techName) {
-        if (window.db && notifId) {
-          db.collection('notificaciones').doc(notifId).update({ read: true }).catch(() => {});
-        }
-        if (type === 'chat' && techName) {
-          this.openDirectWorkerChat(techName);
-        } else if (taskId) {
-          this.viewOrderDetails(taskId);
-        }
       }
 
       showToast(message, type = 'info') {
@@ -1822,6 +1505,7 @@
         }
 
         this.initChatModule();
+        this.setupMultiWorkerChatListeners();
         this.listenIncomingVoiceCalls();
 
         if (notify) this.showToast(`Bienvenido, ${user.fullName}`, 'success');
@@ -2186,12 +1870,16 @@
         window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
       }
 
+      // ========================================================
+      // SISTEMA WEBRTC AUDIO BIDIRECCIONAL CON SEÑALIZACIÓN ESTABLE
+      // ========================================================
       async startVoiceCall() {
         const targetWorker = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
         
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
           this.localStream = stream;
+          console.log("[CALL] Micrófono obtenido");
 
           this.openVoiceCallModal({
             name: this.currentUser.role === 'admin' ? targetWorker : 'Administrador',
@@ -2205,17 +1893,27 @@
             iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
           });
 
-          this.localStream.getTracks().forEach(track => this.peerConnection.addTrack(track, this.localStream));
+          this.localStream.getTracks().forEach(track => {
+            this.peerConnection.addTrack(track, this.localStream);
+            console.log("[CALL] Track agregado:", track.kind);
+          });
 
           this.peerConnection.ontrack = event => {
+            console.log("[CALL] Audio remoto conectado", event.streams);
             const remoteAudio = document.getElementById('remote-audio-stream');
             if (remoteAudio && event.streams[0]) {
               remoteAudio.srcObject = event.streams[0];
+              remoteAudio.volume = 1.0;
+              remoteAudio.muted = false;
+              remoteAudio.play().catch(e => console.warn("[CALL] Error reproducción audio:", e));
             }
           };
 
           const callDoc = db.collection('webrtc_calls').doc(targetWorker);
           const callerCandidates = callDoc.collection('callerCandidates');
+
+          callerCandidates.get().then(snap => snap.forEach(d => d.ref.delete())).catch(() => {});
+          callDoc.collection('calleeCandidates').get().then(snap => snap.forEach(d => d.ref.delete())).catch(() => {});
 
           this.peerConnection.onicecandidate = event => {
             if (event.candidate) {
@@ -2223,7 +1921,7 @@
             }
           };
 
-          const offer = await this.peerConnection.createOffer();
+          const offer = await this.peerConnection.createOffer({ offerToReceiveAudio: true });
           await this.peerConnection.setLocalDescription(offer);
 
           await callDoc.set({
@@ -2234,26 +1932,39 @@
             offer: { type: offer.type, sdp: offer.sdp },
             timestamp: Date.now()
           });
+          console.log("[CALL] Oferta enviada");
 
-          callDoc.onSnapshot(async doc => {
-            if (doc.exists) {
-              const data = doc.data();
-              if (data.status === 'answered' && data.answer && !this.peerConnection.currentRemoteDescription) {
-                const answerDesc = new RTCSessionDescription(data.answer);
-                await this.peerConnection.setRemoteDescription(answerDesc);
-                this.onCallConnected();
-              } else if (data.status === 'rejected' || data.status === 'ended') {
-                this.endVoiceCall(false);
-              }
-            }
-          });
+          let calleeCandQueue = [];
 
           callDoc.collection('calleeCandidates').onSnapshot(snap => {
             snap.docChanges().forEach(change => {
               if (change.type === 'added') {
-                this.peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+                const candData = change.doc.data();
+                if (this.peerConnection && this.peerConnection.remoteDescription && this.peerConnection.remoteDescription.type) {
+                  this.peerConnection.addIceCandidate(new RTCIceCandidate(candData)).catch(() => {});
+                } else {
+                  calleeCandQueue.push(candData);
+                }
               }
             });
+          });
+
+          callDoc.onSnapshot(async docSnap => {
+            if (!docSnap.exists) return;
+            const data = docSnap.data();
+            if (data.status === 'answered' && data.answer && this.peerConnection && !this.peerConnection.currentRemoteDescription) {
+              console.log("[CALL] Respuesta recibida");
+              const answerDesc = new RTCSessionDescription(data.answer);
+              await this.peerConnection.setRemoteDescription(answerDesc);
+              
+              for (const cand of calleeCandQueue) {
+                await this.peerConnection.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
+              }
+              calleeCandQueue = [];
+              this.onCallConnected();
+            } else if (data.status === 'ended' || data.status === 'rejected') {
+              this.endVoiceCall(false);
+            }
           });
 
         } catch (err) {
@@ -2264,37 +1975,30 @@
       }
 
       listenIncomingVoiceCalls() {
-        if (!window.db) return;
-        const myName = this.currentUser.fullName || this.currentUser.username;
+        if (!window.db || this.callUnsubscribe) return;
+        const myName = (this.currentUser.fullName || this.currentUser.username || '').trim();
         const isAdmin = this.currentUser.role === 'admin';
 
-        const query = isAdmin
-          ? db.collection('webrtc_calls').where('recipient', '==', 'Administrador').where('status', '==', 'calling')
-          : db.collection('webrtc_calls').doc(myName);
+        this.callUnsubscribe = db.collection('webrtc_calls').onSnapshot(snap => {
+          snap.docChanges().forEach(change => {
+            if (change.type === 'added' || change.type === 'modified') {
+              const data = change.doc.data();
+              const isRecent = (Date.now() - (data.timestamp || 0) < 60000);
 
-        if (isAdmin) {
-          query.onSnapshot(snap => {
-            snap.docChanges().forEach(change => {
-              if (change.type === 'added' || change.type === 'modified') {
-                const data = change.doc.data();
-                if (data.status === 'calling' && (Date.now() - data.timestamp < 45000)) {
+              if (isAdmin) {
+                if (data.recipient === 'Administrador' && data.status === 'calling' && isRecent) {
                   this.currentCallData = { id: change.doc.id, ...data };
                   this.triggerIncomingCallAlert(data.caller);
                 }
-              }
-            });
-          });
-        } else {
-          query.onSnapshot(doc => {
-            if (doc.exists) {
-              const data = doc.data();
-              if (data.status === 'calling' && data.callerRole === 'admin' && (Date.now() - data.timestamp < 45000)) {
-                this.currentCallData = { id: doc.id, ...data };
-                this.triggerIncomingCallAlert('Administrador (Don Martínez)');
+              } else {
+                if ((change.doc.id === myName || data.recipient === myName) && data.status === 'calling' && data.callerRole === 'admin' && isRecent) {
+                  this.currentCallData = { id: change.doc.id, ...data };
+                  this.triggerIncomingCallAlert('Administrador (Don Martínez)');
+                }
               }
             }
           });
-        }
+        });
       }
 
       triggerIncomingCallAlert(callerName) {
@@ -2312,17 +2016,25 @@
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
           this.localStream = stream;
+          console.log("[CALL] Micrófono obtenido");
 
           this.peerConnection = new RTCPeerConnection({
             iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
           });
 
-          this.localStream.getTracks().forEach(track => this.peerConnection.addTrack(track, this.localStream));
+          this.localStream.getTracks().forEach(track => {
+            this.peerConnection.addTrack(track, this.localStream);
+            console.log("[CALL] Track agregado:", track.kind);
+          });
 
           this.peerConnection.ontrack = event => {
+            console.log("[CALL] Audio remoto conectado", event.streams);
             const remoteAudio = document.getElementById('remote-audio-stream');
             if (remoteAudio && event.streams[0]) {
               remoteAudio.srcObject = event.streams[0];
+              remoteAudio.volume = 1.0;
+              remoteAudio.muted = false;
+              remoteAudio.play().catch(e => console.warn("[CALL] Error reproducción audio:", e));
             }
           };
 
@@ -2336,18 +2048,20 @@
           };
 
           await this.peerConnection.setRemoteDescription(new RTCSessionDescription(this.currentCallData.offer));
-          const answer = await this.peerConnection.createAnswer();
+          const answer = await this.peerConnection.createAnswer({ offerToReceiveAudio: true });
           await this.peerConnection.setLocalDescription(answer);
 
           await callDoc.update({
             status: 'answered',
             answer: { type: answer.type, sdp: answer.sdp }
           });
+          console.log("[CALL] Respuesta enviada");
 
           callDoc.collection('callerCandidates').onSnapshot(snap => {
             snap.docChanges().forEach(change => {
               if (change.type === 'added') {
-                this.peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+                const candData = change.doc.data();
+                this.peerConnection.addIceCandidate(new RTCIceCandidate(candData)).catch(() => {});
               }
             });
           });
@@ -2431,6 +2145,9 @@
         this.currentCallData = null;
       }
 
+      // ========================================================
+      // CHAT ESTILO MESSENGER CON AUDITORÍA MULTICANAL EN VIVO
+      // ========================================================
       initChatModule() {
         const isAdmin = this.currentUser.role === 'admin';
         const sidebar = document.getElementById('chat-sidebar');
@@ -2452,66 +2169,83 @@
       }
 
       setupMultiWorkerChatListeners() {
-        if (!window.db || this.currentUser.role !== 'admin') return;
+        if (!window.db || !this.currentUser) return;
 
-        this.workers.forEach(w => {
-          const wName = w.fullName || w.username;
-          if (this.dedicatedWorkerUnsubscribes[wName]) return;
+        console.log("[GLOBAL CHAT] Listener iniciado");
 
-          console.log(`[GLOBAL CHAT] Listener iniciado para: ${wName}`);
+        if (this.currentUser.role === 'admin') {
+          this.workers.forEach(w => {
+            const wName = w.fullName || w.username;
+            this.attachThreadListener(wName);
+          });
+        } else {
+          const myName = this.currentUser.fullName || this.currentUser.username;
+          this.attachThreadListener(myName);
+        }
+      }
 
-          const unsub = db.collection('chats_internos')
-            .doc(wName)
-            .collection('mensajes')
-            .orderBy('timestamp', 'desc')
-            .limit(10)
-            .onSnapshot(snap => {
-              snap.docChanges().forEach(change => {
-                if (change.type === 'added') {
-                  const data = change.doc.data();
-                  const msgId = change.doc.id;
+      attachThreadListener(threadId) {
+        if (this.dedicatedWorkerUnsubscribes[threadId]) return;
 
-                  console.log(`[GLOBAL CHAT] Mensaje detectado en ${wName}:`, data);
+        let initialLoad = true;
 
-                  const isFromWorker = data.senderRole === 'worker';
-                  const isNewEvent = data.timestamp > this.appStartTime && !this.processedEventIds.has(msgId);
+        const unsub = db.collection('chats_internos')
+          .doc(threadId)
+          .collection('mensajes')
+          .orderBy('timestamp', 'desc')
+          .limit(10)
+          .onSnapshot(snap => {
+            snap.docChanges().forEach(change => {
+              if (change.type === 'added') {
+                const data = change.doc.data();
+                const msgId = change.doc.id;
 
-                  if (isFromWorker && isNewEvent) {
-                    this.processedEventIds.add(msgId);
-                    console.log(`[GLOBAL CHAT] Remitente: ${data.senderName}`);
-
-                    if (this.prefs.sound) {
-                      SoundEngine.playMessageSound();
-                      console.log('[GLOBAL CHAT] Sonido reproducido');
-                    }
-
-                    this.triggerBellAttention();
-
-                    this.sendNativeNotification({
-                      title: `💬 Mensaje de ${data.senderName}`,
-                      body: data.text,
-                      workerName: wName
-                    });
-
-                    this.addActivityNotification(data.senderName, '', 'MENSAJE', data.text, 'chat');
-                    console.log('[GLOBAL CHAT] Campana actualizada');
-
-                    this.showPopupNotification({
-                      title: '💬 NUEVO MENSAJE',
-                      subtitle: `${data.senderName} te envió un mensaje`,
-                      details: data.text,
-                      type: 'chat',
-                      icon: '💬',
-                      onClick: () => this.openDirectWorkerChat(wName)
-                    });
-                    console.log('[GLOBAL CHAT] Notificación mostrada');
-                  }
+                if (initialLoad) {
+                  this.processedEventIds.add(msgId);
+                  return;
                 }
-              });
-            }, err => console.warn(`Error listener ${wName}:`, err));
 
-          this.dedicatedWorkerUnsubscribes[wName] = unsub;
-        });
+                if (this.processedEventIds.has(msgId)) return;
+                this.processedEventIds.add(msgId);
+
+                console.log(`[GLOBAL CHAT] Mensaje detectado en hilo ${threadId}:`, data);
+
+                const isFromOther = data.senderRole !== this.currentUser.role;
+
+                if (isFromOther) {
+                  console.log(`[GLOBAL CHAT] Remitente: ${data.senderName}`);
+
+                  // 1. Sonido Inmediato
+                  if (this.prefs.sound) {
+                    SoundEngine.playMessageSound();
+                    console.log('[GLOBAL CHAT] Sonido reproducido');
+                  }
+
+                  // 2. Notificación Emergente Flotante Interna
+                  this.showPopupNotification({
+                    title: '💬 NUEVO MENSAJE',
+                    subtitle: `${data.senderName}`,
+                    details: data.text,
+                    type: 'chat',
+                    icon: '💬',
+                    onClick: () => {
+                      if (this.currentUser.role === 'admin') {
+                        this.openDirectWorkerChat(threadId);
+                      } else {
+                        const chatModal = document.getElementById('chat-window-modal');
+                        if (chatModal.classList.contains('hidden')) this.toggleChatWindow();
+                      }
+                    }
+                  });
+                  console.log('[GLOBAL CHAT] Popup mostrado');
+                  console.log('[GLOBAL CHAT] Conversación actualizada');
+                }
+              }
+            });
+            initialLoad = false;
+          }, err => console.warn(`Aviso listener chat ${threadId}:`, err));
+
+        this.dedicatedWorkerUnsubscribes[threadId] = unsub;
       }
 
       clearDedicatedWorkerChatListeners() {
@@ -2696,7 +2430,7 @@
 
       copyMessageText(text) {
         navigator.clipboard.writeText(text);
-        this.showToast("Mensaje copiado al portapapeles", "success");
+        this.showToast("Mensaje copiado", "success");
       }
 
       handleTypingInput() {
@@ -2809,13 +2543,13 @@
           return `
             <div class="flex flex-col ${isMine ? 'items-end' : 'items-start'} group relative">
               <span class="text-[9px] font-bold text-slate-400 mb-0.5 px-1">${m.senderName} &bull; ${m.time}</span>
-              <div class="max-w-[85%] sm:max-w-[78%] rounded-2xl px-3.5 py-2 shadow-sm relative ${isMine ? 'bg-brand-dark text-white rounded-br-none border-b-2 border-brand-lime' : 'bg-white text-slate-800 rounded-bl-none border border-slate-200'}">
+              <div class="max-w-[82%] sm:max-w-[78%] rounded-2xl px-3.5 py-2 shadow-sm relative ${isMine ? 'bg-brand-dark text-white rounded-br-none border-b-2 border-brand-lime' : 'bg-white text-slate-800 rounded-bl-none border border-slate-200'}">
                 <p class="leading-relaxed whitespace-pre-wrap text-xs sm:text-sm">${m.text}</p>
                 <div class="text-[9px] text-right mt-0.5 opacity-80 flex items-center justify-end gap-1">
                   ${isMine ? statusTick : ''}
                 </div>
 
-                <div class="hidden group-hover:flex items-center gap-1.5 absolute -top-3 ${isMine ? 'left-2' : 'right-2'} bg-slate-800/90 rounded-lg p-1 text-[10px] text-white shadow-md">
+                <div class="hidden group-hover:flex items-center gap-1.5 absolute -top-3 ${isMine ? 'left-2' : 'right-2'} bg-slate-800/90 rounded-lg p-1 text-[10px] text-white shadow-md z-30">
                   <button type="button" onclick="app.copyMessageText('${m.text.replace(/'/g, "\\'")}')" class="hover:text-brand-lime" title="Copiar">📋</button>
                   <button type="button" onclick="app.deleteMessageForMe('${m.id}')" class="hover:text-amber-400" title="Eliminar para mí">🗑</button>
                   ${isMine ? `<button type="button" onclick="app.deleteMessageForEveryone('${m.id}')" class="hover:text-rose-400" title="Eliminar para todos">✕</button>` : ''}
@@ -3357,6 +3091,46 @@
         if (window.lucide) lucide.createIcons();
       }
 
+      renderAdminAuditLog() {
+        const tbody = document.getElementById('audit-log-tbody');
+        const counter = document.getElementById('audit-log-counter');
+        if (!tbody) return;
+
+        const reportedTasks = this.tasks.filter(t => t.completedAt || t.observations);
+        counter.textContent = `${reportedTasks.length} Informes`;
+
+        if (reportedTasks.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-slate-400 italic">No hay informes registrados.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = reportedTasks.map(t => {
+          const evidenceCount = Array.isArray(t.evidence) ? t.evidence.length : 0;
+          return `
+            <tr class="hover:bg-slate-50 transition">
+              <td class="p-2 font-semibold text-slate-700 whitespace-nowrap text-[11px]">${t.completedAt || 'En proceso'}</td>
+              <td class="p-2 font-bold text-slate-900">${t.assignedTo}</td>
+              <td class="p-2 font-bold text-slate-800">${t.client}</td>
+              <td class="p-2">
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold ${t.status === 'REALIZADA' ? 'bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder' : t.status === 'NO_REALIZADA' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}">
+                  ${t.status}
+                </span>
+              </td>
+              <td class="p-2 max-w-xs truncate text-[11px]">${t.observations || 'Sin detalle'}</td>
+              <td class="p-2 whitespace-nowrap">
+                ${evidenceCount > 0 ? `
+                  <button onclick="app.viewOrderDetails('${t.id}')" class="text-brand-limeHover font-bold flex items-center gap-1 hover:underline">
+                    <i data-lucide="eye" class="w-3.5 h-3.5"></i> Ver (${evidenceCount})
+                  </button>
+                ` : `<span class="text-slate-400">Sin archivos</span>`}
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        if (window.lucide) lucide.createIcons();
+      }
+
       openNewTaskModal() {
         if (this.currentUser.role !== 'admin') return;
         document.getElementById('form-modal-title').textContent = 'Nueva Orden de Trabajo';
@@ -3500,9 +3274,6 @@
           this.tasks[taskIndex].evidence = this.currentReportEvidence;
           this.tasks[taskIndex].completedAt = this.formatFullDateTime(new Date());
 
-          const myName = this.currentUser.fullName || this.currentUser.username;
-          this.addActivityNotification(myName, this.selectedTask.id, this.activeReportStatus, observations, 'order');
-
           this.saveTasks();
           this.updateStats();
           this.renderTasks();
@@ -3520,9 +3291,6 @@
           this.tasks[taskIndex].observations = obs;
           this.tasks[taskIndex].evidence = this.currentReportEvidence;
           this.tasks[taskIndex].completedAt = this.formatFullDateTime(new Date());
-
-          const myName = this.currentUser.fullName || this.currentUser.username;
-          this.addActivityNotification(myName, this.selectedTask.id, 'EN_PROCESO', obs || 'Trabajo iniciado', 'order');
 
           this.saveTasks();
           this.updateStats();
