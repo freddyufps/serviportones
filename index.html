@@ -155,9 +155,6 @@
   <!-- CONTENEDOR FLOTANTE DE NOTIFICACIONES EMERGENTES -->
   <div id="toast-notification-stack" class="fixed top-3 right-3 sm:top-4 sm:right-4 z-[99999] flex flex-col gap-2.5 max-w-[92vw] sm:max-w-sm w-full pointer-events-none"></div>
 
-  <!-- ELEMENTO DE AUDIO REMOTO WEBRTC (Evita display:none para reproducción garantizada) -->
-  <audio id="remote-audio-stream" autoplay playsinline style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;"></audio>
-
   <!-- MODAL DE LLAMADA DE VOZ WEBRTC -->
   <div id="modal-voice-call" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[100000] hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl flex flex-col items-center zoom-photo-enter text-white">
@@ -184,6 +181,8 @@
           <i data-lucide="phone-off" class="w-6 h-6"></i>
         </button>
       </div>
+
+      <audio id="remote-audio-stream" autoplay class="hidden"></audio>
     </div>
   </div>
 
@@ -1822,9 +1821,7 @@
           this.renderAdminAuditLog();
         }
 
-        // Activación completa de chat y listeners para todos los usuarios
         this.initChatModule();
-        this.setupMultiWorkerChatListeners();
         this.listenIncomingVoiceCalls();
 
         if (notify) this.showToast(`Bienvenido, ${user.fullName}`, 'success');
@@ -1987,9 +1984,6 @@
         document.getElementById('modal-photo-zoom').classList.add('hidden');
       }
 
-      // ==========================================
-      // GEOLOCALIZACIÓN Y GPS EN TIEMPO REAL
-      // ==========================================
       toggleWorkerGps() {
         if (this.isGpsSharing) {
           this.stopGpsSharing();
@@ -2192,16 +2186,12 @@
         window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
       }
 
-      // ========================================================
-      // SISTEMA WEBRTC AUDIO BIDIRECCIONAL CON SEÑALIZACIÓN EN FIRESTORE
-      // ========================================================
       async startVoiceCall() {
         const targetWorker = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
         
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
           this.localStream = stream;
-          console.log("[CALL] Micrófono obtenido");
 
           this.openVoiceCallModal({
             name: this.currentUser.role === 'admin' ? targetWorker : 'Administrador',
@@ -2215,28 +2205,17 @@
             iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
           });
 
-          this.localStream.getTracks().forEach(track => {
-            this.peerConnection.addTrack(track, this.localStream);
-            console.log("[CALL] Track agregado:", track.kind);
-          });
+          this.localStream.getTracks().forEach(track => this.peerConnection.addTrack(track, this.localStream));
 
           this.peerConnection.ontrack = event => {
-            console.log("[CALL] Audio remoto conectado", event.streams);
             const remoteAudio = document.getElementById('remote-audio-stream');
             if (remoteAudio && event.streams[0]) {
               remoteAudio.srcObject = event.streams[0];
-              remoteAudio.volume = 1.0;
-              remoteAudio.muted = false;
-              remoteAudio.play().catch(e => console.warn("[CALL] Error reproducción audio:", e));
             }
           };
 
           const callDoc = db.collection('webrtc_calls').doc(targetWorker);
           const callerCandidates = callDoc.collection('callerCandidates');
-
-          // Limpiar candidatos previos
-          callerCandidates.get().then(snap => snap.forEach(d => d.ref.delete())).catch(() => {});
-          callDoc.collection('calleeCandidates').get().then(snap => snap.forEach(d => d.ref.delete())).catch(() => {});
 
           this.peerConnection.onicecandidate = event => {
             if (event.candidate) {
@@ -2244,7 +2223,7 @@
             }
           };
 
-          const offer = await this.peerConnection.createOffer({ offerToReceiveAudio: true });
+          const offer = await this.peerConnection.createOffer();
           await this.peerConnection.setLocalDescription(offer);
 
           await callDoc.set({
@@ -2255,40 +2234,26 @@
             offer: { type: offer.type, sdp: offer.sdp },
             timestamp: Date.now()
           });
-          console.log("[CALL] Oferta enviada");
 
-          // Cola de candidatos para evitar error antes de setRemoteDescription
-          let calleeCandQueue = [];
+          callDoc.onSnapshot(async doc => {
+            if (doc.exists) {
+              const data = doc.data();
+              if (data.status === 'answered' && data.answer && !this.peerConnection.currentRemoteDescription) {
+                const answerDesc = new RTCSessionDescription(data.answer);
+                await this.peerConnection.setRemoteDescription(answerDesc);
+                this.onCallConnected();
+              } else if (data.status === 'rejected' || data.status === 'ended') {
+                this.endVoiceCall(false);
+              }
+            }
+          });
 
           callDoc.collection('calleeCandidates').onSnapshot(snap => {
             snap.docChanges().forEach(change => {
               if (change.type === 'added') {
-                const candData = change.doc.data();
-                if (this.peerConnection && this.peerConnection.remoteDescription && this.peerConnection.remoteDescription.type) {
-                  this.peerConnection.addIceCandidate(new RTCIceCandidate(candData)).catch(() => {});
-                } else {
-                  calleeCandQueue.push(candData);
-                }
+                this.peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
               }
             });
-          });
-
-          callDoc.onSnapshot(async docSnap => {
-            if (!docSnap.exists) return;
-            const data = docSnap.data();
-            if (data.status === 'answered' && data.answer && this.peerConnection && !this.peerConnection.currentRemoteDescription) {
-              console.log("[CALL] Respuesta recibida");
-              const answerDesc = new RTCSessionDescription(data.answer);
-              await this.peerConnection.setRemoteDescription(answerDesc);
-              
-              for (const cand of calleeCandQueue) {
-                await this.peerConnection.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
-              }
-              calleeCandQueue = [];
-              this.onCallConnected();
-            } else if (data.status === 'ended' || data.status === 'rejected') {
-              this.endVoiceCall(false);
-            }
           });
 
         } catch (err) {
@@ -2299,33 +2264,37 @@
       }
 
       listenIncomingVoiceCalls() {
-        if (!window.db || this.callUnsubscribe) return;
-        const myName = (this.currentUser.fullName || this.currentUser.username || '').trim();
+        if (!window.db) return;
+        const myName = this.currentUser.fullName || this.currentUser.username;
         const isAdmin = this.currentUser.role === 'admin';
 
-        // Escucha directa en memoria sin consultas compuestas propensas a fallos
-        this.callUnsubscribe = db.collection('webrtc_calls').onSnapshot(snap => {
-          snap.docChanges().forEach(change => {
-            if (change.type === 'added' || change.type === 'modified') {
-              const data = change.doc.data();
-              const isRecent = (Date.now() - (data.timestamp || 0) < 60000);
+        const query = isAdmin
+          ? db.collection('webrtc_calls').where('recipient', '==', 'Administrador').where('status', '==', 'calling')
+          : db.collection('webrtc_calls').doc(myName);
 
-              if (isAdmin) {
-                // Admin recibe llamadas de cualquier trabajador con destino Administrador
-                if (data.recipient === 'Administrador' && data.status === 'calling' && isRecent) {
+        if (isAdmin) {
+          query.onSnapshot(snap => {
+            snap.docChanges().forEach(change => {
+              if (change.type === 'added' || change.type === 'modified') {
+                const data = change.doc.data();
+                if (data.status === 'calling' && (Date.now() - data.timestamp < 45000)) {
                   this.currentCallData = { id: change.doc.id, ...data };
                   this.triggerIncomingCallAlert(data.caller);
                 }
-              } else {
-                // Trabajador recibe llamadas dirigidas a su nombre o docId
-                if ((change.doc.id === myName || data.recipient === myName) && data.status === 'calling' && data.callerRole === 'admin' && isRecent) {
-                  this.currentCallData = { id: change.doc.id, ...data };
-                  this.triggerIncomingCallAlert('Administrador (Don Martínez)');
-                }
+              }
+            });
+          });
+        } else {
+          query.onSnapshot(doc => {
+            if (doc.exists) {
+              const data = doc.data();
+              if (data.status === 'calling' && data.callerRole === 'admin' && (Date.now() - data.timestamp < 45000)) {
+                this.currentCallData = { id: doc.id, ...data };
+                this.triggerIncomingCallAlert('Administrador (Don Martínez)');
               }
             }
           });
-        });
+        }
       }
 
       triggerIncomingCallAlert(callerName) {
@@ -2343,25 +2312,17 @@
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
           this.localStream = stream;
-          console.log("[CALL] Micrófono obtenido");
 
           this.peerConnection = new RTCPeerConnection({
             iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
           });
 
-          this.localStream.getTracks().forEach(track => {
-            this.peerConnection.addTrack(track, this.localStream);
-            console.log("[CALL] Track agregado:", track.kind);
-          });
+          this.localStream.getTracks().forEach(track => this.peerConnection.addTrack(track, this.localStream));
 
           this.peerConnection.ontrack = event => {
-            console.log("[CALL] Audio remoto conectado", event.streams);
             const remoteAudio = document.getElementById('remote-audio-stream');
             if (remoteAudio && event.streams[0]) {
               remoteAudio.srcObject = event.streams[0];
-              remoteAudio.volume = 1.0;
-              remoteAudio.muted = false;
-              remoteAudio.play().catch(e => console.warn("[CALL] Error reproducción audio:", e));
             }
           };
 
@@ -2375,20 +2336,18 @@
           };
 
           await this.peerConnection.setRemoteDescription(new RTCSessionDescription(this.currentCallData.offer));
-          const answer = await this.peerConnection.createAnswer({ offerToReceiveAudio: true });
+          const answer = await this.peerConnection.createAnswer();
           await this.peerConnection.setLocalDescription(answer);
 
           await callDoc.update({
             status: 'answered',
             answer: { type: answer.type, sdp: answer.sdp }
           });
-          console.log("[CALL] Respuesta enviada");
 
           callDoc.collection('callerCandidates').onSnapshot(snap => {
             snap.docChanges().forEach(change => {
               if (change.type === 'added') {
-                const candData = change.doc.data();
-                this.peerConnection.addIceCandidate(new RTCIceCandidate(candData)).catch(() => {});
+                this.peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
               }
             });
           });
@@ -2472,9 +2431,6 @@
         this.currentCallData = null;
       }
 
-      // ========================================================
-      // CHAT ESTILO MESSENGER CON AUDITORÍA MULTICANAL EN VIVO
-      // ========================================================
       initChatModule() {
         const isAdmin = this.currentUser.role === 'admin';
         const sidebar = document.getElementById('chat-sidebar');
@@ -2495,98 +2451,67 @@
         this.subscribeChatMessages();
       }
 
-      // AUDITORÍA Y MONITOREO DE TODOS LOS TRABAJADORES SIMULTÁNEAMENTE
       setupMultiWorkerChatListeners() {
-        if (!window.db || !this.currentUser) return;
+        if (!window.db || this.currentUser.role !== 'admin') return;
 
-        console.log("[GLOBAL CHAT] Listener iniciado para:", this.currentUser.fullName || this.currentUser.username);
+        this.workers.forEach(w => {
+          const wName = w.fullName || w.username;
+          if (this.dedicatedWorkerUnsubscribes[wName]) return;
 
-        if (this.currentUser.role === 'admin') {
-          this.workers.forEach(w => {
-            const wName = w.fullName || w.username;
-            this.attachThreadListener(wName);
-          });
-        } else {
-          const myName = this.currentUser.fullName || this.currentUser.username;
-          this.attachThreadListener(myName);
-        }
-      }
+          console.log(`[GLOBAL CHAT] Listener iniciado para: ${wName}`);
 
-      attachThreadListener(threadId) {
-        if (this.dedicatedWorkerUnsubscribes[threadId]) return;
+          const unsub = db.collection('chats_internos')
+            .doc(wName)
+            .collection('mensajes')
+            .orderBy('timestamp', 'desc')
+            .limit(10)
+            .onSnapshot(snap => {
+              snap.docChanges().forEach(change => {
+                if (change.type === 'added') {
+                  const data = change.doc.data();
+                  const msgId = change.doc.id;
 
-        let initialLoad = true;
+                  console.log(`[GLOBAL CHAT] Mensaje detectado en ${wName}:`, data);
 
-        const unsub = db.collection('chats_internos')
-          .doc(threadId)
-          .collection('mensajes')
-          .orderBy('timestamp', 'desc')
-          .limit(10)
-          .onSnapshot(snap => {
-            snap.docChanges().forEach(change => {
-              if (change.type === 'added') {
-                const data = change.doc.data();
-                const msgId = change.doc.id;
+                  const isFromWorker = data.senderRole === 'worker';
+                  const isNewEvent = data.timestamp > this.appStartTime && !this.processedEventIds.has(msgId);
 
-                if (initialLoad) {
-                  this.processedEventIds.add(msgId);
-                  return;
-                }
+                  if (isFromWorker && isNewEvent) {
+                    this.processedEventIds.add(msgId);
+                    console.log(`[GLOBAL CHAT] Remitente: ${data.senderName}`);
 
-                if (this.processedEventIds.has(msgId)) return;
-                this.processedEventIds.add(msgId);
-
-                console.log(`[GLOBAL CHAT] Mensaje detectado en hilo ${threadId}:`, data);
-
-                const isFromOther = data.senderRole !== this.currentUser.role;
-
-                if (isFromOther) {
-                  console.log(`[GLOBAL CHAT] Remitente: ${data.senderName}`);
-
-                  // 1. Sonido Inmediato
-                  if (this.prefs.sound) {
-                    SoundEngine.playMessageSound();
-                    console.log('[GLOBAL CHAT] Sonido reproducido');
-                  }
-
-                  // 2. Destello en Campana
-                  this.triggerBellAttention();
-
-                  // 3. Notificación Nativa del Sistema
-                  this.sendNativeNotification({
-                    title: `💬 Mensaje de ${data.senderName}`,
-                    body: data.text,
-                    workerName: this.currentUser.role === 'admin' ? threadId : null
-                  });
-
-                  // 4. Agregar a Historial de Campana
-                  this.addActivityNotification(data.senderName, '', 'MENSAJE', data.text, 'chat');
-                  console.log('[GLOBAL CHAT] Campana actualizada');
-
-                  // 5. Notificación Emergente Flotante
-                  this.showPopupNotification({
-                    title: '💬 NUEVO MENSAJE',
-                    subtitle: `${data.senderName} te envió un mensaje`,
-                    details: data.text,
-                    type: 'chat',
-                    icon: '💬',
-                    onClick: () => {
-                      if (this.currentUser.role === 'admin') {
-                        this.openDirectWorkerChat(threadId);
-                      } else {
-                        const chatModal = document.getElementById('chat-window-modal');
-                        if (chatModal.classList.contains('hidden')) this.toggleChatWindow();
-                      }
+                    if (this.prefs.sound) {
+                      SoundEngine.playMessageSound();
+                      console.log('[GLOBAL CHAT] Sonido reproducido');
                     }
-                  });
-                  console.log('[GLOBAL CHAT] Notificación mostrada');
-                }
-              }
-            });
-            initialLoad = false;
-          }, err => console.warn(`Aviso listener chat ${threadId}:`, err));
 
-        this.dedicatedWorkerUnsubscribes[threadId] = unsub;
+                    this.triggerBellAttention();
+
+                    this.sendNativeNotification({
+                      title: `💬 Mensaje de ${data.senderName}`,
+                      body: data.text,
+                      workerName: wName
+                    });
+
+                    this.addActivityNotification(data.senderName, '', 'MENSAJE', data.text, 'chat');
+                    console.log('[GLOBAL CHAT] Campana actualizada');
+
+                    this.showPopupNotification({
+                      title: '💬 NUEVO MENSAJE',
+                      subtitle: `${data.senderName} te envió un mensaje`,
+                      details: data.text,
+                      type: 'chat',
+                      icon: '💬',
+                      onClick: () => this.openDirectWorkerChat(wName)
+                    });
+                    console.log('[GLOBAL CHAT] Notificación mostrada');
+                  }
+                }
+              });
+            }, err => console.warn(`Error listener ${wName}:`, err));
+
+          this.dedicatedWorkerUnsubscribes[wName] = unsub;
+        });
       }
 
       clearDedicatedWorkerChatListeners() {
@@ -2890,7 +2815,7 @@
                   ${isMine ? statusTick : ''}
                 </div>
 
-                <div class="hidden group-hover:flex items-center gap-1.5 absolute -top-3 ${isMine ? 'left-2' : 'right-2'} bg-slate-800/90 rounded-lg p-1 text-[10px] text-white shadow-md z-30">
+                <div class="hidden group-hover:flex items-center gap-1.5 absolute -top-3 ${isMine ? 'left-2' : 'right-2'} bg-slate-800/90 rounded-lg p-1 text-[10px] text-white shadow-md">
                   <button type="button" onclick="app.copyMessageText('${m.text.replace(/'/g, "\\'")}')" class="hover:text-brand-lime" title="Copiar">📋</button>
                   <button type="button" onclick="app.deleteMessageForMe('${m.id}')" class="hover:text-amber-400" title="Eliminar para mí">🗑</button>
                   ${isMine ? `<button type="button" onclick="app.deleteMessageForEveryone('${m.id}')" class="hover:text-rose-400" title="Eliminar para todos">✕</button>` : ''}
@@ -2968,6 +2893,280 @@
 
         const resetField = this.currentUser.role === 'admin' ? 'unreadByAdmin' : 'unreadByWorker';
         db.collection('chats_internos').doc(threadId).set({ [resetField]: 0 }, { merge: true }).catch(() => {});
+      }
+
+      renderTechniciansMonitor() {
+        const grid = document.getElementById('technicians-status-grid');
+        const counter = document.getElementById('techs-online-counter');
+        if (!grid) return;
+
+        const ONLINE_THRESHOLD_MS = 60 * 1000;
+        const now = Date.now();
+        let onlineCount = 0;
+
+        grid.innerHTML = this.workers.map(u => {
+          const isOnline = (now - (u.lastHeartbeat || 0)) < ONLINE_THRESHOLD_MS;
+          if (isOnline) onlineCount++;
+
+          const uName = u.fullName || u.username;
+          const assignedPending = this.tasks.filter(t => t.assignedTo === uName && (t.status === 'PENDIENTE' || t.status === 'EN_PROCESO')).length;
+
+          return `
+            <div class="p-3 rounded-2xl border ${isOnline ? 'bg-brand-limeLight border-brand-limeBorder shadow-sm' : 'bg-slate-50 border-slate-200'} flex flex-col justify-between">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div onclick="app.zoomWorkerPhoto('${u.photo || ''}', '${uName}')" class="cursor-pointer relative w-10 h-10 rounded-full overflow-hidden border-2 ${isOnline ? 'border-brand-lime' : 'border-slate-300'} bg-slate-200 shrink-0 flex items-center justify-center hover:opacity-90 transition" title="Haz clic para ampliar">
+                    ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<span class="font-bold text-xs text-slate-700">${uName.charAt(0)}</span>`}
+                    <span class="w-3 h-3 rounded-full ${isOnline ? 'bg-emerald-500 ring-2 ring-white animate-pulse' : 'bg-slate-300'} absolute top-0 right-0"></span>
+                  </div>
+                  <div class="min-w-0 flex items-center gap-2">
+                    <h4 class="text-xs font-black text-slate-900 truncate">${uName}</h4>
+                    <span class="w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-500 ring-2 ring-emerald-300 animate-pulse' : 'bg-slate-300'} shrink-0" title="${isOnline ? 'Conectado' : 'Desconectado'}"></span>
+                  </div>
+                </div>
+                <span class="text-[10px] px-2 py-0.5 rounded-md font-extrabold ${assignedPending > 0 ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-600'} shrink-0">
+                  ${assignedPending} ptes
+                </span>
+              </div>
+
+              <div class="bg-white/80 rounded-xl p-2 border border-slate-200/70 text-[10px] space-y-0.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-500">Última Actividad:</span>
+                  <span class="font-bold ${isOnline ? 'text-emerald-600' : 'text-slate-700'}">${u.lastLogin || 'No registrado'}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        counter.textContent = `${onlineCount} En Línea`;
+        if (window.lucide) lucide.createIcons();
+      }
+
+      openSettingsModal() {
+        const isAdmin = this.currentUser.role === 'admin';
+        this.renderMySettingsPhotoPreview();
+
+        document.getElementById('set-own-current-pass').value = '';
+        document.getElementById('set-own-new-pass').value = '';
+        document.getElementById('set-own-confirm-pass').value = '';
+
+        const adminUsersSection = document.getElementById('settings-admin-users-section');
+        const subtitle = document.getElementById('settings-modal-subtitle');
+
+        if (isAdmin) {
+          subtitle.textContent = 'Gestión integral de personal en Firestore';
+          adminUsersSection.classList.remove('hidden');
+          this.resetUserForm();
+          this.renderUsersTable();
+        } else {
+          subtitle.textContent = `Ajustes personales de tu cuenta (${this.currentUser.fullName || this.currentUser.username})`;
+          adminUsersSection.classList.add('hidden');
+        }
+
+        document.getElementById('modal-settings').classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
+      }
+
+      closeSettingsModal() {
+        document.getElementById('modal-settings').classList.add('hidden');
+      }
+
+      renderMySettingsPhotoPreview() {
+        const img = document.getElementById('settings-my-photo-preview');
+        const init = document.getElementById('settings-my-initial-preview');
+        const name = this.currentUser.fullName || this.currentUser.username || 'A';
+        if (this.currentUser.photo) {
+          img.src = this.currentUser.photo;
+          img.classList.remove('hidden');
+          init.classList.add('hidden');
+        } else {
+          img.classList.add('hidden');
+          init.classList.remove('hidden');
+          init.textContent = name.charAt(0);
+        }
+      }
+
+      handleUploadOwnPhoto(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+          this.showToast('La imagen debe pesar menos de 2MB', 'error');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const base64Data = event.target.result;
+          this.currentUser.photo = base64Data;
+          SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
+
+          if (window.db && this.currentUser.id) {
+            db.collection('users').doc(this.currentUser.id).update({ photo: base64Data }).catch(e => console.error(e));
+            db.collection('presencia').doc(this.currentUser.username.toLowerCase()).set({ photo: base64Data }, { merge: true }).catch(() => {});
+          }
+
+          this.renderMySettingsPhotoPreview();
+          this.setupDashboardUI();
+          this.renderTasks();
+          if (this.currentUser.role === 'admin') this.renderTechniciansMonitor();
+          this.showToast('Foto actualizada en Firestore', 'success');
+        };
+        reader.readAsDataURL(file);
+      }
+
+      removeOwnPhoto() {
+        this.currentUser.photo = '';
+        SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
+
+        if (window.db && this.currentUser.id) {
+          db.collection('users').doc(this.currentUser.id).update({ photo: '' }).catch(e => console.error(e));
+          db.collection('presencia').doc(this.currentUser.username.toLowerCase()).set({ photo: '' }, { merge: true }).catch(() => {});
+        }
+
+        this.renderMySettingsPhotoPreview();
+        this.setupDashboardUI();
+        this.renderTasks();
+        if (this.currentUser.role === 'admin') this.renderTechniciansMonitor();
+        this.showToast('Foto eliminada', 'info');
+      }
+
+      async handleChangeOwnPassword(e) {
+        e.preventDefault();
+        const currentPass = document.getElementById('set-own-current-pass').value.trim();
+        const newPass = document.getElementById('set-own-new-pass').value.trim();
+        const confirmPass = document.getElementById('set-own-confirm-pass').value.trim();
+
+        if (newPass !== confirmPass) {
+          this.showToast('Las contraseñas no coinciden', 'error');
+          return;
+        }
+
+        if (window.db && this.currentUser.id) {
+          try {
+            const userDoc = await db.collection('users').doc(this.currentUser.id).get();
+            if (userDoc.exists && String(userDoc.data().password).trim() === currentPass) {
+              await db.collection('users').doc(this.currentUser.id).update({ password: newPass });
+              this.currentUser.password = newPass;
+              SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
+              this.showToast('Contraseña actualizada en Firestore', 'success');
+              this.closeSettingsModal();
+              return;
+            } else {
+              this.showToast('Contraseña actual incorrecta', 'error');
+            }
+          } catch(err) {
+            this.showToast('Error al conectar con Firestore', 'error');
+          }
+        }
+      }
+
+      resetUserForm() {
+        document.getElementById('manage-user-id').value = '';
+        document.getElementById('manage-user-form').reset();
+        document.getElementById('btn-save-user').textContent = 'Guardar en Firestore';
+        if (window.lucide) lucide.createIcons();
+      }
+
+      async handleSaveUser(e) {
+        e.preventDefault();
+        if (this.currentUser.role !== 'admin') return;
+
+        const id = document.getElementById('manage-user-id').value;
+        const fullName = this.normalizeInput(document.getElementById('manage-fullname').value);
+        const username = this.normalizeInput(document.getElementById('manage-username').value);
+        const password = this.normalizeInput(document.getElementById('manage-password').value);
+        const phone = this.normalizeInput(document.getElementById('manage-phone').value);
+        const specialty = this.normalizeInput(document.getElementById('manage-specialty').value);
+
+        if (username.toLowerCase() === 'administrador' && id !== 'admin') {
+          this.showToast('El usuario no puede llamarse administrador', 'error');
+          return;
+        }
+
+        const userData = {
+          fullName,
+          username,
+          password,
+          phone,
+          specialty: specialty || 'Técnico de Portones',
+          role: 'worker',
+          active: true
+        };
+
+        if (window.db) {
+          try {
+            if (id) {
+              await db.collection('users').doc(id).set(userData, { merge: true });
+              this.showToast(`Trabajador ${fullName} actualizado en Firestore`, 'success');
+            } else {
+              const docId = 'tech-' + Date.now();
+              await db.collection('users').doc(docId).set({ ...userData, photo: '', lastHeartbeat: 0, lastLogin: 'Nunca' });
+              this.showToast(`Trabajador ${fullName} registrado en Firestore`, 'success');
+            }
+            this.resetUserForm();
+          } catch(err) {
+            console.error("Error guardando trabajador en Firestore:", err);
+            this.showToast('Error guardando en Firestore', 'error');
+          }
+        }
+      }
+
+      renderUsersTable() {
+        const tbody = document.getElementById('table-users-body');
+        if (!tbody) return;
+        document.getElementById('settings-users-count-badge').textContent = `${this.workers.length} Trabajadores`;
+
+        tbody.innerHTML = this.workers.map(u => {
+          const uName = u.fullName || u.username;
+          return `
+            <tr class="hover:bg-slate-50 transition">
+              <td class="p-1.5">
+                <div class="flex items-center gap-1.5">
+                  <div onclick="app.zoomWorkerPhoto('${u.photo || ''}', '${uName}')" class="cursor-pointer w-6 h-6 rounded-full border border-brand-lime overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center">
+                    ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<span class="font-bold text-[9px]">${uName.charAt(0)}</span>`}
+                  </div>
+                  <span class="font-bold text-slate-800 truncate max-w-[90px]">${uName}</span>
+                </div>
+              </td>
+              <td class="p-1.5 font-mono text-[10px] text-slate-600">
+                <span>@${u.username}</span>
+              </td>
+              <td class="p-1.5 text-right space-x-1">
+                <button onclick="app.editUser('${u.id}')" class="p-1 text-slate-600 hover:text-brand-limeHover" title="Editar"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
+                <button onclick="app.deleteUser('${u.id}')" class="p-1 text-slate-600 hover:text-rose-600" title="Eliminar"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        if (window.lucide) lucide.createIcons();
+      }
+
+      editUser(id) {
+        const u = this.users.find(x => x.id === id);
+        if (!u) return;
+        document.getElementById('manage-user-id').value = u.id;
+        document.getElementById('manage-fullname').value = u.fullName || u.username;
+        document.getElementById('manage-username').value = u.username;
+        document.getElementById('manage-password').value = u.password;
+        document.getElementById('manage-phone').value = u.phone || '';
+        document.getElementById('manage-specialty').value = u.specialty || '';
+        document.getElementById('btn-save-user').textContent = 'Actualizar en Firestore';
+        if (window.lucide) lucide.createIcons();
+      }
+
+      async deleteUser(id) {
+        if (!confirm(`¿Eliminar trabajador de Firestore?`)) return;
+        if (window.db) {
+          try {
+            await db.collection('users').doc(id).delete();
+            this.showToast('Trabajador eliminado de Firestore', 'info');
+          } catch(err) {
+            this.showToast('Error al eliminar de Firestore', 'error');
+          }
+        }
       }
 
       renderTechOptionsInSelects() {
@@ -3152,46 +3351,6 @@
                 </div>
               </div>
             </div>
-          `;
-        }).join('');
-
-        if (window.lucide) lucide.createIcons();
-      }
-
-      renderAdminAuditLog() {
-        const tbody = document.getElementById('audit-log-tbody');
-        const counter = document.getElementById('audit-log-counter');
-        if (!tbody) return;
-
-        const reportedTasks = this.tasks.filter(t => t.completedAt || t.observations);
-        counter.textContent = `${reportedTasks.length} Informes`;
-
-        if (reportedTasks.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-slate-400 italic">No hay informes registrados.</td></tr>`;
-          return;
-        }
-
-        tbody.innerHTML = reportedTasks.map(t => {
-          const evidenceCount = Array.isArray(t.evidence) ? t.evidence.length : 0;
-          return `
-            <tr class="hover:bg-slate-50 transition">
-              <td class="p-2 font-semibold text-slate-700 whitespace-nowrap text-[11px]">${t.completedAt || 'En proceso'}</td>
-              <td class="p-2 font-bold text-slate-900">${t.assignedTo}</td>
-              <td class="p-2 font-bold text-slate-800">${t.client}</td>
-              <td class="p-2">
-                <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold ${t.status === 'REALIZADA' ? 'bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder' : t.status === 'NO_REALIZADA' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}">
-                  ${t.status}
-                </span>
-              </td>
-              <td class="p-2 max-w-xs truncate text-[11px]">${t.observations || 'Sin detalle'}</td>
-              <td class="p-2 whitespace-nowrap">
-                ${evidenceCount > 0 ? `
-                  <button onclick="app.viewOrderDetails('${t.id}')" class="text-brand-limeHover font-bold flex items-center gap-1 hover:underline">
-                    <i data-lucide="eye" class="w-3.5 h-3.5"></i> Ver (${evidenceCount})
-                  </button>
-                ` : `<span class="text-slate-400">Sin archivos</span>`}
-              </td>
-            </tr>
           `;
         }).join('');
 
@@ -3401,3 +3560,47 @@
 
       viewOrderDetails(id) {
         const t = this.tasks.find(x => x.id === id);
+        if (!t) return;
+        this.selectedTask = t;
+
+        document.getElementById('view-order-number').textContent = t.id;
+        document.getElementById('view-client').textContent = t.client;
+        document.getElementById('view-phone').textContent = t.phone;
+        document.getElementById('view-address').textContent = t.address;
+        document.getElementById('view-service').textContent = t.serviceType;
+        document.getElementById('view-equipment').textContent = t.equipment;
+        document.getElementById('view-technician').textContent = t.assignedTo;
+        document.getElementById('view-observations').textContent = t.observations || 'Sin informe registrado.';
+
+        const badge = document.getElementById('view-order-badge');
+        badge.textContent = t.status;
+        badge.className = `px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${t.status === 'REALIZADA' ? 'bg-emerald-100 text-emerald-800' : t.status === 'NO_REALIZADA' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}`;
+
+        const evSection = document.getElementById('view-evidence-section');
+        const evGallery = document.getElementById('view-evidence-gallery');
+        if (Array.isArray(t.evidence) && t.evidence.length > 0) {
+          evSection.classList.remove('hidden');
+          evGallery.innerHTML = t.evidence.map(item => `
+            <div class="rounded-xl overflow-hidden border aspect-video bg-black flex items-center justify-center">
+              ${item.type === 'video' ? `<video src="${item.src}" class="w-full h-full object-cover" controls></video>` : `<img src="${item.src}" class="w-full h-full object-cover">`}
+            </div>
+          `).join('');
+        } else {
+          evSection.classList.add('hidden');
+        }
+
+        document.getElementById('modal-view-order').classList.remove('hidden');
+      }
+
+      closeViewModal() {
+        document.getElementById('modal-view-order').classList.add('hidden');
+      }
+    }
+
+    let app;
+    window.addEventListener('DOMContentLoaded', () => {
+      app = new PortonProApp();
+    });
+  </script>
+</body>
+</html>
