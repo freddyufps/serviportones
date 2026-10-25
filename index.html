@@ -1338,6 +1338,24 @@
         }
       }
 
+      showToast(message, type = 'info') {
+        const toast = document.getElementById('toast');
+        const text = document.getElementById('toast-message');
+        const icon = document.getElementById('toast-icon');
+        if (!toast || !text || !icon) return;
+
+        const icons = { success: '✅', error: '⚠️', info: 'ℹ️' };
+        icon.textContent = icons[type] || icons.info;
+        text.textContent = String(message ?? '');
+        toast.classList.remove('translate-y-20', 'opacity-0');
+        toast.classList.add('translate-y-0', 'opacity-100');
+        clearTimeout(this.toastTimer);
+        this.toastTimer = setTimeout(() => {
+          toast.classList.remove('translate-y-0', 'opacity-100');
+          toast.classList.add('translate-y-20', 'opacity-0');
+        }, 2800);
+      }
+
       normalizeInput(val) {
         if (!val && val !== 0) return '';
         return String(val).trim().normalize('NFC').replace(/[\u200B-\u200D\uFEFF]/g, '');
@@ -3332,6 +3350,51 @@
         this.updateStats();
         this.renderTasks();
         this.showToast(`Órdenes reiniciadas correctamente`, 'success');
+      }
+
+      renderAdminAuditLog() {
+        const section = document.getElementById('section-admin-audit-log');
+        const body = document.getElementById('audit-log-tbody');
+        const counter = document.getElementById('audit-log-counter');
+        if (!section || !body || !counter || this.currentUser?.role !== 'admin') return;
+
+        const reportStatuses = new Set(['REALIZADA', 'NO_REALIZADA', 'EN_PROCESO']);
+        const reports = (Array.isArray(this.tasks) ? this.tasks : []).filter(task =>
+          task && (task.completedAt || reportStatuses.has(String(task.status || '').toUpperCase()))
+        );
+        counter.textContent = `${reports.length} Informes`;
+        body.replaceChildren();
+
+        if (reports.length === 0) {
+          const row = document.createElement('tr');
+          const cell = document.createElement('td');
+          cell.colSpan = 6;
+          cell.className = 'p-4 text-center text-slate-400';
+          cell.textContent = 'No hay informes registrados.';
+          row.appendChild(cell);
+          body.appendChild(row);
+          return;
+        }
+
+        reports.forEach(task => {
+          const row = document.createElement('tr');
+          const evidenceCount = Array.isArray(task.evidence) ? task.evidence.length : 0;
+          const values = [
+            task.completedAt || task.date || '—',
+            task.assignedTo || '—',
+            task.client || '—',
+            task.status || '—',
+            task.observations || '—',
+            evidenceCount ? `${evidenceCount} archivo(s)` : '—'
+          ];
+          values.forEach(value => {
+            const cell = document.createElement('td');
+            cell.className = 'p-2 align-top';
+            cell.textContent = String(value);
+            row.appendChild(cell);
+          });
+          body.appendChild(row);
+        });
       }
 
       renderTasks() {
