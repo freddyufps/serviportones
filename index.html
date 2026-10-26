@@ -2164,7 +2164,7 @@
             }
           }, error => console.error('[CALL] Error de señalización:', error)));
 
-          this.callSignalingUnsubscribes.push(callDoc.collection('calleeCandidates').onSnapshot(snap => {
+          this.callSignalingUnsubscribes.push(callDoc.collection('calleeCandidates').where('callSessionId', '==', callSessionId).onSnapshot(snap => {
             snap.docChanges().forEach(change => {
               if (change.type === 'added') {
                 const candidate = change.doc.data();
@@ -2352,7 +2352,7 @@
           const callStatus = document.getElementById('call-status-label');
           if (callStatus) callStatus.textContent = 'Conectando audio...';
 
-          this.callSignalingUnsubscribes.push(callDoc.collection('callerCandidates').onSnapshot(snap => {
+          this.callSignalingUnsubscribes.push(callDoc.collection('callerCandidates').where('callSessionId', '==', this.currentCallData.sessionId).onSnapshot(snap => {
             snap.docChanges().forEach(change => {
               if (change.type === 'added') {
                 const candidate = change.doc.data();
