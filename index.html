@@ -145,6 +145,25 @@
     #chat-window-modal form[onsubmit*="handleSendMessage"] button[type="submit"] .chat-send-arrow { display:block;color:#fff !important;font-size:18px;font-weight:900;line-height:1;transform:translateX(1px); }
     .chat-active-contact-header { display:flex;align-items:center;gap:11px;min-height:62px;padding:10px 18px;background:rgba(15,25,41,.94);border-bottom:1px solid rgba(148,163,184,.12); }
     #chat-window-contact-avatar img { width:100%;height:100%;object-fit:cover; }
+    .presence-label { display:block;font-size:9px;font-weight:800;line-height:1.2;white-space:nowrap; }
+    .presence-label.is-available { color:#059669;animation:technicianPresencePulse 1.8s ease-in-out infinite; }
+    .presence-label.is-absent { color:#d97706; }
+    .presence-label.is-disconnected { color:#64748b; }
+    @property --presence-angle { syntax:"<angle>";inherits:false;initial-value:0deg; }
+    .presence-card-connected,.presence-card-absent { position:relative;isolation:isolate; }
+    .presence-card-connected::before,.presence-card-connected::after,.presence-card-absent::before,.presence-card-absent::after { content:"";position:absolute;inset:-1.5px;padding:2px;border-radius:inherit;pointer-events:none;z-index:2;-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask-composite:exclude; }
+    .presence-card-connected::before { background:#059669;opacity:.48;filter:drop-shadow(0 0 2px rgba(5,150,105,.45)); }
+    .presence-card-connected::after { background:conic-gradient(from var(--presence-angle),transparent 0deg,rgba(5,150,105,.18) 45deg,rgba(5,150,105,.5) 175deg,#059669 265deg,#10b981 315deg,#d9f99d 342deg,rgba(217,249,157,.25) 360deg);filter:drop-shadow(0 0 4px rgba(16,185,129,.72));animation:presenceBorderSweep 2.7s linear infinite; }
+    .presence-card-absent::before { background:#d97706;opacity:.52;filter:drop-shadow(0 0 2px rgba(217,119,6,.45)); }
+    .presence-card-absent::after { background:conic-gradient(from var(--presence-angle),transparent 0deg,rgba(217,119,6,.18) 45deg,rgba(217,119,6,.5) 175deg,#d97706 265deg,#f97316 315deg,#fed7aa 342deg,rgba(254,215,170,.25) 360deg);filter:drop-shadow(0 0 4px rgba(249,115,22,.72));animation:presenceBorderSweep 2.7s linear infinite; }
+    @keyframes presenceBorderSweep { to { --presence-angle:360deg; } }
+    @media (prefers-reduced-motion:reduce) { .presence-card-connected::after,.presence-card-absent::after { animation:none; } }
+    .chat-contact-name-status { display:flex;flex-direction:column;align-items:flex-start;min-width:0;line-height:1.2; }
+    .messenger-window-activity.presence-label.is-available { color:#059669 !important; }
+    .messenger-window-activity.presence-label.is-absent { color:#d97706 !important;animation:none; }
+    .messenger-window-activity.presence-label.is-disconnected { color:#64748b !important;animation:none; }
+    @keyframes technicianPresencePulse { 0%,100% { opacity:1;text-shadow:0 0 5px rgba(5,150,105,.28); } 50% { opacity:.48;text-shadow:0 0 1px rgba(5,150,105,.08); } }
+    @media (prefers-reduced-motion:reduce) { .presence-label.is-available { animation:none; } }
     .chat-inline-typing-indicator { display:flex;align-items:center;gap:8px;width:max-content;max-width:88%;margin:4px 0 2px;padding:6px 10px 6px 6px;border:1px solid #dbe4ed;border-radius:16px 16px 16px 5px;background:#f1f5f9;color:#52677b;font-size:10px;box-shadow:0 3px 9px rgba(15,23,42,.07);animation:chatTypingAppear .22s ease-out both; }
     .chat-inline-typing-avatar { display:flex;width:26px;height:26px;flex:0 0 26px;align-items:center;justify-content:center;overflow:hidden;border:1px solid #71a832;border-radius:50%;background:#e2e8f0;color:#102a43;font-size:10px;font-weight:800; }
     .chat-inline-typing-avatar img { width:100%;height:100%;object-fit:cover; }
@@ -538,13 +557,13 @@
             <div onclick="app.zoomWorkerPhoto(app.getCurrentDisplayPhoto(), app.getCurrentDisplayName())" class="seasonal-worker-avatar cursor-pointer relative w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border-2 border-brand-lime bg-slate-700 flex items-center justify-center shrink-0">
               <img id="header-user-photo" src="" alt="Foto" class="w-full h-full object-cover hidden">
               <span id="header-avatar-initial" class="text-white font-black text-xs">A</span>
-              <span class="w-2 h-2 rounded-full bg-brand-lime border border-slate-900 absolute top-0 right-0"></span>
+              
             </div>
             <div class="text-left hidden sm:block">
               <p id="header-user-name" class="text-xs font-bold leading-none text-white truncate max-w-[100px]">Administrador</p>
               <div id="admin-presence-control" class="relative mt-0.5">
                 <button type="button" onclick="app.toggleAdminPresenceMenu()" class="flex items-center gap-1 text-[9px] font-semibold text-emerald-300 hover:text-white" aria-haspopup="true" aria-expanded="false" id="admin-presence-toggle">
-                  <span id="admin-presence-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                  
                   <span id="admin-presence-label">Disponible</span>
                   <i data-lucide="chevron-down" class="w-3 h-3"></i>
                 </button>
@@ -806,9 +825,7 @@
           <p id="chat-typing-indicator" class="text-[10px] text-brand-lime font-semibold truncate hidden">Escribiendo...</p>
           <div id="chat-admin-presence" class="hidden mt-1 items-center gap-1.5">
             <div id="chat-admin-presence-avatar" class="seasonal-worker-avatar relative w-5 h-5 rounded-full border border-brand-lime/70 bg-slate-700 text-[8px] font-bold flex items-center justify-center text-white shrink-0 overflow-hidden"></div>
-            <span id="chat-admin-presence-name" class="text-[9px] text-slate-300">Administrador</span>
-            <span id="chat-admin-presence-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            <span id="chat-admin-presence-label" class="text-[9px] font-semibold text-emerald-300">Disponible</span>
+            <span class="min-w-0 flex flex-col items-start leading-tight"><span id="chat-admin-presence-name" class="text-[9px] text-slate-300">Administrador</span><span id="chat-admin-presence-label" class="text-[9px] font-semibold text-emerald-300">Disponible</span></span>
           </div>
         </div>
       </div>
@@ -2417,34 +2434,40 @@
         const input = document.getElementById('admin-identity-photo-file');
         if (input) input.value = '';
       }
+      getPresenceStatus(user) {
+        if (!user) return 'disconnected';
+        const username = String(user.username || '').toLowerCase();
+        const record = this.presenceRecords[username] || {};
+        const heartbeat = Number(record.lastHeartbeat ?? user.lastHeartbeat ?? 0);
+        const savedStatus = record.availabilityStatus;
+        if (savedStatus === 'absent') return 'absent';
+        if (savedStatus === 'disconnected') return 'disconnected';
+        return heartbeat > 0 && Date.now() - heartbeat < 60000 ? 'available' : 'disconnected';
+      }
+
+      getPresenceLabel(status) {
+        return ({ available: 'Disponible', absent: 'Ausente', disconnected: 'Desconectado' })[status] || 'Desconectado';
+      }
+
       getAdminPresenceInfo() {
         const admin = this.users.find(user => String(user.role || '').toLowerCase() === 'admin');
-        const username = String(admin?.username || '').toLowerCase();
+        const username = String(admin?.username || this.currentUser?.username || '').toLowerCase();
         const record = this.presenceRecords[username] || {};
-        const isHeartbeatFresh = Date.now() - Number(record.lastHeartbeat || admin?.lastHeartbeat || 0) < 60000;
-        const savedStatus = record.availabilityStatus;
-        const status = !isHeartbeatFresh ? 'disconnected' : savedStatus === 'absent' ? 'absent' : savedStatus === 'disconnected' ? 'disconnected' : 'available';
+        const status = this.getPresenceStatus(admin || this.currentUser);
         return {
           name: record.activeAdminName || admin?.fullName || record.fullName || 'Administrador',
           photo: record.adminIdentityPhotos?.[record.activeAdminName] || record.photo || admin?.photo || '',
           status,
-          isHeartbeatFresh
+          isHeartbeatFresh: status !== 'disconnected'
         };
       }
 
       renderAdminPresence() {
         const info = this.getAdminPresenceInfo();
-        const labels = { available: 'Disponible', absent: 'Ausente', disconnected: 'Desconectado' };
-        const colors = {
-          available: { dot: 'bg-emerald-400', text: 'text-emerald-300' },
-          absent: { dot: 'bg-amber-400', text: 'text-amber-300' },
-          disconnected: { dot: 'bg-slate-400', text: 'text-slate-300' }
-        };
-        const color = colors[info.status];
-        const label = labels[info.status];
+        const label = this.getPresenceLabel(info.status);
+        const stateClass = `presence-label is-${info.status}`;
         const statusLabel = document.getElementById('admin-presence-label');
-        const statusDot = document.getElementById('admin-presence-dot');
-        if (statusLabel) statusLabel.textContent = label;
+        if (statusLabel) { statusLabel.textContent = label; statusLabel.className = `${stateClass} text-[9px]`; }
         if (this.currentUser?.role === 'admin') {
           const headerName = document.getElementById('header-user-name');
           const headerInitial = document.getElementById('header-avatar-initial');
@@ -2456,11 +2479,10 @@
           else if (headerPhoto) { headerPhoto.classList.add('hidden'); headerInitial?.classList.remove('hidden'); }
           if (!document.getElementById('settings-admin-identities-section')?.classList.contains('hidden')) this.renderAdminIdentities();
         }
-        if (statusDot) statusDot.className = `w-1.5 h-1.5 rounded-full ${color.dot}`;
 
         const dashboard = document.getElementById('worker-admin-presence-dashboard');
         if (dashboard) {
-          dashboard.innerHTML = `<div class="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-2.5 py-1.5"><div class="seasonal-worker-avatar relative w-8 h-8 rounded-full border border-white/40 bg-slate-700 overflow-hidden flex items-center justify-center text-xs font-bold">${info.photo ? `<img src="${this.escapeHtml(info.photo)}" alt="Foto del Administrador" class="w-full h-full object-cover">` : this.escapeHtml(info.name.charAt(0))}</div><div class="leading-tight"><p class="text-[9px] uppercase tracking-wide text-slate-300">${this.escapeHtml(info.name)}</p><div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full ${color.dot}"></span><span class="text-[10px] font-bold ${color.text}">${label}</span></div></div></div>`;
+          dashboard.innerHTML = `<div class="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-2.5 py-1.5 ${info.status === 'available' ? 'presence-card-connected' : info.status === 'absent' ? 'presence-card-absent' : ''}"><div class="seasonal-worker-avatar relative w-8 h-8 rounded-full border border-white/40 bg-slate-700 overflow-hidden flex items-center justify-center text-xs font-bold">${info.photo ? `<img src="${this.escapeHtml(info.photo)}" alt="Foto del Administrador" class="w-full h-full object-cover">` : this.escapeHtml(info.name.charAt(0))}</div><div class="leading-tight"><p class="text-[9px] uppercase tracking-wide text-slate-300">${this.escapeHtml(info.name)}</p><span class="${stateClass}">${label}</span></div></div>`;
         }
 
         if (this.currentUser?.role === 'worker') {
@@ -2477,9 +2499,7 @@
           const chatName = document.getElementById('chat-admin-presence-name');
           if (chatName) chatName.textContent = info.name;
           const chatLabel = document.getElementById('chat-admin-presence-label');
-          const chatDot = document.getElementById('chat-admin-presence-dot');
-          if (chatLabel) { chatLabel.textContent = label; chatLabel.className = `text-[9px] font-semibold ${color.text}`; }
-          if (chatDot) chatDot.className = `w-1.5 h-1.5 rounded-full ${color.dot}`;
+          if (chatLabel) { chatLabel.textContent = label; chatLabel.className = `${stateClass} text-[9px]`; }
         }
         this.renderActiveChatHeader();
       }
@@ -3497,9 +3517,9 @@
       }
 
       formatChatLastActivity(timestamp, online) {
-        if (online) return '🟢 En línea';
+        if (online) return 'Ahora';
         const elapsed = Date.now() - Number(timestamp || 0);
-        if (!timestamp || elapsed < 0) return '⚫ Desconectado';
+        if (!timestamp || elapsed < 0) return 'Sin registro';
         const minutes = Math.floor(elapsed / 60000);
         if (minutes < 1) return 'Hace un momento';
         if (minutes < 60) return `Hace ${minutes} min`;
@@ -3563,7 +3583,10 @@
           const thread = this.conversations[workerName] || {};
           const summary = this.chatThreadSummaries[workerName];
           const isSelected = this.activeChatWorker === workerName;
-          const isOnline = now - Number(worker.lastHeartbeat || 0) < ONLINE_THRESHOLD_MS;
+          const presenceStatus = this.getPresenceStatus(worker);
+          const isOnline = presenceStatus === 'available';
+          const presenceCardClass = presenceStatus === 'available' ? 'bg-brand-limeLight border-brand-limeBorder shadow-sm presence-card-connected' : presenceStatus === 'absent' ? 'bg-amber-50 border-amber-200 shadow-sm presence-card-absent' : 'bg-slate-50 border-slate-200';
+          const presenceLabel = this.getPresenceLabel(presenceStatus);
           const unread = this.prefs.chatBadge ? (summary?.hasMessages ? summary.unreadCount : Number(thread.unreadByAdmin || 0)) : 0;
           const preview = summary?.hasMessages ? summary.lastMessage : (thread.lastMessage || 'Sin mensajes');
           const previewTime = summary?.hasMessages ? summary.lastTime : (thread.lastTime || '');
@@ -3576,9 +3599,9 @@
             <button type="button" data-chat-contact="${safeName.toLocaleLowerCase()}" onclick="app.selectChatConversation(decodeURIComponent('${encodeURIComponent(workerName)}'))" class="chat-contact-row ${isSelected ? 'is-selected' : ''} ${isOnline ? 'is-online' : ''} ${unread > 0 ? 'has-unread' : ''}">
               <span class="chat-contact-avatar seasonal-worker-avatar">${avatar}</span>
               <span class="chat-contact-copy">
-                <span class="chat-contact-topline"><span class="chat-contact-name">${safeName}</span><span class="chat-contact-time">${this.escapeHtml(previewTime)}</span></span>
+                <span class="chat-contact-topline"><span class="chat-contact-name-status"><span class="chat-contact-name">${safeName}</span><span class="presence-label is-${presenceStatus}">${presenceLabel}</span></span><span class="chat-contact-time">${this.escapeHtml(previewTime)}</span></span>
                 <span class="chat-contact-preview">${this.escapeHtml(preview || 'Sin mensajes')}</span>
-                <span class="chat-contact-activity ${isOnline ? 'is-online' : ''}">Última actividad: ${activity}</span>
+                <span class="chat-contact-activity">Última actividad: ${activity}</span>
               </span>
               ${unread > 0 ? `<span class="chat-unread-pill">${unread > 99 ? '99+' : unread} ${unread === 1 ? 'mensaje nuevo' : 'mensajes nuevos'}</span>` : ''}
             </button>
@@ -3627,21 +3650,18 @@
         if (!header || !this.currentUser) return;
         let name = '';
         let photo = '';
-        let activity = '';
-        let isOnline = false;
+        let status = 'disconnected';
         if (this.currentUser.role === 'admin') {
           name = this.activeChatWorker || '';
           const worker = this.workers.find(item => (item.fullName || item.username) === name);
           if (!worker) { header.innerHTML = ''; return; }
           photo = worker.photo || '';
-          isOnline = Date.now() - Number(worker.lastHeartbeat || 0) < 60000;
-          activity = this.formatChatLastActivity(worker.lastHeartbeat, isOnline);
+          status = this.getPresenceStatus(worker);
         } else {
           const admin = this.getAdminPresenceInfo();
           name = admin.name;
           photo = admin.photo;
-          isOnline = admin.status === 'available';
-          activity = admin.status === 'absent' ? '🟠 Ausente' : admin.status === 'available' ? '🟢 En línea' : '⚫ Desconectado';
+          status = admin.status;
         }
         const safeName = this.escapeHtml(name);
         const title = document.getElementById('chat-header-title');
@@ -3649,7 +3669,7 @@
         const image = photo ? `<img src="${this.escapeHtml(photo)}" alt="Foto de ${safeName}">` : this.escapeHtml(String(name).charAt(0).toUpperCase());
         const topAvatar = document.getElementById('chat-window-contact-avatar');
         if (topAvatar) topAvatar.innerHTML = photo ? `<img src="${this.escapeHtml(photo)}" alt="Foto de ${safeName}">` : `<span>${this.escapeHtml(String(name).charAt(0).toUpperCase())}</span>`;
-        header.innerHTML = `<div class="chat-active-contact-avatar seasonal-worker-avatar">${image}</div><div class="min-w-0"><div class="chat-active-contact-name truncate">${safeName}</div><div class="chat-active-contact-status ${isOnline ? 'is-online' : ''}">Última actividad: ${this.escapeHtml(activity)}</div></div>`;
+        header.innerHTML = `<div class="chat-active-contact-avatar seasonal-worker-avatar">${image}</div><div class="min-w-0"><div class="chat-active-contact-name truncate">${safeName}</div><span class="presence-label is-${status}">${this.getPresenceLabel(status)}</span></div>`;
       }
 
       renderChatTypingIndicators() {
@@ -3727,18 +3747,19 @@
           const worker = this.workers.find(item => (item.fullName || item.username) === name);
           const photo = worker?.photo ? '<img src="' + this.escapeHtml(worker.photo) + '" alt="">' : this.escapeHtml(String(name).charAt(0).toUpperCase());
           const isMinimized = Boolean(this.minimizedChatWindows[name]);
-          const isOnline = worker && Date.now() - Number(worker.lastHeartbeat || 0) < 60000;
-          const activity = worker ? this.formatChatLastActivity(worker.lastHeartbeat, isOnline) : 'Desconectado';
+          const presenceStatus = this.getPresenceStatus(worker);
+          const presenceLabel = this.getPresenceLabel(presenceStatus);
           const typing = Boolean(this.chatTypingByWorker[name]);
           const threadSummary = this.chatThreadSummaries[name];
           const threadData = this.conversations[name] || {};
           const unreadCount = Math.max(threadSummary?.hasMessages ? Number(threadSummary.unreadCount || 0) : Number(threadData.unreadByAdmin || 0), this.chatDockUnreadByWorker?.has(name) ? 1 : 0);
-          const presenceText = typing ? name + ' está escribiendo...' : 'Última actividad: ' + activity;
+          const presenceText = typing ? name + ' está escribiendo...' : presenceLabel;
+          const presenceClass = typing ? 'is-typing' : 'presence-label is-' + presenceStatus;
           const cached = this.chatConversationHtmlCache[name] || (name === this.activeChatWorker ? (document.getElementById('chat-messages-container')?.innerHTML || '') : '<div class="text-center py-8 text-xs italic">Abre la conversación para cargar los mensajes.</div>');
           return '<section class="messenger-chat-window ' + (isMinimized ? 'is-minimized ' : '') + (unreadCount > 0 ? 'has-unread' : '') + '" data-messenger-window="' + this.escapeHtml(name) + '" style="--chat-cell-width:' + cellWidth + 'px">' +
             '<header class="messenger-window-header" onclick="app.selectChatConversation(decodeURIComponent(\'' + encodeURIComponent(name) + '\'))">' +
               '<span class="messenger-window-avatar seasonal-worker-avatar">' + photo + '</span>' +
-              '<span class="min-w-0"><span class="messenger-window-title">' + this.escapeHtml(name) + '</span><span class="messenger-window-activity">' + this.escapeHtml(presenceText) + '</span></span>' +
+              '<span class="min-w-0"><span class="messenger-window-title">' + this.escapeHtml(name) + '</span><span class="messenger-window-activity ' + presenceClass + '">' + this.escapeHtml(presenceText) + '</span></span>' +
               '<span class="messenger-window-controls">' +
                 '<button type="button" title="' + (isMinimized ? 'Restaurar' : 'Minimizar') + '" aria-label="' + (isMinimized ? 'Restaurar' : 'Minimizar') + ' ' + this.escapeHtml(name) + '" onclick="event.stopPropagation();app.toggleMessengerWindow(decodeURIComponent(\'' + encodeURIComponent(name) + '\'))">' + (isMinimized ? '' : '−') + '</button>' +
                 '<button type="button" title="Cerrar" aria-label="Cerrar ' + this.escapeHtml(name) + '" onclick="event.stopPropagation();app.closeChatTab(decodeURIComponent(\'' + encodeURIComponent(name) + '\'))">×</button>' +
@@ -4114,23 +4135,24 @@
         let onlineCount = 0;
 
         grid.innerHTML = this.workers.map(u => {
-          const isOnline = (now - (u.lastHeartbeat || 0)) < ONLINE_THRESHOLD_MS;
+          const presenceStatus = this.getPresenceStatus(u);
+          const isOnline = presenceStatus !== 'disconnected';
+          const presenceLabel = this.getPresenceLabel(presenceStatus);
           if (isOnline) onlineCount++;
 
           const uName = u.fullName || u.username;
           const assignedPending = this.tasks.filter(t => t.assignedTo === uName && (t.status === 'PENDIENTE' || t.status === 'EN_PROCESO')).length;
 
           return `
-            <div class="p-3 rounded-2xl border ${isOnline ? 'bg-brand-limeLight border-brand-limeBorder shadow-sm' : 'bg-slate-50 border-slate-200'} flex flex-col justify-between">
+            <div class="p-3 rounded-2xl border ${presenceCardClass} flex flex-col justify-between">
               <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2.5 min-w-0">
-                  <div onclick="app.zoomWorkerPhoto('${u.photo || ''}', '${uName}')" class="seasonal-worker-avatar cursor-pointer relative w-10 h-10 rounded-full overflow-hidden border-2 ${isOnline ? 'border-brand-lime' : 'border-slate-300'} bg-slate-200 shrink-0 flex items-center justify-center hover:opacity-90 transition" title="Haz clic para ampliar">
+                  <div onclick="app.zoomWorkerPhoto('${u.photo || ''}', '${uName}')" class="seasonal-worker-avatar cursor-pointer relative w-10 h-10 rounded-full overflow-hidden border-2 border-slate-300 bg-slate-200 shrink-0 flex items-center justify-center hover:opacity-90 transition" title="Haz clic para ampliar">
                     ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<span class="font-bold text-xs text-slate-700">${uName.charAt(0)}</span>`}
-                    <span class="w-3 h-3 rounded-full ${isOnline ? 'bg-emerald-500 ring-2 ring-white animate-pulse' : 'bg-slate-300'} absolute top-0 right-0"></span>
                   </div>
-                  <div class="min-w-0 flex items-center gap-2">
+                  <div class="min-w-0 flex flex-col items-start leading-tight">
                     <h4 class="text-xs font-black text-slate-900 truncate">${uName}</h4>
-                    <span class="w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-500 ring-2 ring-emerald-300 animate-pulse' : 'bg-slate-300'} shrink-0" title="${isOnline ? 'Conectado' : 'Desconectado'}"></span>
+                    <span class="presence-label is-${presenceStatus}">${presenceLabel}</span>
                   </div>
                 </div>
                 <span class="text-[10px] px-2 py-0.5 rounded-md font-extrabold ${assignedPending > 0 ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-600'} shrink-0">
@@ -4141,7 +4163,7 @@
               <div class="bg-white/80 rounded-xl p-2 border border-slate-200/70 text-[10px] space-y-0.5">
                 <div class="flex items-center justify-between">
                   <span class="text-slate-500">Última Actividad:</span>
-                  <span class="font-bold ${isOnline ? 'text-emerald-600' : 'text-slate-700'}">${u.lastLogin || 'No registrado'}</span>
+                  <span class="font-bold ${presenceStatus === 'available' ? 'text-emerald-600' : presenceStatus === 'absent' ? 'text-amber-600' : 'text-slate-700'}">${this.escapeHtml(u.lastLogin || 'No registrado')}</span>
                 </div>
               </div>
             </div>
@@ -4670,7 +4692,9 @@
           const taskIsFree = this.isTaskFree(t);
           const techObj = taskIsFree ? null : this.users.find(u => (u.fullName || u.username) === t.assignedTo);
           const techPhoto = techObj && techObj.photo ? techObj.photo : '';
-          const techIsOnline = !!techObj && (Date.now() - Number(techObj.lastHeartbeat || 0)) < 60000;
+          const techPresenceStatus = this.getPresenceStatus(techObj);
+          const techPresenceLabel = this.getPresenceLabel(techPresenceStatus);
+          const techIsOnline = techPresenceStatus === 'available';
           const techDetails = [
             techObj?.phone ? `📞 ${this.escapeHtml(techObj.phone)}` : '',
             techObj?.specialty ? `🛠️ ${this.escapeHtml(techObj.specialty)}` : ''
@@ -4707,7 +4731,7 @@
                   <span class="text-slate-500 text-[11px] block mb-1.5">Técnico:</span>
                   ${taskIsFree
                     ? '<span class="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] font-black text-orange-700">🟠 LIBRE · Disponible</span>'
-                    : `<div class="flex items-center gap-2"><div onclick="app.zoomWorkerPhoto('${techPhoto}', '${t.assignedTo}')" class="seasonal-worker-avatar cursor-pointer w-9 h-9 rounded-full overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center border-2 border-brand-lime" title="Ampliar foto">${techPhoto ? `<img src="${this.escapeHtml(techPhoto)}" alt="Foto de ${this.escapeHtml(t.assignedTo)}" class="w-full h-full object-cover">` : `<span class="text-xs font-bold">${this.escapeHtml(String(t.assignedTo || '?').charAt(0).toUpperCase())}</span>`}</div><div class="min-w-0"><div class="flex flex-wrap items-center gap-x-2 gap-y-0.5"><span class="font-bold text-slate-800 text-[11px]">${this.escapeHtml(t.assignedTo)}</span><span class="inline-flex items-center gap-1 text-[10px] font-semibold ${techIsOnline ? 'text-emerald-700' : 'text-slate-500'}"><span class="w-1.5 h-1.5 rounded-full ${techIsOnline ? 'bg-emerald-500' : 'bg-slate-400'}"></span>${techIsOnline ? 'En línea' : 'Desconectado'}</span></div>${techDetails.length ? `<div class="mt-0.5 flex flex-wrap gap-x-2 text-[10px] text-slate-500">${techDetails.map(detail => `<span>${detail}</span>`).join('')}</div>` : ''}</div></div>`}
+                    : `<div class="flex items-center gap-2"><div onclick="app.zoomWorkerPhoto('${techPhoto}', '${t.assignedTo}')" class="seasonal-worker-avatar cursor-pointer w-9 h-9 rounded-full overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center border-2 border-brand-lime" title="Ampliar foto">${techPhoto ? `<img src="${this.escapeHtml(techPhoto)}" alt="Foto de ${this.escapeHtml(t.assignedTo)}" class="w-full h-full object-cover">` : `<span class="text-xs font-bold">${this.escapeHtml(String(t.assignedTo || '?').charAt(0).toUpperCase())}</span>`}</div><div class="min-w-0"><div class="font-bold text-slate-800 text-[11px]">${this.escapeHtml(t.assignedTo)}</div><span class="presence-label is-${techPresenceStatus}">${techPresenceLabel}</span>${techDetails.length ? `<div class="mt-0.5 flex flex-wrap gap-x-2 text-[10px] text-slate-500">${techDetails.map(detail => `<span>${detail}</span>`).join('')}</div>` : ''}</div></div>`}
                 </div>
 
                 ${t.observations ? `
