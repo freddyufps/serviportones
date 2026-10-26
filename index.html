@@ -310,6 +310,7 @@
       .chat-launcher-cell { position:fixed;z-index:90 !important;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));width:auto;height:42px; }
       .chat-launcher-cell > button { width:auto;min-width:158px;height:42px;padding-inline:12px;font-size:11px;box-shadow:0 8px 22px rgba(15,23,42,.32); }
       #chat-conversation-area { display:flex !important; }
+      #chat-window-modal form[onsubmit*="handleSendMessage"] { margin-bottom:calc(60px + env(safe-area-inset-bottom)) !important;flex-shrink:0; }
       #chat-open-tabs { display:none !important; }
       #chat-active-contact-header { display:none; }
       .chat-contact-row.has-unread { background:linear-gradient(110deg,rgba(113,168,50,.18),rgba(28,48,67,.78)); }
@@ -1483,6 +1484,15 @@
 
     const SoundEngine = {
       ctx: null,
+      async unlock() {
+        try {
+          const ctx = this.getCtx();
+          if (ctx && ctx.state === 'suspended') await ctx.resume();
+          console.info('[ORDER] Audio habilitado por interacción', { state: ctx?.state || 'unavailable' });
+        } catch (error) {
+          console.warn('[ORDER] No se pudo habilitar el audio:', error);
+        }
+      },
       getCtx() {
         if (!this.ctx) {
           const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -1531,6 +1541,32 @@
         }
       },
 
+      async playOrderCompletedSound() {
+        try {
+          const ctx = this.getCtx();
+          if (!ctx) { console.warn('[ORDER] Web Audio no está disponible'); return; }
+          if (ctx.state === 'suspended') await ctx.resume();
+          if (ctx.state !== 'running') { console.warn('[ORDER] AudioContext sigue suspendido; aviso no reproducido', { state: ctx.state }); return; }
+          const now = ctx.currentTime;
+          console.info('[ORDER] Reproduciendo sonido de orden completada');
+          [659.25, 783.99, 1046.5].forEach((frequency, index) => {
+            const start = now + index * 0.13;
+            const oscillator = ctx.createOscillator();
+            const gain = ctx.createGain();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(frequency, start);
+            gain.gain.setValueAtTime(0.0001, start);
+            gain.gain.linearRampToValueAtTime(0.42, start + 0.025);
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.38);
+            oscillator.connect(gain);
+            gain.connect(ctx.destination);
+            oscillator.start(start);
+            oscillator.stop(start + 0.4);
+          });
+        } catch (error) {
+          console.warn('[ORDER] No se pudo reproducir el sonido de orden completada:', error);
+        }
+      },
       playOrderSound() {
         try {
           const ctx = this.getCtx();
@@ -1742,6 +1778,7 @@
         };
 
         this.processedEventIds = new Set();
+        this.lastObservedTaskStatuses = null;
         this.isTasksInitialLoad = true;
         this.isNotifsInitialLoad = true;
 
@@ -1887,6 +1924,10 @@
       }
 
       async init() {
+        const unlockOrderAudio = () => SoundEngine.unlock();
+        window.addEventListener('pointerdown', unlockOrderAudio, { once: true, capture: true });
+        window.addEventListener('touchstart', unlockOrderAudio, { once: true, passive: true, capture: true });
+        window.addEventListener('keydown', unlockOrderAudio, { once: true, capture: true });
         this.applySeasonalTheme(this.seasonalTheme);
         this.renderSeasonalThemeSelector();
         this.initTechTheme();
@@ -1969,6 +2010,20 @@
                 });
               }
               
+              if (!this.isTasksInitialLoad && this.currentUser?.role === 'admin') {
+                const previousTasksById = this.lastObservedTaskStatuses || new Map((this.tasks || []).map(task => [String(task?.id), task?.status]));
+                incomingTasks.forEach(task => {
+                  const taskId = String(task?.id || '');
+                  const previousTask = previousTasksById.get(taskId);
+                  if (!taskId || task?.status !== 'REALIZADA' || previousTask === 'REALIZADA' || task?.archivedAt) return;
+
+
+
+                  console.info('[ORDER] Orden pasó a REALIZADA', { taskId, previousStatus: previousTask || 'sin estado anterior' });
+                  if (this.prefs.sound) SoundEngine.playOrderCompletedSound();
+                  else console.info('[ORDER] Sonido omitido: la preferencia está desactivada');
+                });
+              }
               if (!this.isTasksInitialLoad && incomingTasks.length > this.tasks.length) {
                 const latestTask = incomingTasks[0];
                 if (latestTask && !this.processedEventIds.has(latestTask.id)) {
@@ -1986,6 +2041,7 @@
                 }
               }
 
+              this.lastObservedTaskStatuses = new Map(incomingTasks.filter(task => task?.id != null).map(task => [String(task.id), task.status]));
               this.isTasksInitialLoad = false;
               this.tasks = incomingTasks;
               SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
