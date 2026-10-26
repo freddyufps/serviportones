@@ -40,6 +40,12 @@
     }
   </script>
   <style>
+    /* Llamadas WebRTC temporalmente fuera de la interfaz; la implementación se conserva. */
+    @media screen {
+      #modal-voice-call,
+      button[onclick*="startVoiceCall"] { display: none !important; }
+    }
+
     @media print {
       body * { visibility: hidden; }
       #printable-order-modal, #printable-order-modal * { visibility: visible; }
@@ -3184,9 +3190,7 @@
                   ${isMine ? statusTick : ''}
                 </div>
 
-                ${this.currentUser.role === 'admin' ? `<div class="flex sm:hidden sm:group-hover:flex items-center gap-1.5 absolute -top-3 ${isMine ? 'left-2' : 'right-2'} bg-slate-800/90 rounded-lg p-1 text-[10px] text-white shadow-md">
-                  <button type="button" onclick="app.copyMessageText('${m.text.replace(/'/g, "\\'")}')" class="hover:text-brand-lime" title="Copiar">📋</button>
-                </div>` : ''}
+
               </div>
             </div>
           `;
