@@ -2211,9 +2211,9 @@
           const callerRole = String(data.callerRole || '').trim().toLowerCase();
           const normalizedId = String(id || '').trim().toLowerCase();
           const normalizedMyName = String(myName || '').trim().toLowerCase();
-          const workerCaller = callerRole === 'worker' || this.workers.some(worker =>
+          const workerCaller = callerRole === 'worker' || (callerRole !== 'admin' && this.workers.some(worker =>
             [worker.fullName, worker.username].some(name => String(name || '').trim().toLowerCase() === normalizedId)
-          );
+          ));
           const isForMe = isAdmin
             ? workerCaller
             : normalizedId === normalizedMyName && callerRole === 'admin';
