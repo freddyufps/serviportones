@@ -2660,9 +2660,9 @@
 
         this.adminMap = L.map('gps-map-container').setView([4.6097, -74.0817], 12);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
-          attribution: '&copy; OpenStreetMap'
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>'
         }).addTo(this.adminMap);
       }
 
@@ -3589,7 +3589,6 @@
           const isSelected = this.activeChatWorker === workerName;
           const presenceStatus = this.getPresenceStatus(worker);
           const isOnline = presenceStatus === 'available';
-          const presenceCardClass = presenceStatus === 'available' ? 'bg-brand-limeLight border-brand-limeBorder shadow-sm presence-card-connected' : presenceStatus === 'absent' ? 'bg-amber-50 border-amber-200 shadow-sm presence-card-absent' : 'bg-slate-50 border-slate-200';
           const presenceLabel = this.getPresenceLabel(presenceStatus);
           const unread = this.prefs.chatBadge ? (summary?.hasMessages ? summary.unreadCount : Number(thread.unreadByAdmin || 0)) : 0;
           const preview = summary?.hasMessages ? summary.lastMessage : (thread.lastMessage || 'Sin mensajes');
@@ -4134,18 +4133,33 @@
         const counter = document.getElementById('techs-online-counter');
         if (!grid) return;
 
-        const ONLINE_THRESHOLD_MS = 60 * 1000;
-        const now = Date.now();
+        const workerSources = [
+          ...(Array.isArray(this.workers) ? this.workers : []),
+          ...(Array.isArray(this.users) ? this.users.filter(user => ['worker', 'trabajador'].includes(String(user.role || '').toLowerCase().trim())) : [])
+        ];
+        const monitorWorkers = [...new Map(workerSources.map(user => [String(user.id || user.username || user.fullName || '').toLowerCase(), user])).values()];
+        const taskList = Array.isArray(this.tasks) ? this.tasks : [];
         let onlineCount = 0;
 
-        grid.innerHTML = this.workers.map(u => {
+        if (!monitorWorkers.length) {
+          grid.innerHTML = '<p class="col-span-full py-3 text-center text-xs text-slate-500">No hay empleados disponibles para mostrar.</p>';
+          if (counter) counter.textContent = '0 En Línea';
+          return;
+        }
+
+        grid.innerHTML = monitorWorkers.map(u => {
           const presenceStatus = this.getPresenceStatus(u);
-          const isOnline = presenceStatus !== 'disconnected';
+          const isOnline = presenceStatus === 'available';
+          const presenceCardClass = presenceStatus === 'available'
+            ? 'bg-brand-limeLight border-brand-limeBorder shadow-sm presence-card-connected'
+            : presenceStatus === 'absent'
+              ? 'bg-amber-50 border-amber-200 shadow-sm presence-card-absent'
+              : 'bg-slate-50 border-slate-200';
           const presenceLabel = this.getPresenceLabel(presenceStatus);
           if (isOnline) onlineCount++;
 
           const uName = u.fullName || u.username;
-          const assignedPending = this.tasks.filter(t => t.assignedTo === uName && (t.status === 'PENDIENTE' || t.status === 'EN_PROCESO')).length;
+          const assignedPending = taskList.filter(t => t.assignedTo === uName && (t.status === 'PENDIENTE' || t.status === 'EN_PROCESO')).length;
 
           return `
             <div class="p-3 rounded-2xl border ${presenceCardClass} flex flex-col justify-between">
