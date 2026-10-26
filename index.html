@@ -2466,8 +2466,8 @@
             };
           };
           const state = { trigger, sessionId: this.currentCallData?.sessionId || null, connectionState: peerConnection.connectionState, iceConnectionState: peerConnection.iceConnectionState, signalingState: peerConnection.signalingState, generated: this.callIceCounters?.generated ?? null, received: this.callIceCounters?.received ?? null, added: this.callIceCounters?.added ?? null };
-          if (selectedPair) console.info('[CALL] selectedCandidatePair', { ...state, pair: describePair(selectedPair) });
-          else console.info('[CALL] no selectedCandidatePair', { ...state, candidatePairCount: candidatePairs.length, pairs: candidatePairs.map(describePair) });
+          if (selectedPair) console.info('[CALL] selectedCandidatePair ' + JSON.stringify({ ...state, pair: describePair(selectedPair) }));
+          else console.info('[CALL] no selectedCandidatePair ' + JSON.stringify({ ...state, candidatePairCount: candidatePairs.length, pairs: candidatePairs.map(describePair) }));
         } catch (error) {
           console.error('[CALL] getStats failed', { trigger, sessionId: this.currentCallData?.sessionId || null, name: error?.name, message: error?.message }, error);
         }
@@ -2627,6 +2627,7 @@
         const remoteAudio = document.getElementById('remote-audio-stream');
         if (remoteAudio) { remoteAudio.pause(); remoteAudio.srcObject = null; }
         document.getElementById('btn-enable-remote-audio')?.classList.add('hidden');
+        if (this.lastIncomingCallId === endedCallData?.id) this.lastIncomingCallId = null;
         this.currentCallData = null;
       }
 
