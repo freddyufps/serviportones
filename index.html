@@ -46,6 +46,57 @@
       button[onclick*="startVoiceCall"] { display: none !important; }
     }
 
+    /* Ambientación estacional sobria, vectorial y ligera; el tema clásico queda intacto. */
+    body.theme-christmas { background-color: #f2f6f4 !important; background-image: radial-gradient(2px 2px at 22px 34px, rgba(255,255,255,.9) 45%, transparent 56%), radial-gradient(1.5px 1.5px at 112px 96px, rgba(203,220,230,.72) 45%, transparent 56%), radial-gradient(2px 2px at 168px 144px, rgba(255,255,255,.68) 45%, transparent 56%), linear-gradient(145deg, rgba(226,238,232,.38), rgba(238,244,248,.18)); background-size: 190px 190px, 230px 230px, 270px 270px, 100% 100%; animation: seasonalSnowfall 30s linear infinite; }
+    body.theme-easter { background-color: #f8f6f3 !important; background-image: radial-gradient(ellipse 10px 14px at 34px 42px, rgba(221,188,205,.19) 0 65%, transparent 72%), radial-gradient(ellipse 9px 13px at 126px 116px, rgba(191,207,169,.20) 0 65%, transparent 72%), radial-gradient(circle 3px at 86px 164px, rgba(225,204,143,.28) 0 60%, transparent 70%), radial-gradient(circle 2px at 170px 30px, rgba(214,183,200,.26) 0 60%, transparent 70%); background-size: 210px 210px, 250px 250px, 190px 190px, 230px 230px; animation: seasonalEasterDrift 40s ease-in-out infinite alternate; }
+    body.theme-holy-week { background-color: #f7f5f8 !important; background-image: radial-gradient(ellipse at 10% 0%, rgba(221,202,164,.18), transparent 40%), radial-gradient(ellipse at 90% 20%, rgba(166,145,185,.11), transparent 42%), linear-gradient(135deg, transparent 48%, rgba(222,196,133,.055) 49%, transparent 50%); background-size: 100% 100%, 100% 100%, 260px 260px; animation: seasonalEasterDrift 46s ease-in-out infinite alternate; }
+    @keyframes seasonalSnowfall { to { background-position: 0 190px, 0 230px, 0 270px, 0 0; } }
+    @keyframes seasonalEasterDrift { to { background-position: 18px 18px, -14px 12px, 8px -10px, -10px 14px; } }
+    @keyframes seasonalLightGlow { 0%, 100% { opacity: .48; } 50% { opacity: .88; } }
+    body.theme-christmas #view-dashboard > header { border-bottom-color: #d4b65f; box-shadow: 0 3px 14px rgba(33, 91, 73, .2); }
+    body.theme-easter #view-dashboard > header { border-bottom-color: #c9a7b8; box-shadow: 0 3px 14px rgba(143, 118, 145, .16); }
+    body.theme-holy-week #view-dashboard > header { border-bottom-color: #c9ad68; box-shadow: 0 3px 14px rgba(88, 67, 111, .17); }
+    body.theme-christmas #dashboard-banner { box-shadow: 0 8px 24px rgba(35, 88, 68, .12); }
+    body.theme-easter #dashboard-banner { box-shadow: 0 8px 24px rgba(173, 143, 164, .12); }
+    body.theme-holy-week #dashboard-banner { box-shadow: 0 8px 24px rgba(117, 94, 136, .12); }
+    body.theme-christmas #view-dashboard > header::after { content: ''; position: absolute; right: 5%; top: 2px; width: min(230px, 30vw); height: 9px; opacity: .72; pointer-events: none; background: radial-gradient(circle at 5px 5px, #c96b67 0 2px, transparent 3px) 0 0 / 24px 9px repeat-x, radial-gradient(circle at 17px 5px, #d5bf79 0 2px, transparent 3px) 0 0 / 24px 9px repeat-x; animation: seasonalLightGlow 6s ease-in-out infinite; }
+    #seasonal-logo-decoration-login, #seasonal-logo-decoration-header { position: absolute; z-index: 2; pointer-events: none; display: none; overflow: visible; filter: drop-shadow(0 2px 3px rgba(15,23,42,.18)); }
+    #seasonal-logo-decoration-login { top: -25px; right: -8px; width: 112px; height: 78px; }
+    #view-dashboard header #seasonal-logo-decoration-header { top: -13px; right: -12px; width: 66px; height: 48px; }
+    #seasonal-logo-decoration-login svg, #seasonal-logo-decoration-header svg { width: 100%; height: 100%; overflow: visible; }
+    .theme-swatch { display: block; width: 32px; height: 11px; border-radius: 999px; margin-bottom: 5px; border: 1px solid rgba(100,116,139,.25); }
+    .theme-swatch-classic { background: linear-gradient(90deg, #111827 0 48%, #71a832 48% 100%); }
+    .theme-swatch-christmas { background: linear-gradient(90deg, #214d3b, #d0b35f 52%, #d9e6ec); }
+    .theme-swatch-easter { background: linear-gradient(90deg, #cbb2c0, #e8d9b8 52%, #b9c9aa); }
+    .theme-swatch-holy-week { background: linear-gradient(90deg, #716080, #d1b875 55%, #f4eee2); }
+    @media (prefers-reduced-motion: reduce) { body.theme-christmas, body.theme-easter, body.theme-holy-week, body.theme-christmas #view-dashboard > header::after { animation: none; } }
+    /* Partículas estacionales visibles, dibujadas localmente y sin recursos pesados. */
+    .seasonal-effects-layer { position: fixed; inset: 0; z-index: 45; overflow: hidden; pointer-events: none; contain: strict; }
+    .seasonal-particle { position: absolute; top: -3vh; left: var(--particle-x); width: var(--particle-size); height: var(--particle-size); opacity: var(--particle-opacity); animation: seasonalParticleFall var(--particle-duration) linear var(--particle-delay) infinite; will-change: transform; }
+    .seasonal-effects-layer.theme-christmas .seasonal-particle { border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff 0 35%, rgba(220,236,244,.84) 70%, rgba(220,236,244,.35)); box-shadow: 0 0 8px rgba(230,244,250,.8); }
+    .seasonal-effects-layer.theme-easter .seasonal-particle { border-radius: 55% 55% 48% 48%; background: linear-gradient(145deg, #f4e7e8, #d8bfd0 68%, #b8c9a8); box-shadow: 0 1px 5px rgba(161,130,151,.22); }
+    .seasonal-effects-layer.theme-holy-week .seasonal-particle { border-radius: 50%; background: radial-gradient(circle, #fff8df 0 24%, #d5bd80 50%, rgba(213,189,128,0) 74%); box-shadow: 0 0 9px rgba(218,193,131,.5); }
+    @keyframes seasonalParticleFall { 0% { transform: translate3d(0,-4vh,0) rotate(0); } 100% { transform: translate3d(var(--particle-drift),108vh,0) rotate(150deg); } }
+    body.theme-christmas #login-brand-logo::after, body.theme-christmas #dashboard-brand-logo::after { content: ''; position: absolute; z-index: 3; left: 34%; top: 1px; width: 58%; height: 10px; pointer-events: none; background: radial-gradient(circle at 5px 5px, #d04b48 0 2px, transparent 3px) 0 0/24px 10px repeat-x, radial-gradient(circle at 16px 5px, #e5c86e 0 2px, transparent 3px) 0 0/24px 10px repeat-x, radial-gradient(circle at 22px 5px, #55926e 0 2px, transparent 3px) 0 0/24px 10px repeat-x; animation: seasonalLightGlow 2.8s ease-in-out infinite; filter: drop-shadow(0 0 3px rgba(245,217,126,.65)); }
+    body.theme-christmas #seasonal-logo-decoration-login svg, body.theme-christmas #seasonal-logo-decoration-header svg { animation: seasonalLogoFloat 4.5s ease-in-out infinite; transform-origin: 50% 65%; }
+    body.theme-easter #seasonal-logo-decoration-login svg, body.theme-easter #seasonal-logo-decoration-header svg { animation: seasonalLogoFloat 6s ease-in-out infinite; transform-origin: 50% 65%; }
+    body.theme-holy-week #seasonal-logo-decoration-login svg, body.theme-holy-week #seasonal-logo-decoration-header svg { animation: seasonalLogoGlow 4s ease-in-out infinite; transform-origin: 50% 55%; }
+    .seasonal-logo-lights circle { animation: seasonalBulbGlow 1.8s ease-in-out infinite alternate; filter: drop-shadow(0 0 4px #f4d66f); }
+    .seasonal-logo-lights circle:nth-child(2) { animation-delay: .4s; } .seasonal-logo-lights circle:nth-child(3) { animation-delay: .8s; } .seasonal-logo-lights circle:nth-child(4) { animation-delay: 1.2s; }
+    .seasonal-hat { transform-box: fill-box; transform-origin: 60% 95%; animation: seasonalHatTilt 3.4s ease-in-out infinite; }
+    @keyframes seasonalLogoFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+    @keyframes seasonalLogoGlow { 0%,100% { filter: drop-shadow(0 0 2px rgba(219,196,137,.32)); } 50% { filter: drop-shadow(0 0 9px rgba(219,196,137,.8)); } }
+    @keyframes seasonalBulbGlow { from { opacity: .55; } to { opacity: 1; } }
+    @keyframes seasonalHatTilt { 0%,100% { translate: 0 0; } 50% { translate: 0 -1px; } }
+    .seasonal-worker-avatar { position: relative; overflow: visible !important; isolation: isolate; }
+    .seasonal-worker-avatar > img { border-radius: 50%; }
+    body.theme-christmas .seasonal-worker-avatar { animation: none; }
+    body.theme-christmas .seasonal-worker-avatar::after { content: ''; position: absolute; z-index: 6; top: -9px; left: 0; width: 18px; height: 12px; border-radius: 90% 12% 18% 10%; background: radial-gradient(circle at 87% 5%,#fffaf1 0 2px,rgba(255,250,241,.4) 2.5px,transparent 4px),linear-gradient(to bottom,transparent 0 69%,#f7f2e9 70% 87%,#cfc8bb 88% 96%,transparent 97%),linear-gradient(145deg,#d94a45 0 72%,#9a292e 100%); clip-path: polygon(0 100%,14% 54%,43% 25%,75% 0,100% 4%,88% 43%,100% 74%,85% 100%); transform: rotate(-15deg); transform-origin: 10% 100%; animation: seasonalHatTilt 3.8s ease-in-out infinite; filter: drop-shadow(0 1px 2px rgba(15,23,42,.35)); }
+    body.theme-christmas .seasonal-worker-avatar::before { content: ''; position: absolute; z-index: 5; inset: -4px; border: 2px solid #d8bd70; border-radius: 50%; background: radial-gradient(circle at 50% 0%,#f8db79 0 1.5px,transparent 2.6px),radial-gradient(circle at 100% 50%,#de5b55 0 1.5px,transparent 2.6px),radial-gradient(circle at 50% 100%,#68b889 0 1.5px,transparent 2.6px),radial-gradient(circle at 0% 50%,#f8db79 0 1.5px,transparent 2.6px),radial-gradient(circle at 85% 15%,#de5b55 0 1.3px,transparent 2.4px),radial-gradient(circle at 85% 85%,#f8db79 0 1.3px,transparent 2.4px),radial-gradient(circle at 15% 85%,#de5b55 0 1.3px,transparent 2.4px),radial-gradient(circle at 15% 15%,#68b889 0 1.3px,transparent 2.4px); box-shadow: 0 0 0 1px rgba(255,255,255,.75),0 0 7px rgba(218,190,104,.35); pointer-events: none; animation: seasonalBulbGlow 2.4s ease-in-out infinite alternate; }
+    body.theme-easter .seasonal-worker-avatar::after { content: ''; position: absolute; z-index: 4; top: -3px; right: -2px; width: 9px; height: 9px; border-radius: 50%; background: radial-gradient(circle,#d9bd78 0 19%,transparent 22%), radial-gradient(circle at 50% 0,#e8c9d6 0 30%,transparent 34%), radial-gradient(circle at 100% 50%,#e8c9d6 0 30%,transparent 34%), radial-gradient(circle at 50% 100%,#e8c9d6 0 30%,transparent 34%), radial-gradient(circle at 0 50%,#e8c9d6 0 30%,transparent 34%); animation: seasonalLogoFloat 4s ease-in-out infinite; }
+    body.theme-holy-week .seasonal-worker-avatar::after { content: ''; position: absolute; z-index: 4; top: -4px; right: 0; width: 8px; height: 11px; background: linear-gradient(90deg,transparent 35%,#c6a85d 36% 64%,transparent 65%), linear-gradient(transparent 25%,#c6a85d 26% 48%,transparent 49%); filter: drop-shadow(0 0 3px rgba(232,215,174,.8)); }
+    @keyframes seasonalAvatarGlow { 0%,100% { box-shadow: 0 0 0 1px rgba(213,191,121,.22); } 50% { box-shadow: 0 0 0 2px rgba(213,191,121,.72),0 0 8px rgba(213,191,121,.45); } }
+    @media (prefers-reduced-motion: reduce) { .seasonal-effects-layer, #seasonal-logo-decoration-login svg, #seasonal-logo-decoration-header svg, .seasonal-worker-avatar, .seasonal-worker-avatar::before, .seasonal-worker-avatar::after { animation: none !important; } }
     @media print {
       body * { visibility: hidden; }
       #printable-order-modal, #printable-order-modal * { visibility: visible; }
@@ -90,6 +141,11 @@
       80% { opacity: 0.6; }
       100% { transform: translateY(-20px) scale(1.1); opacity: 0; }
     }
+    body.theme-classic .electric-energy-line,
+    body.theme-classic .tech-pulse-glow,
+    body.theme-classic .tech-particle,
+    body.theme-classic #tech-particles-container { animation: none !important; filter: none !important; opacity: 1; }
+    body.theme-classic .electric-energy-line { stroke-dasharray: none; stroke-dashoffset: 0; }
 
     .zoom-photo-enter {
       animation: zoomInSmooth 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -151,6 +207,8 @@
   <!-- CONTENEDOR FLOTANTE DE NOTIFICACIONES EMERGENTES -->
   <div id="toast-notification-stack" class="fixed top-3 right-3 sm:top-4 sm:right-4 z-[99999] flex flex-col gap-2.5 max-w-[92vw] sm:max-w-sm w-full pointer-events-none"></div>
 
+  <div id="seasonal-effects-layer" class="seasonal-effects-layer hidden" aria-hidden="true"></div>
+
   <!-- MODAL DE LLAMADA DE VOZ WEBRTC -->
   <div id="modal-voice-call" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[100000] hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl flex flex-col items-center zoom-photo-enter text-white">
@@ -187,7 +245,8 @@
   <div id="view-login" class="flex-1 flex items-center justify-center p-3 sm:p-6 min-h-screen bg-gradient-to-br from-slate-950 via-brand-dark to-slate-900 relative z-10">
     <div class="w-full max-w-sm sm:max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden mx-auto">
       <div class="bg-white p-5 sm:p-7 text-center border-b border-slate-100 flex flex-col items-center relative">
-        <div class="w-full max-w-[240px] sm:max-w-[280px] py-1 relative">
+        <div id="login-brand-logo" class="w-full max-w-[240px] sm:max-w-[280px] py-1 relative">
+          <span id="seasonal-logo-decoration-login" aria-hidden="true" style="display:none"></span>
           <svg viewBox="0 0 420 170" class="w-full h-auto drop-shadow-sm select-none" xmlns="http://www.w3.org/2000/svg">
             <g stroke-linecap="round" stroke-linejoin="round">
               <path d="M 22 80 L 135 34 L 135 22 L 148 22 L 148 40 L 222 79" fill="none" stroke="#111827" stroke-width="11" />
@@ -252,7 +311,8 @@
       <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
         
         <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
-          <div class="h-8 sm:h-9 bg-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl flex items-center shadow-sm shrink-0">
+          <div id="dashboard-brand-logo" class="h-8 sm:h-9 bg-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl flex items-center shadow-sm shrink-0 relative">
+            <span id="seasonal-logo-decoration-header" aria-hidden="true" style="display:none"></span>
             <svg viewBox="0 0 420 170" class="h-6 sm:h-8 w-auto" xmlns="http://www.w3.org/2000/svg">
               <g stroke-linecap="round" stroke-linejoin="round">
                 <path d="M 22 80 L 135 34 L 135 22 L 148 22 L 148 40 L 222 79" fill="none" stroke="#111827" stroke-width="12" />
@@ -285,14 +345,25 @@
           </button>
 
           <div class="flex items-center gap-1.5 sm:gap-2 bg-slate-800/90 pl-1 pr-2 sm:pr-3 py-1 rounded-xl border border-slate-700">
-            <div onclick="app.zoomWorkerPhoto(app.currentUser?.photo, app.currentUser?.fullName)" class="cursor-pointer relative w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border-2 border-brand-lime bg-slate-700 flex items-center justify-center shrink-0">
+            <div onclick="app.zoomWorkerPhoto(app.currentUser?.photo, app.getCurrentDisplayName())" class="seasonal-worker-avatar cursor-pointer relative w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border-2 border-brand-lime bg-slate-700 flex items-center justify-center shrink-0">
               <img id="header-user-photo" src="" alt="Foto" class="w-full h-full object-cover hidden">
               <span id="header-avatar-initial" class="text-white font-black text-xs">A</span>
               <span class="w-2 h-2 rounded-full bg-brand-lime border border-slate-900 absolute top-0 right-0"></span>
             </div>
             <div class="text-left hidden sm:block">
               <p id="header-user-name" class="text-xs font-bold leading-none text-white truncate max-w-[100px]">Administrador</p>
-              <span class="text-[9px] text-brand-lime font-medium">En línea</span>
+              <div id="admin-presence-control" class="relative mt-0.5">
+                <button type="button" onclick="app.toggleAdminPresenceMenu()" class="flex items-center gap-1 text-[9px] font-semibold text-emerald-300 hover:text-white" aria-haspopup="true" aria-expanded="false" id="admin-presence-toggle">
+                  <span id="admin-presence-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                  <span id="admin-presence-label">Disponible</span>
+                  <i data-lucide="chevron-down" class="w-3 h-3"></i>
+                </button>
+                <div id="admin-presence-menu" class="hidden absolute left-0 top-full mt-2 w-40 rounded-xl border border-slate-700 bg-slate-900 p-1.5 shadow-xl z-[70]">
+                  <button type="button" onclick="app.setAdminAvailability('available')" class="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] text-slate-100 hover:bg-slate-800"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>Disponible</button>
+                  <button type="button" onclick="app.setAdminAvailability('absent')" class="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] text-slate-100 hover:bg-slate-800"><span class="w-2 h-2 rounded-full bg-amber-400"></span>Ausente</button>
+                  <button type="button" onclick="app.setAdminAvailability('disconnected')" class="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] text-slate-100 hover:bg-slate-800"><span class="w-2 h-2 rounded-full bg-slate-400"></span>Desconectado</button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -544,6 +615,12 @@
         <div class="min-w-0">
           <h4 id="chat-header-title" class="text-xs sm:text-sm font-bold truncate">Chat Corporativo</h4>
           <p id="chat-typing-indicator" class="text-[10px] text-brand-lime font-semibold truncate hidden">Escribiendo...</p>
+          <div id="chat-admin-presence" class="hidden mt-1 items-center gap-1.5">
+            <div id="chat-admin-presence-avatar" class="seasonal-worker-avatar relative w-5 h-5 rounded-full border border-brand-lime/70 bg-slate-700 text-[8px] font-bold flex items-center justify-center text-white shrink-0 overflow-hidden"></div>
+            <span id="chat-admin-presence-name" class="text-[9px] text-slate-300">Administrador</span>
+            <span id="chat-admin-presence-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            <span id="chat-admin-presence-label" class="text-[9px] font-semibold text-emerald-300">Disponible</span>
+          </div>
         </div>
       </div>
       
@@ -634,7 +711,27 @@
       </div>
 
       <div class="p-4 space-y-3.5 overflow-y-auto flex-1 text-xs sm:text-sm">
-        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+        <section id="settings-theme-section" class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <div><h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800">Temas visuales</h4><p class="text-[11px] text-slate-500 mt-0.5">Personaliza la ambientación de ServiPortones.</p></div>
+            <button id="btn-toggle-seasonal-themes" type="button" aria-expanded="false" onclick="app.toggleThemePicker()" class="shrink-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-100">Mostrar temas</button>
+          </div>
+          <div id="seasonal-theme-options" class="hidden grid-cols-2 gap-2 pt-1">
+            <button type="button" data-seasonal-theme="classic" onclick="app.setSeasonalTheme('classic')" class="seasonal-theme-option rounded-lg border bg-white px-2.5 py-2 text-left text-xs font-semibold text-slate-700 transition"><span class="theme-swatch theme-swatch-classic" aria-hidden="true"></span>Tema Clásico</button>
+            <button type="button" data-seasonal-theme="christmas" onclick="app.setSeasonalTheme('christmas')" class="seasonal-theme-option rounded-lg border bg-white px-2.5 py-2 text-left text-xs font-semibold text-slate-700 transition"><span class="theme-swatch theme-swatch-christmas" aria-hidden="true"></span>Tema Navidad</button>
+            <button type="button" data-seasonal-theme="easter" onclick="app.setSeasonalTheme('easter')" class="seasonal-theme-option rounded-lg border bg-white px-2.5 py-2 text-left text-xs font-semibold text-slate-700 transition"><span class="theme-swatch theme-swatch-easter" aria-hidden="true"></span>Tema Pascua</button>
+            <button type="button" data-seasonal-theme="holy-week" onclick="app.setSeasonalTheme('holy-week')" class="seasonal-theme-option rounded-lg border bg-white px-2.5 py-2 text-left text-xs font-semibold text-slate-700 transition"><span class="theme-swatch theme-swatch-holy-week" aria-hidden="true"></span>Tema Semana Santa</button>
+          </div>
+        </section>
+        <section id="settings-admin-identities-section" class="hidden bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+          <div><h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800">Identidad del administrador</h4><p class="text-[11px] text-slate-500 mt-0.5">Lisbeth y Gabriela usan esta misma cuenta y comparten permisos y datos.</p></div>
+          <div id="admin-identities-list" class="space-y-2"></div>
+          <div id="admin-identity-editor" class="hidden rounded-lg border border-brand-limeBorder bg-white p-2.5 space-y-2">
+            <label for="admin-identity-name-input" class="text-[10px] font-bold text-slate-600">Editar nombre</label>
+            <input id="admin-identity-name-input" type="text" maxlength="40" class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-lime">
+            <div class="flex justify-end gap-2"><button type="button" onclick="app.cancelAdminIdentityEdit()" class="rounded-lg border border-slate-300 px-3 py-1.5 text-[11px] font-semibold">Cancelar</button><button type="button" onclick="app.saveAdminIdentityEdit()" class="rounded-lg bg-brand-dark px-3 py-1.5 text-[11px] font-bold text-white">Guardar nombre</button></div>
+          </div>
+        </section>        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
           <div class="flex items-center justify-between">
             <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
               <i data-lucide="message-circle" class="w-4 h-4 text-brand-limeHover"></i>
@@ -663,7 +760,7 @@
             <span>Mi Foto de Perfil</span>
           </h4>
           <div class="flex items-center gap-3">
-            <div onclick="app.zoomWorkerPhoto(app.currentUser?.photo, app.currentUser?.fullName)" class="cursor-pointer relative w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-brand-lime overflow-hidden bg-slate-200 shadow shrink-0 flex items-center justify-center">
+            <div onclick="app.zoomWorkerPhoto(app.currentUser?.photo, app.getCurrentDisplayName())" class="cursor-pointer relative w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-brand-lime overflow-hidden bg-slate-200 shadow shrink-0 flex items-center justify-center">
               <img id="settings-my-photo-preview" src="" alt="Foto" class="w-full h-full object-cover hidden">
               <span id="settings-my-initial-preview" class="text-lg font-black text-slate-600">A</span>
             </div>
@@ -966,7 +1063,7 @@
             <p class="text-xs text-slate-700 mt-1"><b>Teléfono:</b> <span id="view-phone"></span></p>
             <p class="text-xs text-slate-700 mt-1"><b>Dirección:</b> <span id="view-address"></span></p>
             <div class="mt-3 pt-3 border-t flex items-center gap-3">
-              <div id="view-technician-avatar" class="w-10 h-10 rounded-full border-2 border-brand-lime bg-slate-100 text-slate-700 font-black flex items-center justify-center overflow-hidden shrink-0"></div>
+              <div id="view-technician-avatar" class="seasonal-worker-avatar w-10 h-10 rounded-full border-2 border-brand-lime bg-slate-100 text-slate-700 font-black flex items-center justify-center overflow-hidden shrink-0"></div>
               <div class="min-w-0"><p class="text-[10px] uppercase text-slate-400 font-bold">Técnico asignado</p><p id="view-technician" class="font-bold text-sm text-slate-900 truncate"></p><p id="view-completed-at" class="text-[10px] text-slate-500"></p></div>
             </div>
           </div>
@@ -1244,6 +1341,11 @@
         this.selectedTask = null;
         this.activeReportStatus = null;
         this.heartbeatTimer = null;
+        this.presenceRecords = {};
+        this.presenceRefreshTimer = null;
+        this.adminIdentityNames = ['Lisbeth', 'Gabriela'];
+        this.activeAdminName = '';
+        this.adminIdentityEditingIndex = null;
         this.currentReportEvidence = [];
         this.pendingEvidenceReads = [];
         this.removedEvidenceStoragePaths = [];
@@ -1307,6 +1409,7 @@
         this.isTasksInitialLoad = true;
         this.isNotifsInitialLoad = true;
 
+        this.seasonalTheme = this.readSeasonalTheme();
         this.init();
       }
 
@@ -1328,7 +1431,7 @@
         if (key === 'chatBadge') {
           if (this.currentUser?.role === 'admin') this.renderConversationsSidebar();
           else {
-            const threadId = this.currentUser?.fullName || this.currentUser?.username;
+            const threadId = this.getCurrentDisplayName();
             const summary = this.chatThreadSummaries[threadId];
             const count = summary?.hasMessages ? summary.unreadCount : Number(this.workerUnreadCount || 0);
             const badge = document.getElementById('chat-unread-badge');
@@ -1446,30 +1549,13 @@
       }
 
       initTechTheme() {
-        if (document.getElementById('tech-particles-container')) return;
-        const container = document.createElement('div');
-        container.id = 'tech-particles-container';
-        container.style.position = 'fixed';
-        container.style.top = '0';
-        container.style.left = '0';
-        container.style.width = '100vw';
-        container.style.height = '100vh';
-        container.style.pointerEvents = 'none';
-        container.style.zIndex = '9998';
-        container.style.overflow = 'hidden';
-
-        for (let i = 0; i < 20; i++) {
-          const particle = document.createElement('div');
-          particle.className = 'tech-particle';
-          particle.style.left = Math.random() * 98 + 'vw';
-          particle.style.animationDuration = (Math.random() * 8 + 6) + 's';
-          particle.style.animationDelay = (Math.random() * 8) + 's';
-          container.appendChild(particle);
-        }
-        document.body.appendChild(container);
+        // El tema Clásico conserva la interfaz limpia y sin partículas heredadas.
+        document.getElementById('tech-particles-container')?.remove();
       }
 
       async init() {
+        this.applySeasonalTheme(this.seasonalTheme);
+        this.renderSeasonalThemeSelector();
         this.initTechTheme();
         this.loadPreferences();
 
@@ -1497,6 +1583,7 @@
             snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
             this.users = list;
             this.workers = list.filter(u => String(u.role).toLowerCase() === 'worker');
+            if (this.currentUser) this.renderAdminPresence();
 
             this.renderTechOptionsInSelects();
             this.renderUsersTable();
@@ -1575,14 +1662,24 @@
 
           db.collection('presencia').onSnapshot((snapshot) => {
             snapshot.forEach(doc => {
-              const data = doc.data();
-              const u = this.users.find(x => String(x.username || '').toLowerCase() === doc.id.toLowerCase());
+              const data = doc.data() || {};
+              const presenceId = doc.id.toLowerCase();
+              this.presenceRecords[presenceId] = data;
+              if (this.currentUser?.role === 'admin' && presenceId === String(this.currentUser.username || '').toLowerCase()) {
+                if (Array.isArray(data.adminIdentityNames) && data.adminIdentityNames.length === 2) this.adminIdentityNames = data.adminIdentityNames.map(name => String(name || '').trim()).filter(Boolean).length === 2 ? data.adminIdentityNames.map(name => String(name || '').trim()) : this.adminIdentityNames;
+                if (data.activeAdminName) this.activeAdminName = String(data.activeAdminName);
+              }
+              const u = this.users.find(x => String(x.username || '').toLowerCase() === presenceId);
               if (u) {
                 if (data.lastHeartbeat !== undefined) u.lastHeartbeat = data.lastHeartbeat;
                 if (data.photo) u.photo = data.photo;
                 if (data.lastLogin) u.lastLogin = data.lastLogin;
               }
             });
+            if (this.currentUser) {
+              this.renderTasks();
+              this.renderAdminPresence();
+            }
             if (this.currentUser && this.currentUser.role === 'admin') {
               this.renderTechniciansMonitor();
               this.renderConversationsSidebar();
@@ -1774,6 +1871,8 @@
         this.sendHeartbeat();
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
         this.heartbeatTimer = setInterval(() => this.sendHeartbeat(), 6000);
+        if (this.presenceRefreshTimer) clearInterval(this.presenceRefreshTimer);
+        this.presenceRefreshTimer = setInterval(() => this.renderAdminPresence(), 10000);
 
         this.setupDashboardUI();
         this.renderTechOptionsInSelects();
@@ -1798,13 +1897,15 @@
         if (this.currentUser && window.db) {
           db.collection('presencia').doc(this.currentUser.username.toLowerCase()).set({
             lastHeartbeat: 0,
-            lastLogin: formattedLogout
+            lastLogin: formattedLogout,
+            ...(this.currentUser.role === 'admin' ? { availabilityStatus: 'disconnected' } : {})
           }, { merge: true }).catch(e => console.error(e));
         }
 
         this.currentUser = null;
         SafeStorage.removeItem('portonpro_session_v4');
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+        if (this.presenceRefreshTimer) clearInterval(this.presenceRefreshTimer);
         this.showLoginView();
         this.showToast('Sesión cerrada correctamente', 'info');
       }
@@ -1815,7 +1916,7 @@
         if (window.db) {
           db.collection('presencia').doc(this.currentUser.username.toLowerCase()).set({
             username: this.currentUser.username,
-            fullName: this.currentUser.fullName || this.currentUser.username,
+            fullName: this.getCurrentDisplayName(),
             lastHeartbeat: now,
             photo: this.currentUser.photo || '',
             role: this.currentUser.role
@@ -1832,8 +1933,9 @@
       setupDashboardUI() {
         const isAdmin = this.currentUser.role === 'admin';
 
-        document.getElementById('header-user-name').textContent = this.currentUser.fullName || this.currentUser.username;
+        document.getElementById('header-user-name').textContent = this.getCurrentDisplayName();
         document.getElementById('header-role-badge').textContent = isAdmin ? 'Admin' : 'Técnico';
+        document.getElementById('admin-presence-control')?.classList.toggle('hidden', !isAdmin);
 
         const headerPhoto = document.getElementById('header-user-photo');
         const headerInit = document.getElementById('header-avatar-initial');
@@ -1844,7 +1946,7 @@
         } else {
           headerPhoto.classList.add('hidden');
           headerInit.classList.remove('hidden');
-          headerInit.textContent = (this.currentUser.fullName || this.currentUser.username || 'A').charAt(0);
+          headerInit.textContent = (this.getCurrentDisplayName() || 'A').charAt(0);
         }
 
         const btnNewOrder = document.getElementById('btn-nav-new-order');
@@ -1905,8 +2007,9 @@
           banner.className = 'mb-4 sm:mb-5 p-3.5 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm bg-gradient-to-r from-slate-900 via-brand-dark to-slate-950 text-white border-brand-lime/40';
           banner.innerHTML = `
             <div>
-              <h3 class="font-extrabold text-xs sm:text-sm text-white">Bienvenido, ${this.currentUser.fullName || this.currentUser.username}</h3>
+              <h3 class="font-extrabold text-xs sm:text-sm text-white">Bienvenido, ${this.getCurrentDisplayName()}</h3>
               <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5">Revisa tus visitas asignadas, comparte posición o llama al administrador.</p>
+              <div id="worker-admin-presence-dashboard" class="mt-2"></div>
             </div>
             <div class="mt-2 sm:mt-0 flex items-center gap-2">
               <button onclick="app.startVoiceCall()" class="text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1 shadow transition active:scale-95">
@@ -1920,7 +2023,196 @@
           `;
         }
 
+        this.renderAdminPresence();
         if (window.lucide) lucide.createIcons();
+      }
+
+      getCurrentDisplayName(user = this.currentUser) {
+        if (!user) return '';
+        if (String(user.role || '').toLowerCase() === 'admin') return this.activeAdminName || user.activeAdminName || user.fullName || user.username || 'Administrador';
+        return user.fullName || user.username || '';
+      }
+
+      renderAdminIdentities() {
+        const list = document.getElementById('admin-identities-list');
+        if (!list || this.currentUser?.role !== 'admin') return;
+        const active = this.activeAdminName;
+        list.innerHTML = this.adminIdentityNames.map((name, index) => `
+          <div class="flex items-center gap-2 rounded-lg border ${active === name ? 'border-brand-lime bg-lime-50' : 'border-slate-200 bg-white'} px-2.5 py-2">
+            <button type="button" onclick="app.selectAdminIdentity(${index})" class="flex min-w-0 flex-1 items-center gap-2 text-left">
+              <span class="h-4 w-4 shrink-0 rounded-full border ${active === name ? 'border-brand-lime bg-brand-lime ring-2 ring-lime-200' : 'border-slate-300 bg-white'}"></span>
+              <span class="truncate text-xs font-bold text-slate-800">${this.escapeHtml(name)}</span>
+              ${active === name ? '<span class="ml-auto text-[9px] font-bold uppercase text-emerald-700">En uso</span>' : ''}
+            </button>
+            <button type="button" onclick="app.beginAdminIdentityEdit(${index})" class="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-brand-dark" title="Editar ${this.escapeHtml(name)}" aria-label="Editar ${this.escapeHtml(name)}"><i data-lucide="pencil" class="h-3.5 w-3.5"></i></button>
+          </div>
+        `).join('');
+        if (window.lucide) lucide.createIcons();
+      }
+
+      async saveAdminIdentitySettings(names, activeName) {
+        if (!window.db || this.currentUser?.role !== 'admin') throw new Error('No hay sesión de administrador conectada');
+        const username = String(this.currentUser.username || '').toLowerCase();
+        await db.collection('presencia').doc(username).set({
+          username: this.currentUser.username,
+          fullName: activeName || this.currentUser.fullName || this.currentUser.username,
+          role: 'admin',
+          photo: this.currentUser.photo || '',
+          adminIdentityNames: names,
+          activeAdminName: activeName || ''
+        }, { merge: true });
+        this.adminIdentityNames = names;
+        this.activeAdminName = activeName || '';
+        this.presenceRecords[username] = { ...(this.presenceRecords[username] || {}), adminIdentityNames: names, activeAdminName: activeName || '', fullName: activeName || this.currentUser.fullName || this.currentUser.username, photo: this.currentUser.photo || '' };
+        this.setupDashboardUI();
+        this.renderAdminIdentities();
+        this.renderAdminPresence();
+        if (this.activeChatWorker) this.renderConversationsSidebar();
+      }
+
+      async selectAdminIdentity(index) {
+        if (this.currentUser?.role !== 'admin' || !this.adminIdentityNames[index]) return;
+        try {
+          await this.saveAdminIdentitySettings([...this.adminIdentityNames], this.adminIdentityNames[index]);
+          this.showToast(`Ahora apareces como ${this.adminIdentityNames[index]}`, 'success');
+        } catch (error) {
+          console.error('[IDENTIDAD] No se pudo seleccionar el nombre:', error);
+          this.showToast('No se pudo guardar el nombre elegido', 'error');
+        }
+      }
+
+      beginAdminIdentityEdit(index) {
+        if (this.currentUser?.role !== 'admin' || !this.adminIdentityNames[index]) return;
+        this.adminIdentityEditingIndex = index;
+        const editor = document.getElementById('admin-identity-editor');
+        const input = document.getElementById('admin-identity-name-input');
+        if (!editor || !input) return;
+        input.value = this.adminIdentityNames[index];
+        editor.classList.remove('hidden');
+        input.focus();
+        input.select();
+      }
+
+      cancelAdminIdentityEdit() {
+        this.adminIdentityEditingIndex = null;
+        document.getElementById('admin-identity-editor')?.classList.add('hidden');
+      }
+
+      async saveAdminIdentityEdit() {
+        const index = this.adminIdentityEditingIndex;
+        const input = document.getElementById('admin-identity-name-input');
+        const newName = String(input?.value || '').trim();
+        if (index === null || !this.adminIdentityNames[index]) return;
+        if (!newName) return this.showToast('Escribe un nombre válido', 'error');
+        if (this.adminIdentityNames.some((name, otherIndex) => otherIndex !== index && name.toLocaleLowerCase() === newName.toLocaleLowerCase())) return this.showToast('Los dos nombres deben ser diferentes', 'error');
+        const oldName = this.adminIdentityNames[index];
+        const names = [...this.adminIdentityNames];
+        names[index] = newName;
+        const activeName = this.activeAdminName === oldName ? newName : this.activeAdminName;
+        try {
+          await this.saveAdminIdentitySettings(names, activeName);
+          this.cancelAdminIdentityEdit();
+          this.showToast('Nombre actualizado', 'success');
+        } catch (error) {
+          console.error('[IDENTIDAD] No se pudo editar el nombre:', error);
+          this.showToast('No se pudo guardar el nombre', 'error');
+        }
+      }
+      getAdminPresenceInfo() {
+        const admin = this.users.find(user => String(user.role || '').toLowerCase() === 'admin');
+        const username = String(admin?.username || '').toLowerCase();
+        const record = this.presenceRecords[username] || {};
+        const isHeartbeatFresh = Date.now() - Number(record.lastHeartbeat || admin?.lastHeartbeat || 0) < 60000;
+        const savedStatus = record.availabilityStatus;
+        const status = !isHeartbeatFresh ? 'disconnected' : savedStatus === 'absent' ? 'absent' : savedStatus === 'disconnected' ? 'disconnected' : 'available';
+        return {
+          name: record.activeAdminName || admin?.fullName || record.fullName || 'Administrador',
+          photo: record.photo || admin?.photo || '',
+          status,
+          isHeartbeatFresh
+        };
+      }
+
+      renderAdminPresence() {
+        const info = this.getAdminPresenceInfo();
+        const labels = { available: 'Disponible', absent: 'Ausente', disconnected: 'Desconectado' };
+        const colors = {
+          available: { dot: 'bg-emerald-400', text: 'text-emerald-300' },
+          absent: { dot: 'bg-amber-400', text: 'text-amber-300' },
+          disconnected: { dot: 'bg-slate-400', text: 'text-slate-300' }
+        };
+        const color = colors[info.status];
+        const label = labels[info.status];
+        const statusLabel = document.getElementById('admin-presence-label');
+        const statusDot = document.getElementById('admin-presence-dot');
+        if (statusLabel) statusLabel.textContent = label;
+        if (this.currentUser?.role === 'admin') {
+          const headerName = document.getElementById('header-user-name');
+          const headerInitial = document.getElementById('header-avatar-initial');
+          if (headerName) headerName.textContent = this.getCurrentDisplayName();
+          if (headerInitial) headerInitial.textContent = (this.getCurrentDisplayName() || 'A').charAt(0);
+          if (!document.getElementById('settings-admin-identities-section')?.classList.contains('hidden')) this.renderAdminIdentities();
+        }
+        if (statusDot) statusDot.className = `w-1.5 h-1.5 rounded-full ${color.dot}`;
+
+        const dashboard = document.getElementById('worker-admin-presence-dashboard');
+        if (dashboard) {
+          dashboard.innerHTML = `<div class="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-2.5 py-1.5"><div class="seasonal-worker-avatar relative w-8 h-8 rounded-full border border-white/40 bg-slate-700 overflow-hidden flex items-center justify-center text-xs font-bold">${info.photo ? `<img src="${this.escapeHtml(info.photo)}" alt="Foto del Administrador" class="w-full h-full object-cover">` : this.escapeHtml(info.name.charAt(0))}</div><div class="leading-tight"><p class="text-[9px] uppercase tracking-wide text-slate-300">${this.escapeHtml(info.name)}</p><div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full ${color.dot}"></span><span class="text-[10px] font-bold ${color.text}">${label}</span></div></div></div>`;
+        }
+
+        if (this.currentUser?.role === 'worker') {
+          const chatTitle = document.getElementById('chat-header-title');
+          if (chatTitle) chatTitle.textContent = `Chat: ${info.name}`;
+        }
+        const chatCard = document.getElementById('chat-admin-presence');
+        if (chatCard) {
+          const shouldShow = this.currentUser?.role === 'worker';
+          chatCard.classList.toggle('hidden', !shouldShow);
+          chatCard.classList.toggle('flex', shouldShow);
+          const avatar = document.getElementById('chat-admin-presence-avatar');
+          if (avatar) avatar.innerHTML = info.photo ? `<img src="${this.escapeHtml(info.photo)}" alt="Foto del Administrador" class="w-full h-full object-cover">` : this.escapeHtml(info.name.charAt(0));
+          const chatName = document.getElementById('chat-admin-presence-name');
+          if (chatName) chatName.textContent = info.name;
+          const chatLabel = document.getElementById('chat-admin-presence-label');
+          const chatDot = document.getElementById('chat-admin-presence-dot');
+          if (chatLabel) { chatLabel.textContent = label; chatLabel.className = `text-[9px] font-semibold ${color.text}`; }
+          if (chatDot) chatDot.className = `w-1.5 h-1.5 rounded-full ${color.dot}`;
+        }
+      }
+
+      toggleAdminPresenceMenu() {
+        if (this.currentUser?.role !== 'admin') return;
+        const menu = document.getElementById('admin-presence-menu');
+        const toggle = document.getElementById('admin-presence-toggle');
+        if (!menu || !toggle) return;
+        const opening = menu.classList.contains('hidden');
+        menu.classList.toggle('hidden', !opening);
+        toggle.setAttribute('aria-expanded', String(opening));
+      }
+
+      async setAdminAvailability(status) {
+        const allowed = ['available', 'absent', 'disconnected'];
+        if (this.currentUser?.role !== 'admin' || !allowed.includes(status)) return;
+        const menu = document.getElementById('admin-presence-menu');
+        menu?.classList.add('hidden');
+        document.getElementById('admin-presence-toggle')?.setAttribute('aria-expanded', 'false');
+        if (!window.db) return this.showToast('No hay conexión para guardar tu estado', 'error');
+        const username = String(this.currentUser.username || '').toLowerCase();
+        try {
+          await db.collection('presencia').doc(username).set({
+            username: this.currentUser.username,
+            fullName: this.getCurrentDisplayName(),
+            role: 'admin',
+            photo: this.currentUser.photo || '',
+            lastHeartbeat: Date.now(),
+            availabilityStatus: status
+          }, { merge: true });
+          this.presenceRecords[username] = { ...(this.presenceRecords[username] || {}), availabilityStatus: status, lastHeartbeat: Date.now(), photo: this.currentUser.photo || '' };
+          this.renderAdminPresence();
+        } catch (error) {
+          console.error('[PRESENCE] No se pudo actualizar el estado del administrador:', error);
+          this.showToast('No se pudo guardar el estado', 'error');
+        }
       }
 
       zoomWorkerPhoto(photoUrl, name) {
@@ -1962,7 +2254,7 @@
           return;
         }
 
-        const myName = this.currentUser.fullName || this.currentUser.username;
+        const myName = this.getCurrentDisplayName();
         const btnLabel = document.getElementById('worker-gps-label');
         const btnDot = document.getElementById('worker-gps-dot');
 
@@ -2003,7 +2295,7 @@
         }
         this.isGpsSharing = false;
 
-        const myName = this.currentUser?.fullName || this.currentUser?.username;
+        const myName = this.getCurrentDisplayName();
         if (window.db && myName) {
           db.collection('gps_locations').doc(myName).set({
             active: false,
@@ -2151,9 +2443,9 @@
       }
 
       async startVoiceCall() {
-        const targetWorker = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
+        const targetWorker = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
         const callSessionId = window.crypto?.randomUUID?.() || `call-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-        console.info('[CALL] Iniciando llamada', { sessionId: callSessionId, role: this.currentUser.role, caller: this.currentUser.fullName || this.currentUser.username, documentId: targetWorker });
+        console.info('[CALL] Iniciando llamada', { sessionId: callSessionId, role: this.currentUser.role, caller: this.getCurrentDisplayName(), documentId: targetWorker });
         let callStage = 'getUserMedia';
         
         try {
@@ -2170,7 +2462,7 @@
           this.callSignalingUnsubscribes = [];
 
           this.openVoiceCallModal({
-            name: this.currentUser.role === 'admin' ? targetWorker : 'Administrador',
+            name: this.currentUser.role === 'admin' ? targetWorker : this.getAdminPresenceInfo().name,
             status: 'Llamando...',
             isIncoming: false
           });
@@ -2190,7 +2482,7 @@
           this.configureRemoteAudio();
 
           const callDoc = db.collection('webrtc_calls').doc(targetWorker);
-          this.currentCallData = { id: targetWorker, threadId: targetWorker, sessionId: callSessionId, callSessionId, caller: this.currentUser.fullName || this.currentUser.username, callerRole: this.currentUser.role, recipient: this.currentUser.role === 'admin' ? targetWorker : 'Administrador', wasAnswered: false, connectedAt: null };
+          this.currentCallData = { id: targetWorker, threadId: targetWorker, sessionId: callSessionId, callSessionId, caller: this.getCurrentDisplayName(), callerRole: this.currentUser.role, recipient: this.currentUser.role === 'admin' ? targetWorker : this.getAdminPresenceInfo().name, wasAnswered: false, connectedAt: null };
           console.info('[CALL] Sesión de llamada', { sessionId: callSessionId, role: this.currentUser.role, side: 'caller' });
           const callerCandidates = callDoc.collection('callerCandidates');
 
@@ -2215,9 +2507,9 @@
 
           callStage = 'guardar oferta';
           await callDoc.set({
-            caller: this.currentUser.fullName || this.currentUser.username,
+            caller: this.getCurrentDisplayName(),
             callerRole: this.currentUser.role,
-            recipient: this.currentUser.role === 'admin' ? targetWorker : 'Administrador',
+            recipient: this.currentUser.role === 'admin' ? targetWorker : this.getAdminPresenceInfo().name,
             status: 'calling',
             callSessionId,
             offer: { type: offer.type, sdp: offer.sdp },
@@ -2273,7 +2565,7 @@
       listenIncomingVoiceCalls() {
         if (!window.db) return;
         if (this.callUnsubscribe) { this.callUnsubscribe(); this.callUnsubscribe = null; }
-        const myName = this.currentUser.fullName || this.currentUser.username;
+        const myName = this.getCurrentDisplayName();
         const isAdmin = this.currentUser.role === 'admin';
         const calls = db.collection('webrtc_calls');
         const onCall = (id, data) => {
@@ -2308,7 +2600,7 @@
           console.info('[CALL] Sesión entrante normalizada', { callSessionId, currentSessionId: this.currentCallData.sessionId, hasSessionId: !!callSessionId });
           if (!callSessionId) console.error('[CALL] La llamada entrante no tiene callSessionId; no se puede verificar de forma segura la pertenencia de sus ICE candidates.');
           this.lastIncomingCallId = id;
-          this.triggerIncomingCallAlert(isAdmin ? (data.caller || 'Trabajador') : 'Administrador (Don Martínez)');
+          this.triggerIncomingCallAlert(isAdmin ? (data.caller || 'Trabajador') : this.getAdminPresenceInfo().name);
         };
         if (isAdmin) {
           // Escucha documentos conocidos de técnicos, sin requerir permiso de listar toda la colección.
@@ -2733,7 +3025,7 @@
         } else {
           sidebar.classList.add('hidden');
           if (backBar) backBar.classList.add('hidden');
-          this.activeChatWorker = this.currentUser.fullName || this.currentUser.username;
+          this.activeChatWorker = this.getCurrentDisplayName();
         }
 
         this.subscribeChatMessages();
@@ -2743,7 +3035,7 @@
       setupMultiWorkerChatListeners() {
         if (!window.db || !this.currentUser) return;
         const isAdmin = this.currentUser.role === 'admin';
-        const names = isAdmin ? this.workers.map(w => w.fullName || w.username) : [this.currentUser.fullName || this.currentUser.username];
+        const names = isAdmin ? this.workers.map(w => w.fullName || w.username) : [this.getCurrentDisplayName()];
         names.forEach(wName => {
           if (this.dedicatedWorkerUnsubscribes[wName]) return;
           const query = db.collection('chats_internos').doc(wName).collection('mensajes').orderBy('timestamp', 'asc');
@@ -2819,7 +3111,7 @@
           this.chatActivityRanks[wName] = ++this.chatActivitySequence;
         }
         if (isAdmin) this.renderConversationsSidebar();
-        else if (wName === (this.currentUser?.fullName || this.currentUser?.username)) {
+        else if (wName === (this.getCurrentDisplayName())) {
           const count = summary.hasMessages ? summary.unreadCount : Number(this.workerUnreadCount || 0);
           const badge = document.getElementById('chat-unread-badge');
           if (badge) {
@@ -2929,7 +3221,7 @@
           return `
             <div onclick="app.selectChatConversation('${wName}')" class="p-3 flex items-center justify-between cursor-pointer transition ${isSelected ? 'bg-brand-limeLight/80 border-r-4 border-brand-lime' : 'hover:bg-slate-100/70'}">
               <div class="flex items-center gap-2.5 min-w-0">
-                <div class="relative w-9 h-9 rounded-full overflow-hidden bg-slate-200 border border-brand-lime shrink-0">
+                <div class="seasonal-worker-avatar relative w-9 h-9 rounded-full overflow-hidden bg-slate-200 border border-brand-lime shrink-0">
                   ${w.photo ? `<img src="${w.photo}" class="w-full h-full object-cover">` : `<span class="w-full h-full flex items-center justify-center font-bold text-xs">${wName.charAt(0)}</span>`}
                   <span class="w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-500 ring-2 ring-white animate-pulse' : 'bg-slate-300'} absolute top-0 right-0"></span>
                 </div>
@@ -2960,7 +3252,7 @@
 
       selectChatConversation(wName) {
         this.activeChatWorker = wName;
-        document.getElementById('chat-header-title').textContent = `Chat: ${wName}`;
+        document.getElementById('chat-header-title').textContent = this.currentUser?.role === 'admin' ? `Chat: ${wName}` : `Chat: ${this.getAdminPresenceInfo().name}`;
         document.getElementById('chat-mobile-active-name').textContent = wName;
 
         if (window.innerWidth < 640) {
@@ -2998,7 +3290,7 @@
 
       async archiveCurrentConversation() {
         if (this.currentUser?.role !== 'admin') return;
-        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
+        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
         this.toggleChatOptionsMenu();
 
         if (window.db && threadId) {
@@ -3012,7 +3304,7 @@
         this.toggleChatOptionsMenu();
         if (!confirm("¿Deseas vaciar todos los mensajes de esta conversación?")) return;
 
-        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
+        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
         if (window.db && threadId) {
           const snap = await db.collection('chats_internos').doc(threadId).collection('mensajes').get();
           snap.forEach(d => d.ref.delete());
@@ -3026,7 +3318,7 @@
         this.toggleChatOptionsMenu();
         if (!confirm("¿Deseas eliminar completamente esta conversación y su historial?")) return;
 
-        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
+        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
         if (window.db && threadId) {
           const snap = await db.collection('chats_internos').doc(threadId).collection('mensajes').get();
           snap.forEach(d => d.ref.delete());
@@ -3036,9 +3328,9 @@
       }
 
       async deleteMessageForEveryone(msgId) {
-        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
+        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
         const message = this.chatMessages.find(m => m.id === msgId);
-        if (this.currentUser.role !== 'admin' && (!message || message.senderRole !== 'worker' || message.senderName !== (this.currentUser.fullName || this.currentUser.username))) return;
+        if (this.currentUser.role !== 'admin' && (!message || message.senderRole !== 'worker' || message.senderName !== (this.getCurrentDisplayName()))) return;
         if (!confirm("¿Eliminar este mensaje para todos?")) return;
         if (window.db && threadId && msgId) {
           await db.collection('chats_internos').doc(threadId).collection('mensajes').doc(msgId).delete();
@@ -3052,7 +3344,7 @@
       }
 
       handleTypingInput() {
-        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
+        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
         const myRole = this.currentUser.role;
 
         if (window.db && threadId) {
@@ -3073,7 +3365,7 @@
         if (!window.db) return;
         if (this.chatUnsubscribe) { this.chatUnsubscribe(); }
 
-        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
+        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
 
         if (this.chatThreadUnsubscribe) this.chatThreadUnsubscribe();
         this.chatThreadUnsubscribe = db.collection('chats_internos').doc(threadId).onSnapshot(doc => {
@@ -3158,12 +3450,12 @@
           return;
         }
 
-        const myName = this.currentUser.fullName || this.currentUser.username;
+        const myName = this.getCurrentDisplayName();
         container.innerHTML = this.chatMessages.map(m => {
-          const isMine = m.senderName === myName;
+          const isMine = this.currentUser.role === 'admin' ? m.senderRole === 'admin' : m.senderName === myName;
           let messageText = m.text || '';
           if (m.type === 'call') {
-            const isCaller = m.callerName === myName && m.callerRole === this.currentUser.role;
+            const isCaller = this.currentUser.role === 'admin' ? m.callerRole === 'admin' : m.callerName === myName && m.callerRole === this.currentUser.role;
             const title = m.callOutcome === 'missed' ? '📞 Llamada perdida' : m.callOutcome === 'failed' ? '📞 Llamada sin conexión' : (isCaller ? '📞 Llamada saliente' : '📞 Llamada recibida');
             const seconds = Math.max(0, Number(m.durationSeconds || 0));
             const duration = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
@@ -3210,7 +3502,7 @@
         const text = input.value.trim();
         if (!text) return;
 
-        const myName = this.currentUser.fullName || this.currentUser.username;
+        const myName = this.getCurrentDisplayName();
         const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : myName;
 
         const msgObj = {
@@ -3218,7 +3510,7 @@
           text: text,
           senderName: myName,
           senderRole: this.currentUser.role,
-          recipient: this.currentUser.role === 'admin' ? this.activeChatWorker : 'Administrador',
+          recipient: this.currentUser.role === 'admin' ? this.activeChatWorker : this.getAdminPresenceInfo().name,
           time: this.formatTime(new Date()),
           timestamp: Date.now(),
           status: 'sent'
@@ -3254,7 +3546,7 @@
 
       markMessagesAsRead() {
         if (!window.db || this.chatMessages.length === 0) return;
-        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.currentUser.fullName || this.currentUser.username);
+        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
 
         this.chatMessages.forEach(m => {
           if (m.senderRole !== this.currentUser.role && m.status !== 'read' && m.id) {
@@ -3286,7 +3578,7 @@
             <div class="p-3 rounded-2xl border ${isOnline ? 'bg-brand-limeLight border-brand-limeBorder shadow-sm' : 'bg-slate-50 border-slate-200'} flex flex-col justify-between">
               <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2.5 min-w-0">
-                  <div onclick="app.zoomWorkerPhoto('${u.photo || ''}', '${uName}')" class="cursor-pointer relative w-10 h-10 rounded-full overflow-hidden border-2 ${isOnline ? 'border-brand-lime' : 'border-slate-300'} bg-slate-200 shrink-0 flex items-center justify-center hover:opacity-90 transition" title="Haz clic para ampliar">
+                  <div onclick="app.zoomWorkerPhoto('${u.photo || ''}', '${uName}')" class="seasonal-worker-avatar cursor-pointer relative w-10 h-10 rounded-full overflow-hidden border-2 ${isOnline ? 'border-brand-lime' : 'border-slate-300'} bg-slate-200 shrink-0 flex items-center justify-center hover:opacity-90 transition" title="Haz clic para ampliar">
                     ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<span class="font-bold text-xs text-slate-700">${uName.charAt(0)}</span>`}
                     <span class="w-3 h-3 rounded-full ${isOnline ? 'bg-emerald-500 ring-2 ring-white animate-pulse' : 'bg-slate-300'} absolute top-0 right-0"></span>
                   </div>
@@ -3314,8 +3606,101 @@
         if (window.lucide) lucide.createIcons();
       }
 
+      readSeasonalTheme() {
+        const allowed = ['classic', 'christmas', 'easter', 'holy-week'];
+        try { const saved = localStorage.getItem('serviportones_visual_theme'); return allowed.includes(saved) ? saved : 'classic'; }
+        catch (_) { return 'classic'; }
+      }
+
+      setSeasonalTheme(theme) {
+        const allowed = ['classic', 'christmas', 'easter', 'holy-week'];
+        if (!allowed.includes(theme)) return;
+        this.seasonalTheme = theme;
+        try { localStorage.setItem('serviportones_visual_theme', theme); }
+        catch (error) { console.warn('No se pudo guardar el tema en este dispositivo:', error); }
+        this.applySeasonalTheme(theme);
+        this.renderSeasonalThemeSelector();
+        const themeNames = { classic: 'Clásico', christmas: 'Navidad', easter: 'Pascua', 'holy-week': 'Semana Santa' };
+        this.showToast(`Tema ${themeNames[theme]} aplicado`, 'success');
+      }
+
+      toggleThemePicker() {
+        const options = document.getElementById('seasonal-theme-options');
+        const button = document.getElementById('btn-toggle-seasonal-themes');
+        if (!options || !button) return;
+        const opening = options.classList.contains('hidden');
+        options.classList.toggle('hidden', !opening);
+        options.classList.toggle('grid', opening);
+        button.setAttribute('aria-expanded', String(opening));
+        button.textContent = opening ? 'Ocultar temas' : 'Mostrar temas';
+      }
+
+      applySeasonalTheme(theme) {
+        const classes = ['theme-classic', 'theme-christmas', 'theme-easter', 'theme-holy-week'];
+        document.body.classList.remove(...classes);
+        if (theme === 'classic') document.body.classList.add('theme-classic');
+        if (theme === 'christmas') document.body.classList.add('theme-christmas');
+        if (theme === 'easter') document.body.classList.add('theme-easter');
+        if (theme === 'holy-week') document.body.classList.add('theme-holy-week');
+        const decorations = {
+          classic: '',
+          christmas: `<svg viewBox="0 0 180 110" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="season-hat" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c94743"/><stop offset="1" stop-color="#7f2529"/></linearGradient><linearGradient id="season-gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f4e1a0"/><stop offset="1" stop-color="#b8913e"/></linearGradient></defs><path class="seasonal-hat" d="M28 44 Q39 8 83 11 Q67 23 59 47Z" fill="url(#season-hat)"/><path d="M25 44 Q44 38 63 45 L61 53 Q42 49 24 53Z" fill="#f5f0e6"/><circle cx="81" cy="10" r="7" fill="#f5f0e6"/><path d="M116 42 Q111 30 115 20 M118 29 Q109 24 107 15 M118 28 Q127 20 125 11 M118 32 Q131 31 136 22" fill="none" stroke="url(#season-gold)" stroke-width="3" stroke-linecap="round"/><path d="M111 40 Q124 31 133 42 L130 54 Q123 61 115 53Z" fill="#825c43"/><circle cx="124" cy="44" r="1.6" fill="#f7f1e7"/><path d="M131 47l8 2-8 3" fill="#b8913e"/><path d="M20 74l3 5 5 1-5 2-2 5-2-5-5-2 5-1zM91 67l2 4 4 1-4 2-2 4-2-4-4-2 4-1zM157 72l2 4 4 1-4 2-2 4-2-4-4-2 4-1z" fill="#d7e6ec" opacity=".9"/><g class="seasonal-logo-lights"><circle cx="88" cy="57" r="3" fill="#cb514e"/><circle cx="101" cy="59" r="3" fill="#e5c86e"/><circle cx="114" cy="59" r="3" fill="#4e916b"/><circle cx="127" cy="58" r="3" fill="#cb514e"/></g><circle cx="99" cy="24" r="2" fill="#fff"/><circle cx="148" cy="59" r="1.5" fill="#fff"/></svg>`,
+          easter: `<svg viewBox="0 0 180 110" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="season-egg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f3e6e8"/><stop offset="1" stop-color="#c9a8bb"/></linearGradient><linearGradient id="season-leaf" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b9c9a7"/><stop offset="1" stop-color="#708d68"/></linearGradient></defs><path class="seasonal-egg" d="M40 18 C25 20 20 47 25 63 C30 80 55 82 62 65 C69 48 56 16 40 18Z" fill="url(#season-egg)" stroke="#b895a9" stroke-width="1.5"/><path d="M27 43 Q43 36 61 44 M27 54 Q43 48 64 55" fill="none" stroke="#f8f1e8" stroke-width="3"/><path d="M88 75 Q112 49 137 35" fill="none" stroke="url(#season-leaf)" stroke-width="3" stroke-linecap="round"/><path d="M103 62 Q88 51 88 42 Q104 43 108 56 M119 49 Q117 34 124 26 Q134 37 126 48 M93 72 Q78 68 72 59 Q87 55 98 66" fill="url(#season-leaf)"/><g fill="#e6c9d6" stroke="#c29bac" stroke-width="1"><ellipse cx="143" cy="27" rx="5" ry="9"/><ellipse cx="143" cy="45" rx="5" ry="9"/><ellipse cx="134" cy="36" rx="8" ry="5"/><ellipse cx="152" cy="36" rx="8" ry="5"/></g><circle cx="143" cy="36" r="4" fill="#d7b66f"/><circle cx="76" cy="24" r="2" fill="#d9c487"/><circle cx="158" cy="65" r="1.8" fill="#d9c487"/></svg>`,
+          'holy-week': `<svg viewBox="0 0 180 110" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="season-cross" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ead89d"/><stop offset="1" stop-color="#a88c55"/></linearGradient><radialGradient id="season-glow"><stop stop-color="#f4e7c6" stop-opacity=".78"/><stop offset="1" stop-color="#f4e7c6" stop-opacity="0"/></radialGradient></defs><circle cx="77" cy="44" r="38" fill="url(#season-glow)"/><path class="seasonal-cross-art" d="M76 16 V72 M58 34 H94" stroke="url(#season-cross)" stroke-width="6" stroke-linecap="round"/><path d="M76 79 Q104 68 127 79" fill="none" stroke="#9c8aaa" stroke-width="2" opacity=".75"/><path d="M126 24v17m-6-11h12" stroke="#c7b27a" stroke-width="2" stroke-linecap="round"/><circle cx="127" cy="51" r="2" fill="#d8c58d"/><path d="M42 23l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#d8c58d" opacity=".8"/></svg>`
+        };
+        ['seasonal-logo-decoration-login', 'seasonal-logo-decoration-header'].forEach(id => {
+          const element = document.getElementById(id);
+          if (!element) return;
+          const svg = decorations[theme] || '';
+          element.innerHTML = svg.replace(/season-(hat|gold|egg|leaf|cross|glow)/g, token => token + '-' + id);
+          element.style.display = theme === 'classic' ? 'none' : 'block';
+        });
+        this.updateSeasonalEffects(theme);
+      }
+
+      updateSeasonalEffects(theme) {
+        const layer = document.getElementById('seasonal-effects-layer');
+        if (!layer) return;
+        layer.innerHTML = '';
+        layer.className = 'seasonal-effects-layer';
+        if (theme === 'classic') { layer.classList.add('hidden'); return; }
+        layer.classList.add(`theme-${theme}`);
+        const count = theme === 'christmas' ? 24 : 8;
+        for (let index = 0; index < count; index++) {
+          const particle = document.createElement('i');
+          particle.className = 'seasonal-particle';
+          particle.style.setProperty('--particle-x', `${Math.random() * 100}%`);
+          particle.style.setProperty('--particle-size', `${theme === 'christmas' ? 3 + Math.random() * 4 : 5 + Math.random() * 4}px`);
+          particle.style.setProperty('--particle-opacity', `${.3 + Math.random() * .5}`);
+          particle.style.setProperty('--particle-duration', `${theme === 'christmas' ? 9 + Math.random() * 11 : 12 + Math.random() * 13}s`);
+          particle.style.setProperty('--particle-delay', `${-Math.random() * 20}s`);
+          particle.style.setProperty('--particle-drift', `${-35 + Math.random() * 70}px`);
+          layer.appendChild(particle);
+        }
+      }
+      renderSeasonalThemeSelector() {
+        document.querySelectorAll('[data-seasonal-theme]').forEach(button => {
+          const selected = button.dataset.seasonalTheme === this.seasonalTheme;
+          button.setAttribute('aria-pressed', String(selected));
+          button.classList.toggle('border-brand-lime', selected);
+          button.classList.toggle('ring-2', selected);
+          button.classList.toggle('ring-brand-lime/30', selected);
+          button.classList.toggle('bg-brand-limeLight', selected);
+          button.classList.toggle('border-slate-200', !selected);
+        });
+      }
+      collapseThemePicker() {
+        const options = document.getElementById('seasonal-theme-options');
+        const button = document.getElementById('btn-toggle-seasonal-themes');
+        options?.classList.add('hidden');
+        options?.classList.remove('grid');
+        button?.setAttribute('aria-expanded', 'false');
+        if (button) button.textContent = 'Mostrar temas';
+      }
       openSettingsModal() {
         const isAdmin = this.currentUser.role === 'admin';
+        this.collapseThemePicker();
+        this.renderSeasonalThemeSelector();
         this.renderMySettingsPhotoPreview();
 
         document.getElementById('set-own-current-pass').value = '';
@@ -3323,15 +3708,19 @@
         document.getElementById('set-own-confirm-pass').value = '';
 
         const adminUsersSection = document.getElementById('settings-admin-users-section');
+        const adminIdentitiesSection = document.getElementById('settings-admin-identities-section');
         const subtitle = document.getElementById('settings-modal-subtitle');
 
         if (isAdmin) {
           subtitle.textContent = 'Gestión integral de personal en Firestore';
+          adminIdentitiesSection?.classList.remove('hidden');
+          this.renderAdminIdentities();
           adminUsersSection.classList.remove('hidden');
           this.resetUserForm();
           this.renderUsersTable();
         } else {
-          subtitle.textContent = `Ajustes personales de tu cuenta (${this.currentUser.fullName || this.currentUser.username})`;
+          subtitle.textContent = `Ajustes personales de tu cuenta (${this.getCurrentDisplayName()})`;
+          adminIdentitiesSection?.classList.add('hidden');
           adminUsersSection.classList.add('hidden');
         }
 
@@ -3346,7 +3735,7 @@
       renderMySettingsPhotoPreview() {
         const img = document.getElementById('settings-my-photo-preview');
         const init = document.getElementById('settings-my-initial-preview');
-        const name = this.currentUser.fullName || this.currentUser.username || 'A';
+        const name = this.getCurrentDisplayName() || 'A';
         if (this.currentUser.photo) {
           img.src = this.currentUser.photo;
           img.classList.remove('hidden');
@@ -3555,7 +3944,7 @@
 
       updateStats() {
         const isAdmin = this.currentUser.role === 'admin';
-        const myName = this.currentUser.fullName || this.currentUser.username;
+        const myName = this.getCurrentDisplayName();
         const relevantTasks = (isAdmin ? this.tasks : this.tasks.filter(t => this.isTaskFree(t) || t.assignedTo === myName)).filter(t => !t.archivedAt);
         document.getElementById('stat-total').textContent = relevantTasks.length;
         document.getElementById('stat-pending').textContent = relevantTasks.filter(t => t.status === 'PENDIENTE' || t.status === 'EN_PROCESO').length;
@@ -3666,7 +4055,7 @@
         const archiveCount = document.getElementById('archived-orders-count');
         if (archiveLabel) archiveLabel.textContent = this.showArchivedTasks ? '↩ Volver a órdenes' : '📦 Órdenes Archivadas';
         if (archiveCount) archiveCount.textContent = String(archivedCount);
-        const myName = this.currentUser.fullName || this.currentUser.username;
+        const myName = this.getCurrentDisplayName();
 
         let filtered = this.tasks.filter(t => {
           if (this.showArchivedTasks ? (!isAdmin || !t.archivedAt) : !!t.archivedAt) return false;
@@ -3713,6 +4102,11 @@
           const taskIsFree = this.isTaskFree(t);
           const techObj = taskIsFree ? null : this.users.find(u => (u.fullName || u.username) === t.assignedTo);
           const techPhoto = techObj && techObj.photo ? techObj.photo : '';
+          const techIsOnline = !!techObj && (Date.now() - Number(techObj.lastHeartbeat || 0)) < 60000;
+          const techDetails = [
+            techObj?.phone ? `📞 ${this.escapeHtml(techObj.phone)}` : '',
+            techObj?.specialty ? `🛠️ ${this.escapeHtml(techObj.specialty)}` : ''
+          ].filter(Boolean);
 
           return `
             <div class="bg-white rounded-2xl p-3.5 border ${borderClass} shadow-sm flex flex-col justify-between">
@@ -3741,11 +4135,11 @@
                   </button>
                 </div>
 
-                <div class="mt-2.5 pt-2 border-t flex items-center justify-between text-xs">
-                  <span class="text-slate-500 text-[11px]">Técnico:</span>
+                <div class="mt-2.5 pt-2 border-t text-xs">
+                  <span class="text-slate-500 text-[11px] block mb-1.5">Técnico:</span>
                   ${taskIsFree
                     ? '<span class="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] font-black text-orange-700">🟠 LIBRE · Disponible</span>'
-                    : `<div class="flex items-center gap-1.5 bg-slate-50 border px-2 py-0.5 rounded-lg"><div onclick="app.zoomWorkerPhoto('${techPhoto}', '${t.assignedTo}')" class="cursor-pointer w-4 h-4 rounded-full overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center border border-brand-lime" title="Ampliar">${techPhoto ? `<img src="${techPhoto}" class="w-full h-full object-cover">` : `<span class="text-[9px] font-bold">${String(t.assignedTo || '?').charAt(0)}</span>`}</div><span class="font-bold text-slate-800 text-[11px]">${t.assignedTo}</span></div>`}
+                    : `<div class="flex items-center gap-2"><div onclick="app.zoomWorkerPhoto('${techPhoto}', '${t.assignedTo}')" class="seasonal-worker-avatar cursor-pointer w-9 h-9 rounded-full overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center border-2 border-brand-lime" title="Ampliar foto">${techPhoto ? `<img src="${this.escapeHtml(techPhoto)}" alt="Foto de ${this.escapeHtml(t.assignedTo)}" class="w-full h-full object-cover">` : `<span class="text-xs font-bold">${this.escapeHtml(String(t.assignedTo || '?').charAt(0).toUpperCase())}</span>`}</div><div class="min-w-0"><div class="flex flex-wrap items-center gap-x-2 gap-y-0.5"><span class="font-bold text-slate-800 text-[11px]">${this.escapeHtml(t.assignedTo)}</span><span class="inline-flex items-center gap-1 text-[10px] font-semibold ${techIsOnline ? 'text-emerald-700' : 'text-slate-500'}"><span class="w-1.5 h-1.5 rounded-full ${techIsOnline ? 'bg-emerald-500' : 'bg-slate-400'}"></span>${techIsOnline ? 'En línea' : 'Desconectado'}</span></div>${techDetails.length ? `<div class="mt-0.5 flex flex-wrap gap-x-2 text-[10px] text-slate-500">${techDetails.map(detail => `<span>${detail}</span>`).join('')}</div>` : ''}</div></div>`}
                 </div>
 
                 ${t.observations ? `
@@ -3933,7 +4327,7 @@
         } else if (this.managedItemMode === 'finding' && this.currentUser?.role === 'worker' && this.selectedTask) {
           if (!Array.isArray(this.selectedTask.fieldFindings)) this.selectedTask.fieldFindings = [];
           const index = this.managedItemIndex;
-          const finding = { text: value, authorName: this.currentUser.fullName || this.currentUser.username, authorRole: 'worker', createdAt: Date.now() };
+          const finding = { text: value, authorName: this.getCurrentDisplayName(), authorRole: 'worker', createdAt: Date.now() };
           if (index !== null) return;
           this.selectedTask.fieldFindings.push(finding);
           this.saveTasks(); this.renderFieldFindings();
@@ -3975,7 +4369,7 @@
         const list = document.getElementById('report-findings-list');
         if (!list) return;
         const entries = Array.isArray(this.selectedTask?.fieldFindings) ? this.selectedTask.fieldFindings : [];
-        const myName = this.currentUser?.fullName || this.currentUser?.username;
+        const myName = this.getCurrentDisplayName();
         list.innerHTML = entries.map((item, index) => {
           const canDelete = this.currentUser?.role === 'admin' || (item.authorRole === 'worker' && item.authorName === myName);
           return `<div class="flex items-start gap-2 rounded-xl border border-amber-100 bg-white px-3 py-2 text-xs"><span class="min-w-0 flex-1 leading-relaxed text-slate-700">${this.escapeHtml(item.text)} <span class="text-slate-400">— ${this.escapeHtml(item.authorName || 'Técnico')}</span></span>${canDelete ? `<button type="button" onclick="app.deleteFieldFinding(${index})" class="rounded-md p-1 text-rose-600 hover:bg-rose-50" title="Eliminar novedad" aria-label="Eliminar novedad">🗑️</button>` : ''}</div>`;
@@ -3985,14 +4379,14 @@
       addFieldFinding() { if (this.currentUser?.role === 'worker' && this.selectedTask) this.openManagedItemModal('finding'); }
       deleteFieldFinding(index) {
         const item = this.selectedTask?.fieldFindings?.[index];
-        const name = this.currentUser?.fullName || this.currentUser?.username;
+        const name = this.getCurrentDisplayName();
         if (this.currentUser?.role !== 'worker' || !item || item.authorRole !== 'worker' || item.authorName !== name) return;
         this.selectedTask.fieldFindings.splice(index, 1); this.saveTasks(); this.renderFieldFindings();
       }
 
       async takeFreeOrder(id) {
         if (this.currentUser?.role !== 'worker') return;
-        const myName = this.currentUser.fullName || this.currentUser.username;
+        const myName = this.getCurrentDisplayName();
         if (!myName || !window.db) {
           this.showToast('No se pudo conectar para tomar la orden. Intenta de nuevo.', 'error');
           return;
@@ -4196,7 +4590,7 @@
         if (!task || task.status !== 'REALIZADA' || task.archivedAt) return;
         const previousArchive = { archivedAt: task.archivedAt, archivedBy: task.archivedBy };
         task.archivedAt = Date.now();
-        task.archivedBy = this.currentUser.fullName || this.currentUser.username || 'Administrador';
+        task.archivedBy = this.getCurrentDisplayName() || 'Administrador';
         const result = await this.saveTasks(true);
         if (!result?.ok) {
           delete task.archivedAt;
@@ -4273,7 +4667,7 @@
           console.info('[ORDER] Factura subida a Storage', { taskId, storagePath, url });
           task.invoice = {
             url, storagePath, name: file.name, contentType,
-            size: file.size, uploadedAt: Date.now(), uploadedBy: this.currentUser.fullName || this.currentUser.username || 'Administrador'
+            size: file.size, uploadedAt: Date.now(), uploadedBy: this.getCurrentDisplayName() || 'Administrador'
           };
           const saved = await this.saveTasks(true);
           if (!saved?.ok) {
@@ -4436,7 +4830,7 @@
           this.tasks[taskIndex].evidence = this.currentReportEvidence;
           this.tasks[taskIndex].completedAt = this.formatFullDateTime(new Date());
 
-          const myName = this.currentUser.fullName || this.currentUser.username;
+          const myName = this.getCurrentDisplayName();
           this.addActivityNotification(myName, this.selectedTask.id, this.activeReportStatus, observations, 'order');
 
           console.info('[ORDER] URL guardada: enviando a Firestore', { taskId, cantidad: this.currentReportEvidence.length, urls: this.currentReportEvidence.map(item => item?.url || item?.src || null) });
@@ -4516,7 +4910,7 @@
       viewOrderDetails(id) {
         const t = this.tasks.find(x => x.id === id);
         if (!t || t.status !== 'REALIZADA') return;
-        const myName = this.currentUser?.fullName || this.currentUser?.username;
+        const myName = this.getCurrentDisplayName();
         if (this.currentUser?.role !== 'admin' && t.assignedTo !== myName) return;
         this.selectedTask = t;
 
