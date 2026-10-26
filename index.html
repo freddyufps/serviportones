@@ -345,7 +345,7 @@
           </button>
 
           <div class="flex items-center gap-1.5 sm:gap-2 bg-slate-800/90 pl-1 pr-2 sm:pr-3 py-1 rounded-xl border border-slate-700">
-            <div onclick="app.zoomWorkerPhoto(app.currentUser?.photo, app.getCurrentDisplayName())" class="seasonal-worker-avatar cursor-pointer relative w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border-2 border-brand-lime bg-slate-700 flex items-center justify-center shrink-0">
+            <div onclick="app.zoomWorkerPhoto(app.getCurrentDisplayPhoto(), app.getCurrentDisplayName())" class="seasonal-worker-avatar cursor-pointer relative w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border-2 border-brand-lime bg-slate-700 flex items-center justify-center shrink-0">
               <img id="header-user-photo" src="" alt="Foto" class="w-full h-full object-cover hidden">
               <span id="header-avatar-initial" class="text-white font-black text-xs">A</span>
               <span class="w-2 h-2 rounded-full bg-brand-lime border border-slate-900 absolute top-0 right-0"></span>
@@ -729,9 +729,21 @@
           <div id="admin-identity-editor" class="hidden rounded-lg border border-brand-limeBorder bg-white p-2.5 space-y-2">
             <label for="admin-identity-name-input" class="text-[10px] font-bold text-slate-600">Editar nombre</label>
             <input id="admin-identity-name-input" type="text" maxlength="40" class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-lime">
-            <div class="flex justify-end gap-2"><button type="button" onclick="app.cancelAdminIdentityEdit()" class="rounded-lg border border-slate-300 px-3 py-1.5 text-[11px] font-semibold">Cancelar</button><button type="button" onclick="app.saveAdminIdentityEdit()" class="rounded-lg bg-brand-dark px-3 py-1.5 text-[11px] font-bold text-white">Guardar nombre</button></div>
+            <div class="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-2">
+              <div id="admin-identity-photo-preview" class="seasonal-worker-avatar relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-brand-lime bg-slate-200 text-sm font-black text-slate-600">?</div>
+              <div class="min-w-0 flex-1 space-y-1.5">
+                <p class="text-[10px] font-semibold text-slate-600">Foto de esta identidad</p>
+                <div class="flex flex-wrap items-center gap-2">
+                  <label for="admin-identity-photo-file" class="cursor-pointer rounded-lg bg-brand-dark px-2.5 py-1.5 text-[10px] font-bold text-white hover:bg-black">Elegir foto</label>
+                  <input id="admin-identity-photo-file" type="file" accept="image/*" class="hidden" onchange="app.handleAdminIdentityPhoto(event)">
+                  <button type="button" onclick="app.removeAdminIdentityPhoto()" class="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[10px] font-semibold text-slate-600">Quitar</button>
+                </div>
+              </div>
+            </div>
+            <div class="flex justify-end gap-2"><button type="button" onclick="app.cancelAdminIdentityEdit()" class="rounded-lg border border-slate-300 px-3 py-1.5 text-[11px] font-semibold">Cancelar</button><button type="button" onclick="app.saveAdminIdentityEdit()" class="rounded-lg bg-brand-dark px-3 py-1.5 text-[11px] font-bold text-white">Guardar cambios</button></div>
           </div>
-        </section>        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+        </section>
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
           <div class="flex items-center justify-between">
             <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
               <i data-lucide="message-circle" class="w-4 h-4 text-brand-limeHover"></i>
@@ -1344,8 +1356,11 @@
         this.presenceRecords = {};
         this.presenceRefreshTimer = null;
         this.adminIdentityNames = ['Lisbeth', 'Gabriela'];
+        this.adminIdentityPhotos = {};
         this.activeAdminName = '';
         this.adminIdentityEditingIndex = null;
+
+        this.adminIdentityPhotoDraft = null;
         this.currentReportEvidence = [];
         this.pendingEvidenceReads = [];
         this.removedEvidenceStoragePaths = [];
@@ -1668,6 +1683,7 @@
               if (this.currentUser?.role === 'admin' && presenceId === String(this.currentUser.username || '').toLowerCase()) {
                 if (Array.isArray(data.adminIdentityNames) && data.adminIdentityNames.length === 2) this.adminIdentityNames = data.adminIdentityNames.map(name => String(name || '').trim()).filter(Boolean).length === 2 ? data.adminIdentityNames.map(name => String(name || '').trim()) : this.adminIdentityNames;
                 if (data.activeAdminName) this.activeAdminName = String(data.activeAdminName);
+                if (data.adminIdentityPhotos && typeof data.adminIdentityPhotos === 'object') this.adminIdentityPhotos = { ...data.adminIdentityPhotos };
               }
               const u = this.users.find(x => String(x.username || '').toLowerCase() === presenceId);
               if (u) {
@@ -1939,8 +1955,9 @@
 
         const headerPhoto = document.getElementById('header-user-photo');
         const headerInit = document.getElementById('header-avatar-initial');
-        if (this.currentUser.photo) {
-          headerPhoto.src = this.currentUser.photo;
+        const headerDisplayPhoto = this.getCurrentDisplayPhoto();
+        if (headerDisplayPhoto) {
+          headerPhoto.src = headerDisplayPhoto;
           headerPhoto.classList.remove('hidden');
           headerInit.classList.add('hidden');
         } else {
@@ -2027,6 +2044,12 @@
         if (window.lucide) lucide.createIcons();
       }
 
+      getCurrentDisplayPhoto(user = this.currentUser) {
+        if (!user) return '';
+        if (String(user.role || '').toLowerCase() === 'admin') return this.adminIdentityPhotos[this.activeAdminName] || user.photo || '';
+        return user.photo || '';
+      }
+
       getCurrentDisplayName(user = this.currentUser) {
         if (!user) return '';
         if (String(user.role || '').toLowerCase() === 'admin') return this.activeAdminName || user.activeAdminName || user.fullName || user.username || 'Administrador';
@@ -2037,20 +2060,26 @@
         const list = document.getElementById('admin-identities-list');
         if (!list || this.currentUser?.role !== 'admin') return;
         const active = this.activeAdminName;
-        list.innerHTML = this.adminIdentityNames.map((name, index) => `
-          <div class="flex items-center gap-2 rounded-lg border ${active === name ? 'border-brand-lime bg-lime-50' : 'border-slate-200 bg-white'} px-2.5 py-2">
-            <button type="button" onclick="app.selectAdminIdentity(${index})" class="flex min-w-0 flex-1 items-center gap-2 text-left">
-              <span class="h-4 w-4 shrink-0 rounded-full border ${active === name ? 'border-brand-lime bg-brand-lime ring-2 ring-lime-200' : 'border-slate-300 bg-white'}"></span>
-              <span class="truncate text-xs font-bold text-slate-800">${this.escapeHtml(name)}</span>
-              ${active === name ? '<span class="ml-auto text-[9px] font-bold uppercase text-emerald-700">En uso</span>' : ''}
-            </button>
-            <button type="button" onclick="app.beginAdminIdentityEdit(${index})" class="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-brand-dark" title="Editar ${this.escapeHtml(name)}" aria-label="Editar ${this.escapeHtml(name)}"><i data-lucide="pencil" class="h-3.5 w-3.5"></i></button>
-          </div>
-        `).join('');
+        list.innerHTML = this.adminIdentityNames.map((name, index) => {
+          const photo = this.adminIdentityPhotos[name] || '';
+          const avatar = photo
+            ? `<img src="${this.escapeHtml(photo)}" alt="Foto de ${this.escapeHtml(name)}" class="h-full w-full object-cover">`
+            : this.escapeHtml(name.charAt(0).toUpperCase());
+          return `
+            <div class="flex items-center gap-2 rounded-lg border ${active === name ? 'border-brand-lime bg-lime-50' : 'border-slate-200 bg-white'} px-2.5 py-2">
+              <button type="button" onclick="app.selectAdminIdentity(${index})" class="flex min-w-0 flex-1 items-center gap-2 text-left">
+                <span class="seasonal-worker-avatar relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-xs font-black text-slate-600">${avatar}</span>
+                <span class="h-4 w-4 shrink-0 rounded-full border ${active === name ? 'border-brand-lime bg-brand-lime ring-2 ring-lime-200' : 'border-slate-300 bg-white'}"></span>
+                <span class="truncate text-xs font-bold text-slate-800">${this.escapeHtml(name)}</span>
+                ${active === name ? '<span class="ml-auto text-[9px] font-bold uppercase text-emerald-700">En uso</span>' : ''}
+              </button>
+              <button type="button" onclick="app.beginAdminIdentityEdit(${index})" class="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-brand-dark" title="Editar ${this.escapeHtml(name)}" aria-label="Editar ${this.escapeHtml(name)}"><i data-lucide="pencil" class="h-3.5 w-3.5"></i></button>
+            </div>
+          `;
+        }).join('');
         if (window.lucide) lucide.createIcons();
       }
-
-      async saveAdminIdentitySettings(names, activeName) {
+      async saveAdminIdentitySettings(names, activeName, photos = this.adminIdentityPhotos) {
         if (!window.db || this.currentUser?.role !== 'admin') throw new Error('No hay sesión de administrador conectada');
         const username = String(this.currentUser.username || '').toLowerCase();
         await db.collection('presencia').doc(username).set({
@@ -2059,11 +2088,13 @@
           role: 'admin',
           photo: this.currentUser.photo || '',
           adminIdentityNames: names,
+          adminIdentityPhotos: photos,
           activeAdminName: activeName || ''
         }, { merge: true });
         this.adminIdentityNames = names;
+        this.adminIdentityPhotos = { ...photos };
         this.activeAdminName = activeName || '';
-        this.presenceRecords[username] = { ...(this.presenceRecords[username] || {}), adminIdentityNames: names, activeAdminName: activeName || '', fullName: activeName || this.currentUser.fullName || this.currentUser.username, photo: this.currentUser.photo || '' };
+        this.presenceRecords[username] = { ...(this.presenceRecords[username] || {}), adminIdentityNames: names, adminIdentityPhotos: { ...photos }, activeAdminName: activeName || '', fullName: activeName || this.currentUser.fullName || this.currentUser.username, photo: this.currentUser.photo || '' };
         this.setupDashboardUI();
         this.renderAdminIdentities();
         this.renderAdminPresence();
@@ -2073,7 +2104,7 @@
       async selectAdminIdentity(index) {
         if (this.currentUser?.role !== 'admin' || !this.adminIdentityNames[index]) return;
         try {
-          await this.saveAdminIdentitySettings([...this.adminIdentityNames], this.adminIdentityNames[index]);
+          await this.saveAdminIdentitySettings([...this.adminIdentityNames], this.adminIdentityNames[index], this.adminIdentityPhotos);
           this.showToast(`Ahora apareces como ${this.adminIdentityNames[index]}`, 'success');
         } catch (error) {
           console.error('[IDENTIDAD] No se pudo seleccionar el nombre:', error);
@@ -2084,10 +2115,14 @@
       beginAdminIdentityEdit(index) {
         if (this.currentUser?.role !== 'admin' || !this.adminIdentityNames[index]) return;
         this.adminIdentityEditingIndex = index;
+        this.adminIdentityPhotoDraft = null;
         const editor = document.getElementById('admin-identity-editor');
         const input = document.getElementById('admin-identity-name-input');
+        const photoInput = document.getElementById('admin-identity-photo-file');
+        if (photoInput) photoInput.value = '';
         if (!editor || !input) return;
         input.value = this.adminIdentityNames[index];
+        this.updateAdminIdentityPhotoPreview(this.adminIdentityPhotos[this.adminIdentityNames[index]] || '');
         editor.classList.remove('hidden');
         input.focus();
         input.select();
@@ -2095,12 +2130,16 @@
 
       cancelAdminIdentityEdit() {
         this.adminIdentityEditingIndex = null;
+
+        this.adminIdentityPhotoDraft = null;
         document.getElementById('admin-identity-editor')?.classList.add('hidden');
       }
 
       async saveAdminIdentityEdit() {
         const index = this.adminIdentityEditingIndex;
         const input = document.getElementById('admin-identity-name-input');
+        const photoInput = document.getElementById('admin-identity-photo-file');
+        if (photoInput) photoInput.value = '';
         const newName = String(input?.value || '').trim();
         if (index === null || !this.adminIdentityNames[index]) return;
         if (!newName) return this.showToast('Escribe un nombre válido', 'error');
@@ -2109,14 +2148,68 @@
         const names = [...this.adminIdentityNames];
         names[index] = newName;
         const activeName = this.activeAdminName === oldName ? newName : this.activeAdminName;
+        const photos = { ...this.adminIdentityPhotos };
+        const oldPhoto = photos[oldName] || '';
+        delete photos[oldName];
+        photos[newName] = this.adminIdentityPhotoDraft === null ? oldPhoto : this.adminIdentityPhotoDraft;
         try {
-          await this.saveAdminIdentitySettings(names, activeName);
+          await this.saveAdminIdentitySettings(names, activeName, photos);
           this.cancelAdminIdentityEdit();
           this.showToast('Nombre actualizado', 'success');
         } catch (error) {
           console.error('[IDENTIDAD] No se pudo editar el nombre:', error);
           this.showToast('No se pudo guardar el nombre', 'error');
         }
+      }
+      updateAdminIdentityPhotoPreview(photoData) {
+        const preview = document.getElementById('admin-identity-photo-preview');
+        if (!preview) return;
+        if (photoData) preview.innerHTML = `<img src="${this.escapeHtml(photoData)}" alt="Vista previa de la foto" class="h-full w-full object-cover">`;
+        else {
+          const name = this.adminIdentityNames[this.adminIdentityEditingIndex] || '?';
+          preview.textContent = name.charAt(0).toUpperCase();
+        }
+      }
+
+      async handleAdminIdentityPhoto(event) {
+        const file = event.target.files?.[0];
+        if (!file || this.adminIdentityEditingIndex === null) return;
+        if (!file.type.startsWith('image/')) { this.showToast('Selecciona un archivo de imagen', 'error'); event.target.value = ''; return; }
+        if (file.size > 10 * 1024 * 1024) { this.showToast('La imagen debe pesar menos de 10 MB', 'error'); event.target.value = ''; return; }
+        try {
+          const source = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error('No se pudo leer la imagen'));
+            reader.readAsDataURL(file);
+          });
+          const image = await new Promise((resolve, reject) => {
+            const element = new Image();
+            element.onload = () => resolve(element);
+            element.onerror = () => reject(new Error('La imagen no es válida'));
+            element.src = source;
+          });
+          const maxSide = 480;
+          const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+          canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+          canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+          this.adminIdentityPhotoDraft = canvas.toDataURL('image/jpeg', 0.78);
+          this.updateAdminIdentityPhotoPreview(this.adminIdentityPhotoDraft);
+          this.showToast('Foto lista. Pulsa Guardar cambios para compartirla.', 'success');
+        } catch (error) {
+          console.error('[IDENTIDAD] No se pudo preparar la foto:', error);
+          this.showToast('No se pudo procesar la imagen', 'error');
+        }
+      }
+
+      removeAdminIdentityPhoto() {
+        if (this.adminIdentityEditingIndex === null) return;
+        this.adminIdentityPhotoDraft = '';
+        this.updateAdminIdentityPhotoPreview('');
+        const input = document.getElementById('admin-identity-photo-file');
+        if (input) input.value = '';
       }
       getAdminPresenceInfo() {
         const admin = this.users.find(user => String(user.role || '').toLowerCase() === 'admin');
@@ -2127,7 +2220,7 @@
         const status = !isHeartbeatFresh ? 'disconnected' : savedStatus === 'absent' ? 'absent' : savedStatus === 'disconnected' ? 'disconnected' : 'available';
         return {
           name: record.activeAdminName || admin?.fullName || record.fullName || 'Administrador',
-          photo: record.photo || admin?.photo || '',
+          photo: record.adminIdentityPhotos?.[record.activeAdminName] || record.photo || admin?.photo || '',
           status,
           isHeartbeatFresh
         };
@@ -2149,8 +2242,12 @@
         if (this.currentUser?.role === 'admin') {
           const headerName = document.getElementById('header-user-name');
           const headerInitial = document.getElementById('header-avatar-initial');
+          const headerPhoto = document.getElementById('header-user-photo');
+          const displayPhoto = this.getCurrentDisplayPhoto();
           if (headerName) headerName.textContent = this.getCurrentDisplayName();
           if (headerInitial) headerInitial.textContent = (this.getCurrentDisplayName() || 'A').charAt(0);
+          if (headerPhoto && displayPhoto) { headerPhoto.src = displayPhoto; headerPhoto.classList.remove('hidden'); headerInitial?.classList.add('hidden'); }
+          else if (headerPhoto) { headerPhoto.classList.add('hidden'); headerInitial?.classList.remove('hidden'); }
           if (!document.getElementById('settings-admin-identities-section')?.classList.contains('hidden')) this.renderAdminIdentities();
         }
         if (statusDot) statusDot.className = `w-1.5 h-1.5 rounded-full ${color.dot}`;
