@@ -3540,14 +3540,19 @@
         const taskAssignedSelect = document.getElementById('task-assigned-to');
         const filterTechSelect = document.getElementById('filter-tech');
         const opts = this.workers.map(u => `<option value="${u.fullName || u.username}">${u.fullName || u.username}</option>`).join('');
-        if (taskAssignedSelect) taskAssignedSelect.innerHTML = opts;
-        if (filterTechSelect) filterTechSelect.innerHTML = `<option value="ALL">Todos los Técnicos</option>` + opts;
+        if (taskAssignedSelect) taskAssignedSelect.innerHTML = `<option value="LIBRE">🟠 LIBRE</option>${opts}`;
+        if (filterTechSelect) filterTechSelect.innerHTML = `<option value="ALL">Todos los Técnicos</option><option value="LIBRE">🟠 LIBRE</option>` + opts;
+      }
+
+      isTaskFree(task) {
+        const assignedTo = String(task?.assignedTo || '').trim();
+        return !assignedTo || assignedTo.toUpperCase() === 'LIBRE';
       }
 
       updateStats() {
         const isAdmin = this.currentUser.role === 'admin';
         const myName = this.currentUser.fullName || this.currentUser.username;
-        const relevantTasks = (isAdmin ? this.tasks : this.tasks.filter(t => t.assignedTo === myName)).filter(t => !t.archivedAt);
+        const relevantTasks = (isAdmin ? this.tasks : this.tasks.filter(t => this.isTaskFree(t) || t.assignedTo === myName)).filter(t => !t.archivedAt);
         document.getElementById('stat-total').textContent = relevantTasks.length;
         document.getElementById('stat-pending').textContent = relevantTasks.filter(t => t.status === 'PENDIENTE' || t.status === 'EN_PROCESO').length;
         document.getElementById('stat-done').textContent = relevantTasks.filter(t => t.status === 'REALIZADA').length;
@@ -3661,7 +3666,7 @@
 
         let filtered = this.tasks.filter(t => {
           if (this.showArchivedTasks ? (!isAdmin || !t.archivedAt) : !!t.archivedAt) return false;
-          if (!isAdmin && t.assignedTo !== myName) return false;
+          if (!isAdmin && !this.isTaskFree(t) && t.assignedTo !== myName) return false;
 
           const matchText = !search ||
             t.client.toLowerCase().includes(search) ||
@@ -3671,7 +3676,7 @@
             t.id.toLowerCase().includes(search);
 
           const matchStatus = statusFilter === 'ALL' || t.status === statusFilter;
-          const matchTech = !isAdmin || techFilter === 'ALL' || t.assignedTo === techFilter;
+          const matchTech = !isAdmin || techFilter === 'ALL' || (techFilter === 'LIBRE' ? this.isTaskFree(t) : t.assignedTo === techFilter);
 
           return matchText && matchStatus && matchTech;
         });
@@ -3701,7 +3706,8 @@
             borderClass = 'border-rose-200';
           }
 
-          const techObj = this.users.find(u => (u.fullName || u.username) === t.assignedTo);
+          const taskIsFree = this.isTaskFree(t);
+          const techObj = taskIsFree ? null : this.users.find(u => (u.fullName || u.username) === t.assignedTo);
           const techPhoto = techObj && techObj.photo ? techObj.photo : '';
 
           return `
@@ -3733,12 +3739,9 @@
 
                 <div class="mt-2.5 pt-2 border-t flex items-center justify-between text-xs">
                   <span class="text-slate-500 text-[11px]">Técnico:</span>
-                  <div class="flex items-center gap-1.5 bg-slate-50 border px-2 py-0.5 rounded-lg">
-                    <div onclick="app.zoomWorkerPhoto('${techPhoto}', '${t.assignedTo}')" class="cursor-pointer w-4 h-4 rounded-full overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center border border-brand-lime" title="Ampliar">
-                      ${techPhoto ? `<img src="${techPhoto}" class="w-full h-full object-cover">` : `<span class="text-[9px] font-bold">${t.assignedTo.charAt(0)}</span>`}
-                    </div>
-                    <span class="font-bold text-slate-800 text-[11px]">${t.assignedTo}</span>
-                  </div>
+                  ${taskIsFree
+                    ? '<span class="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] font-black text-orange-700">🟠 LIBRE · Disponible</span>'
+                    : `<div class="flex items-center gap-1.5 bg-slate-50 border px-2 py-0.5 rounded-lg"><div onclick="app.zoomWorkerPhoto('${techPhoto}', '${t.assignedTo}')" class="cursor-pointer w-4 h-4 rounded-full overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center border border-brand-lime" title="Ampliar">${techPhoto ? `<img src="${techPhoto}" class="w-full h-full object-cover">` : `<span class="text-[9px] font-bold">${String(t.assignedTo || '?').charAt(0)}</span>`}</div><span class="font-bold text-slate-800 text-[11px]">${t.assignedTo}</span></div>`}
                 </div>
 
                 ${t.observations ? `
@@ -3752,15 +3755,15 @@
                 ${t.status === 'REALIZADA' ? `<button type="button" onclick="app.viewOrderDetails('${t.id}')" class="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-brand-dark hover:border-brand-lime flex items-center justify-center" title="Ver orden completada" aria-label="Ver orden completada"><i data-lucide="eye" class="w-4 h-4"></i></button>` : '<span></span>'}
 
                 <div class="flex items-center gap-1">
-                  <button onclick="app.openReportModal('${t.id}')" class="text-xs font-bold py-1 px-2.5 rounded-xl shadow-sm transition active:scale-95 ${
-                    t.status === 'REALIZADA'
-                      ? 'bg-brand-lime hover:bg-brand-limeHover text-white'
-                      : t.status === 'NO_REALIZADA'
-                      ? 'bg-rose-600 hover:bg-rose-500 text-white'
-                      : 'bg-brand-dark hover:bg-black text-white'
-                  }">
-                    ${t.status === 'REALIZADA' || t.status === 'NO_REALIZADA' ? 'Editar Informe' : 'Registrar Informe'}
-                  </button>
+                  ${!isAdmin && this.currentUser.role === 'worker' && taskIsFree
+                    ? `<button type="button" onclick="app.takeFreeOrder('${t.id}')" class="text-xs font-black py-1.5 px-3 rounded-xl shadow-sm transition active:scale-95 bg-orange-500 hover:bg-orange-600 text-white">✅ Tomar Orden</button>`
+                    : `<button onclick="app.openReportModal('${t.id}')" class="text-xs font-bold py-1 px-2.5 rounded-xl shadow-sm transition active:scale-95 ${
+                      t.status === 'REALIZADA'
+                        ? 'bg-brand-lime hover:bg-brand-limeHover text-white'
+                        : t.status === 'NO_REALIZADA'
+                        ? 'bg-rose-600 hover:bg-rose-500 text-white'
+                        : 'bg-brand-dark hover:bg-black text-white'
+                    }">${t.status === 'REALIZADA' || t.status === 'NO_REALIZADA' ? 'Editar Informe' : 'Registrar Informe'}</button>`}
 
                   ${isAdmin ? `
                     ${this.showArchivedTasks ? `<button type="button" onclick="app.unarchiveCompletedTask('${t.id}')" class="p-1 text-slate-400 hover:text-emerald-700 rounded-lg" title="Desarchivar orden" aria-label="Desarchivar orden"><i data-lucide="archive-restore" class="w-3.5 h-3.5"></i></button>` : (t.status === 'REALIZADA' && !t.archivedAt ? `<button type="button" onclick="app.archiveCompletedTask('${t.id}')" class="p-1 text-slate-400 hover:text-amber-700 rounded-lg" title="Archivar orden"><i data-lucide="archive" class="w-3.5 h-3.5"></i></button>` : '')}
@@ -3983,6 +3986,52 @@
         this.selectedTask.fieldFindings.splice(index, 1); this.saveTasks(); this.renderFieldFindings();
       }
 
+      async takeFreeOrder(id) {
+        if (this.currentUser?.role !== 'worker') return;
+        const myName = this.currentUser.fullName || this.currentUser.username;
+        if (!myName || !window.db) {
+          this.showToast('No se pudo conectar para tomar la orden. Intenta de nuevo.', 'error');
+          return;
+        }
+        this.showToast('Verificando disponibilidad de la orden…', 'info');
+        const orderRef = db.collection('ordenes').doc('todas');
+        try {
+          const result = await db.runTransaction(async transaction => {
+            const snapshot = await transaction.get(orderRef);
+            if (!snapshot.exists || !Array.isArray(snapshot.data()?.tasks)) return { state: 'missing' };
+            const storedTasks = snapshot.data().tasks;
+            const task = storedTasks.find(item => String(item?.id) === String(id));
+            if (!task) return { state: 'missing' };
+            if (task.archivedAt) return { state: 'archived', tasks: storedTasks };
+            if (!this.isTaskFree(task)) {
+              return { state: task.assignedTo === myName ? 'already-mine' : 'already-assigned', tasks: storedTasks };
+            }
+            const updatedTasks = storedTasks.map(item => String(item?.id) === String(id) ? { ...item, assignedTo: myName } : item);
+            transaction.set(orderRef, { tasks: updatedTasks });
+            return { state: 'claimed', tasks: updatedTasks };
+          });
+
+          if (result?.tasks) {
+            this.tasks = result.tasks;
+            SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
+            this.updateStats();
+            this.renderTasks();
+          }
+          if (result?.state === 'claimed' || result?.state === 'already-mine') {
+            this.showToast(result.state === 'claimed' ? `Orden asignada a ${myName}` : 'Esta orden ya está asignada a tu usuario', 'success');
+          } else if (result?.state === 'already-assigned') {
+            this.showToast('Esta orden ya fue asignada a otro técnico.', 'error');
+          } else if (result?.state === 'archived') {
+            this.showToast('Esta orden ya fue archivada por el Administrador.', 'info');
+          } else {
+            this.showToast('No se encontró la orden. Actualiza la lista e intenta otra vez.', 'error');
+          }
+        } catch (error) {
+          console.error('[ORDEN] No se pudo tomar la orden:', error);
+          this.showToast(`No se pudo tomar la orden: ${error.message || error}`, 'error');
+        }
+      }
+
       openNewTaskModal() {
         if (this.currentUser.role !== 'admin') return;
         document.getElementById('form-modal-title').textContent = 'Nueva Orden de Trabajo';
@@ -4008,7 +4057,7 @@
         document.getElementById('task-address').value = t.address;
         this.renderServiceTypeOptions(t.serviceType);
         document.getElementById('task-equipment').value = t.equipment;
-        document.getElementById('task-assigned-to').value = t.assignedTo;
+        document.getElementById('task-assigned-to').value = this.isTaskFree(t) ? 'LIBRE' : t.assignedTo;
         document.getElementById('task-priority').value = t.priority;
         document.getElementById('task-date').value = t.date;
         document.getElementById('task-instructions').value = t.instructions || '';
