@@ -149,6 +149,9 @@
     .presence-label.is-available { color:#059669;animation:technicianPresencePulse 1.8s ease-in-out infinite; }
     .presence-label.is-absent { color:#d97706; }
     .presence-label.is-disconnected { color:#64748b; }
+    .completed-order-alert { animation:completedOrderGlow 1.9s ease-in-out infinite; }
+    @keyframes completedOrderGlow { 0%,100% { border-color:#bbf7d0;box-shadow:0 1px 4px rgba(22,101,52,.08);background-color:#fff; } 50% { border-color:#16a34a;box-shadow:0 0 0 2px rgba(34,197,94,.2),0 0 22px rgba(34,197,94,.38);background-color:#f0fdf4; } }
+    @media (prefers-reduced-motion:reduce) { .completed-order-alert { animation:none;border-color:#22c55e;background-color:#f0fdf4;box-shadow:0 0 0 2px rgba(34,197,94,.2); } }
     @property --presence-angle { syntax:"<angle>";inherits:false;initial-value:0deg; }
     .presence-card-connected,.presence-card-absent { position:relative;isolation:isolate; }
     .presence-card-connected::before,.presence-card-connected::after,.presence-card-absent::before,.presence-card-absent::after { content:"";position:absolute;inset:-1.5px;padding:2px;border-radius:inherit;pointer-events:none;z-index:2;-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask-composite:exclude; }
@@ -954,7 +957,14 @@
             <div class="flex justify-end gap-2"><button type="button" onclick="app.cancelAdminIdentityEdit()" class="rounded-lg border border-slate-300 px-3 py-1.5 text-[11px] font-semibold">Cancelar</button><button type="button" onclick="app.saveAdminIdentityEdit()" class="rounded-lg bg-brand-dark px-3 py-1.5 text-[11px] font-bold text-white">Guardar cambios</button></div>
           </div>
         </section>
-        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+        <section id="settings-order-sequence-section" class="hidden bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+          <div><h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800">Consecutivo de órdenes</h4><p class="text-[11px] text-slate-500 mt-0.5">Define el número que se usará al crear la próxima orden. Los consecutivos existentes se validan para evitar duplicados.</p></div>
+          <div class="rounded-lg border border-slate-200 bg-white p-2.5 space-y-2">
+            <label for="settings-order-sequence-input" class="block text-[11px] font-semibold text-slate-700">Siguiente número de orden</label>
+            <div class="flex items-center gap-2"><span class="rounded-lg bg-slate-100 px-2.5 py-2 text-xs font-bold text-slate-600">ORD-</span><input id="settings-order-sequence-input" type="number" min="1" step="1" inputmode="numeric" class="min-w-0 flex-1 rounded-lg border border-slate-300 px-2.5 py-2 text-xs" placeholder="Ej. 104"><button type="button" onclick="app.saveOrderSequence()" class="shrink-0 rounded-lg bg-brand-dark px-3 py-2 text-[11px] font-bold text-white">Iniciar desde aquí</button></div>
+            <button type="button" onclick="app.resetOrderSequence()" class="text-[11px] font-semibold text-brand-limeHover hover:underline">Reiniciar al primer consecutivo disponible</button>
+          </div>
+        </section>        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
           <div class="flex items-center justify-between">
             <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
               <i data-lucide="message-circle" class="w-4 h-4 text-brand-limeHover"></i>
@@ -1092,6 +1102,11 @@
 
       <form id="task-form" onsubmit="app.submitTaskForm(event)" onkeydown="app.handleTaskFormKeydown(event)" class="p-3.5 sm:p-4 space-y-2.5 text-xs sm:text-sm overflow-y-auto flex-1">
         <input type="hidden" id="task-id" value="">
+        <div id="task-order-number-field" class="hidden">
+          <label for="task-order-number" class="block text-[11px] font-semibold text-slate-700 mb-0.5">Número de orden</label>
+          <div class="flex items-center gap-2"><span class="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-600">ORD-</span><input type="number" id="task-order-number" min="1" step="1" inputmode="numeric" class="w-36 px-2.5 py-1.5 border rounded-lg" disabled></div>
+          <p class="mt-0.5 text-[10px] text-slate-500">Puedes corregir el consecutivo de esta orden. No se permiten números ya usados.</p>
+        </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
             <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Cliente / Predio *</label>
@@ -1558,6 +1573,7 @@
         this.users = [];
         this.workers = [];
         this.tasks = INITIAL_TASKS;
+        this.orderSequenceNext = 101;
         this.showArchivedTasks = false;
         this.invoiceUploadTaskId = null;
         this.notifications = [];
@@ -1801,6 +1817,8 @@
         if (savedTasks) {
           try { this.tasks = JSON.parse(savedTasks); } catch(e) { this.tasks = INITIAL_TASKS; }
         }
+        const savedOrderSequence = Number(SafeStorage.getItem('portonpro_order_sequence_next'));
+        this.orderSequenceNext = Number.isSafeInteger(savedOrderSequence) && savedOrderSequence > 0 ? savedOrderSequence : this.getDefaultNextOrderNumber();
 
         const remembered = SafeStorage.getItem('portonpro_remembered');
         if (remembered) {
@@ -1842,7 +1860,11 @@
 
           db.collection('ordenes').doc('todas').onSnapshot((doc) => {
             if (doc.exists && Array.isArray(doc.data().tasks)) {
-              const incomingTasks = doc.data().tasks;
+              const orderDocument = doc.data();
+              const incomingTasks = orderDocument.tasks;
+              const remoteSequence = Number(orderDocument.nextOrderNumber);
+              this.orderSequenceNext = Number.isSafeInteger(remoteSequence) && remoteSequence > 0 ? remoteSequence : this.getDefaultNextOrderNumber(incomingTasks);
+              SafeStorage.setItem('portonpro_order_sequence_next', String(this.orderSequenceNext));
               incomingTasks.forEach(task => {
                 const evidenceList = Array.isArray(task?.evidence) ? task.evidence : [];
                 const evidenceUrls = evidenceList.map(item => typeof item === 'string' ? item : item?.url || item?.src || null);
@@ -1948,11 +1970,61 @@
         if (window.lucide) lucide.createIcons();
       }
 
+      getOrderNumberFromId(id) {
+        const match = String(id || '').match(/^ORD-(\d+)$/i);
+        return match ? Number(match[1]) : null;
+      }
+
+      getDefaultNextOrderNumber(tasks = this.tasks) {
+        const numbers = (Array.isArray(tasks) ? tasks : []).map(task => this.getOrderNumberFromId(task?.id)).filter(Number.isSafeInteger);
+        return Math.max(101, ...numbers.map(number => number + 1));
+      }
+
+      getNextAvailableOrderNumber(start = this.orderSequenceNext, tasks = this.tasks, excludedId = null) {
+        const used = new Set((Array.isArray(tasks) ? tasks : []).filter(task => task?.id !== excludedId).map(task => this.getOrderNumberFromId(task?.id)).filter(Number.isSafeInteger));
+        let candidate = Number(start);
+        if (!Number.isSafeInteger(candidate) || candidate < 1) candidate = this.getDefaultNextOrderNumber(tasks);
+        while (used.has(candidate)) candidate += 1;
+        return candidate;
+      }
+
+      renderOrderSequenceSetting() {
+        const input = document.getElementById('settings-order-sequence-input');
+        if (input) input.value = this.getNextAvailableOrderNumber();
+      }
+
+      async saveOrderSequence() {
+        if (this.currentUser?.role !== 'admin') return;
+        const input = document.getElementById('settings-order-sequence-input');
+        const requested = Number(input?.value);
+        if (!Number.isSafeInteger(requested) || requested < 1) return this.showToast('Escribe un número de orden válido.', 'error');
+        if (this.tasks.some(task => this.getOrderNumberFromId(task?.id) === requested)) {
+          return this.showToast(`El número ORD-${requested} ya está en uso. Elige un consecutivo libre.`, 'error');
+        }
+        const previous = this.orderSequenceNext;
+        this.orderSequenceNext = requested;
+        const result = await this.saveTasks(true);
+        if (!result.ok) { this.orderSequenceNext = previous; SafeStorage.setItem('portonpro_order_sequence_next', String(previous)); }
+        this.renderOrderSequenceSetting();
+        if (result.ok) this.showToast(`La próxima orden comenzará en ORD-${requested}.`, 'success');
+      }
+
+      async resetOrderSequence() {
+        if (this.currentUser?.role !== 'admin') return;
+        const previous = this.orderSequenceNext;
+        this.orderSequenceNext = this.getNextAvailableOrderNumber(101);
+        const result = await this.saveTasks(true);
+        if (!result.ok) { this.orderSequenceNext = previous; SafeStorage.setItem('portonpro_order_sequence_next', String(previous)); }
+        this.renderOrderSequenceSetting();
+        if (result.ok) this.showToast(`Consecutivo reiniciado. La próxima orden será ORD-${this.orderSequenceNext}.`, 'success');
+      }
+
       saveTasks(reportError = false) {
         SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
+        SafeStorage.setItem('portonpro_order_sequence_next', String(this.orderSequenceNext));
         if (!window.db) return Promise.resolve({ ok: true, localOnly: true });
         try {
-          return db.collection('ordenes').doc('todas').set({ tasks: this.tasks })
+          return db.collection('ordenes').doc('todas').set({ tasks: this.tasks, nextOrderNumber: this.orderSequenceNext }, { merge: true })
             .then(() => ({ ok: true }))
             .catch(error => {
               console.error('[ORDEN] Falló la escritura de órdenes:', error);
@@ -1965,7 +2037,6 @@
           return Promise.resolve({ ok: false, error });
         }
       }
-
       async addActivityNotification(techName, taskId, actionType, details, type = 'order') {
         const notifData = {
           techName: techName,
@@ -4307,6 +4378,8 @@
       openSettingsModal() {
         const isAdmin = this.currentUser.role === 'admin';
         document.getElementById('settings-theme-section')?.classList.toggle('hidden', !isAdmin);
+        document.getElementById('settings-order-sequence-section')?.classList.toggle('hidden', !isAdmin);
+        this.renderOrderSequenceSetting();
         this.collapseThemePicker();
         this.renderSeasonalThemeSelector();
         this.renderMySettingsPhotoPreview();
@@ -4682,6 +4755,9 @@
           return matchText && matchStatus && matchTech;
         });
 
+        const statusPriority = { REALIZADA: 0, EN_PROCESO: 1, PENDIENTE: 2, NO_REALIZADA: 3 };
+        filtered.sort((a, b) => (statusPriority[a.status] ?? 4) - (statusPriority[b.status] ?? 4));
+
         countTag.textContent = filtered.length;
 
         if (filtered.length === 0) {
@@ -4719,7 +4795,7 @@
           ].filter(Boolean);
 
           return `
-            <div class="bg-white rounded-2xl p-3.5 border ${borderClass} shadow-sm flex flex-col justify-between">
+            <div class="bg-white rounded-2xl p-3.5 border ${borderClass} shadow-sm flex flex-col justify-between ${isAdmin && t.status === 'REALIZADA' && !t.archivedAt ? 'completed-order-alert' : ''}">
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <span class="text-xs font-mono font-black text-slate-500">${t.id}</span>
@@ -5045,6 +5121,10 @@
         document.getElementById('form-modal-title').textContent = 'Nueva Orden de Trabajo';
         document.getElementById('task-id').value = '';
         document.getElementById('task-form').reset();
+        document.getElementById('task-order-number-field').classList.remove('hidden');
+        document.getElementById('task-order-number').disabled = false;
+        document.getElementById('task-order-number').required = true;
+        document.getElementById('task-order-number').value = this.getNextAvailableOrderNumber();
         this.renderServiceTypeOptions(this.serviceTypes[0]);
         this.activeChecklistDraft = this.checklistTemplate.map(label => ({ label, done: false }));
         this.checklistDraftDirty = false;
@@ -5060,6 +5140,12 @@
 
         document.getElementById('form-modal-title').textContent = `Editar Orden ${t.id}`;
         document.getElementById('task-id').value = t.id;
+        const orderNumberInput = document.getElementById('task-order-number');
+        const orderNumber = this.getOrderNumberFromId(t.id);
+        document.getElementById('task-order-number-field').classList.remove('hidden');
+        orderNumberInput.disabled = false;
+        orderNumberInput.required = true;
+        orderNumberInput.value = orderNumber || this.getNextAvailableOrderNumber();
         document.getElementById('task-client').value = t.client;
         document.getElementById('task-phone').value = t.phone;
         document.getElementById('task-address').value = t.address;
@@ -5121,10 +5207,18 @@
         const id = document.getElementById('task-id').value;
         const previousTasks = this.tasks.map(task => ({ ...task }));
         const previousChecklistTemplate = [...this.checklistTemplate];
+        const previousOrderSequence = this.orderSequenceNext;
+        const requestedOrderNumber = Number(document.getElementById('task-order-number').value);
+        const newOrderId = Number.isSafeInteger(requestedOrderNumber) && requestedOrderNumber > 0 ? `ORD-${requestedOrderNumber}` : '';
+        if (!newOrderId) return this.showToast('Escribe un consecutivo de orden válido.', 'error');
+        if (newOrderId && this.tasks.some(task => task.id !== id && String(task.id).toUpperCase() === newOrderId.toUpperCase())) {
+          return this.showToast(`El número ${newOrderId} ya está en uso. Elige otro consecutivo.`, 'error');
+        }
 
         if (id) {
           const index = this.tasks.findIndex(t => t.id === id);
           if (index !== -1) {
+            this.tasks[index].id = newOrderId;
             this.tasks[index].client = document.getElementById('task-client').value;
             this.tasks[index].phone = document.getElementById('task-phone').value;
             this.tasks[index].address = document.getElementById('task-address').value;
@@ -5135,9 +5229,11 @@
             this.tasks[index].date = document.getElementById('task-date').value;
             this.tasks[index].instructions = document.getElementById('task-instructions').value;
             if (this.checklistDraftDirty) this.tasks[index].checklist = this.activeChecklistDraft.map(item => ({ ...item }));
+            if (requestedOrderNumber >= this.orderSequenceNext) this.orderSequenceNext = this.getNextAvailableOrderNumber(requestedOrderNumber + 1, this.tasks);
           }
         } else {
-          const num = 100 + this.tasks.length + 1;
+          const num = requestedOrderNumber;
+          this.orderSequenceNext = num + 1;
           const newTask = {
             id: `ORD-${num}`,
             client: document.getElementById('task-client').value,
@@ -5157,6 +5253,7 @@
             completedAt: null
           };
           this.tasks.unshift(newTask);
+          this.orderSequenceNext = this.getNextAvailableOrderNumber(num + 1, this.tasks);
           this.checklistTemplate = this.activeChecklistDraft.map(item => item.label);
           SafeStorage.setItem('portonpro_checklist_template_v1', JSON.stringify(this.checklistTemplate));
         }
@@ -5164,6 +5261,8 @@
         const saveResult = await this.saveTasks(true);
         if (!saveResult.ok) {
           this.tasks = previousTasks;
+          this.orderSequenceNext = previousOrderSequence;
+          SafeStorage.setItem('portonpro_order_sequence_next', String(previousOrderSequence));
           this.checklistTemplate = previousChecklistTemplate;
           SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
           SafeStorage.setItem('portonpro_checklist_template_v1', JSON.stringify(this.checklistTemplate));
