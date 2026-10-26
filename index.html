@@ -173,7 +173,7 @@
     .chat-open-tab .chat-tab-close { display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:6px;color:#8293a7;font-size:13px; }
     .chat-open-tab .chat-tab-close:hover { color:white;background:rgba(255,255,255,.1); }
     @media (max-width:639px) {
-      #chat-window-modal { inset:0 !important;width:100vw !important;height:100dvh !important;max-height:100dvh;border-radius:0 !important; }
+      #chat-window-modal { inset:0 !important;z-index:100 !important;width:100vw !important;height:100dvh !important;max-height:100dvh;border-radius:0 !important; }
       #chat-sidebar { width:100% !important;min-width:100%;border-right:0 !important; }
       #chat-sidebar.mobile-conversation-open { display:none !important; }
       #chat-conversation-area.mobile-list-open { display:none !important; }
@@ -279,8 +279,8 @@
     @media (max-width:639px) {
       #chat-desktop-windows { display:none !important; }
       #chat-desktop-chat-cells { display:none !important; }
-      .chat-launcher-cell { position:fixed;right:16px;bottom:16px;width:auto;height:48px; }
-      .chat-launcher-cell > button { width:auto;min-width:190px;height:48px; }
+      .chat-launcher-cell { position:fixed;z-index:90 !important;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));width:auto;height:42px; }
+      .chat-launcher-cell > button { width:auto;min-width:158px;height:42px;padding-inline:12px;font-size:11px;box-shadow:0 8px 22px rgba(15,23,42,.32); }
       #chat-conversation-area { display:flex !important; }
       #chat-open-tabs { display:none !important; }
       #chat-active-contact-header { display:none; }
@@ -799,7 +799,7 @@
     <!-- Header del Chat -->
     <div class="bg-brand-dark text-white p-3 sm:p-3.5 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
       <div class="flex items-center gap-2 min-w-0">
-        <div id="chat-window-contact-avatar" class="w-7 h-7 rounded-full bg-slate-700 border border-brand-lime flex items-center justify-center text-xs font-bold text-white shrink-0 overflow-hidden"><i data-lucide="message-circle" class="w-3.5 h-3.5 text-brand-lime"></i></div>
+        <div id="chat-window-contact-avatar" class="seasonal-worker-avatar w-7 h-7 rounded-full bg-slate-700 border border-brand-lime flex items-center justify-center text-xs font-bold text-white shrink-0 overflow-hidden"><i data-lucide="message-circle" class="w-3.5 h-3.5 text-brand-lime"></i></div>
         <div class="min-w-0">
           <h4 id="chat-header-title" class="text-xs sm:text-sm font-bold truncate">Chat Corporativo</h4>
           <p id="chat-typing-indicator" class="text-[10px] text-brand-lime font-semibold truncate hidden">Escribiendo...</p>
@@ -1626,6 +1626,7 @@
         this.isNotifsInitialLoad = true;
 
         this.seasonalTheme = this.readSeasonalTheme();
+        this.sharedSeasonalTheme = null;
         this.init();
       }
 
@@ -1798,6 +1799,7 @@
             const list = [];
             snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
             this.users = list;
+            this.applySharedSeasonalTheme();
             this.workers = list.filter(u => String(u.role).toLowerCase() === 'worker');
             if (this.currentUser) this.renderAdminPresence();
 
@@ -1893,6 +1895,7 @@
                 if (data.lastLogin) u.lastLogin = data.lastLogin;
               }
             });
+            this.applySharedSeasonalTheme();
             if (this.currentUser) {
               this.renderTasks();
               this.renderAdminPresence();
@@ -2079,6 +2082,7 @@
 
       loginSuccess(user, notify = true) {
         this.currentUser = user;
+        this.applySharedSeasonalTheme();
         SafeStorage.setItem('portonpro_session_v4', JSON.stringify(user));
 
         document.getElementById('view-login').classList.add('hidden');
@@ -4153,16 +4157,37 @@
         catch (_) { return 'classic'; }
       }
 
-      setSeasonalTheme(theme) {
+      applySharedSeasonalTheme() {
+        const adminUser = this.currentUser?.role === 'admin' ? this.currentUser : this.users.find(user => String(user.role || '').toLowerCase() === 'admin');
+        if (!adminUser?.username) return;
+        const record = this.presenceRecords[String(adminUser.username).toLowerCase()];
+        const theme = record?.visualTheme;
         const allowed = ['classic', 'christmas', 'easter', 'holy-week'];
         if (!allowed.includes(theme)) return;
+        this.sharedSeasonalTheme = theme;
+        if (this.seasonalTheme === theme) return;
         this.seasonalTheme = theme;
+        try { localStorage.setItem('serviportones_visual_theme', theme); } catch (_) {}
+        this.applySeasonalTheme(theme);
+        this.renderSeasonalThemeSelector();
+      }
+
+      setSeasonalTheme(theme) {
+        const allowed = ['classic', 'christmas', 'easter', 'holy-week'];
+        if (this.currentUser?.role !== 'admin' || !allowed.includes(theme)) return;
+        this.seasonalTheme = theme;
+        this.sharedSeasonalTheme = theme;
         try { localStorage.setItem('serviportones_visual_theme', theme); }
         catch (error) { console.warn('No se pudo guardar el tema en este dispositivo:', error); }
         this.applySeasonalTheme(theme);
         this.renderSeasonalThemeSelector();
+        const username = String(this.currentUser.username || '').toLowerCase();
+        if (window.db && username) {
+          db.collection('presencia').doc(username).set({ visualTheme: theme }, { merge: true })
+            .catch(error => console.error('[THEME] No se pudo sincronizar el tema:', error));
+        }
         const themeNames = { classic: 'Clásico', christmas: 'Navidad', easter: 'Pascua', 'holy-week': 'Semana Santa' };
-        this.showToast(`Tema ${themeNames[theme]} aplicado`, 'success');
+        this.showToast(`Tema ${themeNames[theme]} aplicado a todos`, 'success');
       }
 
       toggleThemePicker() {
@@ -4240,6 +4265,7 @@
       }
       openSettingsModal() {
         const isAdmin = this.currentUser.role === 'admin';
+        document.getElementById('settings-theme-section')?.classList.toggle('hidden', !isAdmin);
         this.collapseThemePicker();
         this.renderSeasonalThemeSelector();
         this.renderMySettingsPhotoPreview();
