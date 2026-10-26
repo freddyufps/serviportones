@@ -97,6 +97,195 @@
     body.theme-holy-week .seasonal-worker-avatar::after { content: ''; position: absolute; z-index: 4; top: -4px; right: 0; width: 8px; height: 11px; background: linear-gradient(90deg,transparent 35%,#c6a85d 36% 64%,transparent 65%), linear-gradient(transparent 25%,#c6a85d 26% 48%,transparent 49%); filter: drop-shadow(0 0 3px rgba(232,215,174,.8)); }
     @keyframes seasonalAvatarGlow { 0%,100% { box-shadow: 0 0 0 1px rgba(213,191,121,.22); } 50% { box-shadow: 0 0 0 2px rgba(213,191,121,.72),0 0 8px rgba(213,191,121,.45); } }
     @media (prefers-reduced-motion: reduce) { .seasonal-effects-layer, #seasonal-logo-decoration-login svg, #seasonal-logo-decoration-header svg, .seasonal-worker-avatar, .seasonal-worker-avatar::before, .seasonal-worker-avatar::after { animation: none !important; } }
+    /* Chat: presentación moderna inspirada en Messenger, sin tocar la sincronización. */
+    #chat-window-modal { width: min(1080px, calc(100vw - 40px)); height: min(720px, calc(100vh - 56px)); background: #0b1220 !important; border: 1px solid rgba(148,163,184,.24) !important; border-radius: 22px !important; box-shadow: 0 28px 80px rgba(2,6,23,.58),0 0 0 1px rgba(113,168,50,.08) !important; }
+    #chat-window-modal > .bg-brand-dark { background: linear-gradient(115deg,#0b1424,#111d31 65%,#0b1724) !important; border-bottom: 1px solid rgba(113,168,50,.5) !important; padding: 14px 18px !important; }
+    #chat-window-modal #chat-header-title { color:#f8fafc; font-size:14px; letter-spacing:.01em; }
+    #chat-window-modal > .bg-brand-dark > div:first-child > div:first-child { width:38px;height:38px;background:#17243a;box-shadow:inset 0 0 0 1px rgba(148,163,184,.14); }
+    #chat-window-modal > .flex-1.flex.overflow-hidden { background:#0d1626; }
+    #chat-sidebar { width:300px !important;min-width:270px;background:#101a2a !important;border-right:1px solid rgba(148,163,184,.14) !important; }
+    #chat-sidebar > div:first-child { position:static !important;display:block !important;padding:18px 16px 12px !important;background:#101a2a !important;border-color:rgba(148,163,184,.12) !important; }
+    #chat-sidebar > div:first-child > span { display:block;color:#e2e8f0 !important;font-size:11px !important;letter-spacing:.12em !important;margin-bottom:12px; }
+    #btn-toggle-archived { color:#a8bbd0 !important;border:1px solid rgba(148,163,184,.18);background:#162337;padding:6px 9px;border-radius:9px; }
+    #chat-contact-search-wrap { position:relative;margin:0 14px 12px; }
+    #chat-contact-search-wrap i { position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#8294aa;width:14px;height:14px;pointer-events:none; }
+    #chat-contact-search { width:100%;padding:10px 12px 10px 33px;border-radius:11px;color:#e2e8f0;background:#172438;border:1px solid rgba(148,163,184,.16);outline:none;font-size:11px; }
+    #chat-contact-search:focus { border-color:rgba(113,168,50,.72);box-shadow:0 0 0 3px rgba(113,168,50,.12); }
+    #chat-conversations-list { padding:0 8px 12px;overflow-y:auto;display:flex;flex-direction:column;gap:4px; }
+    .chat-contact-row { display:flex;align-items:center;gap:11px;width:100%;min-width:0;padding:11px 10px;border:1px solid transparent;border-radius:13px;cursor:pointer;text-align:left;color:#e2e8f0;transition:background .18s,border-color .18s,transform .18s; }
+    .chat-contact-row:hover { background:#172438;border-color:rgba(148,163,184,.12);transform:translateY(-1px); }
+    .chat-contact-row.is-selected { background:linear-gradient(110deg,rgba(113,168,50,.19),rgba(28,48,67,.78));border-color:rgba(113,168,50,.38);box-shadow:inset 3px 0 #83b83e,0 4px 14px rgba(2,6,23,.16); }
+    .chat-contact-row.has-unread:not(.is-selected) { background:rgba(113,168,50,.09);border-color:rgba(113,168,50,.2); }
+    .chat-contact-avatar { position:relative;display:flex;width:43px;height:43px;flex:0 0 43px;align-items:center;justify-content:center;overflow:visible;border-radius:50%;color:#e2e8f0;background:#26354a;border:1.5px solid rgba(113,168,50,.72);font-size:13px;font-weight:800; }
+    .chat-contact-avatar img { width:100%;height:100%;border-radius:50%;object-fit:cover; }
+    .chat-contact-avatar .chat-online-ring { position:absolute;width:10px;height:10px;right:-1px;bottom:0;border-radius:50%;border:2px solid #101a2a;background:#728197; }
+    .chat-contact-row.is-online .chat-online-ring { background:#35c98a;box-shadow:0 0 9px rgba(53,201,138,.5); }
+    .chat-contact-copy { min-width:0;flex:1; }
+    .chat-contact-topline { display:flex;align-items:center;justify-content:space-between;gap:6px; }
+    .chat-contact-name { color:#f1f5f9;font-size:12px;font-weight:750;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+    .chat-contact-time { flex:0 0 auto;color:#8192a8;font:9px ui-monospace,monospace; }
+    .chat-contact-preview { margin-top:4px;color:#9aabc0;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+    .chat-contact-activity { margin-top:4px;color:#74869c;font-size:9px; }
+    .chat-contact-activity.is-online { color:#71d7a7; }
+    .chat-unread-pill { display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;max-width:105px;padding:4px 7px;border-radius:999px;color:#f1fae9;background:rgba(113,168,50,.25);border:1px solid rgba(142,198,80,.36);font-size:9px;font-weight:800;white-space:nowrap; }
+    #chat-conversation-area { background:radial-gradient(ellipse at 75% 0%,rgba(31,54,73,.26),transparent 45%),#0d1626 !important; }
+    #chat-mobile-back-bar { color:#e2e8f0;background:#101a2a !important;border-color:rgba(148,163,184,.14) !important; }
+    #chat-mobile-back-bar button { color:#a8d274 !important; }
+    #chat-messages-container { padding:20px 22px !important;background:transparent !important; }
+    #chat-messages-container > .flex { gap:3px; }
+    #chat-messages-container > .flex > span { color:#7f91a8 !important;padding-inline:5px; }
+    #chat-messages-container > .flex > div { border:1px solid rgba(148,163,184,.12) !important;border-radius:17px !important;box-shadow:0 5px 16px rgba(2,6,23,.16) !important; }
+    #chat-messages-container > .flex > div.bg-brand-dark { color:#f7fbf4 !important;background:linear-gradient(140deg,#24394a,#172b3b) !important;border-color:rgba(113,168,50,.35) !important;border-bottom:2px solid #71a832 !important; }
+    #chat-messages-container > .flex > div.bg-white { color:#e6edf5 !important;background:#182538 !important;border-color:rgba(148,163,184,.15) !important; }
+    #chat-window-modal form[onsubmit*="handleSendMessage"] { padding:13px 17px !important;background:#101a2a !important;border-color:rgba(148,163,184,.14) !important; }
+    #chat-input-text { color:#e5edf6 !important;background:#19273b !important;border:1px solid rgba(148,163,184,.16) !important;border-radius:14px !important;padding:11px 14px !important; }
+    #chat-input-text::placeholder { color:#8092a8; }
+    #chat-window-modal form[onsubmit*="handleSendMessage"] button[type="submit"] { width:42px;height:42px;border-radius:13px !important;background:#71a832 !important; }
+    #chat-window-modal form[onsubmit*="handleSendMessage"] button[type="submit"] i { color:#fff !important; }
+    .chat-active-contact-header { display:flex;align-items:center;gap:11px;min-height:62px;padding:10px 18px;background:rgba(15,25,41,.94);border-bottom:1px solid rgba(148,163,184,.12); }
+    #chat-window-contact-avatar img { width:100%;height:100%;object-fit:cover; }
+    .chat-inline-typing-indicator { display:flex;align-items:center;gap:8px;width:max-content;max-width:88%;margin:4px 0 2px;padding:6px 10px 6px 6px;border:1px solid #dbe4ed;border-radius:16px 16px 16px 5px;background:#f1f5f9;color:#52677b;font-size:10px;box-shadow:0 3px 9px rgba(15,23,42,.07);animation:chatTypingAppear .22s ease-out both; }
+    .chat-inline-typing-avatar { display:flex;width:26px;height:26px;flex:0 0 26px;align-items:center;justify-content:center;overflow:hidden;border:1px solid #71a832;border-radius:50%;background:#e2e8f0;color:#102a43;font-size:10px;font-weight:800; }
+    .chat-inline-typing-avatar img { width:100%;height:100%;object-fit:cover; }
+    .chat-inline-typing-copy { display:flex;align-items:center;gap:6px;white-space:nowrap; }
+    .chat-typing-dots { display:inline-flex;align-items:center;gap:3px;height:12px; }
+    .chat-typing-dots i { width:4px;height:4px;border-radius:50%;background:#71a832;animation:chatTypingBounce .8s ease-in-out infinite; }
+    .chat-typing-dots i:nth-child(2) { animation-delay:.13s; }
+    .chat-typing-dots i:nth-child(3) { animation-delay:.26s; }
+    @keyframes chatTypingBounce { 0%,60%,100% { opacity:.4;transform:translateY(0); } 30% { opacity:1;transform:translateY(-4px); } }
+    @keyframes chatTypingAppear { from { opacity:0;transform:translateY(4px); } to { opacity:1;transform:translateY(0); } }
+    #chat-typing-indicator { display:none !important; }
+    .chat-active-contact-avatar { display:flex;align-items:center;justify-content:center;width:38px;height:38px;flex:0 0 38px;border-radius:50%;overflow:hidden;background:#26354a;border:1.5px solid rgba(113,168,50,.72);color:#e2e8f0;font-size:12px;font-weight:800; }
+    .chat-active-contact-avatar img { width:100%;height:100%;object-fit:cover; }
+    .chat-active-contact-name { color:#f1f5f9;font-size:12px;font-weight:750; }
+    .chat-active-contact-status { margin-top:3px;color:#9aabc0;font-size:9px; }
+    .chat-active-contact-status.is-online { color:#71d7a7; }
+    #chat-open-tabs.hidden { display:none; }
+    #chat-open-tabs { display:flex;align-items:center;gap:6px;min-height:42px;overflow-x:auto;padding:5px 10px;background:#0c1422;border-bottom:1px solid rgba(148,163,184,.12);scrollbar-width:thin; }
+    .chat-open-tab { display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;max-width:190px;padding:6px 8px;border-radius:10px;color:#9eafc3;background:#131f31;border:1px solid rgba(148,163,184,.1);font-size:10px;cursor:pointer; }
+    .chat-open-tab.is-active { color:#f3f8ed;background:rgba(113,168,50,.17);border-color:rgba(113,168,50,.42); }
+    .chat-open-tab img { width:22px;height:22px;border-radius:50%;object-fit:cover; }
+    #chat-window-controls button { width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border-radius:9px;color:#a8b7c9;transition:background .15s,color .15s; }
+    #chat-window-controls button:hover { color:white;background:rgba(255,255,255,.1); }
+    #chat-window-controls button:last-child { color:#fff !important;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);box-shadow:0 1px 3px rgba(0,0,0,.18); }
+    #chat-window-controls button:last-child:hover { color:#fff !important;background:rgba(239,68,68,.82);border-color:rgba(255,255,255,.42); }
+    #chat-window-controls button:last-child svg { width:16px;height:16px;stroke-width:2.5; }
+    .chat-open-tab .chat-tab-close { display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:6px;color:#8293a7;font-size:13px; }
+    .chat-open-tab .chat-tab-close:hover { color:white;background:rgba(255,255,255,.1); }
+    @media (max-width:639px) {
+      #chat-window-modal { inset:0 !important;width:100vw !important;height:100dvh !important;max-height:100dvh;border-radius:0 !important; }
+      #chat-sidebar { width:100% !important;min-width:100%;border-right:0 !important; }
+      #chat-sidebar.mobile-conversation-open { display:none !important; }
+      #chat-conversation-area.mobile-list-open { display:none !important; }
+      #chat-mobile-back-bar { min-height:50px;padding-inline:14px; }
+      #chat-messages-container { padding:15px 12px !important; }
+    }
+    #chat-floating-button-container { width:var(--chat-cell-width,300px); }
+    #chat-floating-button-container.hidden { display:none !important; }
+    /* Paleta clara corporativa del chat en escritorio y móvil. */
+    #chat-window-modal { background:#fff !important;border-color:#cbd5e1 !important;box-shadow:0 14px 40px rgba(15,23,42,.2) !important; }
+    #chat-window-modal > .bg-brand-dark { background:linear-gradient(120deg,#1e3a5f,#244b74) !important;border-bottom-color:#71a832 !important; }
+    #chat-window-modal > .flex-1.flex.overflow-hidden { background:#fff !important; }
+    #chat-sidebar { background:#f8fafc !important;border-color:#e2e8f0 !important; }
+    #chat-sidebar > div:first-child { background:#fff !important;border-color:#e2e8f0 !important; }
+    #chat-sidebar > div:first-child > span { color:#52677b !important; }
+    #btn-toggle-archived { color:#52677b !important;background:#f8fafc;border-color:#dbe4ed; }
+    #chat-contact-search { color:#1e293b;background:#f8fafc;border-color:#cbd5e1; }
+    #chat-contact-search::placeholder { color:#718096; }
+    .chat-contact-row { color:#1e293b; }
+    .chat-contact-row:hover { background:#f1f5f9;border-color:#dbe4ed; }
+    .chat-contact-row.is-selected { background:linear-gradient(110deg,rgba(113,168,50,.13),#eff6ff); }
+    .chat-contact-row.has-unread { background:linear-gradient(110deg,rgba(113,168,50,.22),#eff6ff) !important;border-color:rgba(113,168,50,.55) !important;box-shadow:inset 3px 0 #71a832,0 4px 14px rgba(15,23,42,.08); }
+    .chat-contact-name { color:#102a43; }
+    .chat-contact-preview { color:#52677b; }
+    .chat-contact-activity { color:#718096; }
+    .chat-contact-avatar { color:#1e293b;background:#e2e8f0; }
+    #chat-conversation-area { background:#f8fafc !important; }
+    #chat-active-contact-header { background:#fff;border-color:#e2e8f0; }
+    .chat-active-contact-name { color:#102a43; }
+    .chat-active-contact-status { color:#718096; }
+    #chat-mobile-back-bar { color:#1e293b;background:#f1f5f9 !important;border-color:#e2e8f0 !important; }
+    #chat-mobile-back-bar button { color:#1e3a5f !important; }
+    #chat-messages-container { background:#f8fafc !important; }
+    #chat-messages-container > .flex > span { color:#718096 !important; }
+    #chat-messages-container > .flex > div { border-color:#dbe4ed !important;box-shadow:0 3px 10px rgba(15,23,42,.06) !important; }
+    #chat-messages-container > .flex > div.bg-brand-dark { color:#fff !important;background:linear-gradient(140deg,#28476a,#1e3a5f) !important;border-color:rgba(30,58,95,.2) !important;border-bottom:2px solid #71a832 !important; }
+    #chat-messages-container > .flex > div.bg-white { color:#1e293b !important;background:#fff !important;border-color:#dbe4ed !important; }
+    #chat-window-modal form[onsubmit*="handleSendMessage"] { background:#fff !important;border-color:#e2e8f0 !important; }
+    #chat-input-text { color:#1e293b !important;background:#f8fafc !important;border-color:#cbd5e1 !important; }
+    #chat-input-text::placeholder { color:#718096; }
+    .chat-active-contact-avatar { color:#1e293b;background:#e2e8f0; }
+    #chat-open-tabs { background:#f8fafc;border-color:#e2e8f0; }
+    .chat-open-tab { color:#52677b;background:#fff;border-color:#dbe4ed; }
+    .chat-open-tab.is-active { color:#102a43;background:#eff6ff;border-color:#71a832; }    /* Messenger desktop: contactos fijos a la derecha y ventanas independientes a su izquierda. */
+    @media (min-width:640px) {
+      #chat-window-modal { inset:auto 22px 82px auto !important;width:var(--chat-cell-width,300px) !important;height:min(500px,calc(100vh - 160px)) !important;max-height:calc(100vh - 160px);background:#fff !important;border:1px solid #cbd5e1 !important;border-radius:19px !important;box-shadow:0 14px 40px rgba(15,23,42,.2) !important; }
+      #chat-window-modal.worker-chat-mode { inset:auto 22px 82px auto !important;width:var(--chat-cell-width,300px) !important;height:min(500px,calc(100vh - 160px)) !important; }
+      #chat-window-modal.worker-chat-mode #chat-conversation-area { display:flex !important; }
+      #chat-window-modal > .bg-brand-dark { padding:12px 14px !important;background:linear-gradient(120deg,#1e3a5f,#244b74) !important; }
+      #chat-window-modal > .flex-1.flex.overflow-hidden { background:#fff !important; }
+      #chat-sidebar { width:100% !important;min-width:100%;border:0 !important;background:#fff !important; }
+      #chat-sidebar > div:first-child { background:#fff !important;border-color:#e2e8f0 !important; }
+      #chat-sidebar > div:first-child > span { color:#102a43 !important; }
+      #chat-contact-search { color:#1e293b;background:#f8fafc;border-color:#cbd5e1; }
+      #chat-conversations-list { gap:6px;padding-inline:10px; }
+      .chat-contact-row { color:#1e293b; }
+      .chat-contact-row:hover { background:#f1f5f9;border-color:#dbe4ed; }
+      .chat-contact-row.is-selected { background:linear-gradient(110deg,rgba(113,168,50,.13),#eff6ff); }
+      .chat-contact-row.has-unread { background:linear-gradient(110deg,rgba(113,168,50,.22),#eff6ff) !important;border-color:rgba(113,168,50,.55) !important;box-shadow:inset 3px 0 #71a832,0 4px 14px rgba(15,23,42,.08); }
+      .chat-contact-name { color:#102a43; }
+      .chat-contact-preview { color:#52677b; }
+      .chat-contact-activity { color:#718096; }
+      .chat-contact-avatar .chat-online-ring { display:none !important; }
+      #chat-conversation-area { display:none !important; }
+      #chat-desktop-windows { position:fixed;z-index:60;left:22px;right:calc(var(--chat-cell-width,300px) + 33px);bottom:22px;display:flex;flex-direction:row;align-items:flex-end;justify-content:flex-end;gap:11px;width:auto;max-width:none;overflow:visible;padding:0;background:transparent; }
+      #chat-desktop-chat-cells { display:flex;flex-direction:row;align-items:flex-end;justify-content:flex-end;gap:11px;width:100%; }
+      .chat-launcher-cell { position:fixed;z-index:70;right:22px;bottom:22px;width:var(--chat-cell-width,300px);height:54px;display:flex; }
+      .chat-launcher-cell > button { width:100%;height:54px;justify-content:center;border-radius:14px; }
+      #chat-desktop-windows::-webkit-scrollbar { display:none; }
+      .messenger-chat-window { display:flex;flex:0 0 var(--chat-cell-width,300px);flex-direction:column;width:var(--chat-cell-width,300px);min-width:0;height:min(500px,calc(100vh - 160px));overflow:hidden;border:1px solid #cbd5e1;border-radius:16px;background:#fff;box-shadow:0 12px 32px rgba(15,23,42,.18); }
+      .messenger-chat-window.is-minimized { height:56px;cursor:pointer;border:1px solid #cbd5e1;border-radius:15px;background:#e2e8f0;padding:1px;box-shadow:0 5px 14px rgba(15,23,42,.13); }
+      .messenger-chat-window.is-minimized .messenger-window-header { border:1px solid #d1d9e2;border-radius:13px;background:#fff;color:#102a43;box-shadow:inset 0 0 0 1px rgba(255,255,255,.8),0 3px 9px rgba(15,23,42,.09); }
+      .messenger-chat-window.is-minimized .messenger-window-title { color:#102a43; }
+      .messenger-chat-window.is-minimized .messenger-window-activity { color:#64748b; }
+      .messenger-chat-window.is-minimized.has-unread .messenger-window-header { border:2px solid #ef4444;background:linear-gradient(120deg,#1e3a5f,#244b74);animation:messengerUnreadPulse 2.2s ease-in-out infinite; }
+      .messenger-chat-window.is-minimized.has-unread .messenger-window-title,
+      .messenger-chat-window.is-minimized.has-unread .messenger-window-activity { color:#fff; }
+      @keyframes messengerUnreadPulse { 0%,100% { border-color:#dc2626;box-shadow:0 0 5px 2px rgba(239,68,68,.68),0 6px 18px rgba(15,23,42,.2); } 50% { border-color:#fca5a5;box-shadow:0 0 2px 1px rgba(239,68,68,.3),0 6px 18px rgba(15,23,42,.2); } }
+      @media (prefers-reduced-motion:reduce) { .messenger-chat-window.is-minimized.has-unread .messenger-window-header { animation:none;border-color:#ef4444; } }
+      .messenger-chat-window.is-minimized .messenger-window-controls button:first-child { display:none; }
+      .messenger-chat-window.is-minimized .messenger-window-header > .min-w-0 { flex:1; }
+      .messenger-chat-window.is-minimized .messenger-window-controls { display:flex !important;flex:0 0 auto; }
+      .messenger-chat-window.is-minimized .messenger-window-controls button:last-child { display:flex !important;width:24px;height:24px;border:1px solid #cbd5e1;border-radius:50%;background:#f8fafc;color:#334155 !important;font-size:16px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(15,23,42,.12); }
+      .messenger-chat-window.is-minimized .messenger-window-controls button:last-child:hover { background:#fee2e2;color:#b91c1c !important;border-color:#fca5a5; }
+      .messenger-window-header { display:flex;align-items:center;gap:9px;min-height:54px;padding:8px 10px;background:linear-gradient(120deg,#1e3a5f,#244b74);border-bottom:1px solid rgba(30,58,95,.18);cursor:pointer; }
+      .messenger-window-avatar { display:flex;width:34px;height:34px;flex:0 0 34px;align-items:center;justify-content:center;overflow:hidden;border-radius:50%;border:1px solid #71a832;background:#e2e8f0;color:#1e293b;font-size:11px;font-weight:800; }
+      .messenger-window-avatar img { width:100%;height:100%;object-fit:cover; }
+      .messenger-window-title { overflow:hidden;color:#fff;font-size:11px;font-weight:800;text-overflow:ellipsis;white-space:nowrap; }
+      .messenger-window-activity { display:block;margin-top:2px;color:#dbe7f2;font-size:9px; }
+      .messenger-window-controls { display:flex;margin-left:auto;gap:3px; }
+      .messenger-window-controls button { display:flex;width:26px;height:26px;align-items:center;justify-content:center;border-radius:7px;color:#fff; }
+      .messenger-window-controls button:hover { background:rgba(255,255,255,.17); }
+      .messenger-window-messages { display:flex;flex:1;flex-direction:column;gap:9px;overflow:auto;padding:13px 12px;color:#1e293b;background:#fff; }
+      .messenger-window-messages .text-center { color:#718096 !important; }
+      .messenger-window-messages > .flex > div { max-width:88%; }
+      .messenger-window-messages > .flex > div.bg-white { color:#1e293b !important;background:#f1f5f9 !important;border-color:#dbe4ed !important; }
+      .messenger-window-messages > .flex > div.bg-brand-dark { background:linear-gradient(140deg,#28476a,#1e3a5f) !important; }
+      .messenger-window-form { display:flex;gap:7px;padding:9px;background:#fff;border-top:1px solid #e2e8f0; }
+      .messenger-window-form input { min-width:0;flex:1;padding:9px 11px;border:1px solid #cbd5e1;border-radius:11px;outline:none;background:#f8fafc;color:#1e293b;font-size:11px; }
+      .messenger-window-form input::placeholder { color:#718096; }
+      .messenger-window-form button { width:36px;border-radius:10px;background:#71a832;color:white; }
+    }
+    @media (max-width:639px) {
+      #chat-desktop-windows { display:none !important; }
+      #chat-desktop-chat-cells { display:none !important; }
+      .chat-launcher-cell { position:fixed;right:16px;bottom:16px;width:auto;height:48px; }
+      .chat-launcher-cell > button { width:auto;min-width:190px;height:48px; }
+      #chat-conversation-area { display:flex !important; }
+      #chat-open-tabs { display:none !important; }
+      #chat-active-contact-header { display:none; }
+      .chat-contact-row.has-unread { background:linear-gradient(110deg,rgba(113,168,50,.18),rgba(28,48,67,.78)); }
+    }
     @media print {
       body * { visibility: hidden; }
       #printable-order-modal, #printable-order-modal * { visibility: visible; }
@@ -598,10 +787,11 @@
   </div>
 
   <!-- SISTEMA DE CHAT PRIVADO PROFESIONAL ESTILO MESSENGER/APP MÓVIL -->
-  <div id="chat-floating-button-container" class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 hidden">
-    <button onclick="app.toggleChatWindow()" class="relative p-3.5 sm:p-4 bg-brand-dark hover:bg-black text-white rounded-full shadow-2xl border-2 border-brand-lime flex items-center justify-center active:scale-95 transition" title="Chat Interno">
-      <i data-lucide="message-square" class="w-5 h-5 sm:w-6 sm:h-6 text-brand-lime"></i>
-      <span id="chat-unread-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-bounce">0</span>
+  <div id="chat-floating-button-container" class="chat-launcher-cell hidden">
+    <button onclick="app.toggleChatWindow()" class="relative h-12 px-4 bg-brand-dark hover:bg-slate-800 text-white rounded-2xl shadow-xl border-2 border-brand-lime flex items-center justify-center gap-2 active:scale-95 transition" title="Chat ServiPortones">
+      <i data-lucide="message-square" class="w-5 h-5 text-brand-lime"></i>
+      <span class="text-xs font-bold whitespace-nowrap">Chat ServiPortones</span>
+      <span id="chat-unread-badge" class="hidden absolute -top-1.5 -right-1.5 bg-rose-500 text-white font-black text-[9px] min-w-4 h-4 px-1 rounded-full flex items-center justify-center">0</span>
     </button>
   </div>
 
@@ -609,9 +799,7 @@
     <!-- Header del Chat -->
     <div class="bg-brand-dark text-white p-3 sm:p-3.5 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
       <div class="flex items-center gap-2 min-w-0">
-        <div class="w-7 h-7 rounded-full bg-slate-700 border border-brand-lime flex items-center justify-center text-xs font-bold text-white shrink-0">
-          <i data-lucide="message-circle" class="w-3.5 h-3.5 text-brand-lime"></i>
-        </div>
+        <div id="chat-window-contact-avatar" class="w-7 h-7 rounded-full bg-slate-700 border border-brand-lime flex items-center justify-center text-xs font-bold text-white shrink-0 overflow-hidden"><i data-lucide="message-circle" class="w-3.5 h-3.5 text-brand-lime"></i></div>
         <div class="min-w-0">
           <h4 id="chat-header-title" class="text-xs sm:text-sm font-bold truncate">Chat Corporativo</h4>
           <p id="chat-typing-indicator" class="text-[10px] text-brand-lime font-semibold truncate hidden">Escribiendo...</p>
@@ -640,7 +828,7 @@
               🗂 Archivar conversación
             </button>
             <button onclick="app.clearCurrentConversation()" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex items-center gap-2 text-amber-400">
-              🧹 Vaciar conversación
+              🗑 Eliminar mensajes / vaciar conversación
             </button>
             <button onclick="app.deleteCurrentConversation()" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex items-center gap-2 text-rose-400 border-t border-slate-800 mt-1 pt-1.5">
               ❌ Eliminar conversación
@@ -648,9 +836,10 @@
           </div>
         </div>
 
-        <button onclick="app.toggleChatWindow()" class="text-slate-400 hover:text-white p-1 rounded-lg">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
+        <div id="chat-window-controls" class="flex items-center gap-1">
+          <button type="button" onclick="app.toggleChatWindow()" title="Minimizar chat" aria-label="Minimizar chat"><i data-lucide="minus" class="w-4 h-4"></i></button>
+          <button type="button" onclick="app.toggleChatWindow()" title="Cerrar chat" aria-label="Cerrar chat"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
       </div>
     </div>
 
@@ -659,11 +848,12 @@
       <!-- SIDEBAR DE CONVERSACIONES (MESSENGER) -->
       <div id="chat-sidebar" class="w-full sm:w-60 md:w-64 bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 overflow-y-auto chat-scroll z-20">
         <div class="p-2.5 border-b border-slate-200 bg-white sticky top-0 z-10 flex items-center justify-between">
-          <span class="text-[10px] font-black uppercase tracking-wider text-slate-500">Conversaciones</span>
+          <span class="text-[10px] font-black uppercase tracking-wider text-slate-500">Contactos</span>
           <button onclick="app.toggleShowArchivedChats()" id="btn-toggle-archived" class="text-[10px] font-bold text-slate-400 hover:text-slate-800">
             Ver Archivados
           </button>
         </div>
+        <div id="chat-contact-search-wrap"><i data-lucide="search"></i><input id="chat-contact-search" type="search" autocomplete="off" placeholder="Buscar trabajador..." oninput="app.filterChatContacts(this.value)"></div>
         <div id="chat-conversations-list" class="divide-y divide-slate-100 flex-1">
           <div class="text-center py-6 text-slate-400 text-xs italic">Cargando chats...</div>
         </div>
@@ -671,6 +861,8 @@
 
       <!-- ÁREA DE MENSAJES Y ENVÍO -->
       <div id="chat-conversation-area" class="flex-1 flex flex-col bg-white overflow-hidden min-w-0 w-full">
+        <div id="chat-active-contact-header" class="chat-active-contact-header"></div>
+        <div id="chat-open-tabs" class="hidden sm:flex"></div>
         <div id="chat-mobile-back-bar" class="p-2 bg-slate-100 border-b flex items-center justify-between sm:hidden shrink-0">
           <button onclick="app.showMobileChatSidebar()" class="text-xs font-bold text-brand-dark flex items-center gap-1">
             ← Chats
@@ -694,6 +886,7 @@
     </div>
   </div>
 
+  <div id="chat-desktop-windows" aria-label="Conversaciones abiertas"><div id="chat-desktop-chat-cells"></div></div>
   <!-- MODAL: AJUSTES, FOTOS Y PREFERENCIAS -->
   <div id="modal-settings" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
@@ -1376,6 +1569,14 @@
         // Estado del Chat y Conversaciones
         this.chatMessages = [];
         this.activeChatWorker = 'Jeampaul';
+        this.openChatTabs = [];
+        this.chatConversationHtmlCache = {};
+        this.chatScrollPositions = {};
+        this.chatWasNearBottom = {};
+        this.minimizedChatWindows = {};
+        this.messengerDrafts = {};
+        this.chatTypingByWorker = {};
+        this.chatDockUnreadByWorker = new Set();
         this.chatUnsubscribe = null;
         this.chatThreadUnsubscribe = null;
         this.chatThreadsUnsubscribe = null;
@@ -2275,6 +2476,7 @@
           if (chatLabel) { chatLabel.textContent = label; chatLabel.className = `text-[9px] font-semibold ${color.text}`; }
           if (chatDot) chatDot.className = `w-1.5 h-1.5 rounded-full ${color.dot}`;
         }
+        this.renderActiveChatHeader();
       }
 
       toggleAdminPresenceMenu() {
@@ -3108,6 +3310,7 @@
         const isAdmin = this.currentUser.role === 'admin';
         const sidebar = document.getElementById('chat-sidebar');
         const backBar = document.getElementById('chat-mobile-back-bar');
+        document.getElementById('chat-window-modal')?.classList.toggle('worker-chat-mode', !isAdmin);
 
         const options = document.getElementById('chat-conversation-options-dropdown');
         if (options?.parentElement) options.parentElement.classList.toggle('hidden', !isAdmin);
@@ -3118,11 +3321,15 @@
           if (backBar) backBar.classList.remove('hidden');
           const firstWorker = this.workers[0]?.fullName || this.workers[0]?.username || 'Jeampaul';
           this.activeChatWorker = firstWorker;
+          this.openChatTabs = [];
           this.subscribeAllChatThreads();
+          this.renderChatTabs();
+          this.renderActiveChatHeader();
         } else {
           sidebar.classList.add('hidden');
           if (backBar) backBar.classList.add('hidden');
           this.activeChatWorker = this.getCurrentDisplayName();
+          this.renderActiveChatHeader();
         }
 
         this.subscribeChatMessages();
@@ -3136,8 +3343,16 @@
         names.forEach(wName => {
           if (this.dedicatedWorkerUnsubscribes[wName]) return;
           const query = db.collection('chats_internos').doc(wName).collection('mensajes').orderBy('timestamp', 'asc');
-          let cancelled = false, unsubscribe = null, baselineIds = new Set(), firstSnapshot = true;
-          this.dedicatedWorkerUnsubscribes[wName] = () => { cancelled = true; if (unsubscribe) unsubscribe(); };
+          let cancelled = false, unsubscribe = null, unsubscribeThreadDoc = null, baselineIds = new Set(), firstSnapshot = true;
+          this.dedicatedWorkerUnsubscribes[wName] = () => { cancelled = true; if (unsubscribe) unsubscribe(); if (unsubscribeThreadDoc) unsubscribeThreadDoc(); };
+          unsubscribeThreadDoc = db.collection('chats_internos').doc(wName).onSnapshot(threadDoc => {
+            const threadData = threadDoc.exists ? threadDoc.data() : {};
+            const otherRole = isAdmin ? 'worker' : 'admin';
+            const isOtherTyping = Boolean(threadData.typing && threadData.typing[otherRole]);
+            if (this.chatTypingByWorker[wName] === isOtherTyping) return;
+            this.chatTypingByWorker[wName] = isOtherTyping;
+            if (isAdmin) this.renderMessengerWindows();
+          }, error => console.error('[CHAT] Error escuchando escritura de ' + wName + ':', error));
           const attach = () => {
             if (cancelled) return;
             unsubscribe = query.onSnapshot(snap => {
@@ -3218,6 +3433,18 @@
         }
       }
 
+      ensureIncomingWorkerWindow(wName) {
+        if (this.currentUser?.role !== 'admin' || window.innerWidth < 640) return;
+        if (!Array.isArray(this.openChatTabs)) this.openChatTabs = [];
+        const alreadyOpen = this.openChatTabs.includes(wName);
+        if (!alreadyOpen) {
+          this.openChatTabs.push(wName);
+          this.minimizedChatWindows[wName] = true;
+        }
+        if (!alreadyOpen || this.minimizedChatWindows[wName]) this.chatDockUnreadByWorker.add(wName);
+        this.renderMessengerWindows();
+      }
+
       notifyIncomingChatMessage(wName, msgId, data) {
         const uniqueId = `${wName}:${msgId}`;
         if (this.notifiedChatMessageIds.has(uniqueId)) return;
@@ -3227,6 +3454,7 @@
           this.notifiedChatMessageIds.delete(oldestId);
         }
         this.chatActivityRanks[wName] = ++this.chatActivitySequence;
+        this.ensureIncomingWorkerWindow(wName);
         if (this.prefs.sound) SoundEngine.playMessageSound();
         this.showPopupNotification({
           title: `${data.senderName || wName} te envió un mensaje`,
@@ -3263,13 +3491,32 @@
           });
       }
 
+      formatChatLastActivity(timestamp, online) {
+        if (online) return '🟢 En línea';
+        const elapsed = Date.now() - Number(timestamp || 0);
+        if (!timestamp || elapsed < 0) return '⚫ Desconectado';
+        const minutes = Math.floor(elapsed / 60000);
+        if (minutes < 1) return 'Hace un momento';
+        if (minutes < 60) return `Hace ${minutes} min`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `Hace ${hours} h`;
+        const days = Math.floor(hours / 24);
+        return `Hace ${days} día${days === 1 ? '' : 's'}`;
+      }
+
+      filterChatContacts(query) {
+        const normalized = String(query || '').trim().toLocaleLowerCase();
+        document.querySelectorAll('#chat-conversations-list .chat-contact-row').forEach(row => {
+          row.style.display = normalized && !row.dataset.chatContact?.includes(normalized) ? 'none' : 'flex';
+        });
+      }
+
       renderConversationsSidebar() {
         const listElem = document.getElementById('chat-conversations-list');
         if (!listElem) return;
 
         const ONLINE_THRESHOLD_MS = 60 * 1000;
         const now = Date.now();
-
         const sortedWorkers = [...this.workers].sort((a, b) => {
           const nameA = a.fullName || a.username;
           const nameB = b.fullName || b.username;
@@ -3281,8 +3528,8 @@
           return timeB - timeA;
         });
 
-        const unreadTotal = sortedWorkers.reduce((sum, w) => {
-          const name = w.fullName || w.username;
+        const unreadTotal = sortedWorkers.reduce((sum, worker) => {
+          const name = worker.fullName || worker.username;
           const summary = this.chatThreadSummaries[name];
           const count = summary?.hasMessages ? summary.unreadCount : Number(this.conversations[name]?.unreadByAdmin || 0);
           return sum + count;
@@ -3293,9 +3540,9 @@
           globalBadge.classList.toggle('hidden', !this.prefs.chatBadge || !unreadTotal);
         }
 
-        const filtered = sortedWorkers.filter(w => {
-          const wName = w.fullName || w.username;
-          const thread = this.conversations[wName];
+        const filtered = sortedWorkers.filter(worker => {
+          const name = worker.fullName || worker.username;
+          const thread = this.conversations[name];
           if (this.showArchived) return thread && thread.archived;
           return !(thread && thread.archived);
         });
@@ -3305,41 +3552,37 @@
           return;
         }
 
-        listElem.innerHTML = filtered.map(w => {
-          const wName = w.fullName || w.username;
-          const thread = this.conversations[wName] || {};
-          const summary = this.chatThreadSummaries[wName];
-          const isSelected = this.activeChatWorker === wName;
-          const isOnline = (now - (w.lastHeartbeat || 0)) < ONLINE_THRESHOLD_MS;
+        listElem.innerHTML = filtered.map(worker => {
+          const workerName = worker.fullName || worker.username;
+          const safeName = this.escapeHtml(workerName);
+          const thread = this.conversations[workerName] || {};
+          const summary = this.chatThreadSummaries[workerName];
+          const isSelected = this.activeChatWorker === workerName;
+          const isOnline = now - Number(worker.lastHeartbeat || 0) < ONLINE_THRESHOLD_MS;
           const unread = this.prefs.chatBadge ? (summary?.hasMessages ? summary.unreadCount : Number(thread.unreadByAdmin || 0)) : 0;
           const preview = summary?.hasMessages ? summary.lastMessage : (thread.lastMessage || 'Sin mensajes');
           const previewTime = summary?.hasMessages ? summary.lastTime : (thread.lastTime || '');
+          const activity = this.formatChatLastActivity(worker.lastHeartbeat, isOnline);
+          const avatar = worker.photo
+            ? `<img src="${this.escapeHtml(worker.photo)}" alt="Foto de ${safeName}">`
+            : `<span>${this.escapeHtml(String(workerName).charAt(0).toUpperCase())}</span>`;
 
           return `
-            <div onclick="app.selectChatConversation('${wName}')" class="p-3 flex items-center justify-between cursor-pointer transition ${isSelected ? 'bg-brand-limeLight/80 border-r-4 border-brand-lime' : 'hover:bg-slate-100/70'}">
-              <div class="flex items-center gap-2.5 min-w-0">
-                <div class="seasonal-worker-avatar relative w-9 h-9 rounded-full overflow-hidden bg-slate-200 border border-brand-lime shrink-0">
-                  ${w.photo ? `<img src="${w.photo}" class="w-full h-full object-cover">` : `<span class="w-full h-full flex items-center justify-center font-bold text-xs">${wName.charAt(0)}</span>`}
-                  <span class="w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-500 ring-2 ring-white animate-pulse' : 'bg-slate-300'} absolute top-0 right-0"></span>
-                </div>
-                <div class="min-w-0">
-                  <div class="flex items-center justify-between gap-1">
-                    <span class="font-extrabold text-xs text-slate-900 truncate">${wName}</span>
-                    <span class="text-[9px] text-slate-400 font-mono">${this.escapeHtml(previewTime)}</span>
-                  </div>
-                  <p class="text-[11px] text-slate-500 truncate italic mt-0.5">${this.escapeHtml(preview || 'Sin mensajes')}</p>
-                </div>
-              </div>
-              ${unread > 0 ? `
-                <span class="w-5 h-5 rounded-full bg-rose-500 text-white font-black text-[10px] flex items-center justify-center shrink-0 ml-1.5 shadow-sm">
-                  ${unread}
-                </span>
-              ` : ''}
-            </div>
+            <button type="button" data-chat-contact="${safeName.toLocaleLowerCase()}" onclick="app.selectChatConversation(decodeURIComponent('${encodeURIComponent(workerName)}'))" class="chat-contact-row ${isSelected ? 'is-selected' : ''} ${isOnline ? 'is-online' : ''} ${unread > 0 ? 'has-unread' : ''}">
+              <span class="chat-contact-avatar seasonal-worker-avatar">${avatar}</span>
+              <span class="chat-contact-copy">
+                <span class="chat-contact-topline"><span class="chat-contact-name">${safeName}</span><span class="chat-contact-time">${this.escapeHtml(previewTime)}</span></span>
+                <span class="chat-contact-preview">${this.escapeHtml(preview || 'Sin mensajes')}</span>
+                <span class="chat-contact-activity ${isOnline ? 'is-online' : ''}">Última actividad: ${activity}</span>
+              </span>
+              ${unread > 0 ? `<span class="chat-unread-pill">${unread > 99 ? '99+' : unread} ${unread === 1 ? 'mensaje nuevo' : 'mensajes nuevos'}</span>` : ''}
+            </button>
           `;
         }).join('');
+        const search = document.getElementById('chat-contact-search');
+        if (search?.value) this.filterChatContacts(search.value);
+        this.renderMessengerWindows();
       }
-
       toggleShowArchivedChats() {
         this.showArchived = !this.showArchived;
         const btn = document.getElementById('btn-toggle-archived');
@@ -3348,20 +3591,220 @@
       }
 
       selectChatConversation(wName) {
+        const previousWorker = this.activeChatWorker;
+        const previousMessages = document.getElementById('chat-messages-container');
+        if (previousWorker && previousMessages) this.chatConversationHtmlCache[previousWorker] = previousMessages.innerHTML;
         this.activeChatWorker = wName;
+        this.chatDockUnreadByWorker?.delete(wName);
+        if (this.currentUser?.role === 'admin') {
+          if (!Array.isArray(this.openChatTabs)) this.openChatTabs = [];
+          const isNewTab = !this.openChatTabs.includes(wName);
+          if (isNewTab) this.openChatTabs.push(wName);
+          this.minimizedChatWindows[wName] = false;
+        }
         document.getElementById('chat-header-title').textContent = this.currentUser?.role === 'admin' ? `Chat: ${wName}` : `Chat: ${this.getAdminPresenceInfo().name}`;
         document.getElementById('chat-mobile-active-name').textContent = wName;
 
         if (window.innerWidth < 640) {
-          document.getElementById('chat-sidebar').classList.add('hidden');
+          document.getElementById('chat-sidebar').classList.add('mobile-conversation-open');
+          document.getElementById('chat-conversation-area').classList.remove('mobile-list-open');
         }
 
         this.subscribeChatMessages();
         this.renderConversationsSidebar();
+        this.renderChatTabs();
+        this.renderActiveChatHeader();
+        this.renderMessengerWindows();
       }
 
+      renderActiveChatHeader() {
+        const header = document.getElementById('chat-active-contact-header');
+        if (!header || !this.currentUser) return;
+        let name = '';
+        let photo = '';
+        let activity = '';
+        let isOnline = false;
+        if (this.currentUser.role === 'admin') {
+          name = this.activeChatWorker || '';
+          const worker = this.workers.find(item => (item.fullName || item.username) === name);
+          if (!worker) { header.innerHTML = ''; return; }
+          photo = worker.photo || '';
+          isOnline = Date.now() - Number(worker.lastHeartbeat || 0) < 60000;
+          activity = this.formatChatLastActivity(worker.lastHeartbeat, isOnline);
+        } else {
+          const admin = this.getAdminPresenceInfo();
+          name = admin.name;
+          photo = admin.photo;
+          isOnline = admin.status === 'available';
+          activity = admin.status === 'absent' ? '🟠 Ausente' : admin.status === 'available' ? '🟢 En línea' : '⚫ Desconectado';
+        }
+        const safeName = this.escapeHtml(name);
+        const title = document.getElementById('chat-header-title');
+        if (title) title.textContent = `Chat: ${name}`;
+        const image = photo ? `<img src="${this.escapeHtml(photo)}" alt="Foto de ${safeName}">` : this.escapeHtml(String(name).charAt(0).toUpperCase());
+        const topAvatar = document.getElementById('chat-window-contact-avatar');
+        if (topAvatar) topAvatar.innerHTML = photo ? `<img src="${this.escapeHtml(photo)}" alt="Foto de ${safeName}">` : `<span>${this.escapeHtml(String(name).charAt(0).toUpperCase())}</span>`;
+        header.innerHTML = `<div class="chat-active-contact-avatar seasonal-worker-avatar">${image}</div><div class="min-w-0"><div class="chat-active-contact-name truncate">${safeName}</div><div class="chat-active-contact-status ${isOnline ? 'is-online' : ''}">Última actividad: ${this.escapeHtml(activity)}</div></div>`;
+      }
+
+      renderChatTypingIndicators() {
+        const targets = [];
+        const activeThread = this.currentUser?.role === 'admin' ? this.activeChatWorker : this.getCurrentDisplayName();
+        const mainMessages = document.getElementById('chat-messages-container');
+        if (mainMessages && activeThread) targets.push({ container: mainMessages, threadId: activeThread });
+        document.querySelectorAll('#chat-desktop-chat-cells [data-messenger-window]').forEach(windowEl => {
+          const name = windowEl.dataset.messengerWindow;
+          const messages = windowEl.querySelector('.messenger-window-messages');
+          if (messages) targets.push({ container: messages, threadId: name });
+        });
+        targets.forEach(({ container, threadId }) => {
+          container.querySelector('.chat-inline-typing-indicator')?.remove();
+          if (!this.chatTypingByWorker[threadId]) return;
+          let name = threadId;
+          let photo = '';
+          if (this.currentUser?.role === 'admin') {
+            const worker = this.workers.find(item => (item.fullName || item.username) === threadId);
+            photo = worker?.photo || '';
+          } else {
+            const admin = this.getAdminPresenceInfo();
+            name = admin.name;
+            photo = admin.photo || '';
+          }
+          const safeName = this.escapeHtml(name);
+          const avatar = photo ? `<img src="${this.escapeHtml(photo)}" alt="">` : this.escapeHtml(String(name).charAt(0).toUpperCase());
+          const indicator = document.createElement('div');
+          indicator.className = 'chat-inline-typing-indicator';
+          indicator.innerHTML = `<span class="chat-inline-typing-avatar seasonal-worker-avatar">${avatar}</span><span class="chat-inline-typing-copy"><span>${safeName} está escribiendo</span><span class="chat-typing-dots" aria-label="Escribiendo"><i></i><i></i><i></i></span></span>`;
+          container.appendChild(indicator);
+        });
+      }
+      renderChatTabs() {
+        const tray = document.getElementById('chat-open-tabs');
+        if (!tray || this.currentUser?.role !== 'admin') return;
+        const tabs = Array.isArray(this.openChatTabs) ? this.openChatTabs : [];
+        tray.innerHTML = tabs.map(name => {
+          const worker = this.workers.find(item => (item.fullName || item.username) === name);
+          const image = worker?.photo ? `<img src="${this.escapeHtml(worker.photo)}" alt="">` : `<span class="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-slate-700 text-[9px] font-bold">${this.escapeHtml(String(name).charAt(0).toUpperCase())}</span>`;
+          return `<span class="chat-open-tab ${this.activeChatWorker === name ? 'is-active' : ''}"><button type="button" class="flex min-w-0 items-center gap-1.5 truncate" onclick="app.selectChatConversation(decodeURIComponent('${encodeURIComponent(name)}'))">${image}<span class="truncate">${this.escapeHtml(name)}</span></button><button type="button" class="chat-tab-close" title="Cerrar conversación" aria-label="Cerrar ${this.escapeHtml(name)}" onclick="event.stopPropagation();app.closeChatTab(decodeURIComponent('${encodeURIComponent(name)}'))">×</button></span>`;
+        }).join('');
+        tray.classList.toggle('hidden', tabs.length === 0);
+      }
+
+      renderMessengerWindows() {
+        const dock = document.getElementById('chat-desktop-chat-cells');
+        const dockRoot = document.getElementById('chat-desktop-windows');
+        if (!dock || !dockRoot) return;
+        if (window.innerWidth < 640 || this.currentUser?.role !== 'admin') { dock.innerHTML = ''; this.renderChatTypingIndicators(); return; }
+        const focusedInput = document.activeElement?.matches('.messenger-window-form input') ? document.activeElement : null;
+        const focusedWindow = focusedInput?.closest('[data-messenger-window]')?.dataset.messengerWindow || '';
+        const cursorStart = focusedInput?.selectionStart;
+        const cursorEnd = focusedInput?.selectionEnd;
+        dock.querySelectorAll('[data-messenger-window]').forEach(windowEl => {
+          const name = windowEl.dataset.messengerWindow;
+          const input = windowEl.querySelector('.messenger-window-form input');
+          if (input) this.messengerDrafts[name] = input.value;
+        });
+        dock.querySelectorAll('[data-messenger-window]').forEach(windowEl => {
+          const name = windowEl.dataset.messengerWindow;
+          const messages = windowEl.querySelector('.messenger-window-messages');
+          if (!messages) return;
+          this.chatScrollPositions[name] = messages.scrollTop;
+          this.chatWasNearBottom[name] = messages.scrollHeight - messages.clientHeight - messages.scrollTop < 80;
+        });
+        const names = Array.isArray(this.openChatTabs) ? this.openChatTabs : [];
+        const cellCount = names.length + 1;
+        const availableWidth = window.innerWidth - 44 - 11 * Math.max(0, cellCount - 1);
+        const cellWidth = Math.min(300, Math.max(96, Math.floor(availableWidth / Math.max(cellCount, 1))));
+        dockRoot.style.setProperty('--chat-cell-width', cellWidth + 'px');
+        document.getElementById('chat-floating-button-container')?.style.setProperty('--chat-cell-width', cellWidth + 'px');
+        document.getElementById('chat-window-modal')?.style.setProperty('--chat-cell-width', cellWidth + 'px');
+        dock.innerHTML = names.map(name => {
+          const worker = this.workers.find(item => (item.fullName || item.username) === name);
+          const photo = worker?.photo ? '<img src="' + this.escapeHtml(worker.photo) + '" alt="">' : this.escapeHtml(String(name).charAt(0).toUpperCase());
+          const isMinimized = Boolean(this.minimizedChatWindows[name]);
+          const isOnline = worker && Date.now() - Number(worker.lastHeartbeat || 0) < 60000;
+          const activity = worker ? this.formatChatLastActivity(worker.lastHeartbeat, isOnline) : 'Desconectado';
+          const typing = Boolean(this.chatTypingByWorker[name]);
+          const threadSummary = this.chatThreadSummaries[name];
+          const threadData = this.conversations[name] || {};
+          const unreadCount = Math.max(threadSummary?.hasMessages ? Number(threadSummary.unreadCount || 0) : Number(threadData.unreadByAdmin || 0), this.chatDockUnreadByWorker?.has(name) ? 1 : 0);
+          const presenceText = typing ? name + ' está escribiendo...' : 'Última actividad: ' + activity;
+          const cached = this.chatConversationHtmlCache[name] || (name === this.activeChatWorker ? (document.getElementById('chat-messages-container')?.innerHTML || '') : '<div class="text-center py-8 text-xs italic">Abre la conversación para cargar los mensajes.</div>');
+          return '<section class="messenger-chat-window ' + (isMinimized ? 'is-minimized ' : '') + (unreadCount > 0 ? 'has-unread' : '') + '" data-messenger-window="' + this.escapeHtml(name) + '" style="--chat-cell-width:' + cellWidth + 'px">' +
+            '<header class="messenger-window-header" onclick="app.selectChatConversation(decodeURIComponent(\'' + encodeURIComponent(name) + '\'))">' +
+              '<span class="messenger-window-avatar seasonal-worker-avatar">' + photo + '</span>' +
+              '<span class="min-w-0"><span class="messenger-window-title">' + this.escapeHtml(name) + '</span><span class="messenger-window-activity">' + this.escapeHtml(presenceText) + '</span></span>' +
+              '<span class="messenger-window-controls">' +
+                '<button type="button" title="' + (isMinimized ? 'Restaurar' : 'Minimizar') + '" aria-label="' + (isMinimized ? 'Restaurar' : 'Minimizar') + ' ' + this.escapeHtml(name) + '" onclick="event.stopPropagation();app.toggleMessengerWindow(decodeURIComponent(\'' + encodeURIComponent(name) + '\'))">' + (isMinimized ? '' : '−') + '</button>' +
+                '<button type="button" title="Cerrar" aria-label="Cerrar ' + this.escapeHtml(name) + '" onclick="event.stopPropagation();app.closeChatTab(decodeURIComponent(\'' + encodeURIComponent(name) + '\'))">×</button>' +
+              '</span></header>' +
+            (isMinimized ? '' : '<div class="messenger-window-messages">' + cached + '</div><form class="messenger-window-form" onsubmit="app.handleMessengerWindowSend(event,decodeURIComponent(\'' + encodeURIComponent(name) + '\'))"><input type="text" autocomplete="off" placeholder="Escribe un mensaje..." aria-label="Mensaje para ' + this.escapeHtml(name) + '"><button type="submit" title="Enviar" aria-label="Enviar">➤</button></form>') +
+          '</section>';
+        }).join('');
+        dock.querySelectorAll('[data-messenger-window]').forEach(windowEl => {
+          const name = windowEl.dataset.messengerWindow;
+          const messages = windowEl.querySelector('.messenger-window-messages');
+          if (messages) {
+            if (!Object.prototype.hasOwnProperty.call(this.chatScrollPositions, name) || this.chatWasNearBottom[name]) messages.scrollTop = messages.scrollHeight;
+            else messages.scrollTop = this.chatScrollPositions[name];
+            messages.addEventListener('scroll', () => {
+              this.chatScrollPositions[name] = messages.scrollTop;
+              this.chatWasNearBottom[name] = messages.scrollHeight - messages.clientHeight - messages.scrollTop < 80;
+            }, { passive: true });
+          }
+          const input = windowEl.querySelector('.messenger-window-form input');
+          if (input) {
+            input.value = this.messengerDrafts[name] || '';
+            input.addEventListener('input', event => this.handleMessengerWindowTyping(event, name));
+          }
+        });
+        if (focusedWindow) {
+          const restoredInput = dock.querySelector('[data-messenger-window="' + CSS.escape(focusedWindow) + '"] .messenger-window-form input');
+          if (restoredInput) {
+            restoredInput.focus({ preventScroll: true });
+            if (Number.isInteger(cursorStart) && Number.isInteger(cursorEnd)) restoredInput.setSelectionRange(cursorStart, cursorEnd);
+          }
+        }
+        this.renderChatTypingIndicators();
+      }
+
+      toggleMessengerWindow(workerName) {
+        this.minimizedChatWindows[workerName] = !this.minimizedChatWindows[workerName];
+        this.renderMessengerWindows();
+      }
+
+      handleMessengerWindowTyping(event, workerName) {
+        if (this.activeChatWorker !== workerName) this.selectChatConversation(workerName);
+        this.handleTypingInput();
+      }
+
+      async handleMessengerWindowSend(event, workerName) {
+        event.preventDefault();
+        const input = event.currentTarget?.querySelector('input');
+        const sharedInput = document.getElementById('chat-input-text');
+        if (!input || !sharedInput || !input.value.trim()) return;
+        if (this.activeChatWorker !== workerName) this.selectChatConversation(workerName);
+        sharedInput.value = input.value;
+        input.value = '';
+        this.messengerDrafts[workerName] = '';
+        await this.handleSendMessage({ preventDefault() {} });
+      }
+
+      closeChatTab(workerName) {
+        if (this.currentUser?.role !== 'admin') return;
+        this.openChatTabs = (this.openChatTabs || []).filter(name => name !== workerName);
+        delete this.minimizedChatWindows[workerName];
+        if (this.activeChatWorker === workerName) {
+          const next = this.openChatTabs[0];
+          if (next) return this.selectChatConversation(next);
+          this.activeChatWorker = '';
+        }
+        this.renderChatTabs();
+        this.renderMessengerWindows();
+      }
       showMobileChatSidebar() {
-        document.getElementById('chat-sidebar').classList.remove('hidden');
+        document.getElementById('chat-sidebar').classList.remove('mobile-conversation-open');
+        document.getElementById('chat-conversation-area').classList.add('mobile-list-open');
       }
 
       openDirectWorkerChat(workerName) {
@@ -3376,7 +3819,8 @@
         chatModal.classList.toggle('hidden');
         if (!chatModal.classList.contains('hidden')) {
           this.scrollToChatBottom();
-          this.markMessagesAsRead();
+          const isDesktopAdminContacts = this.currentUser?.role === 'admin' && window.innerWidth >= 640;
+          if (!isDesktopAdminContacts) this.markMessagesAsRead();
         }
       }
 
@@ -3470,6 +3914,7 @@
             const data = doc.data();
             const otherRole = this.currentUser.role === 'admin' ? 'worker' : 'admin';
             const isOtherTyping = data.typing && data.typing[otherRole];
+            this.chatTypingByWorker[threadId] = Boolean(isOtherTyping);
             if (this.currentUser.role === 'worker') {
               this.workerUnreadCount = Number(data.unreadByWorker || 0);
               const summary = this.chatThreadSummaries[threadId];
@@ -3480,15 +3925,8 @@
                 badge.classList.toggle('hidden', !this.prefs.chatBadge || !count);
               }
             }
-            const typingElem = document.getElementById('chat-typing-indicator');
-            if (typingElem) {
-              if (isOtherTyping) {
-                typingElem.textContent = `${this.activeChatWorker} está escribiendo...`;
-                typingElem.classList.remove('hidden');
-              } else {
-                typingElem.classList.add('hidden');
-              }
-            }
+            if (this.currentUser.role === 'admin') this.renderMessengerWindows();
+            else this.renderChatTypingIndicators();
           }
         });
 
@@ -3534,7 +3972,9 @@
               badge.classList.add('hidden');
             }
             const chatWindow = document.getElementById('chat-window-modal');
-            if (chatWindow && !chatWindow.classList.contains('hidden') && !document.hidden) this.markMessagesAsRead();
+            const desktopConversationOpen = this.currentUser.role === 'admin' && window.innerWidth >= 640 && this.openChatTabs.includes(threadId) && !this.minimizedChatWindows[threadId];
+            const mobileOrWorkerConversationOpen = chatWindow && !chatWindow.classList.contains('hidden') && (this.currentUser.role !== 'admin' || window.innerWidth < 640);
+            if ((desktopConversationOpen || mobileOrWorkerConversationOpen) && !document.hidden) this.markMessagesAsRead();
           }, err => console.error("Error chat snapshot:", err));
       }
 
@@ -3544,6 +3984,8 @@
 
         if (this.chatMessages.length === 0) {
           container.innerHTML = `<div class="text-center py-8 text-slate-400 text-xs italic">Inicia una conversación privada segura.</div>`;
+          if (this.activeChatWorker) this.chatConversationHtmlCache[this.activeChatWorker] = container.innerHTML;
+          this.renderMessengerWindows();
           return;
         }
 
@@ -3584,6 +4026,8 @@
             </div>
           `;
         }).join('');
+        if (this.activeChatWorker) this.chatConversationHtmlCache[this.activeChatWorker] = container.innerHTML;
+        this.renderMessengerWindows();
 
         this.scrollToChatBottom();
       }
