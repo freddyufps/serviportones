@@ -2451,12 +2451,16 @@
 
       getAdminPresenceInfo() {
         const admin = this.users.find(user => String(user.role || '').toLowerCase() === 'admin');
-        const username = String(admin?.username || this.currentUser?.username || '').toLowerCase();
-        const record = this.presenceRecords[username] || {};
-        const status = this.getPresenceStatus(admin || this.currentUser);
+        const presenceAdminEntry = Object.entries(this.presenceRecords).find(([, record]) => String(record?.role || '').toLowerCase() === 'admin');
+        const isAdminSession = String(this.currentUser?.role || '').toLowerCase() === 'admin';
+        const adminUser = admin || (isAdminSession ? this.currentUser : null);
+        const username = String(adminUser?.username || presenceAdminEntry?.[0] || '').toLowerCase();
+        const record = username ? (this.presenceRecords[username] || {}) : {};
+        const presenceUser = adminUser || (username ? { username, ...record } : null);
+        const status = this.getPresenceStatus(presenceUser);
         return {
-          name: record.activeAdminName || admin?.fullName || record.fullName || 'Administrador',
-          photo: record.adminIdentityPhotos?.[record.activeAdminName] || record.photo || admin?.photo || '',
+          name: record.activeAdminName || adminUser?.fullName || record.fullName || 'Administrador',
+          photo: record.adminIdentityPhotos?.[record.activeAdminName] || record.photo || adminUser?.photo || '',
           status,
           isHeartbeatFresh: status !== 'disconnected'
         };
