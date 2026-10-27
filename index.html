@@ -7053,5 +7053,35 @@ html.theme-dark #chat-launcher-button {
     }
   };
 })();
+</script><style id="chat-header-admin-presence-card-sync">
+#chat-window-modal .chat-brand-mark.chat-admin-identity { width:auto!important;min-width:0!important;max-width:min(68vw,230px)!important;height:auto!important;min-height:42px!important;justify-content:flex-start!important;padding:2px 3px!important;background:transparent!important;border:0!important;box-shadow:none!important;overflow:visible!important; }
+#chat-window-modal .chat-admin-presence-inline-card { display:inline-flex!important;align-items:center!important;gap:7px!important;box-sizing:border-box!important;width:auto!important;min-width:0!important;max-width:min(68vw,230px)!important;min-height:40px!important;padding:4px 8px!important;border:1px solid rgba(255,255,255,.2)!important;border-radius:12px!important;background:rgba(15,23,42,.36)!important;color:#fff!important; }
+#chat-window-modal .chat-admin-presence-inline-card>div:first-child { width:31px!important;height:31px!important;min-width:31px!important;min-height:31px!important;flex:0 0 31px!important; }
+#chat-window-modal .chat-admin-presence-inline-card>div:last-child { min-width:0!important;white-space:nowrap!important; }
+#chat-window-modal .chat-admin-presence-inline-card>div:last-child p:first-child { overflow:hidden!important;max-width:150px!important;color:#fff!important;font-size:10px!important;font-weight:800!important;text-overflow:ellipsis!important;white-space:nowrap!important; }
+#chat-window-modal .chat-admin-presence-inline-card>div:last-child p:nth-child(2) { color:#d7e2ee!important;font-size:8px!important; }
+#chat-window-modal .chat-admin-presence-inline-card .presence-label { display:block!important;font-size:9px!important;line-height:1.15!important; }
+@media(max-width:639px){#chat-window-modal .chat-brand-mark.chat-admin-identity{max-width:calc(100vw - 118px)!important;min-height:40px!important}#chat-window-modal .chat-admin-presence-inline-card{max-width:calc(100vw - 126px)!important;min-height:38px!important;padding:3px 6px!important;gap:6px!important}#chat-window-modal .chat-admin-presence-inline-card>div:first-child{width:29px!important;height:29px!important;min-width:29px!important;min-height:29px!important;flex-basis:29px!important}#chat-window-modal .chat-admin-presence-inline-card>div:last-child p:first-child{max-width:115px!important}}
+</style>
+<script id="chat-header-admin-presence-card-sync">
+(function(){
+  const C=typeof PortonProApp!=='undefined'?PortonProApp:null;
+  if(!C?.prototype?.renderActiveChatHeader)return;
+  const previous=C.prototype.renderActiveChatHeader;
+  C.prototype.renderActiveChatHeader=function(){
+    previous.call(this);
+    if(this.currentUser?.role==='admin')return;
+    const host=document.querySelector('#chat-window-modal .chat-brand-mark');
+    const source=document.getElementById('worker-admin-presence-card');
+    if(!host||!source)return;
+    const card=source.cloneNode(true);
+    const status=this.getAdminPresenceInfo?.()?.status||'disconnected';
+    card.id='chat-admin-presence-header-card';
+    card.className='chat-admin-presence-inline-card '+(status==='available'?'presence-card-connected':status==='absent'?'presence-card-absent':'');
+    host.classList.add('chat-admin-identity');
+    host.setAttribute('aria-label','Administrador activo: '+(this.getAdminPresenceInfo?.()?.name||'Administrador'));
+    host.innerHTML=card.outerHTML;
+  };
+})();
 </script></body>
 </html>
