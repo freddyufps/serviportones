@@ -4021,9 +4021,6 @@ updateMessengerWindowTyping(workerName) {
                 <p class="order-date-line mt-1 text-[11px] text-slate-500"><span class="font-semibold">Fecha de realización:</span> ${this.escapeHtml(workDate || 'Sin fecha')}</p>
                 ${adminLine}
                 ${phoneLine}
-                <p class="text-xs font-bold text-brand-limeHover flex items-center gap-1 mt-0.5">
-                  <i data-lucide="cpu" class="w-3.5 h-3.5"></i> ${this.escapeHtml(t.equipment || "Equipo sin especificar")}
-                </p>
 
                 <div class="order-client-panel mt-2.5 rounded-xl border border-slate-100 bg-slate-50/80 p-2.5 space-y-1.5 text-xs min-w-0">
                   <p class="text-slate-600 flex items-start gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5"></i><span class="line-clamp-2 break-words">${this.escapeHtml(t.address || "Sin dirección")}</span></p>
@@ -4033,6 +4030,12 @@ updateMessengerWindowTyping(workerName) {
                   </div>
                 </div>
 
+                ${orderNotes ? `
+                  <div class="order-observations mt-2 p-2 rounded-xl text-xs bg-slate-50 border text-slate-700 text-[11px]">
+                    <span class="block mb-0.5 font-bold not-italic">${notesLabel}</span><span class="line-clamp-3 whitespace-pre-line">${this.escapeHtml(orderNotes)}</span>
+                  </div>
+                ` : ''}
+
                 <div class="order-tech-section mt-2.5 pt-2 border-t text-xs">
                   <span class="text-slate-500 text-[11px] block mb-1.5">Técnico:</span>
                   ${taskIsFree
@@ -4040,11 +4043,6 @@ updateMessengerWindowTyping(workerName) {
                     : `<div class="flex items-center gap-2"><div onclick="app.zoomWorkerPhoto('${techPhoto}', '${t.assignedTo}')" class="seasonal-worker-avatar cursor-pointer w-9 h-9 rounded-full overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center border-2 border-brand-lime" title="Ampliar foto">${techPhoto ? `<img src="${this.escapeHtml(techPhoto)}" alt="Foto de ${this.escapeHtml(t.assignedTo)}" class="w-full h-full object-cover">` : `<span class="text-xs font-bold">${this.escapeHtml(String(t.assignedTo || '?').charAt(0).toUpperCase())}</span>`}</div><div class="min-w-0"><div class="font-bold text-slate-800 text-[11px]">${this.escapeHtml(t.assignedTo)}</div><span class="presence-label is-${techPresenceStatus}">${techPresenceLabel}</span>${techDetails.length ? `<div class="mt-0.5 flex flex-wrap gap-x-2 text-[10px] text-slate-500">${techDetails.map(detail => `<span>${detail}</span>`).join('')}</div>` : ''}</div></div>`}
                 </div>
 
-                ${orderNotes ? `
-                  <div class="order-observations mt-2 p-2 rounded-xl text-xs bg-slate-50 border text-slate-700 text-[11px]">
-                    <span class="block mb-0.5 font-bold not-italic">${notesLabel}</span><span class="line-clamp-3 whitespace-pre-line">${this.escapeHtml(orderNotes)}</span>
-                  </div>
-                ` : ''}
               </div>
 
               <div class="mt-3 pt-2 border-t flex items-center justify-between gap-1">
