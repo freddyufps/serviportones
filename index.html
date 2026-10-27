@@ -1901,6 +1901,8 @@
 
       updatePref(key, value) {
         this.prefs[key] = value;
+        const preferenceIds = { sound: ['pref-sound','chat-pref-sound'], popup: ['pref-popup','chat-pref-popup'], chatBadge: ['pref-chat-badge','chat-pref-chatBadge'] };
+        (preferenceIds[key] || []).forEach(id => { const input = document.getElementById(id); if (input) input.checked = Boolean(value); });
         SafeStorage.setItem('portonpro_preferences', JSON.stringify(this.prefs));
         if (key === 'chatBadge') {
           if (this.currentUser?.role === 'admin') this.renderConversationsSidebar();
@@ -6279,7 +6281,7 @@ document.addEventListener('pointerdown',function(e){if(e.pointerType!=='touch')r
     const adminQuick = document.createElement('section');
     adminQuick.id = 'settings-admin-quick';
     adminQuick.className = 'settings-admin-quick';
-    adminQuick.innerHTML = '<div class="settings-admin-quick-heading"><span class="settings-admin-icon">♙</span><div><h4>Administradores</h4><p>Cambio rápido de identidad. Ambas identidades comparten esta cuenta y sus permisos.</p></div><button type="button" data-admin-only="true" class="settings-admin-employees-shortcut" onclick="app.showSettingsCategory(\'employees\')"><i data-lucide="users-round"></i><span>Empleados</span></button><span class="settings-active-admin">ACTIVO</span></div>';
+    adminQuick.innerHTML = '<div class="settings-admin-quick-heading"><span class="settings-admin-icon">♙</span><div><h4>Administradores</h4><p>Cambio rápido de identidad. Ambas identidades comparten esta cuenta y sus permisos.</p></div><button type="button" data-admin-only="true" class="settings-admin-employees-shortcut" onclick="app.showSettingsCategory(&quot;employees&quot;)"><i data-lucide="users-round"></i><span>Empleados</span></button><span class="settings-active-admin">ACTIVO</span></div>';
     if (nodes.administrators) adminQuick.appendChild(nodes.administrators);
 
     const nav = document.createElement('nav');
@@ -6367,29 +6369,40 @@ document.addEventListener('pointerdown',function(e){if(e.pointerType!=='touch')r
     employeesShortcut.type = 'button';
     employeesShortcut.dataset.adminOnly = 'true';
     employeesShortcut.className = 'settings-employees-shortcut';
-    employeesShortcut.innerHTML = '<i data-lucide="users-round"></i><span><b>Administrar empleados</b><small>Crear cuentas, editar datos o actualizar cédulas y especialidades.</small></span><span aria-hidden="true">›</span>';
+    employeesShortcut.innerHTML = '<i data-lucide="users-round"></i><span><b>Administrar trabajadores</b><small>Crear cuentas, editar datos, cédulas y especialidades.</small></span><span aria-hidden="true">›</span>';
     employeesShortcut.addEventListener('click', () => this.showSettingsCategory('employees'));
     securityPanel.appendChild(employeesShortcut);
-
     const employeesPanel = content.querySelector('#settings-category-employees');
     if (nodes.team) {
       const teamHeading = nodes.team.querySelector('h4 span');
-      if (teamHeading) teamHeading.textContent = 'Crear y editar trabajadores';
+      if (teamHeading) teamHeading.textContent = 'Administrar trabajadores';
       employeesPanel.appendChild(nodes.team);
     }
-    const placeholders = {
-      chat: 'La configuración actual del chat se conserva. Opciones avanzadas de lectura, archivos y descarga automática se podrán añadir aquí.',
-      application: 'La limpieza de caché y los estados de Firebase, almacenamiento y sincronización aún no tienen controles disponibles.',
-      system: 'Este espacio queda preparado para estadísticas de uso, órdenes, trabajadores, chats y archivos.',
-      backups: 'La exportación, copia de seguridad y restauración de datos todavía no están habilitadas.'
-    };
-    for (const id of Object.keys(placeholders)) {
-      const note = document.createElement('div');
-      note.className = 'settings-future-note';
-      note.textContent = placeholders[id];
-      content.querySelector('#settings-category-' + id).appendChild(note);
-    }
+    const chatPanel = content.querySelector('#settings-category-chat');
+    const chatPreferenceControls = document.createElement('div');
+    chatPreferenceControls.className = 'settings-chat-preferences';
+    chatPreferenceControls.innerHTML = '<h5>Preferencias rápidas</h5><div class="settings-chat-preferences-grid"></div>';
+    const chatPreferenceGrid = chatPreferenceControls.querySelector('.settings-chat-preferences-grid');
+    [['sound','pref-sound'],['popup','pref-popup'],['chatBadge','pref-chat-badge']].forEach(([key, sourceId]) => {
+      const source = document.getElementById(sourceId)?.closest('label');
+      if (!source) return;
+      const control = source.cloneNode(true);
+      const input = control.querySelector('input');
+      input.id = 'chat-pref-' + key;
+      input.dataset.chatPreference = key;
+      input.setAttribute('onchange', `app.updatePref('${key}', this.checked)`);
+      chatPreferenceGrid.appendChild(control);
+    });
+    chatPanel.appendChild(chatPreferenceControls);
+    chatPanel.insertAdjacentHTML('beforeend', '<div class="settings-info-card settings-info-wide"><b>Funciones disponibles</b><p>Conversaciones privadas, estados de entrega y lectura, reacciones con emojis y contador de mensajes por conversación.</p><small id="settings-chat-storage-note">La carga de adjuntos depende de Firebase Storage.</small></div>');
+    const applicationPanel = content.querySelector('#settings-category-application');
+    applicationPanel.insertAdjacentHTML('beforeend', '<div class="settings-info-grid"><div class="settings-info-card"><span>Conexión del dispositivo</span><b id="settings-app-network">—</b></div><div class="settings-info-card"><span>Firestore</span><b id="settings-app-firestore">—</b></div><div class="settings-info-card"><span>Firebase Storage</span><b id="settings-app-storage">—</b></div><div class="settings-info-card"><span>Aplicación</span><b>HTML independiente</b></div></div><div class="settings-info-card settings-info-wide"><b>Mantenimiento local</b><p>Elimina únicamente la caché web temporal de este sitio. No borra la sesión, las órdenes ni los datos guardados en Firestore.</p><button type="button" class="settings-action-button" onclick="app.clearTemporaryAppCache()">Limpiar caché temporal</button></div>');
 
+    const systemPanel = content.querySelector('#settings-category-system');
+    systemPanel.insertAdjacentHTML('beforeend', '<div class="settings-info-grid"><div class="settings-info-card"><span>Órdenes cargadas</span><b id="settings-system-orders">0</b></div><div class="settings-info-card"><span>Órdenes activas</span><b id="settings-system-active-orders">0</b></div><div class="settings-info-card"><span>Completadas</span><b id="settings-system-completed">0</b></div><div class="settings-info-card"><span>Archivadas</span><b id="settings-system-archived">0</b></div><div class="settings-info-card"><span>Trabajadores</span><b id="settings-system-workers">0</b></div><div class="settings-info-card"><span>Conversaciones conocidas</span><b id="settings-system-chats">0</b></div><div class="settings-info-card"><span>Evidencias y facturas asociadas</span><b id="settings-system-files">0</b></div><div class="settings-info-card"><span>Sincronización de red</span><b id="settings-system-sync">—</b></div></div><p class="settings-info-footnote">Los valores reflejan los datos cargados en esta sesión; los archivos externos no se descargan para calcular espacio usado.</p>');
+
+    const backupsPanel = content.querySelector('#settings-category-backups');
+    backupsPanel.insertAdjacentHTML('beforeend', '<div class="settings-info-card settings-info-wide"><b>Respaldo local</b><p>Descarga un archivo JSON con las órdenes cargadas, perfiles básicos de trabajadores (sin contraseñas), preferencias, tema y consecutivo actual.</p><button type="button" class="settings-action-button" onclick="app.downloadLocalSettingsBackup()">Descargar respaldo JSON</button><small>Es una copia de los datos disponibles en esta sesión. No incluye el historial completo del chat ni los archivos binarios y no reemplaza una copia integral de Firestore.</small></div><div class="settings-info-card settings-info-wide"><b>Restauración</b><p>La restauración automática aún no está habilitada para evitar sobrescribir información de producción por accidente.</p><span class="settings-status-pill">Preparada para una mejora futura</span></div>');
     const layout = document.createElement('div');
     layout.className = 'settings-workspace-layout';
     layout.append(nav, content);
@@ -6407,6 +6420,73 @@ document.addEventListener('pointerdown',function(e){if(e.pointerType!=='touch')r
     });
   };
 
+  PortonProApp.prototype.refreshSettingsOverview = function () {
+    const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+    [['sound',this.prefs?.sound],['popup',this.prefs?.popup],['chatBadge',this.prefs?.chatBadge]].forEach(([key,value]) => { const input = document.getElementById('chat-pref-' + key); if (input) input.checked = Boolean(value); });
+    set('settings-chat-sound', yesNo(this.prefs?.sound));
+    set('settings-chat-popup', yesNo(this.prefs?.popup));
+    set('settings-chat-badge', yesNo(this.prefs?.chatBadge));
+    set('settings-chat-storage-note', typeof window.firebase?.storage === 'function' ? 'Firebase Storage SDK cargado; la disponibilidad del proyecto se confirma al subir un archivo.' : 'Firebase Storage SDK no está cargado en esta página.');
+    set('settings-app-network', navigator.onLine ? 'Con conexión' : 'Sin conexión');
+    set('settings-app-firestore', window.db ? 'Cliente inicializado; conexión remota no comprobada' : 'Cliente no disponible');
+    set('settings-app-storage', typeof window.firebase?.storage === 'function' ? 'SDK disponible; bucket no verificado' : 'SDK no disponible');
+
+    const tasks = Array.isArray(this.tasks) ? this.tasks : [];
+    const archived = tasks.filter(task => !!task?.archivedAt).length;
+    const completed = tasks.filter(task => task?.status === 'REALIZADA' && !task?.archivedAt).length;
+    const active = tasks.filter(task => !task?.archivedAt && task?.status !== 'REALIZADA' && task?.status !== 'NO_REALIZADA').length;
+    const attachedFiles = tasks.reduce((sum, task) => {
+      const evidence = Array.isArray(task?.evidence) ? task.evidence.length : 0;
+      const invoice = task?.invoice?.url || task?.invoiceUrl || task?.facturaUrl ? 1 : 0;
+      return sum + evidence + invoice;
+    }, 0);
+    set('settings-system-orders', String(tasks.length));
+    set('settings-system-active-orders', String(active));
+    set('settings-system-completed', String(completed));
+    set('settings-system-archived', String(archived));
+    set('settings-system-workers', String(Array.isArray(this.workers) ? this.workers.length : 0));
+    set('settings-system-chats', String(Object.keys(this.conversations || {}).length));
+    set('settings-system-files', String(attachedFiles));
+    set('settings-system-sync', navigator.onLine ? 'Dispositivo en línea' : 'Dispositivo sin conexión');
+  };
+
+  PortonProApp.prototype.clearTemporaryAppCache = async function () {
+    if (!('caches' in window)) return this.showToast('Este navegador no ofrece caché web borrable desde la aplicación.', 'info');
+    try {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map(name => caches.delete(name)));
+      this.showToast(cacheNames.length ? 'Caché temporal eliminada. La sesión y los datos siguen intactos.' : 'No había caché temporal para limpiar.', 'success');
+    } catch (error) {
+      console.warn('[SETTINGS] No se pudo limpiar la caché web', error);
+      this.showToast('No se pudo limpiar la caché temporal de este navegador.', 'error');
+    }
+  };
+
+  PortonProApp.prototype.downloadLocalSettingsBackup = function () {
+    if (this.currentUser?.role !== 'admin') return this.showToast('Solo el administrador puede descargar respaldos.', 'error');
+    const workers = (Array.isArray(this.workers) ? this.workers : []).map(worker => ({
+      id: worker.id, fullName: worker.fullName || '', username: worker.username || '',
+      phone: worker.phone || '', nationalId: worker.nationalId || '', specialty: worker.specialty || '',
+      role: worker.role || 'worker', active: worker.active !== false, photo: worker.photo || ''
+    }));
+    const backup = {
+      product: 'ServiPortones', kind: 'respaldo-local-de-datos-cargados', generatedAt: new Date().toISOString(),
+      scope: 'Datos disponibles en esta sesión. No contiene historial completo de chats ni archivos binarios.',
+      orders: Array.isArray(this.tasks) ? this.tasks : [], workers,
+      preferences: this.prefs || {}, seasonalTheme: this.seasonalTheme || 'classic',
+      nextOrderNumber: this.orderSequenceNext || null
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `serviportones-respaldo-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    this.showToast('Respaldo local descargado.', 'success');
+  };
   PortonProApp.prototype.showSettingsCategory = function (category) {
     const isAdmin = this.currentUser?.role === 'admin';
     const button = document.querySelector('[data-settings-category="' + category + '"]');
@@ -6418,6 +6498,7 @@ document.addEventListener('pointerdown',function(e){if(e.pointerType!=='touch')r
       if (active) item.setAttribute('aria-current','page'); else item.removeAttribute('aria-current');
     });
     document.querySelectorAll('#settings-category-content .settings-category-panel').forEach(panel => panel.classList.toggle('hidden', panel.id !== 'settings-category-' + category));
+    this.refreshSettingsOverview();
     if (window.lucide) lucide.createIcons();
   };
 
@@ -6536,6 +6617,28 @@ html.settings-modal-open,body.settings-modal-open{height:100%;overflow:hidden!im
 .employee-edit-bubble-content{overflow-y:auto;padding:12px;overscroll-behavior:contain;flex:1}
 .employee-edit-bubble-content #manage-user-form{box-shadow:none}
 @media(max-width:640px){.employee-edit-bubble-overlay{padding:10px}.employee-edit-bubble-card{width:100%;max-height:84dvh;border-radius:16px}.employee-edit-bubble-content{padding:10px}}
+</style>
+<style id="settings-category-cards-style">
+.settings-info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:10px}
+.settings-info-card{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;padding:12px;border:1px solid #e1e8ef;border-radius:13px;background:linear-gradient(135deg,#fff,#f8fafc);color:#14213b}
+.settings-info-card>span{color:#687b90;font-size:10px;font-weight:650}
+.settings-info-card>b{font-size:13px;font-weight:850;overflow-wrap:anywhere}
+.settings-info-card p{margin:0;color:#64748b;font-size:11px;line-height:1.5}
+.settings-info-card small{color:#8492a3;font-size:10px;line-height:1.45}
+.settings-info-wide{margin-bottom:9px}
+.settings-info-footnote{margin:4px 2px;color:#8795a6;font-size:10px;line-height:1.45}
+.settings-action-button{margin-top:4px;padding:8px 11px;border:1px solid #cfe0bd;border-radius:9px;background:#f3f8ec;color:#3e641d;font-size:11px;font-weight:800;cursor:pointer}
+.settings-action-button:hover{background:#e9f3dc;border-color:#a6c97e}
+.settings-status-pill{display:inline-flex;margin-top:3px;padding:4px 8px;border-radius:999px;background:#eef2f7;color:#65758a;font-size:9px;font-weight:800}
+@media(max-width:600px){.settings-info-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.settings-info-card{padding:9px;border-radius:11px}.settings-info-card>b{font-size:12px}}
+</style>
+<style id="settings-chat-mobile-and-size-style">
+.settings-chat-preferences{padding:12px;border:1px solid #e1e8ef;border-radius:13px;background:#f8fafc;margin-bottom:10px}
+.settings-chat-preferences h5{margin:0 0 8px;color:#14213b;font-size:12px;font-weight:850}
+.settings-chat-preferences-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.settings-chat-preferences label{min-height:44px;padding:9px 10px!important;border:1px solid #e1e8ef!important;border-radius:10px!important;background:#fff!important}
+.settings-chat-preferences input{flex:0 0 auto}
+@media(max-width:700px){#modal-settings{padding:8px!important;align-items:center!important}#modal-settings>div{width:min(560px,calc(100vw - 20px))!important;height:min(84dvh,740px)!important;max-height:84dvh!important;min-height:0!important;border-radius:18px!important}.settings-workspace{gap:7px}.settings-admin-quick{padding:8px 9px}.settings-admin-quick-heading{gap:7px;margin-bottom:6px}.settings-admin-quick-heading h4{font-size:12px}.settings-admin-quick-heading p{font-size:10px}.settings-workspace-layout{gap:7px}.settings-category-panel{padding:9px!important}.settings-chat-preferences{padding:9px;margin-bottom:7px}.settings-chat-preferences-grid{grid-template-columns:1fr;gap:6px}.settings-chat-preferences label{min-height:42px;padding:9px!important}}
 </style>
 </body>
 </html>
