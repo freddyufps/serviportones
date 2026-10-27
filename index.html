@@ -7083,5 +7083,43 @@ html.theme-dark #chat-launcher-button {
     host.innerHTML=card.outerHTML;
   };
 })();
+</script><style id="chat-header-admin-identity-cleanup">
+#chat-window-modal .chat-brand-mark.chat-admin-identity { display:flex!important;align-items:center!important;width:auto!important;min-width:0!important;max-width:min(62vw,220px)!important;height:auto!important;min-height:40px!important;justify-content:flex-start!important;gap:0!important;padding:0!important;overflow:visible!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;color:#fff!important; }
+#chat-window-modal .chat-brand-mark.chat-admin-identity::before,#chat-window-modal .chat-brand-mark.chat-admin-identity::after { display:none!important;content:none!important; }
+#chat-window-modal .chat-admin-header-card { position:relative;display:flex;align-items:center;gap:8px;box-sizing:border-box;min-width:116px;max-width:100%;min-height:40px;padding:4px 9px;border:1px solid rgba(255,255,255,.2);border-radius:12px;background:rgba(15,23,42,.38);color:#f8fafc; }
+#chat-window-modal .chat-admin-header-avatar { display:flex;flex:0 0 32px;width:32px;height:32px;align-items:center;justify-content:center;overflow:hidden;border:1px solid #8dbd4a;border-radius:50%;background:#e2e8f0;color:#1e3a5f;font-size:12px;font-weight:800; }
+#chat-window-modal .chat-admin-header-avatar img { width:100%;height:100%;object-fit:cover; }
+#chat-window-modal .chat-admin-header-copy { display:flex;min-width:0;flex-direction:column;gap:1px;line-height:1.05; }
+#chat-window-modal .chat-admin-header-name { max-width:140px;overflow:hidden;color:#fff;font-size:11px;font-weight:800;text-overflow:ellipsis;white-space:nowrap; }
+#chat-window-modal .chat-admin-header-role { color:#d6e1ed;font-size:8px;font-weight:700;letter-spacing:.04em;text-transform:uppercase; }
+#chat-window-modal .chat-admin-header-status { font-size:9px;font-weight:700;white-space:nowrap; }
+#chat-window-modal .chat-admin-header-status.is-available { color:#55d69a; }
+#chat-window-modal .chat-admin-header-status.is-absent { color:#f5a742; }
+@media(max-width:639px){#chat-window-modal .chat-brand-mark.chat-admin-identity{max-width:calc(100vw - 126px)!important;min-height:38px!important}#chat-window-modal .chat-admin-header-card{min-width:104px;min-height:36px;padding:3px 7px;gap:6px}#chat-window-modal .chat-admin-header-avatar{width:29px;height:29px;flex-basis:29px}#chat-window-modal .chat-admin-header-name{max-width:calc(100vw - 205px);font-size:10px}#chat-window-modal .chat-admin-header-role{font-size:7px}#chat-window-modal .chat-admin-header-status{font-size:8px}}
+</style>
+<script id="chat-header-admin-identity-cleanup">
+(function(){
+  const C=typeof PortonProApp!=='undefined'?PortonProApp:null;
+  if(!C?.prototype?.renderActiveChatHeader)return;
+  const previous=C.prototype.renderActiveChatHeader;
+  C.prototype.renderActiveChatHeader=function(){
+    previous.call(this);
+    if(this.currentUser?.role==='admin')return;
+    const host=document.querySelector('#chat-window-modal .chat-brand-mark');
+    const info=this.getAdminPresenceInfo?.();
+    if(!host||!info)return;
+    const records=Object.values(this.presenceRecords||{});
+    const adminRecord=records.find(record=>String(record?.role||'').toLowerCase()==='admin')||{};
+    const activeName=String(adminRecord.activeAdminName||info.name||this.activeAdminName||'Administrador');
+    const photo=adminRecord.adminIdentityPhotos?.[activeName]||this.adminIdentityPhotos?.[activeName]||info.photo||'';
+    const status=String(info.status||'disconnected');
+    const safe=value=>this.escapeHtml?this.escapeHtml(String(value)):String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const avatar=photo?'<img src="'+safe(photo)+'" alt="Foto de '+safe(activeName)+'">':safe(activeName.trim().charAt(0).toUpperCase()||'A');
+    const cardClass=status==='available'?' presence-card-connected':status==='absent'?' presence-card-absent':'';
+    host.classList.add('chat-admin-identity');
+    host.setAttribute('aria-label','Administrador activo: '+activeName);
+    host.innerHTML='<div class="chat-admin-header-card'+cardClass+'"><span class="chat-admin-header-avatar seasonal-worker-avatar">'+avatar+'</span><span class="chat-admin-header-copy"><span class="chat-admin-header-name">'+safe(activeName)+'</span><span class="chat-admin-header-role">Administrador</span><span class="chat-admin-header-status is-'+safe(status)+'">'+safe(this.getPresenceLabel?.(status)||'Desconectado')+'</span></span></div>';
+  };
+})();
 </script></body>
 </html>
