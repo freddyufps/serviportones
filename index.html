@@ -1206,14 +1206,15 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input type="text" id="manage-fullname" required placeholder="Nombre Completo" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg">
               <input type="text" id="manage-username" required placeholder="Usuario" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg">
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <input type="text" id="manage-password" required placeholder="Contraseña" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg font-mono">
+              <input type="text" id="manage-national-id" maxlength="24" inputmode="numeric" autocomplete="off" placeholder="Cédula (opcional)" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg">
               <input type="tel" id="manage-phone" required placeholder="WhatsApp" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <input type="text" id="manage-password" required placeholder="Contraseña" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg font-mono">
               <input type="text" id="manage-specialty" placeholder="Especialidad" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg">
             </div>
             <div class="flex justify-end gap-1.5 pt-0.5">
-              <button type="button" onclick="app.resetUserForm()" class="px-2.5 py-1 text-xs border rounded-lg">Cancelar</button>
+              <button type="button" onclick="app.cancelUserForm()" class="px-2.5 py-1 text-xs border rounded-lg">Cancelar</button>
               <button type="submit" id="btn-save-user" class="px-3 py-1 bg-brand-dark text-white rounded-lg text-xs font-bold">Guardar en Firestore</button>
             </div>
           </form>
@@ -1548,11 +1549,16 @@
 
     const SoundEngine = {
       ctx: null,
+      pendingWorkerConnectedSound: false,
       async unlock() {
         try {
           const ctx = this.getCtx();
           if (ctx && ctx.state === 'suspended') await ctx.resume();
           console.info('[ORDER] Audio habilitado por interacción', { state: ctx?.state || 'unavailable' });
+          if (ctx?.state === 'running' && this.pendingWorkerConnectedSound) {
+            this.pendingWorkerConnectedSound = false;
+            this.playWorkerConnectedSound();
+          }
         } catch (error) {
           console.warn('[ORDER] No se pudo habilitar el audio:', error);
         }
@@ -1605,6 +1611,36 @@
         }
       },
 
+      async playWorkerConnectedSound() {
+        try {
+          const ctx = this.getCtx();
+          if (!ctx) return;
+          if (ctx.state === 'suspended') await ctx.resume();
+          if (ctx.state !== 'running') {
+            this.pendingWorkerConnectedSound = true;
+            console.info('[PRESENCE] Sonido de conexión en espera de interacción para habilitar audio');
+            return;
+          }
+          const now = ctx.currentTime;
+          console.info('[PRESENCE] Reproduciendo sonido de conexión de trabajador');
+          [783.99, 987.77, 1318.51].forEach((frequency, index) => {
+            const start = now + index * 0.14;
+            const oscillator = ctx.createOscillator();
+            const gain = ctx.createGain();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(frequency, start);
+            gain.gain.setValueAtTime(0.0001, start);
+            gain.gain.linearRampToValueAtTime(0.24, start + 0.025);
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.42);
+            oscillator.connect(gain);
+            gain.connect(ctx.destination);
+            oscillator.start(start);
+            oscillator.stop(start + 0.44);
+          });
+        } catch (error) {
+          console.warn('[PRESENCE] No se pudo reproducir el sonido de conexión:', error);
+        }
+      },
       async playOrderCompletedSound() {
         try {
           const ctx = this.getCtx();
@@ -2124,6 +2160,9 @@
             snapshot.forEach(doc => {
               const data = doc.data() || {};
               const presenceId = doc.id.toLowerCase();
+              const existingPresenceUser = this.users.find(x => String(x.username || '').toLowerCase() === presenceId) || (Array.isArray(this.workers) ? this.workers.find(x => String(x.username || '').toLowerCase() === presenceId) : null);
+              const previousRecord = this.presenceRecords[presenceId];
+              const previousStatus = previousRecord ? this.getPresenceStatus(existingPresenceUser || { username: presenceId }) : 'disconnected';
               this.presenceRecords[presenceId] = data;
               if (this.currentUser?.role === 'admin' && presenceId === String(this.currentUser.username || '').toLowerCase()) {
                 if (Array.isArray(data.adminIdentityNames) && data.adminIdentityNames.length === 2) this.adminIdentityNames = data.adminIdentityNames.map(name => String(name || '').trim()).filter(Boolean).length === 2 ? data.adminIdentityNames.map(name => String(name || '').trim()) : this.adminIdentityNames;
@@ -2136,7 +2175,15 @@
                 if (data.photo) u.photo = data.photo;
                 if (data.lastLogin) u.lastLogin = data.lastLogin;
               }
+              const presenceUser = u || existingPresenceUser || { username: presenceId, ...data };
+              const isWorkerPresence = ['worker', 'trabajador'].includes(String(data.role || presenceUser.role || '').toLowerCase().trim());
+              const becameAvailable = this.getPresenceStatus(presenceUser) === 'available';
+              if (this.presenceSnapshotInitialized && this.currentUser?.role === 'admin' && isWorkerPresence && previousStatus !== 'available' && becameAvailable && this.prefs?.sound !== false) {
+                console.info('[PRESENCE] Transición de trabajador a disponible', { username: presenceId });
+                SoundEngine.playWorkerConnectedSound();
+              }
             });
+            this.presenceSnapshotInitialized = true;
             this.applySharedSeasonalTheme();
             if (this.currentUser) {
               this.renderTasks();
@@ -2608,6 +2655,7 @@
         this.setupDashboardUI();
         this.renderAdminIdentities();
         this.renderAdminPresence();
+        this.renderMySettingsPhotoPreview();
         if (this.activeChatWorker) this.renderConversationsSidebar();
       }
 
@@ -4443,7 +4491,32 @@ updateMessengerWindowTyping(workerName) {
           ...(Array.isArray(this.workers) ? this.workers : []),
           ...(Array.isArray(this.users) ? this.users.filter(user => ['worker', 'trabajador'].includes(String(user.role || '').toLowerCase().trim())) : [])
         ];
-        const monitorWorkers = [...new Map(workerSources.map(user => [String(user.id || user.username || user.fullName || '').toLowerCase(), user])).values()];
+        const workerById = new Map(workerSources.map(user => [String(user.id || user.username || user.fullName || '').toLowerCase(), user]));
+        const currentStatuses = new Map([...workerById].map(([id, user]) => [id, this.getPresenceStatus(user)]));
+        const hadMonitorOrder = Array.isArray(this.techniciansMonitorOrder) && this.techniciansMonitorOrder.length > 0;
+        let monitorOrder = hadMonitorOrder ? this.techniciansMonitorOrder.filter(id => workerById.has(id)) : [];
+        for (const id of workerById.keys()) if (!monitorOrder.includes(id)) monitorOrder.push(id);
+
+        if (!hadMonitorOrder) {
+          monitorOrder.sort((a, b) => Number(currentStatuses.get(b) === 'available') - Number(currentStatuses.get(a) === 'available'));
+        } else {
+          for (const [id, status] of currentStatuses) {
+            const previousStatus = this.techniciansMonitorPresence?.get(id);
+            if (status === 'available' && previousStatus !== 'available') {
+              monitorOrder = monitorOrder.filter(item => item !== id);
+              monitorOrder.unshift(id);
+            } else if (previousStatus === 'available' && status !== 'available') {
+              const onlineRemain = monitorOrder.filter(item => item !== id && currentStatuses.get(item) === 'available').length;
+              if (onlineRemain > 0) {
+                monitorOrder = monitorOrder.filter(item => item !== id);
+                monitorOrder.splice(onlineRemain, 0, id);
+              }
+            }
+          }
+        }
+        this.techniciansMonitorOrder = monitorOrder;
+        this.techniciansMonitorPresence = currentStatuses;
+        const monitorWorkers = monitorOrder.map(id => workerById.get(id)).filter(Boolean);
         const taskList = Array.isArray(this.tasks) ? this.tasks : [];
         let onlineCount = 0;
 
@@ -4652,8 +4725,17 @@ updateMessengerWindowTyping(workerName) {
         const img = document.getElementById('settings-my-photo-preview');
         const init = document.getElementById('settings-my-initial-preview');
         const name = this.getCurrentDisplayName() || 'A';
-        if (this.currentUser.photo) {
-          img.src = this.currentUser.photo;
+        const photo = this.getCurrentDisplayPhoto();
+        const summaryPhoto = document.getElementById('settings-account-summary-photo');
+        const summaryFallback = document.getElementById('settings-account-summary-fallback');
+        if (summaryPhoto && summaryFallback) {
+          if (photo) { summaryPhoto.src = photo; summaryPhoto.classList.remove('hidden'); summaryFallback.classList.add('hidden'); }
+          else { summaryPhoto.removeAttribute('src'); summaryPhoto.classList.add('hidden'); summaryFallback.classList.remove('hidden'); }
+        }
+        const accountName = document.getElementById('settings-account-name');
+        if (accountName) accountName.textContent = name;
+        if (photo) {
+          img.src = photo;
           img.classList.remove('hidden');
           init.classList.add('hidden');
         } else {
@@ -4738,6 +4820,72 @@ updateMessengerWindowTyping(workerName) {
         }
       }
 
+      openEmployeeEditBubble(worker) {
+        const sourceForm = document.getElementById('manage-user-form');
+        if (!sourceForm || !worker) return;
+        const scrollContainers = [...document.querySelectorAll('*')].filter(el => {
+          const style = getComputedStyle(el);
+          return /(auto|scroll)/.test(style.overflowY) && el.scrollHeight > el.clientHeight;
+        });
+        const returnState = {
+          activeElement: document.activeElement,
+          scrollPositions: scrollContainers.map(el => [el, el.scrollTop, el.scrollLeft]),
+          windowX: window.scrollX,
+          windowY: window.scrollY
+        };
+        document.getElementById('employee-edit-bubble')?.remove();
+        const overlay = document.createElement('div');
+        overlay.id = 'employee-edit-bubble';
+        overlay.className = 'employee-edit-bubble-overlay';
+        overlay.setAttribute('role','dialog');
+        overlay.setAttribute('aria-modal','true');
+        overlay.setAttribute('aria-labelledby','employee-edit-bubble-title');
+        overlay.innerHTML = '<div class="employee-edit-bubble-card"><div class="employee-edit-bubble-header"><div><h3 id="employee-edit-bubble-title">Editar trabajador</h3><p>Actualiza sus datos y guarda los cambios.</p></div><button type="button" onclick="app.cancelUserForm()" aria-label="Cerrar">×</button></div><div class="employee-edit-bubble-content" data-employee-edit-form></div></div>';
+        overlay.addEventListener('click', event => { if (event.target === overlay) this.cancelUserForm(); });
+        const form = sourceForm.cloneNode(true);
+        form.id = 'manage-user-edit-form';
+        form.dataset.editingWorker = 'true';
+        form.querySelectorAll('[id]').forEach(field => {
+          const sourceId = field.id;
+          field.dataset.userField = sourceId.replace('manage-', '').replace('btn-save-user', 'save');
+          field.id = `edit-${sourceId}`;
+        });
+        const field = name => form.querySelector(`[data-user-field="${name}"]`);
+        field('user-id').value = worker.id;
+        field('fullname').value = worker.fullName || worker.username || '';
+        field('username').value = worker.username || '';
+        field('password').value = worker.password || '';
+        field('phone').value = worker.phone || '';
+        field('national-id').value = worker.nationalId || '';
+        field('specialty').value = worker.specialty || '';
+        field('save').textContent = 'Actualizar en Firestore';
+        overlay.querySelector('[data-employee-edit-form]').appendChild(form);
+        document.body.appendChild(overlay);
+        overlay.__returnState = returnState;
+        overlay.querySelector('.employee-edit-bubble-header button')?.focus({ preventScroll: true });
+        if (window.lucide) lucide.createIcons();
+      }
+
+      closeEmployeeEditBubble() {
+        const overlay = document.getElementById('employee-edit-bubble');
+        if (!overlay) return;
+        const returnState = overlay.__returnState;
+        overlay.remove();
+        if (returnState) {
+          const restoreView = () => {
+            returnState.scrollPositions.forEach(([el, top, left]) => {
+              if (el.isConnected) { el.scrollTop = top; el.scrollLeft = left; }
+            });
+            window.scrollTo(returnState.windowX, returnState.windowY);
+            if (returnState.activeElement?.isConnected) returnState.activeElement.focus({ preventScroll: true });
+          };
+          requestAnimationFrame(() => { restoreView(); requestAnimationFrame(restoreView); });
+        }
+      }
+      cancelUserForm() {
+        if (document.getElementById('employee-edit-bubble')) this.closeEmployeeEditBubble();
+        else this.resetUserForm();
+      }
       resetUserForm() {
         document.getElementById('manage-user-id').value = '';
         document.getElementById('manage-user-form').reset();
@@ -4749,12 +4897,15 @@ updateMessengerWindowTyping(workerName) {
         e.preventDefault();
         if (this.currentUser.role !== 'admin') return;
 
-        const id = document.getElementById('manage-user-id').value;
-        const fullName = this.normalizeInput(document.getElementById('manage-fullname').value);
-        const username = this.normalizeInput(document.getElementById('manage-username').value);
-        const password = this.normalizeInput(document.getElementById('manage-password').value);
-        const phone = this.normalizeInput(document.getElementById('manage-phone').value);
-        const specialty = this.normalizeInput(document.getElementById('manage-specialty').value);
+        const form = e.currentTarget;
+        const getField = name => form.querySelector(`[data-user-field="${name}"]`) || document.getElementById(`manage-${name}`);
+        const id = getField('user-id').value;
+        const fullName = this.normalizeInput(getField('fullname').value);
+        const username = this.normalizeInput(getField('username').value);
+        const password = this.normalizeInput(getField('password').value);
+        const phone = this.normalizeInput(getField('phone').value);
+        const nationalId = this.normalizeInput(getField('national-id').value);
+        const specialty = this.normalizeInput(getField('specialty').value);
 
         if (username.toLowerCase() === 'administrador' && id !== 'admin') {
           this.showToast('El usuario no puede llamarse administrador', 'error');
@@ -4766,6 +4917,7 @@ updateMessengerWindowTyping(workerName) {
           username,
           password,
           phone,
+          nationalId,
           specialty: specialty || 'Técnico de Portones',
           role: 'worker',
           active: true
@@ -4781,6 +4933,7 @@ updateMessengerWindowTyping(workerName) {
               await db.collection('users').doc(docId).set({ ...userData, photo: '', lastHeartbeat: 0, lastLogin: 'Nunca' });
               this.showToast(`Trabajador ${fullName} registrado en Firestore`, 'success');
             }
+            if (id) this.closeEmployeeEditBubble();
             this.resetUserForm();
           } catch(err) {
             console.error("Error guardando trabajador en Firestore:", err);
@@ -4807,7 +4960,7 @@ updateMessengerWindowTyping(workerName) {
                 </div>
               </td>
               <td class="p-1.5 font-mono text-[10px] text-slate-600">
-                <span>@${u.username}</span>
+                <span>@${this.escapeHtml(u.username || '')}</span>${u.nationalId ? `<br><span class="text-slate-500">C.C. ${this.escapeHtml(u.nationalId)}</span>` : ''}
               </td>
               <td class="p-1.5 text-right space-x-1">
                 <button onclick="app.editUser('${u.id}')" class="p-1 text-slate-600 hover:text-brand-limeHover" title="Editar"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
@@ -4821,18 +4974,10 @@ updateMessengerWindowTyping(workerName) {
       }
 
       editUser(id) {
-        const u = this.users.find(x => x.id === id);
-        if (!u) return;
-        document.getElementById('manage-user-id').value = u.id;
-        document.getElementById('manage-fullname').value = u.fullName || u.username;
-        document.getElementById('manage-username').value = u.username;
-        document.getElementById('manage-password').value = u.password;
-        document.getElementById('manage-phone').value = u.phone || '';
-        document.getElementById('manage-specialty').value = u.specialty || '';
-        document.getElementById('btn-save-user').textContent = 'Actualizar en Firestore';
-        if (window.lucide) lucide.createIcons();
+        const worker = this.users.find(x => x.id === id);
+        if (!worker) return;
+        this.openEmployeeEditBubble(worker);
       }
-
       async deleteUser(id) {
         if (!confirm(`¿Eliminar trabajador de Firestore?`)) return;
         if (window.db) {
@@ -5026,6 +5171,7 @@ updateMessengerWindowTyping(workerName) {
           const techIsOnline = techPresenceStatus === 'available';
           const techDetails = [
             techObj?.phone ? `📞 ${this.escapeHtml(techObj.phone)}` : '',
+            techObj?.nationalId ? `🪪 C.C. ${this.escapeHtml(techObj.nationalId)}` : '',
             techObj?.specialty ? `🛠️ ${this.escapeHtml(techObj.specialty)}` : ''
           ].filter(Boolean);
 
@@ -6106,5 +6252,290 @@ document.addEventListener('pointerdown',function(e){if(e.pointerType!=='touch')r
 
 </script>
 <style id="chat-hidden-overlay-fix">#chat-attachment-preview-overlay[hidden],#chat-image-viewer[hidden]{display:none!important}.chat-message-text.chat-emoji-only,.chat-message-text.chat-emoji-only span,.sticker-emoji{animation:none!important;transform:none!important}button[data-chat-action="attach"]{display:none!important}.chat-message-avatar{width:48px!important;height:48px!important;flex:0 0 48px!important}.messenger-window-avatar{width:46px!important;height:46px!important;flex:0 0 46px!important}.messenger-window-header{min-height:62px!important}.chat-message-text{font-size:14px!important;line-height:1.35!important}.chat-message-identity{font-size:11px!important}.chat-message-avatar img{width:100%;height:100%;object-fit:cover}@media(max-width:640px){.chat-emoji-picker{display:block!important;position:fixed!important;left:8px!important;right:8px!important;top:auto!important;bottom:calc(env(safe-area-inset-bottom, 0px) + 74px)!important;width:auto!important;max-height:min(48dvh,400px)!important;border-radius:18px!important;overflow:hidden!important;overscroll-behavior:contain;box-shadow:0 8px 30px rgba(15,23,42,.24)!important}.chat-emoji-picker .chat-picker-head{padding:7px;gap:6px}.chat-emoji-picker .chat-picker-categories{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;touch-action:pan-x}.chat-emoji-picker .chat-emoji-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;max-height:min(27dvh,225px);padding:7px;overscroll-behavior:contain;touch-action:pan-y}.chat-emoji-picker .chat-emoji-choice{height:42px!important;min-height:42px!important;font-size:28px!important;touch-action:manipulation}.chat-emoji-picker .chat-picker-footer{padding:6px 8px}.chat-message-avatar{width:42px!important;height:42px!important;flex:0 0 42px!important}.messenger-window-avatar{width:42px!important;height:42px!important;flex-basis:42px!important}.messenger-window-header{min-height:62px!important}.chat-message-text{font-size:14px!important;line-height:1.35!important}.chat-message-identity{font-size:11px!important}}</style>
+<style id="chat-hide-custom-emojis-mobile">@media (max-width: 640px){.chat-composer-tools [data-chat-action="emoji"],.chat-emoji-picker{display:none!important}}</style>
+<script id="settings-workspace-organizer">
+(function () {
+  if (typeof PortonProApp === 'undefined' || PortonProApp.prototype.__settingsWorkspaceInstalled) return;
+  PortonProApp.prototype.__settingsWorkspaceInstalled = true;
+
+  PortonProApp.prototype.ensureSettingsWorkspace = function () {
+    if (document.getElementById('settings-workspace')) return;
+    const modal = document.getElementById('modal-settings');
+    const body = modal?.querySelector(':scope > div > .p-4');
+    if (!modal || !body) return;
+    const nodes = {
+      appearance: document.getElementById('settings-theme-section'),
+      administrators: document.getElementById('settings-admin-identities-section'),
+      orders: document.getElementById('settings-order-sequence-section'),
+      notifications: document.getElementById('pref-popup')?.closest('.bg-slate-50'),
+      account: document.getElementById('settings-my-photo-preview')?.closest('.bg-slate-50'),
+      security: document.getElementById('set-own-current-pass')?.closest('.bg-slate-50'),
+      team: document.getElementById('settings-admin-users-section')
+    };
+    const soundLabel = document.getElementById('pref-sound')?.closest('label');
+    const shell = document.createElement('div');
+    shell.id = 'settings-workspace';
+    shell.className = 'settings-workspace';
+    const adminQuick = document.createElement('section');
+    adminQuick.id = 'settings-admin-quick';
+    adminQuick.className = 'settings-admin-quick';
+    adminQuick.innerHTML = '<div class="settings-admin-quick-heading"><span class="settings-admin-icon">♙</span><div><h4>Administradores</h4><p>Cambio rápido de identidad. Ambas identidades comparten esta cuenta y sus permisos.</p></div><button type="button" data-admin-only="true" class="settings-admin-employees-shortcut" onclick="app.showSettingsCategory(\'employees\')"><i data-lucide="users-round"></i><span>Empleados</span></button><span class="settings-active-admin">ACTIVO</span></div>';
+    if (nodes.administrators) adminQuick.appendChild(nodes.administrators);
+
+    const nav = document.createElement('nav');
+    nav.className = 'settings-category-nav';
+    nav.setAttribute('aria-label', 'Categorías de configuración');
+    const content = document.createElement('div');
+    content.id = 'settings-category-content';
+    content.className = 'settings-category-content';
+    const defs = [
+      ['account','Cuenta','user-round','Perfil y datos de acceso.',false],
+      ['employees','Empleados','users-round','Crear y editar trabajadores.',true],
+      ['sound','Sonidos','volume-2','Avisos de audio y preferencias.',false],
+      ['notifications','Notificaciones','bell','Alertas y contadores.',false],
+      ['appearance','Apariencia','palette','Temas visuales del sistema.',true],
+      ['orders','Órdenes de trabajo','clipboard-list','Consecutivos y numeración.',true],
+      ['security','Seguridad','shield-check','Contraseña y acceso.',false],
+      ['chat','Chat y mensajería','messages-square','Preferencias de conversación.',false],
+      ['application','Aplicación','smartphone','Estado y mantenimiento.',false],
+      ['system','Sistema','activity','Resumen operativo.',true],
+      ['backups','Respaldos','database-backup','Copias y restauración.',true]
+    ];
+    for (const [id, label, icon, description, adminOnly] of defs) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'settings-category-button';
+      button.dataset.settingsCategory = id;
+      if (adminOnly) button.dataset.adminOnly = 'true';
+      button.innerHTML = '<i data-lucide="' + icon + '"></i><span><b>' + label + '</b><small>' + description + '</small></span>';
+      nav.appendChild(button);
+      const panel = document.createElement('section');
+      panel.id = 'settings-category-' + id;
+      panel.className = 'settings-category-panel hidden';
+      panel.innerHTML = '<div class="settings-category-title"><div><h4>' + label + '</h4><p>' + description + '</p></div></div>';
+      content.appendChild(panel);
+    }
+
+    const accountPanel = content.querySelector('#settings-category-account');
+    const accountSummary = document.createElement('div');
+    accountSummary.className = 'settings-account-summary';
+    accountSummary.innerHTML = '<div class="settings-account-avatar"><img id="settings-account-summary-photo" class="hidden" alt="Foto del perfil"><i id="settings-account-summary-fallback" data-lucide="user-round"></i></div><div><b id="settings-account-name">Usuario</b><span id="settings-account-username">Cuenta</span></div><span id="settings-account-role"></span>';
+    accountPanel.appendChild(accountSummary);
+    if (nodes.account) accountPanel.appendChild(nodes.account);
+
+    const soundPanel = content.querySelector('#settings-category-sound');
+    if (soundLabel) {
+      const soundCard = document.createElement('div');
+      soundCard.className = 'settings-option-card';
+      soundCard.innerHTML = '<div><b>Sonido general</b><p>Controla los avisos sonoros de mensajes, órdenes y conexiones.</p></div>';
+      soundCard.appendChild(soundLabel);
+      soundPanel.appendChild(soundCard);
+      const soundFuture = document.createElement('div');
+      soundFuture.className = 'settings-future-note';
+      soundFuture.textContent = 'Los controles individuales de tipo de sonido y volumen se podrán configurar aquí en una mejora futura.';
+      soundPanel.appendChild(soundFuture);
+    }
+
+    const notificationsPanel = content.querySelector('#settings-category-notifications');
+    if (nodes.notifications) notificationsPanel.appendChild(nodes.notifications);
+    const notificationFuture = document.createElement('div');
+    notificationFuture.className = 'settings-future-note';
+    notificationFuture.textContent = 'Las notificaciones push y alertas por vencimiento aún no están habilitadas en esta versión.';
+    notificationsPanel.appendChild(notificationFuture);
+
+    const appearancePanel = content.querySelector('#settings-category-appearance');
+    if (nodes.appearance) appearancePanel.appendChild(nodes.appearance);
+    const appearanceFuture = document.createElement('div');
+    appearanceFuture.className = 'settings-future-note';
+    appearanceFuture.textContent = 'Los temas visuales existentes se mantienen. Controles de color, tamaño de texto y modo automático quedan preparados para una futura configuración.';
+    appearancePanel.appendChild(appearanceFuture);
+
+    const ordersPanel = content.querySelector('#settings-category-orders');
+    if (nodes.orders) ordersPanel.appendChild(nodes.orders);
+    const orderFuture = document.createElement('div');
+    orderFuture.className = 'settings-future-note';
+    orderFuture.textContent = 'La numeración actual utiliza el prefijo ORD-. La edición de prefijos personalizados queda pendiente para una futura mejora.';
+    ordersPanel.appendChild(orderFuture);
+
+    const securityPanel = content.querySelector('#settings-category-security');
+    if (nodes.security) securityPanel.appendChild(nodes.security);
+    const securityFuture = document.createElement('div');
+    securityFuture.className = 'settings-future-note';
+    securityFuture.textContent = 'El cierre remoto de sesiones, historial de accesos y bloqueo por inactividad no están habilitados todavía.';
+    securityPanel.appendChild(securityFuture);
+    const employeesShortcut = document.createElement('button');
+    employeesShortcut.type = 'button';
+    employeesShortcut.dataset.adminOnly = 'true';
+    employeesShortcut.className = 'settings-employees-shortcut';
+    employeesShortcut.innerHTML = '<i data-lucide="users-round"></i><span><b>Administrar empleados</b><small>Crear cuentas, editar datos o actualizar cédulas y especialidades.</small></span><span aria-hidden="true">›</span>';
+    employeesShortcut.addEventListener('click', () => this.showSettingsCategory('employees'));
+    securityPanel.appendChild(employeesShortcut);
+
+    const employeesPanel = content.querySelector('#settings-category-employees');
+    if (nodes.team) {
+      const teamHeading = nodes.team.querySelector('h4 span');
+      if (teamHeading) teamHeading.textContent = 'Crear y editar trabajadores';
+      employeesPanel.appendChild(nodes.team);
+    }
+    const placeholders = {
+      chat: 'La configuración actual del chat se conserva. Opciones avanzadas de lectura, archivos y descarga automática se podrán añadir aquí.',
+      application: 'La limpieza de caché y los estados de Firebase, almacenamiento y sincronización aún no tienen controles disponibles.',
+      system: 'Este espacio queda preparado para estadísticas de uso, órdenes, trabajadores, chats y archivos.',
+      backups: 'La exportación, copia de seguridad y restauración de datos todavía no están habilitadas.'
+    };
+    for (const id of Object.keys(placeholders)) {
+      const note = document.createElement('div');
+      note.className = 'settings-future-note';
+      note.textContent = placeholders[id];
+      content.querySelector('#settings-category-' + id).appendChild(note);
+    }
+
+    const layout = document.createElement('div');
+    layout.className = 'settings-workspace-layout';
+    layout.append(nav, content);
+    shell.append(adminQuick, layout);
+    body.replaceChildren(shell);
+    body.classList.remove('p-4','space-y-3.5','overflow-y-auto');
+    body.classList.add('settings-workspace-body');
+    const modalCard = modal.querySelector(':scope > div');
+    modalCard?.classList.remove('max-w-lg');
+    modalCard?.classList.add('max-w-5xl');
+    nav.addEventListener('click', event => {
+      const button = event.target.closest('[data-settings-category]');
+      if (!button || button.disabled) return;
+      this.showSettingsCategory(button.dataset.settingsCategory);
+    });
+  };
+
+  PortonProApp.prototype.showSettingsCategory = function (category) {
+    const isAdmin = this.currentUser?.role === 'admin';
+    const button = document.querySelector('[data-settings-category="' + category + '"]');
+    if (!button || (button.dataset.adminOnly === 'true' && !isAdmin)) category = 'account';
+    this.settingsActiveCategory = category;
+    document.querySelectorAll('#settings-workspace [data-settings-category]').forEach(item => {
+      const active = item.dataset.settingsCategory === category;
+      item.classList.toggle('is-active', active);
+      if (active) item.setAttribute('aria-current','page'); else item.removeAttribute('aria-current');
+    });
+    document.querySelectorAll('#settings-category-content .settings-category-panel').forEach(panel => panel.classList.toggle('hidden', panel.id !== 'settings-category-' + category));
+    if (window.lucide) lucide.createIcons();
+  };
+
+  const originalOpen = PortonProApp.prototype.openSettingsModal;
+  const originalClose = PortonProApp.prototype.closeSettingsModal;
+  PortonProApp.prototype.openSettingsModal = function () {
+    this.ensureSettingsWorkspace();
+    if (!this.settingsScrollLockState) {
+      this.settingsScrollLockState = { bodyOverflow: document.body.style.overflow, rootOverflow: document.documentElement.style.overflow };
+      document.body.classList.add('settings-modal-open');
+      document.documentElement.classList.add('settings-modal-open');
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    }
+    originalOpen.call(this);
+    const isAdmin = this.currentUser?.role === 'admin';
+    document.getElementById('settings-admin-quick')?.classList.toggle('hidden', !isAdmin);
+    document.querySelectorAll('#settings-workspace [data-admin-only="true"]').forEach(button => button.classList.toggle('hidden', !isAdmin));
+    const name = this.getCurrentDisplayName?.() || this.currentUser?.fullName || this.currentUser?.username || 'Usuario';
+    document.getElementById('settings-account-name').textContent = name;
+    document.getElementById('settings-account-username').textContent = '@' + (this.currentUser?.username || 'cuenta');
+    document.getElementById('settings-account-role').textContent = isAdmin ? 'Administrador' : 'Trabajador';
+    this.showSettingsCategory(this.settingsActiveCategory || 'account');
+  };
+
+  PortonProApp.prototype.closeSettingsModal = function () {
+    originalClose.call(this);
+    if (!this.settingsScrollLockState) return;
+    document.body.style.overflow = this.settingsScrollLockState.bodyOverflow;
+    document.documentElement.style.overflow = this.settingsScrollLockState.rootOverflow;
+    document.body.classList.remove('settings-modal-open');
+    document.documentElement.classList.remove('settings-modal-open');
+    this.settingsScrollLockState = null;
+  };})();
+</script>
+<style id="settings-workspace-styles">
+
+#modal-settings>div{width:min(1080px,96vw)}
+.settings-workspace-body{min-height:0;overflow:hidden!important;padding:12px!important}
+.settings-workspace{display:grid;grid-template-rows:auto minmax(0,1fr);gap:12px;min-height:0;height:100%}
+.settings-admin-quick{padding:12px 14px;border:1px solid #dce5ed;border-radius:16px;background:linear-gradient(120deg,#f7fafc,#eef5e7);box-shadow:0 3px 12px #14213b0c}
+.settings-admin-quick-heading{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.settings-admin-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:#14213b;color:#a6cf6a;font-size:20px}
+.settings-admin-quick-heading h4,.settings-category-title h4{margin:0;color:#14213b;font-size:13px;font-weight:900;letter-spacing:.03em}
+.settings-admin-quick-heading p,.settings-category-title p{margin:2px 0 0;color:#64748b;font-size:11px}
+.settings-active-admin{margin-left:auto;padding:4px 8px;border-radius:999px;background:#e8f3d8;color:#527e20;font-size:9px;font-weight:900;letter-spacing:.08em}
+#settings-admin-identities-section{margin:0!important;padding:8px 10px!important;background:#fff!important}
+#settings-admin-identities-section>div:first-child{display:none}
+#admin-identities-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.settings-workspace-layout{display:grid;grid-template-columns:190px minmax(0,1fr);gap:12px;min-height:0;height:100%}
+.settings-category-nav{display:flex;flex-direction:column;gap:5px;min-height:0;overflow:auto;padding:2px}
+.settings-category-button{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:7px 9px;border:1px solid transparent;border-radius:12px;background:transparent;color:#52677b;text-align:left;cursor:pointer;transition:background .16s,border-color .16s,color .16s}
+.settings-category-button>i{width:18px;height:18px;flex:0 0 18px;color:#6f9f2d}
+.settings-category-button b,.settings-category-button small{display:block}
+.settings-category-button b{font-size:11px;font-weight:800}
+.settings-category-button small{margin-top:2px;color:#8795a6;font-size:9px;line-height:1.2}
+.settings-category-button:hover{background:#f3f7ee;border-color:#dce8ce}
+.settings-category-button.is-active{background:#eaf3df;border-color:#cde1b5;color:#294a16;box-shadow:inset 3px 0 #77aa32}
+.settings-category-content{min-width:0;min-height:0;overflow:hidden}
+.settings-category-panel{height:100%;overflow:auto;padding:14px;border:1px solid #e0e7ef;border-radius:16px;background:#fff;box-shadow:0 3px 14px #14213b0a}
+.settings-category-panel.hidden{display:none!important}
+.settings-category-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #edf1f5}
+.settings-account-summary{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px 12px;border:1px solid #e5ebf1;border-radius:13px;background:#f8fafc}
+.settings-account-avatar{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:#eaf3df;color:#64952d}
+.settings-account-avatar svg{width:19px;height:19px}
+.settings-account-summary>div:nth-child(2){min-width:0;flex:1}
+.settings-account-summary b,.settings-account-summary span{display:block}
+.settings-account-summary b{color:#14213b;font-size:12px}
+.settings-account-summary span{margin-top:2px;color:#718096;font-size:10px}
+#settings-account-role{padding:4px 8px!important;border-radius:999px;background:#edf2f7;color:#52677b!important;font-size:9px!important;font-weight:800}
+.settings-category-panel>.bg-slate-50{margin-bottom:8px}
+.settings-option-card{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid #e0e7ef;border-radius:13px;background:#f8fafc}
+.settings-option-card b{color:#24364b;font-size:12px}
+.settings-option-card p{margin:3px 0 0;color:#718096;font-size:10px}
+.settings-future-note{margin-top:8px;padding:11px 12px;border:1px dashed #cbd5e1;border-radius:12px;background:#f8fafc;color:#718096;font-size:10px;line-height:1.5}
+@media(max-width:700px){#modal-settings>div{width:min(680px,97vw);max-height:94dvh}.settings-workspace-body{padding:9px!important}.settings-workspace{gap:8px}.settings-admin-quick{padding:9px}.settings-admin-quick-heading{gap:7px;margin-bottom:6px}.settings-admin-icon{width:30px;height:30px}.settings-workspace-layout{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:7px}.settings-category-nav{flex-direction:row;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;padding:1px 1px 5px}.settings-category-button{flex:0 0 auto;width:auto;min-width:125px;min-height:42px;padding:6px 8px}.settings-category-button small{display:none}.settings-category-button.is-active{box-shadow:inset 0 -3px #77aa32}.settings-category-panel{padding:10px;border-radius:13px}.settings-account-summary{padding:8px}.settings-admin-quick-heading p{max-width:230px;line-height:1.25}}
+</style>
+<style id="modal-transparent-backdrops">
+#modal-settings,#modal-task-form,#modal-service-manager,#modal-managed-item,#modal-report,#modal-view-order{background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.settings-account-avatar{position:relative;overflow:hidden}
+.settings-account-avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.settings-account-avatar i{position:absolute;width:19px;height:19px}
+#settings-admin-users-section{margin-top:12px!important}
+</style><style id="settings-employees-shortcut-style">
+.settings-employees-shortcut{display:flex;align-items:center;gap:10px;width:100%;margin-top:12px;padding:12px;border:1px solid #d9e8c8;border-radius:13px;background:#f4f9ee;color:#365820;text-align:left;cursor:pointer}
+.settings-employees-shortcut>i{width:20px;height:20px;flex:0 0 20px;color:#6f9f2d}
+.settings-employees-shortcut>span:nth-child(2){min-width:0;flex:1}
+.settings-employees-shortcut b,.settings-employees-shortcut small{display:block}
+.settings-employees-shortcut b{font-size:12px;font-weight:900}
+.settings-employees-shortcut small{margin-top:3px;color:#718096;font-size:10px}
+.settings-employees-shortcut>span:last-child{font-size:22px;color:#6f9f2d}
+.settings-employees-shortcut:hover{border-color:#9fc66c;background:#edf6e3}
+</style><style id="settings-admin-employees-shortcut-style">
+.settings-admin-employees-shortcut{display:inline-flex;align-items:center;justify-content:center;gap:6px;margin-left:auto;padding:7px 10px;border:1px solid #cfe2bb;border-radius:10px;background:#fff;color:#456d23;font-size:10px;font-weight:900;white-space:nowrap;cursor:pointer}
+.settings-admin-employees-shortcut i{width:15px;height:15px}
+.settings-admin-employees-shortcut:hover{background:#edf6e3;border-color:#9fc66c}
+.settings-active-admin{margin-left:0!important}
+@media(max-width:700px){.settings-admin-employees-shortcut{padding:6px 8px;font-size:9px}.settings-admin-quick-heading{flex-wrap:wrap}.settings-admin-quick-heading>div{flex:1;min-width:125px}}
+</style><style id="settings-contained-scroll">
+html.settings-modal-open,body.settings-modal-open{height:100%;overflow:hidden!important;overscroll-behavior:none}
+#modal-settings{overflow:hidden!important;overscroll-behavior:contain;touch-action:pan-y}
+#modal-settings>div{height:min(92dvh,850px);max-height:92dvh;min-height:0}
+#modal-settings .settings-workspace-body{height:0;min-height:0;flex:1 1 0%;overflow:hidden!important;overscroll-behavior:contain;touch-action:pan-y}
+#settings-workspace,.settings-workspace-layout,.settings-category-content{min-height:0}
+.settings-category-nav,.settings-category-content,.settings-category-panel{overscroll-behavior:contain}
+.settings-category-panel{min-height:0;max-height:100%;overflow-x:hidden;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+@media(max-width:700px){#modal-settings>div{height:94dvh;max-height:94dvh}}
+</style><style id="employee-edit-bubble-style">
+.employee-edit-bubble-overlay{position:fixed;inset:0;z-index:100250;display:flex;align-items:center;justify-content:center;padding:16px;background:transparent}
+.employee-edit-bubble-card{width:min(520px,calc(100vw - 24px));max-height:min(82dvh,680px);overflow:hidden;border:1px solid #dbe4ed;border-radius:18px;background:#fff;box-shadow:0 20px 60px rgba(16,24,40,.28);display:flex;flex-direction:column}
+.employee-edit-bubble-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid #e5ebf1;background:#f8fafc;flex:none}
+.employee-edit-bubble-header h3{margin:0;color:#142033;font-size:16px;font-weight:750}
+.employee-edit-bubble-header p{margin:3px 0 0;color:#64748b;font-size:12px}
+.employee-edit-bubble-header button{width:34px;height:34px;border:1px solid #d5deea;border-radius:10px;background:#fff;color:#475569;font-size:22px;line-height:1;cursor:pointer}
+.employee-edit-bubble-header button:hover{background:#fff1f2;border-color:#fecdd3;color:#e11d48}
+.employee-edit-bubble-content{overflow-y:auto;padding:12px;overscroll-behavior:contain;flex:1}
+.employee-edit-bubble-content #manage-user-form{box-shadow:none}
+@media(max-width:640px){.employee-edit-bubble-overlay{padding:10px}.employee-edit-bubble-card{width:100%;max-height:84dvh;border-radius:16px}.employee-edit-bubble-content{padding:10px}}
+</style>
 </body>
 </html>
