@@ -6886,5 +6886,46 @@ body.theme-dark .chat-emoji-picker .chat-picker-footer button{background:#22334a
 </style>
 <style id="admin-presence-menu-interaction-layer">#header-presence-profile,#header-presence-profile>div:last-child,#admin-presence-control{overflow:visible!important}#header-presence-profile{z-index:2147483000!important}#admin-presence-control{position:relative!important;z-index:2147483001!important}#admin-presence-menu{display:block;position:absolute;left:0;top:calc(100% + 6px);z-index:2147483001!important;pointer-events:auto!important;touch-action:manipulation}#admin-presence-menu.hidden{display:none!important}#admin-presence-menu button{position:relative;z-index:1;pointer-events:auto!important;cursor:pointer;touch-action:manipulation}</style>
 <style id="dark-mode-monitor-name-contrast">body.theme-dark #technicians-status-grid .presence-card-connected h4{color:#17301a!important;text-shadow:none!important}body.theme-dark #technicians-status-grid .presence-card-connected .presence-label.is-available{color:#087d4b!important;text-shadow:none!important}</style>
-</body>
+<style id="mobile-reactions-and-chat-dark-bottom-fix">
+/* En móvil se reacciona manteniendo pulsado el mensaje; el botón compacto queda solo en escritorio. */
+@media (max-width: 639px) {
+  #chat-messages-container .chat-message-actions .chat-reaction-trigger { display:none !important; }
+  #chat-messages-container .chat-message-row { -webkit-touch-callout:none; }
+}
+/* El modo oscuro cubre también el espacio inferior, el compositor y el área segura del teléfono. */
+html.theme-dark, body.theme-dark { background-color:#0b1220 !important; }
+body.theme-dark #chat-window-modal,
+html.theme-dark #chat-window-modal,
+body.theme-dark #chat-window-modal > .flex-1.flex.overflow-hidden,
+html.theme-dark #chat-window-modal > .flex-1.flex.overflow-hidden,
+body.theme-dark #chat-window-modal #chat-conversation-area,
+html.theme-dark #chat-window-modal #chat-conversation-area,
+body.theme-dark #chat-window-modal #chat-messages-container,
+html.theme-dark #chat-window-modal #chat-messages-container {
+  background-color:#111c2c !important;
+}
+body.theme-dark #chat-window-modal form[onsubmit*="handleSendMessage"],
+html.theme-dark #chat-window-modal form[onsubmit*="handleSendMessage"] {
+  background-color:#111c2c !important;
+  border-color:#34465d !important;
+}
+body.theme-dark #chat-window-modal #chat-input-text,
+html.theme-dark #chat-window-modal #chat-input-text {
+  background-color:#172438 !important;
+  color:#e7eef8 !important;
+  border-color:#40536a !important;
+}
+body.theme-dark #chat-floating-button-container,
+html.theme-dark #chat-floating-button-container { background:transparent !important; }
+body.theme-dark #chat-launcher-button,
+html.theme-dark #chat-launcher-button {
+  background:linear-gradient(120deg,#1e3a5f,#244b74) !important;
+  color:#f8fafc !important;
+  border-color:#71a832 !important;
+}
+@media (max-width: 639px) {
+  body.theme-dark #chat-window-modal,
+  html.theme-dark #chat-window-modal { padding-bottom:env(safe-area-inset-bottom) !important; }
+}
+</style></body>
 </html>
