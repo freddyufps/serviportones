@@ -275,6 +275,7 @@
         this.workers = [];
         this.tasks = INITIAL_TASKS;
         this.orderSequenceNext = 101;
+        this.taskClientMode = 'new';
         this.showArchivedTasks = false;
         this.invoiceUploadTaskId = null;
         this.notifications = [];
@@ -329,6 +330,7 @@
 
         // Estado del GPS
         this.gpsWatchId = null;
+        this.gpsConnectedAt = null;
         this.isGpsSharing = false;
         this.adminMap = null;
         this.adminMapMarkers = {};
@@ -1053,16 +1055,24 @@
 
         const monitorSection = document.getElementById('section-technicians-monitor');
         const filterTech = document.getElementById('filter-tech');
+        const filterTechControl = document.getElementById('filter-tech-control');
         const auditLogSection = document.getElementById('section-admin-audit-log');
         const roleHint = document.getElementById('role-hint-text');
+        this.installOrderFilterDismissHandlers();
 
         const btnResetPending = document.getElementById('btn-reset-pending');
         const btnResetDone = document.getElementById('btn-reset-done');
         const btnResetFailed = document.getElementById('btn-reset-failed');
+        const btnAssignOrderFilter = document.getElementById('btn-assign-order-filter');
+        const ordersToolbar = document.getElementById('orders-toolbar');
 
+        roleHint?.classList.toggle('hidden', !isAdmin);
         if (isAdmin) {
+          ordersToolbar?.classList.remove('hidden');
+          btnAssignOrderFilter?.classList.remove('hidden');
           monitorSection.classList.remove('hidden');
           filterTech.classList.remove('hidden');
+          filterTechControl?.classList.remove('hidden');
           filterTech.disabled = false;
           auditLogSection.classList.remove('hidden');
           roleHint.textContent = 'Supervisión en vivo, GPS y control total';
@@ -1071,17 +1081,21 @@
           if (btnResetDone) btnResetDone.classList.remove('hidden');
           if (btnResetFailed) btnResetFailed.classList.remove('hidden');
         } else {
+          ordersToolbar?.classList.add('hidden');
+          btnAssignOrderFilter?.classList.add('hidden');
           monitorSection.classList.add('hidden');
           filterTech.classList.add('hidden');
+          filterTechControl?.classList.add('hidden');
           filterTech.disabled = true;
           auditLogSection.classList.add('hidden');
-          roleHint.textContent = 'Usa Waze/Maps y completa tus reportes';
+          roleHint.textContent = '';
 
           if (btnResetPending) btnResetPending.classList.add('hidden');
           if (btnResetDone) btnResetDone.classList.add('hidden');
           if (btnResetFailed) btnResetFailed.classList.add('hidden');
         }
 
+        this.renderOrderFilterMenus();
         const banner = document.getElementById('dashboard-banner');
         if (isAdmin) {
           banner.className = 'mb-4 sm:mb-5 p-3.5 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm bg-gradient-to-r from-slate-950 via-brand-dark to-slate-900 text-white border-brand-lime/40';
@@ -1090,12 +1104,9 @@
               <h3 class="font-extrabold text-xs sm:text-sm text-white">Panel Central de Operaciones</h3>
               <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5">Asigna órdenes, supervisa técnicos en mapa GPS y comunícate por chat y voz.</p>
             </div>
-            <div class="mt-2 sm:mt-0 flex items-center gap-2">
-              <button onclick="app.openAdminGpsModal()" class="text-xs font-bold bg-cyan-700 hover:bg-cyan-600 text-white px-3 py-1.5 rounded-xl flex items-center gap-1 shadow transition active:scale-95">
-                <i data-lucide="map-pin" class="w-3.5 h-3.5"></i> Ver Mapa GPS
-              </button>
-              <button onclick="app.openNewTaskModal()" class="text-xs font-bold bg-brand-lime hover:bg-brand-limeHover text-white px-3 py-1.5 rounded-xl flex items-center gap-1 shadow transition active:scale-95">
-                <i data-lucide="plus-circle" class="w-4 h-4"></i> Asignar Orden
+            <div class="mt-2 sm:mt-0 flex items-center justify-center sm:justify-end gap-2 self-center sm:self-auto">
+              <button type="button" aria-label="Ver mapa GPS" title="Ver mapa GPS" onclick="app.openAdminGpsModal()" class="group shrink-0 cursor-pointer rounded-2xl border-0 bg-transparent p-0 shadow-none transition-transform hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400">
+                <img src="assets/media/boton-ver-mapa-gps.png" alt="Ver mapa GPS" class="block h-20 w-20 object-contain sm:h-24 sm:w-24 md:h-28 md:w-28">
               </button>
             </div>
           `;
@@ -1481,6 +1492,7 @@
         }
 
         const myName = this.getCurrentDisplayName();
+        this.gpsConnectedAt = Date.now();
         const btnLabel = document.getElementById('worker-gps-label');
         const btnDot = document.getElementById('worker-gps-dot');
 
@@ -1492,7 +1504,8 @@
               workerName: myName,
               active: true,
               updatedAt: this.formatTime(new Date()),
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              connectedAt: this.gpsConnectedAt || Date.now()
             };
 
             if (window.db) {
@@ -1520,6 +1533,7 @@
           this.gpsWatchId = null;
         }
         this.isGpsSharing = false;
+        this.gpsConnectedAt = null;
 
         const myName = this.getCurrentDisplayName();
         if (window.db && myName) {
@@ -1560,6 +1574,7 @@
 
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
+          referrerPolicy: 'strict-origin-when-cross-origin',
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>'
         }).addTo(this.adminMap);
       }
@@ -1574,7 +1589,8 @@
           snap.forEach(doc => {
             const data = doc.data();
             locs[doc.id] = data;
-            if (data.active) activeCount++;
+            const lastSignal = Number(data.timestamp || 0);
+            if (data.active && lastSignal && Date.now() - lastSignal < 180000) activeCount++;
           });
 
           this.locationsData = locs;
@@ -1594,34 +1610,48 @@
           return;
         }
 
-        listElem.innerHTML = workers.map(w => {
-          const wName = w.fullName || w.username;
-          const loc = this.locationsData[wName];
-          const isGpsActive = loc && loc.active && (Date.now() - (loc.timestamp || 0) < 180000);
+        const now = Date.now();
+        const orderedWorkers = workers.map((worker, index) => {
+          const name = worker.fullName || worker.username;
+          const location = this.locationsData[name];
+          const timestamp = Number(location?.timestamp || 0);
+          const isGpsActive = Boolean(location?.active && timestamp && now - timestamp < 180000);
+          return { worker, index, name, location, isGpsActive };
+        }).sort((a, b) => {
+          if (a.isGpsActive !== b.isGpsActive) return Number(b.isGpsActive) - Number(a.isGpsActive);
+          if (a.isGpsActive) {
+            const aConnectedAt = Number(a.location.connectedAt || a.location.timestamp || 0);
+            const bConnectedAt = Number(b.location.connectedAt || b.location.timestamp || 0);
+            if (aConnectedAt !== bConnectedAt) return bConnectedAt - aConnectedAt;
+          }
+          return a.index - b.index;
+        });
+
+        listElem.innerHTML = orderedWorkers.map(({ worker: w, name: wName, location: loc, isGpsActive }) => {
+          const safeName = this.escapeHtml(wName);
+          const photo = w.photo ? this.escapeHtml(w.photo) : '';
+          const avatar = photo
+            ? `<img src="${photo}" alt="Foto de ${safeName}" loading="lazy">`
+            : `<span>${this.escapeHtml(String(wName).charAt(0).toUpperCase())}</span>`;
+          const lastUpdate = this.escapeHtml(loc?.updatedAt || 'Sin señal');
 
           return `
-            <div class="p-2.5 bg-white rounded-xl border ${isGpsActive ? 'border-cyan-300 shadow-sm' : 'border-slate-200'} flex flex-col gap-1.5">
-              <div class="flex items-center justify-between">
-                <span class="font-extrabold text-slate-800 flex items-center gap-1.5">
-                  <span class="w-2.5 h-2.5 rounded-full ${isGpsActive ? 'bg-cyan-500 animate-ping' : 'bg-slate-300'}"></span>
-                  ${wName}
+            <article class="gps-worker-card ${isGpsActive ? 'is-active' : ''}">
+              <div class="gps-worker-card-main">
+                <span class="gps-worker-avatar seasonal-worker-avatar" aria-hidden="true"><span class="gps-worker-photo-crop">${avatar}</span></span>
+                <span class="gps-worker-card-identity">
+                  <span class="gps-worker-card-name"><span class="gps-worker-state-dot ${isGpsActive ? 'is-active' : ''}"></span>${safeName}</span>
+                  <span class="gps-worker-card-status ${isGpsActive ? 'is-active' : ''}">${isGpsActive ? 'Transmitiendo GPS' : 'GPS inactivo'}</span>
                 </span>
-                <span class="text-[10px] text-slate-400 font-mono">${loc?.updatedAt || 'Sin señal'}</span>
-              </div>
-              <div class="text-[10px] text-slate-500 flex items-center justify-between">
-                <span>Estado: <b class="${isGpsActive ? 'text-cyan-700' : 'text-slate-400'}">${isGpsActive ? 'Transmitiendo' : 'Inactivo'}</b></span>
+                <span class="gps-worker-card-time">${lastUpdate}</span>
               </div>
               ${isGpsActive ? `
-                <div class="flex items-center gap-1.5 pt-1 border-t border-slate-100">
-                  <button type="button" onclick="app.focusWorkerOnMap('${wName}')" class="flex-1 py-1 bg-slate-800 text-white font-bold rounded-lg text-[10px]">
-                    📍 Ver en Mapa
-                  </button>
-                  <button type="button" onclick="app.openExternalRoute(${loc.latitude}, ${loc.longitude})" class="flex-1 py-1 bg-cyan-600 text-white font-bold rounded-lg text-[10px]">
-                    🧭 Trazar Ruta
-                  </button>
+                <div class="gps-worker-card-actions">
+                  <button type="button" onclick="app.focusWorkerOnMap('${encodeURIComponent(wName)}')" class="gps-worker-action">📍 Ver en mapa</button>
+                  <button type="button" onclick="app.openExternalRoute(${loc.latitude}, ${loc.longitude})" class="gps-worker-action is-route">🧭 Trazar ruta</button>
                 </div>
               ` : ''}
-            </div>
+            </article>
           `;
         }).join('');
       }
@@ -3560,12 +3590,166 @@ updateMessengerWindowTyping(workerName) {
         }
       }
 
+      installOrderFilterDismissHandlers() {
+        if (this.orderFilterDismissHandlersInstalled) return;
+        document.addEventListener('click', event => {
+          const target = event.target;
+          if (target instanceof Element && target.closest('.order-filter-dropdown')) return;
+          document.querySelectorAll('.order-filter-dropdown[open]').forEach(menu => { menu.open = false; });
+        });
+        document.addEventListener('keydown', event => {
+          if (event.key === 'Escape') document.querySelectorAll('.order-filter-dropdown[open]').forEach(menu => { menu.open = false; });
+        });
+        this.orderFilterDismissHandlersInstalled = true;
+      }
+
+      renderOrderFilterMenus() {
+        const renderMenu = (selectId, labelId, menuId, fallbackLabel) => {
+          const select = document.getElementById(selectId);
+          const label = document.getElementById(labelId);
+          const menu = document.getElementById(menuId);
+          if (!select || !menu) return;
+          const selected = select.options[select.selectedIndex];
+          if (label) label.textContent = select.value === 'ALL' ? fallbackLabel : (selected?.textContent || fallbackLabel).trim();
+          menu.replaceChildren();
+          Array.from(select.options).forEach(option => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'order-filter-option';
+            item.setAttribute('role', 'option');
+            item.setAttribute('aria-selected', String(option.value === select.value));
+            item.textContent = option.textContent.trim();
+            item.addEventListener('click', () => {
+              select.value = option.value;
+              document.getElementById(selectId === 'filter-status' ? 'filter-status-dropdown' : 'filter-tech-control')?.removeAttribute('open');
+              this.renderOrderFilterMenus();
+              this.renderTasks();
+            });
+            menu.appendChild(item);
+          });
+        };
+        renderMenu('filter-status', 'filter-status-label', 'filter-status-options', 'Estados');
+        renderMenu('filter-tech', 'filter-tech-label', 'filter-tech-options', 'Todos los Técnicos');
+      }
       renderTechOptionsInSelects() {
         const taskAssignedSelect = document.getElementById('task-assigned-to');
         const filterTechSelect = document.getElementById('filter-tech');
+        const previousAssigned = taskAssignedSelect?.value || '';
         const opts = this.workers.map(u => `<option value="${u.fullName || u.username}">${u.fullName || u.username}</option>`).join('');
-        if (taskAssignedSelect) taskAssignedSelect.innerHTML = `<option value="LIBRE">🟠 LIBRE</option>${opts}`;
+        if (taskAssignedSelect) {
+          taskAssignedSelect.innerHTML = `<option value="LIBRE">🟠 LIBRE</option>${opts}`;
+          if ([...taskAssignedSelect.options].some(option => option.value === previousAssigned)) taskAssignedSelect.value = previousAssigned;
+        }
         if (filterTechSelect) filterTechSelect.innerHTML = `<option value="ALL">Todos los Técnicos</option><option value="LIBRE">🟠 LIBRE</option>` + opts;
+        this.renderTaskTechnicianMenu();
+        this.renderOrderFilterMenus();
+      }
+
+      renderTaskTechnicianMenu() {
+        const select = document.getElementById('task-assigned-to');
+        const menu = document.getElementById('task-assigned-menu');
+        const label = document.getElementById('task-assigned-label');
+        if (!select || !menu || !label) return;
+        const selected = select.options[select.selectedIndex];
+        label.textContent = selected?.textContent.trim() || 'Selecciona un técnico';
+        menu.replaceChildren();
+        Array.from(select.options).forEach(option => {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = 'task-technician-option';
+          item.setAttribute('role', 'option');
+          item.setAttribute('aria-selected', String(option.value === select.value));
+          item.textContent = option.textContent.trim();
+          item.addEventListener('click', () => this.selectTaskTechnician(option.value));
+          menu.appendChild(item);
+        });
+      }
+
+      toggleTaskTechnicianMenu() {
+        const menu = document.getElementById('task-assigned-menu');
+        const trigger = document.getElementById('task-assigned-trigger');
+        if (!menu || !trigger) return;
+        const opening = menu.classList.contains('hidden');
+        if (opening) {
+          if (menu.parentElement !== document.body) document.body.appendChild(menu);
+          this.positionTaskTechnicianMenu();
+          menu.classList.remove('hidden');
+        } else {
+          menu.classList.add('hidden');
+        }
+        trigger.setAttribute('aria-expanded', String(opening));
+        if (!this.taskTechnicianDismissInstalled) {
+          document.addEventListener('pointerdown', event => {
+            if (!event.target.closest?.('#task-technician-picker, #task-assigned-menu')) this.closeTaskTechnicianMenu();
+          });
+          document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') this.closeTaskTechnicianMenu();
+          });
+          window.addEventListener('resize', () => this.positionTaskTechnicianMenu());
+          document.addEventListener('scroll', () => this.positionTaskTechnicianMenu(), true);
+          this.taskTechnicianDismissInstalled = true;
+        }
+      }
+
+      positionTaskTechnicianMenu() {
+        const menu = document.getElementById('task-assigned-menu');
+        const trigger = document.getElementById('task-assigned-trigger');
+        if (!menu || !trigger || menu.classList.contains('hidden')) return;
+        const rect = trigger.getBoundingClientRect();
+        const gap = 6;
+        const availableBelow = Math.max(0, window.innerHeight - rect.bottom - gap - 12);
+        const availableAbove = Math.max(0, rect.top - gap - 12);
+        const openAbove = availableBelow < 150 && availableAbove > availableBelow;
+        const maxHeight = Math.min(280, openAbove ? availableAbove : availableBelow);
+        menu.style.position = 'fixed';
+        menu.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - rect.width - 8))}px`;
+        menu.style.width = `${rect.width}px`;
+        menu.style.maxHeight = `${Math.max(100, maxHeight)}px`;
+        menu.style.top = openAbove ? 'auto' : `${rect.bottom + gap}px`;
+        menu.style.bottom = openAbove ? `${Math.max(8, window.innerHeight - rect.top + gap)}px` : 'auto';
+      }
+
+      closeTaskTechnicianMenu() {
+        document.getElementById('task-assigned-menu')?.classList.add('hidden');
+        document.getElementById('task-assigned-trigger')?.setAttribute('aria-expanded', 'false');
+      }
+
+      toggleTaskDatePicker() {
+        const input = document.getElementById('task-date');
+        if (!input) return;
+        if (this.taskDatePickerOpen) {
+          input.blur();
+          this.taskDatePickerOpen = false;
+          return;
+        }
+        if (!this.taskDateDismissInstalled) {
+          document.addEventListener('pointerdown', event => {
+            if (!event.target.closest?.('.task-date-control')) this.taskDatePickerOpen = false;
+          });
+          document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+              input.blur();
+              this.taskDatePickerOpen = false;
+            }
+          });
+          this.taskDateDismissInstalled = true;
+        }
+        try {
+          input.focus({ preventScroll: true });
+          input.showPicker();
+          this.taskDatePickerOpen = true;
+        } catch (error) {
+          input.click();
+          this.taskDatePickerOpen = true;
+        }
+      }
+
+      selectTaskTechnician(value) {
+        const select = document.getElementById('task-assigned-to');
+        if (!select) return;
+        select.value = value;
+        this.renderTaskTechnicianMenu();
+        this.closeTaskTechnicianMenu();
       }
 
       isTaskFree(task) {
@@ -3587,6 +3771,7 @@ updateMessengerWindowTyping(workerName) {
         document.getElementById('filter-search').value = '';
         document.getElementById('filter-status').value = 'ALL';
         if (this.currentUser.role === 'admin') document.getElementById('filter-tech').value = 'ALL';
+        this.renderOrderFilterMenus();
         this.renderTasks();
       }
 
@@ -3746,7 +3931,7 @@ updateMessengerWindowTyping(workerName) {
           ].filter(Boolean);
 
           return `
-            <div class="bg-white rounded-2xl p-3.5 sm:p-4 border ${borderClass} shadow-sm flex flex-col justify-between min-w-0 overflow-hidden transition-all duration-200 hover:shadow-md ${isAdmin && t.status === 'REALIZADA' && !t.archivedAt ? 'completed-order-alert' : ''}">
+            <div class="order-card bg-white rounded-2xl p-3.5 sm:p-4 border ${borderClass} shadow-sm flex flex-col justify-between min-w-0 overflow-hidden transition-all duration-200 hover:shadow-md ${isAdmin && t.status === 'REALIZADA' && !t.archivedAt ? 'completed-order-alert' : ''}">
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <span class="text-xs font-mono font-black text-slate-500">${t.id}</span>
@@ -3758,7 +3943,7 @@ updateMessengerWindowTyping(workerName) {
                   <i data-lucide="cpu" class="w-3.5 h-3.5"></i> ${t.equipment}
                 </p>
 
-                <div class="mt-2.5 rounded-xl border border-slate-100 bg-slate-50/80 p-2.5 space-y-1.5 text-xs min-w-0">
+                <div class="order-client-panel mt-2.5 rounded-xl border border-slate-100 bg-slate-50/80 p-2.5 space-y-1.5 text-xs min-w-0">
                   <p class="font-bold text-slate-800 truncate flex items-center gap-1.5"><i data-lucide="user-round" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i><span class="truncate">${t.client} <span class="font-medium text-slate-500">(${t.phone})</span></span></p>
                   <p class="text-slate-600 flex items-start gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5"></i><span class="line-clamp-2 break-words">${t.address}</span></p>
                   <div class="mt-2 pt-2 border-t border-slate-200/80 flex items-center justify-between gap-2">
@@ -3767,7 +3952,7 @@ updateMessengerWindowTyping(workerName) {
                   </div>
                 </div>
 
-                <div class="mt-2.5 pt-2 border-t text-xs">
+                <div class="order-tech-section mt-2.5 pt-2 border-t text-xs">
                   <span class="text-slate-500 text-[11px] block mb-1.5">Técnico:</span>
                   ${taskIsFree
                     ? '<span class="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] font-black text-orange-700">🟠 LIBRE · Disponible</span>'
@@ -3775,7 +3960,7 @@ updateMessengerWindowTyping(workerName) {
                 </div>
 
                 ${t.observations ? `
-                  <div class="mt-2 p-1.5 rounded-xl text-xs bg-slate-50 border text-slate-700 italic text-[11px] line-clamp-2">
+                  <div class="order-observations mt-2 p-1.5 rounded-xl text-xs bg-slate-50 border text-slate-700 italic text-[11px] line-clamp-2">
                     "${t.observations}"
                   </div>
                 ` : ''}
@@ -3912,6 +4097,11 @@ updateMessengerWindowTyping(workerName) {
         const select = document.getElementById('task-service-type');
         const manageButton = document.getElementById('btn-manage-service-types');
         if (!select) return;
+        if (select.tagName === 'INPUT') {
+          select.value = selected || '';
+          manageButton?.classList.add('hidden');
+          return;
+        }
         const values = [...new Set([...this.serviceTypes, ...(selected && !this.serviceTypes.includes(selected) ? [selected] : [])])];
         select.innerHTML = values.map(value => `<option value="${this.escapeHtml(value)}">${this.escapeHtml(value)}</option>`).join('');
         if (selected) select.value = selected;
@@ -4062,6 +4252,94 @@ updateMessengerWindowTyping(workerName) {
         }
       }
 
+      getRegisteredTaskClients() {
+        const clients = new Map();
+        (Array.isArray(this.tasks) ? this.tasks : []).forEach(task => {
+          const name = String(task?.client || '').trim();
+          if (!name) return;
+          const key = name.toLocaleLowerCase();
+          if (clients.has(key)) return;
+          clients.set(key, {
+            name,
+            phone: String(task?.phone || ''),
+            address: String(task?.address || ''),
+            administrator: String(task?.administrator || task?.contact || '')
+          });
+        });
+        return [...clients.values()].sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+      }
+
+      renderSavedTaskClients() {
+        const list = document.getElementById('task-client-options');
+        if (!list) return;
+        list.replaceChildren();
+        this.getRegisteredTaskClients().forEach(client => list.appendChild(new Option(client.name, client.name)));
+      }
+      setTaskClientMode(mode) {
+        const saved = mode === 'saved';
+        this.taskClientMode = saved ? 'saved' : 'new';
+        const newTab = document.getElementById('task-client-tab-new');
+        const savedTab = document.getElementById('task-client-tab-saved');
+        const newPanel = document.getElementById('task-client-new-panel');
+        const savedPanel = document.getElementById('task-client-saved-panel');
+        const hint = document.getElementById('task-client-mode-hint');
+        const search = document.getElementById('task-client-search');
+        const savedDetails = document.getElementById('task-client-saved-details');
+        newTab?.classList.toggle('active', !saved);
+        savedTab?.classList.toggle('active', saved);
+        newTab?.setAttribute('aria-selected', String(!saved));
+        savedTab?.setAttribute('aria-selected', String(saved));
+        newPanel?.classList.toggle('hidden', saved);
+        savedPanel?.classList.toggle('hidden', !saved);
+        if (hint) hint.textContent = saved
+          ? 'Escribe el nombre y elige una coincidencia para completar los datos guardados.'
+          : 'Ingresa los datos del cliente. Al guardar, estarán disponibles para próximas órdenes.';
+        ['task-client', 'task-address'].forEach(id => {
+          const input = document.getElementById(id);
+          if (input) input.required = !saved;
+        });
+        if (search) search.required = saved;
+        if (saved) {
+          this.renderSavedTaskClients();
+          const exact = this.getRegisteredTaskClients().find(client => client.name.toLocaleLowerCase() === String(search?.value || '').trim().toLocaleLowerCase());
+          savedDetails?.classList.toggle('hidden', !exact);
+          if (exact) this.selectSavedTaskClient(exact.name);
+        } else {
+          savedDetails?.classList.add('hidden');
+        }
+      }
+
+      searchSavedTaskClients(query) {
+        const value = String(query || '').trim();
+        const exact = this.getRegisteredTaskClients().find(client => client.name.toLocaleLowerCase() === value.toLocaleLowerCase());
+        if (exact) {
+          this.selectSavedTaskClient(exact.name);
+          return;
+        }
+        document.getElementById('task-client-saved-details')?.classList.add('hidden');
+        document.getElementById('task-client').value = '';
+        document.getElementById('task-phone').value = '';
+        document.getElementById('task-address').value = '';
+        document.getElementById('task-administrator').value = '';
+      }
+
+      selectSavedTaskClient(name) {
+        const client = this.getRegisteredTaskClients().find(item => item.name.toLocaleLowerCase() === String(name || '').trim().toLocaleLowerCase());
+        if (!client) {
+          document.getElementById('task-client-saved-details')?.classList.add('hidden');
+          return;
+        }
+        const search = document.getElementById('task-client-search');
+        if (search) search.value = client.name;
+        document.getElementById('task-client').value = client.name;
+        document.getElementById('task-phone').value = client.phone;
+        document.getElementById('task-address').value = client.address;
+        document.getElementById('task-administrator').value = client.administrator;
+        document.getElementById('task-client-saved-name').textContent = client.name;
+        document.getElementById('task-client-saved-address').textContent = client.address || 'Sin dirección guardada';
+        document.getElementById('task-client-saved-administrator').textContent = client.administrator || 'Sin contacto guardado';
+        document.getElementById('task-client-saved-details').classList.remove('hidden');
+      }
       openNewTaskModal() {
         if (this.currentUser.role !== 'admin') return;
         document.getElementById('form-modal-title').textContent = 'Nueva Orden de Trabajo';
@@ -4071,11 +4349,15 @@ updateMessengerWindowTyping(workerName) {
         document.getElementById('task-order-number').disabled = false;
         document.getElementById('task-order-number').required = true;
         document.getElementById('task-order-number').value = this.getNextAvailableOrderNumber();
-        this.renderServiceTypeOptions(this.serviceTypes[0]);
-        this.activeChecklistDraft = this.checklistTemplate.map(label => ({ label, done: false }));
+        document.getElementById('task-administrator').value = '';
+        this.renderSavedTaskClients();
+        this.setTaskClientMode('new');
+        this.renderServiceTypeOptions('');
+        this.renderTaskTechnicianMenu();
+        this.activeChecklistDraft = [];
         this.checklistDraftDirty = false;
         this.renderChecklistAdminEditor();
-        document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
+
         document.getElementById('modal-task-form').classList.remove('hidden');
       }
 
@@ -4095,9 +4377,12 @@ updateMessengerWindowTyping(workerName) {
         document.getElementById('task-client').value = t.client;
         document.getElementById('task-phone').value = t.phone;
         document.getElementById('task-address').value = t.address;
+        document.getElementById('task-administrator').value = t.administrator || t.contact || '';
+        this.setTaskClientMode('new');
         this.renderServiceTypeOptions(t.serviceType);
         document.getElementById('task-equipment').value = t.equipment;
         document.getElementById('task-assigned-to').value = this.isTaskFree(t) ? 'LIBRE' : t.assignedTo;
+        this.renderTaskTechnicianMenu();
         document.getElementById('task-priority').value = t.priority;
         document.getElementById('task-date').value = t.date;
         document.getElementById('task-instructions').value = t.instructions || '';
@@ -4112,7 +4397,7 @@ updateMessengerWindowTyping(workerName) {
       }
 
       handleTaskFormKeydown(e) {
-        if (e.key !== 'Enter' || e.isComposing || e.shiftKey || e.ctrlKey || e.altKey || e.target?.tagName === 'TEXTAREA') return;
+        if (e.key !== 'Enter' || e.isComposing || e.shiftKey || e.ctrlKey || e.altKey || e.target?.tagName === 'TEXTAREA' || e.target?.closest?.('button,[role=option]')) return;
         e.preventDefault();
         this.submitTaskForm();
       }
@@ -4123,6 +4408,16 @@ updateMessengerWindowTyping(workerName) {
         if (!form) {
           this.showToast('No se encontró el formulario de la orden.', 'error');
           return;
+        }
+        if (this.taskClientMode === 'saved') {
+          const searchValue = String(document.getElementById('task-client-search')?.value || '').trim();
+          const client = this.getRegisteredTaskClients().find(item => item.name.toLocaleLowerCase() === searchValue.toLocaleLowerCase());
+          if (!client) {
+            this.showToast('Escribe y selecciona un cliente registrado de las sugerencias.', 'error');
+            document.getElementById('task-client-search')?.focus();
+            return;
+          }
+          this.selectSavedTaskClient(client.name);
         }
         if (!form.checkValidity()) {
           const invalidControls = [...form.elements].filter(control => control.willValidate && !control.validity.valid);
@@ -4168,6 +4463,7 @@ updateMessengerWindowTyping(workerName) {
             this.tasks[index].client = document.getElementById('task-client').value;
             this.tasks[index].phone = document.getElementById('task-phone').value;
             this.tasks[index].address = document.getElementById('task-address').value;
+            this.tasks[index].administrator = document.getElementById('task-administrator').value.trim();
             this.tasks[index].serviceType = document.getElementById('task-service-type').value;
             this.tasks[index].equipment = document.getElementById('task-equipment').value;
             this.tasks[index].assignedTo = document.getElementById('task-assigned-to').value;
@@ -4185,6 +4481,7 @@ updateMessengerWindowTyping(workerName) {
             client: document.getElementById('task-client').value,
             phone: document.getElementById('task-phone').value,
             address: document.getElementById('task-address').value,
+            administrator: document.getElementById('task-administrator').value.trim(),
             serviceType: document.getElementById('task-service-type').value,
             equipment: document.getElementById('task-equipment').value,
             assignedTo: document.getElementById('task-assigned-to').value,
@@ -4200,8 +4497,8 @@ updateMessengerWindowTyping(workerName) {
           };
           this.tasks.unshift(newTask);
           this.orderSequenceNext = this.getNextAvailableOrderNumber(num + 1, this.tasks);
-          this.checklistTemplate = this.activeChecklistDraft.map(item => item.label);
-          SafeStorage.setItem('portonpro_checklist_template_v1', JSON.stringify(this.checklistTemplate));
+
+
         }
 
         const saveResult = await this.saveTasks(true);
@@ -4211,7 +4508,7 @@ updateMessengerWindowTyping(workerName) {
           SafeStorage.setItem('portonpro_order_sequence_next', String(previousOrderSequence));
           this.checklistTemplate = previousChecklistTemplate;
           SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
-          SafeStorage.setItem('portonpro_checklist_template_v1', JSON.stringify(this.checklistTemplate));
+
           this.updateStats();
           this.renderTasks();
           return;

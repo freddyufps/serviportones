@@ -1,0 +1,380 @@
+.orders-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:12px 14px;border:1px solid #dbe4ee;border-radius:18px;background:linear-gradient(180deg,#fff 0%,#fbfdff 100%);box-shadow:0 2px 8px rgba(15,23,42,.045)}
+.orders-search{position:relative;flex:1 1 420px;min-width:min(100%,260px);max-width:620px;height:44px;border:1px solid #dbe4ee;border-radius:13px;background:#f8fafc;transition:border-color .16s,box-shadow .16s,background .16s}
+.orders-search:focus-within{border-color:#67b8d0;background:#fff;box-shadow:0 0 0 3px rgba(8,145,178,.12)}
+.orders-search input{color:#1e293b}
+.orders-search input::placeholder{color:#8a9ab0;opacity:1}
+.orders-filter-controls{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:0 0 auto;margin-left:auto;min-width:0}
+.order-filter-dropdown{position:relative;display:block;min-width:148px;color:#243247}
+.order-filter-trigger{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:148px;height:42px;padding:0 12px;border:1px solid #dbe4ee;border-radius:12px;background:#fff;color:#334155;font-size:13px;font-weight:650;list-style:none;cursor:pointer;transition:border-color .16s,background .16s,box-shadow .16s}
+.order-filter-trigger::-webkit-details-marker{display:none}.order-filter-trigger::marker{content:""}
+.order-filter-trigger:hover,.order-filter-dropdown[open]>.order-filter-trigger{border-color:#94a3b8;background:#f8fafc}
+.order-filter-dropdown[open]>.order-filter-trigger{box-shadow:0 0 0 3px rgba(14,116,144,.1)}
+.order-filter-trigger>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.order-filter-chevron{width:15px;height:15px;color:#64748b;flex:none;transition:transform .16s}
+.order-filter-dropdown[open]>.order-filter-trigger .order-filter-chevron{transform:rotate(180deg)}
+.order-filter-menu{position:absolute;z-index:80;top:calc(100% + 7px);left:0;min-width:max(100%,210px);max-height:min(320px,calc(100dvh - 150px));overflow-y:auto;padding:6px;border:1px solid #dbe4ee;border-radius:14px;background:#fff;box-shadow:0 16px 34px rgba(15,23,42,.17)}
+.order-filter-option{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:38px;padding:8px 10px;border:0;border-radius:9px;background:transparent;color:#334155;text-align:left;font-size:13px;cursor:pointer;transition:background .12s,color .12s}
+.order-filter-option:hover{background:#f1f5f9;color:#0f172a}
+.order-filter-option[aria-selected=true]{background:#ecfeff;color:#0e7490;font-weight:700}
+.order-filter-option[aria-selected=true]::after{content:"✓";font-size:13px;font-weight:800}
+.orders-reset{display:grid;place-items:center;width:40px;height:40px;flex:none;border:1px solid transparent;border-radius:12px;background:transparent;color:#64748b;cursor:pointer;transition:background .16s,color .16s,border-color .16s}
+.orders-reset:hover{border-color:#dbe4ee;background:#f8fafc;color:#0f172a}
+.orders-assign-button{display:grid;place-items:center;width:76px;height:76px;flex:none;margin:-4px 0;border:0!important;border-radius:14px;background:transparent!important;padding:0;cursor:pointer;transition:transform .16s,filter .16s}
+.orders-assign-button:hover{transform:translateY(-2px) scale(1.025);filter:drop-shadow(0 5px 7px rgba(15,23,42,.14))}
+.orders-assign-button:focus-visible{outline:3px solid rgba(16,185,129,.35);outline-offset:2px}
+body.theme-dark .orders-toolbar{border-color:#34465d;background:#111c2c;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+body.theme-dark .orders-search{border-color:#40536a;background:#101a2a}
+body.theme-dark .orders-search:focus-within{border-color:#41a6bf;background:#111c2c}
+body.theme-dark .orders-search input{color:#e7eef8}
+body.theme-dark .orders-search input::placeholder{color:#91a2b8}
+body.theme-dark .order-filter-dropdown{color:#e7eef8}
+body.theme-dark .order-filter-trigger,body.theme-dark .order-filter-menu{border-color:#40536a;background:#172235;color:#e7eef8}
+body.theme-dark .order-filter-trigger:hover,body.theme-dark .order-filter-dropdown[open]>.order-filter-trigger{background:#1d2b40}
+body.theme-dark .order-filter-chevron{color:#aab8ca}
+body.theme-dark .order-filter-option{color:#d5dfeb}
+body.theme-dark .order-filter-option:hover{background:#203148;color:#fff}
+body.theme-dark .order-filter-option[aria-selected=true]{background:#123842;color:#8ce4ee}
+body.theme-dark .orders-reset{color:#aab8ca}
+body.theme-dark .orders-reset:hover{border-color:#40536a;background:#1d2b40;color:#fff}
+.gps-modal-overlay{background:rgba(15,23,42,.52)!important;backdrop-filter:blur(3px) saturate(.88)}
+.gps-admin-dialog{width:min(1240px,calc(100vw - 32px));height:min(780px,calc(100vh - 32px));height:min(780px,calc(100dvh - 32px));max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);min-height:360px;background:#fff!important;color:#0f172a}
+.gps-admin-content{min-height:0;flex:1 1 auto;overflow:hidden}
+.gps-map-panel{min-width:0;min-height:0;background:#e9eff5!important}
+#gps-map-container.leaflet-container{background:#e9eff5!important;color:#334155}
+.gps-admin-workers-panel{width:20rem;min-width:18rem;flex:0 0 20rem;overflow-y:auto;background:#f8fafc}
+.gps-admin-footer{line-height:1.4}
+.gps-admin-close:focus-visible{outline:3px solid rgba(8,145,178,.3);outline-offset:1px}
+body.theme-dark #modal-admin-gps .gps-admin-dialog,body.theme-dark #modal-admin-gps .gps-admin-header,body.theme-dark #modal-admin-gps .gps-admin-footer{background:#fff!important;color:#0f172a!important}
+body.theme-dark #modal-admin-gps .gps-admin-workers-panel{background:#f8fafc!important;color:#334155!important}
+body.theme-dark #modal-admin-gps .gps-admin-workers-panel .text-slate-700,body.theme-dark #modal-admin-gps .gps-admin-workers-panel .text-slate-800{color:#334155!important}body.theme-dark #modal-admin-gps .gps-admin-workers-panel .text-slate-500{color:#64748b!important}body.theme-dark #modal-admin-gps .gps-admin-workers-panel .text-slate-400{color:#94a3b8!important}body.theme-dark #modal-admin-gps .gps-admin-workers-panel .bg-white{background:#fff!important;color:#334155!important}
+body.theme-dark #gps-map-container{background:#e9eff5!important}
+@media(max-width:900px){.orders-search{max-width:520px}.orders-filter-controls{gap:6px}.order-filter-dropdown,.order-filter-trigger{min-width:132px}}
+@media(max-width:767px){
+  .orders-toolbar{gap:10px;padding:11px}
+  .orders-search{flex:1 1 100%;max-width:none;min-width:0}
+  .orders-filter-controls{width:100%;justify-content:flex-start;flex-wrap:wrap;margin-left:0;gap:7px}
+  .order-filter-dropdown{flex:1 1 128px;min-width:0}
+  .order-filter-trigger{width:100%;min-width:0;height:40px}
+  .order-filter-menu{min-width:min(100%,220px)}
+  .orders-reset{margin-left:auto;width:38px;height:38px}
+  .orders-assign-button{width:68px;height:68px;margin:-3px 0}
+  .orders-assign-button img{width:64px;height:64px}
+  .gps-modal-overlay{align-items:flex-start!important;padding:8px!important}
+  .gps-admin-dialog{width:100%;height:calc(100vh - 16px);height:calc(100dvh - 16px);max-height:calc(100vh - 16px);max-height:calc(100dvh - 16px);min-height:280px;border-radius:20px}
+  .gps-admin-header{padding:12px}
+  .gps-admin-content{overflow-y:auto;flex-direction:column}
+  .gps-map-panel{flex:0 0 42vh;height:42vh;flex-basis:42dvh;height:42dvh;min-height:220px;max-height:360px}
+  .gps-admin-workers-panel{width:100%;min-width:0;min-height:120px;max-height:none;flex:1 1 auto;border-top:1px solid #e2e8f0;border-left:0}
+  .gps-admin-footer{padding:9px 12px}
+}
+@media(max-width:767px) and (max-height:520px){
+  .gps-admin-dialog{height:calc(100vh - 12px);height:calc(100dvh - 12px);max-height:calc(100vh - 12px);max-height:calc(100dvh - 12px)}
+  .gps-admin-header{padding:8px 10px}
+  .gps-map-panel{flex-basis:38vh;height:38vh;flex-basis:38dvh;height:38dvh;min-height:160px;max-height:230px}
+  .gps-admin-footer>span{display:none}
+}
+/* Formulario de órdenes: selección clara entre nuevo cliente y cliente registrado */
+.task-modal-overlay{align-items:flex-start!important;padding:clamp(10px,3vh,28px)!important;overscroll-behavior:contain}
+.task-modal-dialog{width:min(760px,calc(100vw - 24px));max-width:760px;max-height:min(92dvh,920px);border-radius:22px}
+.task-modal-header{background:linear-gradient(115deg,#102238,#1d3a55)!important}
+.task-form-content{padding:clamp(16px,3vw,26px);display:flex;flex-direction:column;gap:14px}
+.task-form-content>div,.task-form-content>section{margin-top:0!important}
+.task-client-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:5px;border:1px solid #dce5ed;border-radius:14px;background:#f1f5f9}
+.task-client-tab{min-height:42px;padding:9px 14px;border:0;border-radius:10px;background:transparent;color:#58677a;font-size:13px;font-weight:700;cursor:pointer;transition:background .16s,color .16s,box-shadow .16s}
+.task-client-tab:hover{color:#0f253b;background:#fff}
+.task-client-tab.active{background:#fff;color:#0f253b;box-shadow:0 2px 7px rgba(15,35,59,.12)}
+.task-client-mode-hint{margin:0!important;color:#64748b;font-size:12px;line-height:1.5}
+#task-client-saved-panel{padding:16px;border:1px solid #dce5ed;border-radius:15px;background:#f8fafc}
+#task-client-saved-panel select{min-height:44px;border-color:#cbd5e1;font-size:14px}
+.task-form-content input:not([type=checkbox]),.task-form-content select,.task-form-content textarea{min-height:40px;border-color:#d5dee8;background:#fff;transition:border-color .15s,box-shadow .15s}
+.task-form-content input:focus,.task-form-content select:focus,.task-form-content textarea:focus{outline:none;border-color:#1687a5;box-shadow:0 0 0 3px rgba(22,135,165,.12)}
+.task-form-content label{color:#34465b}
+.task-form-content #task-order-number-field{padding:12px 14px;border:1px solid #dce5ed;border-radius:14px;background:#f8fafc}
+.task-form-content>div.pt-2{margin-top:4px!important;padding-top:14px!important;background:#fff}
+body.theme-dark .task-modal-dialog,body.theme-dark .task-form-content,body.theme-dark .task-modal-header{color:#182536}
+body.theme-dark .task-client-tabs{border-color:#dce5ed;background:#f1f5f9}
+body.theme-dark .task-client-tab{color:#58677a}
+body.theme-dark .task-client-tab.active{background:#fff;color:#0f253b}
+body.theme-dark .task-client-mode-hint{color:#64748b}
+body.theme-dark #task-client-saved-panel,body.theme-dark .task-form-content #task-order-number-field{border-color:#dce5ed;background:#f8fafc}
+@media(max-width:640px){
+  .task-modal-overlay{padding:8px!important}
+  .task-modal-dialog{width:100%;max-height:calc(100dvh - 16px);border-radius:18px}
+  .task-form-content{gap:11px;padding:14px}
+  .task-client-tab{min-height:40px;padding:8px 6px;font-size:12px}
+}
+
+.task-client-saved-panel.hidden,#task-client-saved-panel.hidden,#task-client-new-panel.hidden{display:none!important}
+
+.task-client-saved-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:14px}
+.task-client-saved-details>div{display:flex;flex-direction:column;gap:4px;padding:10px 11px;border:1px solid #e2e8f0;border-radius:11px;background:#fff;min-width:0}
+.task-client-saved-details span{color:#64748b;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.task-client-saved-details strong{color:#1e293b;font-size:12px;font-weight:650;overflow-wrap:anywhere}
+#task-client-saved-details.hidden{display:none!important}
+@media(max-width:520px){.task-client-saved-details{grid-template-columns:1fr;gap:7px}.task-client-saved-details>div{padding:8px 10px}}
+
+.task-modal-dialog{background:#fff!important;color:#182536}
+
+
+/* Orden de trabajo según el formato de papel, compacto y adaptable */
+.task-modal-dialog{width:min(620px,calc(100vw - 24px));max-width:620px;max-height:min(88dvh,820px);border-radius:20px}
+.task-address-row{display:grid;grid-template-columns:minmax(0,1fr) 42px 42px;gap:7px;align-items:center}
+.task-address-row input{min-width:0}
+.task-map-button{display:grid;place-items:center;width:42px;height:42px;border:1px solid #d5dee8;border-radius:11px;background:#fff;transition:background .15s,border-color .15s,transform .15s}
+.task-map-button:hover{border-color:#1587a5;background:#f0f9fb;transform:translateY(-1px)}
+.task-map-button img{width:27px;height:27px;object-fit:contain}
+.task-form-content>section#task-client-saved-panel{margin:0!important}
+.task-client-saved-details{grid-template-columns:1fr;gap:7px}
+.task-modal-dialog #task-date{min-height:42px}
+.task-modal-dialog #task-instructions{min-height:84px;resize:vertical}
+@media(max-width:640px){
+  .task-modal-overlay{padding:6px!important}
+  .task-modal-dialog{width:100%;max-width:none;max-height:calc(100dvh - 12px);border-radius:16px}
+  .task-form-content{gap:12px;padding:14px}
+  .task-modal-header{padding:11px 14px!important}
+  .task-address-row{grid-template-columns:minmax(0,1fr) 38px 38px;gap:6px}
+  .task-map-button{width:38px;height:40px;border-radius:10px}
+  .task-map-button img{width:24px;height:24px}
+  .task-modal-dialog #task-instructions{min-height:74px}
+  .task-form-content>div.pt-2{padding-top:10px!important}
+}
+
+/* Centrado y contención de cada campo en el formulario de orden */
+.task-modal-overlay{align-items:center!important;justify-content:center!important;overflow-y:auto!important;padding:16px!important}
+.task-modal-dialog{width:min(640px,calc(100vw - 32px));max-width:640px;max-height:calc(100dvh - 32px);margin:auto;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column}
+.task-form-content{width:100%;min-width:0;box-sizing:border-box;align-items:stretch;overflow-x:hidden;overflow-y:auto;flex:1 1 auto}
+.task-form-content>div,.task-form-content>section{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+.task-form-content input:not([type=checkbox]),.task-form-content select,.task-form-content textarea{width:100%;max-width:100%;min-width:0;box-sizing:border-box}
+.task-form-content input[type=hidden],.task-form-content select.hidden{display:none!important}
+.task-order-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start;width:100%;min-width:0}
+.task-form-content .task-order-meta>#task-order-number-field{width:100%;min-width:0}
+.task-form-content .task-order-meta>#task-order-number-field input{width:120px}
+.task-form-actions{width:100%;min-width:0;box-sizing:border-box;z-index:2}
+@media(max-width:640px){
+  .task-modal-overlay{padding:6px!important}
+  .task-modal-dialog{width:calc(100vw - 12px);max-width:none;max-height:calc(100dvh - 12px);border-radius:16px}
+  .task-form-content{padding:14px;gap:11px}
+  .task-order-meta{gap:8px}
+  .task-form-content .task-order-meta>#task-order-number-field input{width:100px}
+  .task-form-actions{padding:10px 0!important;background:#fff}
+}
+@media(max-width:380px){.task-order-meta{grid-template-columns:1fr}.task-order-meta>#task-order-number-field input{width:110px}}
+
+/* Búsqueda incremental de clientes, fecha y selección de técnico */
+.task-client-search{height:48px;border:1px solid #d6e0ea!important;border-radius:13px!important;background:#fff!important;color:#17283b;padding:0 14px!important;font-size:14px;box-shadow:0 1px 2px rgba(15,23,42,.035);transition:border-color .16s,box-shadow .16s}
+.task-client-search::placeholder{color:#93a1b3}
+.task-client-search:focus{outline:none;border-color:#1691ad!important;box-shadow:0 0 0 4px rgba(22,145,173,.13)}
+.task-date-control{position:relative;width:100%;min-width:0}
+.task-date-icon{position:absolute;left:14px;top:50%;width:18px;height:18px;transform:translateY(-50%);color:#1685a0;pointer-events:none;z-index:1}
+.task-date-input{display:block;width:100%;height:48px;padding:0 14px 0 43px!important;border:1px solid #d6e0ea!important;border-radius:13px!important;background:linear-gradient(180deg,#fff,#f8fbfd)!important;color:#17283b;font-size:14px;font-weight:600;letter-spacing:.015em;box-shadow:0 1px 2px rgba(15,23,42,.035);transition:border-color .16s,box-shadow .16s;cursor:pointer;color-scheme:light}
+.task-date-input:focus{outline:none;border-color:#1691ad!important;box-shadow:0 0 0 4px rgba(22,145,173,.13)}
+.task-date-input::-webkit-calendar-picker-indicator{width:20px;height:20px;opacity:.62;cursor:pointer}
+.task-technician-picker{position:relative;width:100%;min-width:0}
+.task-technician-trigger{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:48px;padding:0 14px;border:1px solid #d6e0ea;border-radius:13px;background:#fff;color:#24364a;font-size:14px;font-weight:650;text-align:left;cursor:pointer;box-shadow:0 1px 2px rgba(15,23,42,.035);transition:border-color .16s,box-shadow .16s,background .16s}
+.task-technician-trigger:hover,.task-technician-trigger[aria-expanded=true]{border-color:#8baabd;background:#fbfdff}
+.task-technician-trigger:focus-visible{outline:none;border-color:#1691ad;box-shadow:0 0 0 4px rgba(22,145,173,.13)}
+.task-technician-chevron{width:17px;height:17px;flex:none;color:#718197;transition:transform .16s}
+.task-technician-trigger[aria-expanded=true] .task-technician-chevron{transform:rotate(180deg)}
+.task-technician-menu{position:absolute;z-index:120;top:calc(100% + 6px);left:0;right:0;max-height:min(280px,calc(100dvh - 190px));overflow-y:auto;padding:6px;border:1px solid #dbe4ed;border-radius:14px;background:#fff;box-shadow:0 16px 34px rgba(15,23,42,.18)}
+.task-technician-menu.hidden{display:none!important}
+.task-technician-option{display:flex;align-items:center;width:100%;min-height:42px;padding:9px 11px;border:0;border-radius:9px;background:transparent;color:#334155;font-size:13px;font-weight:600;text-align:left;cursor:pointer;transition:background .12s,color .12s}
+.task-technician-option:hover{background:#f1f7fa;color:#0e5264}
+.task-technician-option[aria-selected=true]{background:#eaf7f9;color:#0c697e;font-weight:750}
+.task-technician-option[aria-selected=true]::after{content:'✓';margin-left:auto;font-weight:800}
+body.theme-dark .task-client-search,body.theme-dark .task-date-input,body.theme-dark .task-technician-trigger,body.theme-dark .task-technician-menu{background:#fff!important;color:#17283b!important;border-color:#d6e0ea!important}
+body.theme-dark .task-technician-option{color:#334155}
+body.theme-dark .task-technician-option:hover{background:#f1f7fa;color:#0e5264}
+body.theme-dark .task-technician-option[aria-selected=true]{background:#eaf7f9;color:#0c697e}
+@media(max-width:640px){
+  .task-client-search,.task-date-input,.task-technician-trigger{height:46px;min-height:46px;font-size:14px}
+  .task-technician-menu{max-height:min(250px,calc(100dvh - 170px))}
+}
+
+.task-date-control{display:flex;align-items:center;min-height:48px;border-radius:13px;transition:box-shadow .16s,border-color .16s}
+.task-date-control:focus-within{border-radius:13px}
+.task-date-icon{color:#117f99}
+.task-date-input::-webkit-datetime-edit{padding:0}
+.task-date-input::-webkit-datetime-edit-fields-wrapper{padding:0}
+.task-client-search::-webkit-calendar-picker-indicator{display:none}
+.task-client-search::-webkit-list-button{display:none}
+.task-technician-picker select#task-assigned-to{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;clip-path:inset(50%)!important}
+.task-technician-option:focus-visible{outline:2px solid #1591ad;outline-offset:-2px;background:#f1f7fa}
+
+/* Dropdown fuera del área desplazable para evitar recortes en móvil y escritorio */
+.task-technician-menu{position:fixed;z-index:10000;right:auto;bottom:auto;overflow-y:auto;overscroll-behavior:contain;max-height:min(280px,calc(100dvh - 24px));}
+/* Calendario con control explícito de abrir/cerrar */
+.task-date-control{position:relative;display:flex;align-items:center;}
+.task-date-input{padding-right:48px!important;}
+.task-date-toggle{position:absolute;right:7px;top:50%;display:grid;place-items:center;width:34px;height:34px;transform:translateY(-50%);border:0;border-radius:10px;background:#edf6f8;color:#117f99;cursor:pointer;transition:background .15s,color .15s,transform .15s;}
+.task-date-toggle:hover{background:#dceff2;color:#075e70;}
+.task-date-toggle:active{transform:translateY(-50%) scale(.94);}
+.task-date-toggle svg{width:18px;height:18px;}
+.task-date-input::-webkit-calendar-picker-indicator{opacity:.35;margin-right:30px;cursor:pointer;}
+/* Ventana GPS sin oscurecer el resto de la interfaz */
+.gps-modal-overlay{background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;}
+#gps-map-container.leaflet-container{background:#f1f5f9!important;}
+@media(max-width:640px){.task-date-toggle{width:32px;height:32px;right:6px}.task-date-input{padding-right:44px!important}}
+
+/* GPS compacto, con proporciones equilibradas en escritorio y móvil */
+.gps-admin-dialog{width:min(1040px,calc(100vw - 32px));height:min(640px,calc(100dvh - 32px));max-height:calc(100dvh - 32px);min-height:320px;}
+.gps-admin-workers-panel{width:292px;min-width:260px;flex-basis:292px;padding:12px;gap:8px;}
+.gps-worker-card{display:flex;flex-direction:column;gap:8px;padding:9px 10px;border:1px solid #e2e8f0;border-radius:15px;background:#fff;transition:border-color .16s,box-shadow .16s,transform .16s;}
+.gps-worker-card.is-active{border-color:#8dd9e6;box-shadow:0 3px 12px rgba(8,145,178,.08);}
+.gps-worker-card-main{display:flex;align-items:center;gap:10px;min-width:0;}
+.gps-worker-avatar{position:relative;display:grid;place-items:center;width:40px;height:40px;flex:0 0 40px;overflow:visible!important;border:2px solid #a3c75a;border-radius:50%;background:#eef3e8;color:#52652b;font-size:14px;font-weight:800;isolation:isolate;}
+.gps-worker-avatar img{display:block;width:100%;height:100%;border-radius:50%;object-fit:cover;}
+.gps-worker-card-identity{display:flex;flex:1;flex-direction:column;gap:3px;min-width:0;}
+.gps-worker-card-name{display:flex;align-items:center;gap:6px;overflow:hidden;color:#17283b;font-size:12px;font-weight:800;text-overflow:ellipsis;white-space:nowrap;}
+.gps-worker-state-dot{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#cbd5e1;}
+.gps-worker-state-dot.is-active{background:#06b6d4;box-shadow:0 0 0 3px rgba(6,182,212,.13);animation:gpsWorkerPulse 1.8s ease-in-out infinite;}
+.gps-worker-card-status{color:#7b8797;font-size:10px;font-weight:650;}
+.gps-worker-card-status.is-active{color:#07809a;}
+.gps-worker-card-time{flex:none;color:#8b98aa;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;}
+.gps-worker-card-actions{display:flex;gap:6px;padding-top:7px;border-top:1px solid #edf1f5;}
+.gps-worker-action{flex:1;min-width:0;padding:6px 7px;border:1px solid #dce5ec;border-radius:9px;background:#f8fafc;color:#334155;font-size:10px;font-weight:750;cursor:pointer;}
+.gps-worker-action:hover{border-color:#a5dce5;background:#effbfc;color:#08778c;}
+.gps-worker-action.is-route{border-color:#c9e9d2;background:#f2fbf4;color:#347a48;}
+@keyframes gpsWorkerPulse{50%{box-shadow:0 0 0 5px rgba(6,182,212,0);}}
+@media(max-width:767px){
+  .gps-admin-dialog{width:calc(100vw - 20px);height:min(88dvh,700px);max-height:calc(100dvh - 20px);min-height:300px;border-radius:18px;}
+  .gps-admin-content{overflow-y:auto;flex-direction:column;}
+  .gps-map-panel{flex:0 0 32dvh;height:32dvh;min-height:170px;max-height:260px;}
+  .gps-admin-workers-panel{width:100%;min-width:0;min-height:110px;max-height:none;flex:1 1 auto;padding:10px;}
+  .gps-worker-card{padding:8px 9px;}
+}
+@media(max-width:767px) and (max-height:520px){
+  .gps-admin-dialog{height:calc(100dvh - 12px);max-height:calc(100dvh - 12px);}
+  .gps-map-panel{flex-basis:30dvh;height:30dvh;min-height:140px;max-height:190px;}
+}
+body.theme-dark #modal-admin-gps .gps-worker-card{border-color:#dce5ec;background:#fff;color:#17283b;}
+body.theme-dark #modal-admin-gps .gps-worker-card.is-active{border-color:#8dd9e6;}
+
+/* Separación garantizada entre el panel GPS y el acceso fijo al chat */
+.gps-modal-overlay{align-items:center!important;padding:10px 350px 88px 10px!important;}
+.gps-admin-dialog{width:min(880px,calc(100vw - 380px));height:min(560px,calc(100dvh - 112px));max-height:calc(100dvh - 112px);min-height:320px;}
+.gps-admin-content{min-height:0;}
+.gps-worker-avatar{box-sizing:border-box;width:42px;height:42px;flex-basis:42px;overflow:visible!important;}
+.gps-worker-photo-crop{position:absolute;inset:2px;z-index:1;display:grid;place-items:center;overflow:hidden;border-radius:50%;background:#e8edf1;}
+.gps-worker-photo-crop img{display:block;width:100%;height:100%;max-width:none;max-height:none;border-radius:50%;object-fit:cover;object-position:center;}
+.gps-worker-photo-crop>span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;}
+body.theme-christmas .gps-worker-avatar::before,body.theme-easter .gps-worker-avatar::before,body.theme-holy-week .gps-worker-avatar::before{pointer-events:none;}
+@media(max-width:767px){
+  .gps-modal-overlay{align-items:center!important;padding:8px 8px 92px!important;}
+  .gps-admin-dialog{width:calc(100vw - 16px);height:min(82dvh,650px);max-height:calc(100dvh - 112px);min-height:300px;}
+  .gps-map-panel{flex-basis:30dvh;height:30dvh;min-height:160px;max-height:240px;}
+}
+
+/* Centrar el cuadro GPS en el área visible y conservar el espacio del chat */
+.gps-modal-overlay{justify-content:center!important;padding:10px 330px 88px 10px!important;}
+.gps-admin-dialog{margin:0 auto!important;}
+@media(max-width:767px){
+  .gps-modal-overlay{justify-content:center!important;padding:8px 8px 92px!important;}
+  .gps-admin-dialog{margin:0 auto!important;}
+}
+
+/* Centrado horizontal real; el espacio inferior mantiene libre el botón de chat */
+.gps-modal-overlay{padding:10px 10px 88px!important;}
+@media(max-width:767px){.gps-modal-overlay{padding:8px 8px 92px!important;}}
+
+/* En móvil, la lista ocupa solo lo necesario y el mapa recibe el espacio libre */
+@media(max-width:767px){
+  .gps-admin-content{display:flex;flex:1 1 auto;min-height:0;overflow:hidden;}
+  .gps-map-panel{flex:1 1 280px;height:auto;flex-basis:280px;min-height:240px;max-height:none;}
+  .gps-admin-workers-panel{flex:0 1 auto;width:100%;min-width:0;min-height:0;max-height:220px;overflow-y:auto;padding:8px 10px;gap:6px;}
+  #gps-admin-workers-panel>.flex.items-center{padding-bottom:5px;}
+  #gps-workers-list{display:flex;flex-direction:column;gap:6px;}
+  .gps-worker-card{gap:5px;padding:6px 8px;border-radius:12px;}
+  .gps-worker-card-main{gap:8px;}
+  .gps-worker-avatar{width:36px;height:36px;flex-basis:36px;}
+  .gps-worker-card-time{font-size:8px;}
+  .gps-worker-card-actions{padding-top:5px;}
+}
+
+/* Móvil: mapa arriba con prioridad de espacio y trabajadores en columna debajo */
+@media(max-width:767px){
+  .gps-admin-content{flex-direction:column!important;overflow:hidden!important;}
+  .gps-map-panel{order:0;flex:1 1 0!important;width:100%;height:auto!important;min-height:220px;max-height:none;}
+  .gps-admin-workers-panel{order:1;flex:0 0 auto!important;width:100%;min-width:0;min-height:0;max-height:min(210px,28dvh);overflow-y:auto;border-top:1px solid #e2e8f0;border-left:0;padding:7px 10px;}
+  #gps-admin-workers-panel>.flex.items-center{flex:0 0 auto;}
+  #gps-workers-list{display:flex;flex-direction:column;gap:5px;}
+  #gps-workers-list> :not([hidden])~:not([hidden]){margin-top:0;}
+  .gps-worker-card{flex:0 0 auto;}
+}
+
+/* Móvil: franja horizontal de técnicos arriba y mapa amplio debajo */
+@media(max-width:767px){
+  .gps-admin-content{flex-direction:column!important;overflow:hidden!important;}
+  .gps-admin-workers-panel{order:0;flex:0 0 auto!important;width:100%;min-width:0;min-height:0;max-height:170px;overflow-y:hidden;overflow-x:auto;border-top:0;border-bottom:1px solid #e2e8f0;padding:7px 9px;}
+  #gps-admin-workers-panel>.flex.items-center{flex:0 0 auto;min-height:28px;padding:0 0 5px;}
+  #gps-workers-list{display:flex;flex-direction:row;align-items:stretch;gap:7px;width:max-content;min-width:100%;overflow-x:auto;padding:1px 1px 5px;}
+  #gps-workers-list> :not([hidden])~:not([hidden]){margin-top:0;}
+  .gps-worker-card{flex:0 0 215px;max-width:72vw;gap:4px;padding:6px 8px;}
+  .gps-worker-card-main{gap:7px;}
+  .gps-worker-avatar{width:34px;height:34px;flex-basis:34px;}
+  .gps-worker-card-time{font-size:8px;}
+  .gps-worker-card-actions{padding-top:4px;}
+  .gps-map-panel{order:1;flex:1 1 0!important;width:100%;height:auto!important;min-height:180px;max-height:none;}
+}
+
+/* Aplicar la composición móvil también con viewport ampliado/zoom del navegador */
+@media(max-width:900px){
+  #modal-admin-gps .gps-admin-content{display:flex!important;flex-direction:column!important;overflow:hidden!important;min-height:0!important;}
+  #modal-admin-gps #gps-admin-workers-panel{order:0!important;display:flex!important;flex:0 0 auto!important;width:100%!important;min-width:0!important;min-height:0!important;max-height:170px!important;overflow-x:auto!important;overflow-y:hidden!important;border:0!important;border-bottom:1px solid #e2e8f0!important;padding:7px 9px!important;}
+  #modal-admin-gps #gps-admin-workers-panel>.flex.items-center{flex:0 0 auto!important;min-height:28px;padding:0 0 5px;}
+  #modal-admin-gps #gps-workers-list{display:flex!important;flex-direction:row!important;align-items:stretch!important;gap:7px!important;width:max-content!important;min-width:100%;overflow-x:auto!important;padding:1px 1px 5px;}
+  #modal-admin-gps #gps-workers-list> :not([hidden])~:not([hidden]){margin-top:0!important;}
+  #modal-admin-gps .gps-worker-card{order:initial!important;flex:0 0 215px!important;max-width:72vw!important;gap:4px;padding:6px 8px;}
+  #modal-admin-gps #gps-map-container{order:1!important;flex:1 1 0!important;width:100%!important;height:auto!important;min-height:180px!important;max-height:none!important;}
+}
+
+/* El trabajador ve sus órdenes sin la barra de filtros del administrador */
+
+/* Tarjeta compacta del administrador en el encabezado de chat del trabajador */
+#chat-window-modal > .bg-brand-dark > div:first-child{flex:1 1 0%;min-width:0;overflow:hidden;}#chat-window-modal > .bg-brand-dark > div:first-child > div:first-child{flex:1 1 auto;min-width:0;overflow:hidden;}
+#chat-window-modal .chat-brand-mark.chat-admin-identity{flex:1 1 auto!important;width:auto!important;min-width:0!important;max-width:100%!important;height:auto!important;min-height:0!important;overflow:visible!important;}
+#chat-window-modal .chat-admin-header-card{display:flex!important;align-items:center!important;box-sizing:border-box!important;width:max-content;max-width:100%!important;min-width:0!important;height:34px!important;min-height:34px!important;max-height:34px!important;gap:6px!important;padding:2px 7px!important;overflow:hidden!important;border-radius:11px!important;}
+#chat-window-modal .chat-admin-header-avatar{box-sizing:border-box!important;flex:0 0 26px!important;width:26px!important;height:26px!important;min-width:26px!important;min-height:26px!important;}
+#chat-window-modal .chat-admin-header-avatar img{display:block;width:100%;height:100%;max-width:none;object-fit:cover;}
+#chat-window-modal .chat-admin-header-copy{flex:1 1 auto;min-width:0;overflow:hidden;}
+#chat-window-modal .chat-admin-header-name{display:block;max-width:100%!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#chat-window-modal .chat-admin-header-role{display:none!important;}
+#chat-window-modal .chat-admin-header-status{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#chat-window-modal .chat-admin-header-card.presence-card-connected::before,#chat-window-modal .chat-admin-header-card.presence-card-connected::after,#chat-window-modal .chat-admin-header-card.presence-card-absent::before,#chat-window-modal .chat-admin-header-card.presence-card-absent::after{inset:0!important;border-radius:inherit!important;}
+
+/* La regla visual de la barra no debe vencer al estado oculto del rol trabajador */
+#orders-toolbar.hidden{display:none!important;}
+
+/* El contenedor de identidad no se estira ni pinta una banda vacía en el chat */
+#chat-window-modal > .bg-brand-dark > div:first-child{flex:0 1 auto!important;width:auto!important;}
+#chat-window-modal > .bg-brand-dark > div:first-child > div:first-child{flex:0 1 auto!important;width:auto!important;max-width:100%;background:transparent!important;}
+#chat-window-modal .chat-brand-mark.chat-admin-identity{display:inline-flex!important;flex:0 1 auto!important;width:fit-content!important;max-width:min(56vw,210px)!important;min-width:0!important;margin:0!important;padding:0!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
+#chat-window-modal .chat-admin-header-card{flex:0 1 auto!important;width:fit-content!important;min-width:0!important;max-width:100%!important;margin:0!important;}
+#chat-window-modal .chat-admin-header-copy{flex:0 1 auto!important;width:auto!important;max-width:100%;}
+
+/* La tarjeta del chat debe identificar explícitamente el rol del administrador */
+#chat-window-modal .chat-admin-header-card{height:40px!important;min-height:40px!important;max-height:40px!important;}
+#chat-window-modal .chat-admin-header-copy{gap:0!important;line-height:1.05!important;}
+#chat-window-modal .chat-admin-header-role{display:block!important;color:#d6e1ed!important;font-size:8px!important;font-weight:700!important;letter-spacing:.04em;text-transform:uppercase;line-height:1!important;}
+#chat-window-modal .chat-admin-header-status{font-size:8px!important;line-height:1.05!important;}
+@media(max-width:639px){
+  #chat-window-modal .chat-admin-header-card{height:36px!important;min-height:36px!important;max-height:36px!important;gap:5px!important;padding:2px 6px!important;}
+  #chat-window-modal .chat-admin-header-avatar{width:26px!important;height:26px!important;flex-basis:26px!important;min-width:26px!important;min-height:26px!important;}
+  #chat-window-modal .chat-admin-header-name{font-size:9px!important;line-height:1!important;}
+  #chat-window-modal .chat-admin-header-role{font-size:7px!important;line-height:1!important;}
+  #chat-window-modal .chat-admin-header-status{font-size:7px!important;line-height:1!important;}
+}
+
+/* Tarjetas de órdenes legibles en modo oscuro */
+body.theme-dark #tasks-container .order-card{background:#172235!important;color:#e6edf7!important;}
+body.theme-dark #tasks-container .order-card h3{color:#f4f7fb!important;}
+body.theme-dark #tasks-container .order-card .text-slate-500{color:#aab8ca!important;}
+body.theme-dark #tasks-container .order-client-panel{background:#202f43!important;border-color:#40536a!important;color:#e6edf7!important;}
+body.theme-dark #tasks-container .order-client-panel .text-slate-800{color:#f1f5f9!important;}
+body.theme-dark #tasks-container .order-client-panel .text-slate-600{color:#d0dbea!important;}
+body.theme-dark #tasks-container .order-client-panel .text-slate-500,body.theme-dark #tasks-container .order-client-panel .text-slate-400{color:#aab8ca!important;}
+body.theme-dark #tasks-container .order-client-panel [class~="border-slate-200/80"]{border-color:#43566c!important;}
+body.theme-dark #tasks-container .order-client-panel button.bg-white{background:#172235!important;border-color:#52647a!important;}
+body.theme-dark #tasks-container .order-client-panel button.bg-white:hover{background:#263b53!important;border-color:#84a64c!important;}
+body.theme-dark #tasks-container .order-tech-section{border-color:#43566c!important;}
+body.theme-dark #tasks-container .order-tech-section .text-slate-800{color:#f1f5f9!important;}
+body.theme-dark #tasks-container .order-tech-section .text-slate-500{color:#aab8ca!important;}
+body.theme-dark #tasks-container .order-observations{background:#202f43!important;border-color:#40536a!important;color:#d0dbea!important;}

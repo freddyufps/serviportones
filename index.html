@@ -292,23 +292,43 @@
         </div>
       </section>
 
-      <!-- Filtros y Búsqueda -->
-      <section class="bg-white p-2.5 sm:p-3.5 rounded-2xl border border-slate-200 shadow-sm mb-4 sm:mb-5 flex flex-col md:flex-row gap-2 items-stretch md:items-center justify-between">
-        <div class="relative flex-1">
-          <i data-lucide="search" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 absolute left-3 top-2.5"></i>
-          <input type="text" id="filter-search" oninput="app.renderTasks()" placeholder="Buscar cliente, dirección o motor..." class="w-full pl-8 sm:pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none">
+      <!-- Búsqueda y filtros de órdenes -->
+      <section id="orders-toolbar" class="orders-toolbar mb-4 sm:mb-5" aria-label="Buscar y filtrar órdenes">
+        <div class="orders-search">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+          <input type="text" id="filter-search" oninput="app.renderTasks()" placeholder="Buscar cliente, dirección o motor..." aria-label="Buscar órdenes" class="w-full h-full pl-10 pr-4 text-sm bg-transparent border-0 rounded-xl focus:outline-none focus:ring-0">
         </div>
-        <div class="flex flex-wrap gap-1.5 sm:gap-2 items-center">
-          <select id="filter-status" onchange="app.renderTasks()" class="text-xs border border-slate-200 rounded-xl px-2 py-1.5 bg-slate-50 font-medium">
+
+        <div class="orders-filter-controls">
+          <details id="filter-status-dropdown" name="orders-filter-dropdown" class="order-filter-dropdown">
+            <summary class="order-filter-trigger" aria-label="Filtrar por estado">
+              <span id="filter-status-label">Estados</span>
+              <i data-lucide="chevron-down" class="order-filter-chevron"></i>
+            </summary>
+            <div id="filter-status-options" class="order-filter-menu" role="listbox" aria-label="Estados de órdenes"></div>
+          </details>
+          <select id="filter-status" class="sr-only" aria-hidden="true" tabindex="-1">
             <option value="ALL">Estados</option>
             <option value="PENDIENTE">⏳ Pendientes</option>
             <option value="EN_PROCESO">⚙️ En Proceso</option>
             <option value="REALIZADA">✅ Realizadas</option>
             <option value="NO_REALIZADA">❌ No Realizadas</option>
           </select>
-          <select id="filter-tech" onchange="app.renderTasks()" class="text-xs border border-slate-200 rounded-xl px-2.5 py-1.5 bg-slate-50 font-medium"></select>
-          <button onclick="app.resetFilters()" class="p-1.5 text-slate-500 hover:bg-slate-100 rounded-xl" title="Restablecer">
+
+          <details id="filter-tech-control" name="orders-filter-dropdown" class="order-filter-dropdown hidden">
+            <summary class="order-filter-trigger" aria-label="Filtrar por técnico">
+              <span id="filter-tech-label">Todos los Técnicos</span>
+              <i data-lucide="chevron-down" class="order-filter-chevron"></i>
+            </summary>
+            <div id="filter-tech-options" class="order-filter-menu" role="listbox" aria-label="Técnicos"></div>
+          </details>
+          <select id="filter-tech" class="sr-only hidden" aria-hidden="true" tabindex="-1"></select>
+
+          <button type="button" onclick="app.resetFilters()" class="orders-reset" title="Restablecer filtros" aria-label="Restablecer filtros">
             <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          </button>
+          <button id="btn-assign-order-filter" type="button" aria-label="Asignar orden" title="Asignar orden" onclick="app.openNewTaskModal()" class="hidden orders-assign-button">
+            <img src="assets/media/boton-asignar-orden.png" alt="Asignar orden" class="block h-16 w-16 object-contain sm:h-[72px] sm:w-[72px]">
           </button>
         </div>
       </section>
@@ -396,27 +416,27 @@
   </div>
 
   <!-- MODAL GPS SATELITAL (ADMIN) -->
-  <div id="modal-admin-gps" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-2 sm:p-4">
-    <div class="bg-white rounded-3xl max-w-4xl w-full h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
-      <div class="bg-brand-dark text-white p-3.5 sm:p-4 flex items-center justify-between border-b-2 border-cyan-500 shrink-0">
+  <div id="modal-admin-gps" class="gps-modal-overlay fixed inset-0 bg-transparent backdrop-blur-0 z-50 hidden flex items-center justify-center overflow-y-auto overscroll-contain p-2 sm:p-4" onclick="if(event.target===this) app.closeAdminGpsModal()">
+    <div class="gps-admin-dialog bg-white rounded-3xl w-full flex flex-col overflow-hidden shadow-2xl border border-slate-200">
+      <div class="gps-admin-header bg-white text-slate-900 p-3.5 sm:p-4 flex items-center justify-between border-b border-slate-200 shrink-0">
         <div class="flex items-center gap-2">
-          <div class="p-1.5 bg-cyan-500/20 rounded-xl text-cyan-400 border border-cyan-500/40">
+          <div class="p-1.5 bg-cyan-50 rounded-xl text-cyan-700 border border-cyan-100">
             <i data-lucide="map-pin" class="w-5 h-5"></i>
           </div>
           <div>
-            <h3 class="text-xs sm:text-sm font-black">Monitoreo GPS en Vivo &bull; Cuadrilla Técnica</h3>
-            <p class="text-[10px] sm:text-[11px] text-slate-300">Ubicaciones satelitales en tiempo real de los técnicos</p>
+            <h3 class="text-sm sm:text-base font-extrabold text-slate-900">Monitoreo GPS en vivo</h3>
+            <p class="text-xs text-slate-500">Ubicación y actividad de la cuadrilla técnica</p>
           </div>
         </div>
-        <button onclick="app.closeAdminGpsModal()" class="text-slate-400 hover:text-white p-1 rounded-xl">
+        <button onclick="app.closeAdminGpsModal()" class="gps-admin-close text-slate-500 hover:text-slate-900 hover:bg-slate-100 p-2 rounded-xl transition">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
-        <div id="gps-map-container" class="flex-1 w-full h-full min-h-[300px] z-10 bg-slate-100"></div>
+      <div class="gps-admin-content flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden relative">
+        <div id="gps-map-container" class="gps-map-panel flex-1 w-full min-h-0 z-10 bg-slate-100"></div>
 
-        <div class="w-full md:w-80 bg-slate-50 border-t md:border-t-0 md:border-l border-slate-200 p-3 overflow-y-auto chat-scroll shrink-0 flex flex-col gap-2">
+        <div id="gps-admin-workers-panel" class="gps-admin-workers-panel w-full md:w-80 bg-slate-50 border-t md:border-t-0 md:border-l border-slate-200 p-3 overflow-y-auto chat-scroll shrink-0 flex flex-col gap-2">
           <div class="flex items-center justify-between pb-1 border-b border-slate-200">
             <span class="text-[11px] font-black uppercase tracking-wider text-slate-700">Técnicos Emitiendo</span>
             <span id="gps-active-count" class="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-100 text-cyan-800">0 Activos</span>
@@ -427,7 +447,7 @@
         </div>
       </div>
 
-      <div class="p-2.5 bg-white border-t border-slate-200 flex items-center justify-between text-xs shrink-0">
+      <div class="gps-admin-footer p-2.5 bg-white border-t border-slate-200 flex items-center justify-between gap-3 text-xs shrink-0">
         <span class="text-slate-500 text-[10px] sm:text-[11px]">📍 Las coordenadas se actualizan automáticamente al emitir señal.</span>
         <button onclick="app.closeAdminGpsModal()" class="px-4 py-1.5 border border-slate-300 rounded-xl font-bold text-xs hover:bg-slate-100">Cerrar</button>
       </div>
@@ -712,9 +732,9 @@
   </div>
 
   <!-- MODAL: ASIGNAR / EDITAR ORDEN (ADMIN) -->
-  <div id="modal-task-form" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
-      <div class="bg-brand-dark text-white px-4 sm:px-5 py-3 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
+  <div id="modal-task-form" class="task-modal-overlay fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto" onclick="if(event.target===this) app.closeTaskModal()">
+    <div class="task-modal-dialog bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
+      <div class="task-modal-header bg-brand-dark text-white px-4 sm:px-5 py-3 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
         <div class="flex items-center gap-2">
           <i data-lucide="clipboard-pen" class="w-5 h-5 text-brand-lime"></i>
           <h3 id="form-modal-title" class="text-xs sm:text-sm font-bold">Orden de Trabajo</h3>
@@ -724,76 +744,85 @@
         </button>
       </div>
 
-      <form id="task-form" onsubmit="app.submitTaskForm(event)" onkeydown="app.handleTaskFormKeydown(event)" class="p-3.5 sm:p-4 space-y-2.5 text-xs sm:text-sm overflow-y-auto flex-1">
+      <form id="task-form" onsubmit="app.submitTaskForm(event)" onkeydown="app.handleTaskFormKeydown(event)" class="task-form-content p-3.5 sm:p-4 space-y-2.5 text-xs sm:text-sm overflow-y-auto flex-1">
         <input type="hidden" id="task-id" value="">
-        <div id="task-order-number-field" class="hidden">
-          <label for="task-order-number" class="block text-[11px] font-semibold text-slate-700 mb-0.5">Número de orden</label>
-          <div class="flex items-center gap-2"><span class="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-600">ORD-</span><input type="number" id="task-order-number" min="1" step="1" inputmode="numeric" class="w-36 px-2.5 py-1.5 border rounded-lg" disabled></div>
-          <p class="mt-0.5 text-[10px] text-slate-500">Puedes corregir el consecutivo de esta orden. No se permiten números ya usados.</p>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Cliente / Predio *</label>
-            <input type="text" id="task-client" required placeholder="Nombre del cliente" class="w-full px-2.5 py-1.5 border rounded-lg">
+        <input type="hidden" id="task-phone" value="">
+        <input type="text" id="task-equipment" class="hidden" aria-hidden="true" tabindex="-1">
+        <select id="task-priority" class="hidden" aria-hidden="true" tabindex="-1"><option value="MEDIA">Media</option><option value="ALTA">Alta</option><option value="BAJA">Baja</option></select>
+
+        <div class="task-order-meta">
+          <div id="task-order-number-field" class="hidden">
+            <label for="task-order-number" class="block text-[11px] font-semibold text-slate-700 mb-1">Número de orden</label>
+            <div class="flex items-center gap-2"><span class="rounded-lg bg-slate-100 px-2.5 py-2 text-xs font-bold text-slate-600">ORD-</span><input type="number" id="task-order-number" min="1" step="1" inputmode="numeric" class="w-36 px-2.5 py-2 border rounded-lg" disabled></div>
+            <p class="mt-1 text-[10px] text-slate-500">Puedes corregir el consecutivo. No se permiten números ya usados.</p>
           </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Teléfono *</label>
-            <input type="tel" id="task-phone" required placeholder="Teléfono" class="w-full px-2.5 py-1.5 border rounded-lg">
+          <div id="task-work-date-field">
+            <label for="task-date" class="block text-[11px] font-semibold text-slate-700 mb-1">Fecha del trabajo *</label>
+            <div class="task-date-control">
+              <i data-lucide="calendar-days" class="task-date-icon" aria-hidden="true"></i>
+              <input type="date" id="task-date" required class="task-date-input" aria-label="Fecha del trabajo" oninput="app.taskDatePickerOpen=false" onkeydown="if(event.key==='Escape'){this.blur();app.taskDatePickerOpen=false}">
+              <button type="button" class="task-date-toggle" aria-label="Abrir o cerrar calendario" title="Abrir o cerrar calendario" onclick="app.toggleTaskDatePicker()"><i data-lucide="calendar-days" aria-hidden="true"></i></button>
+            </div>
           </div>
         </div>
 
-        <div>
-          <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Dirección del Inmueble *</label>
-          <input type="text" id="task-address" required placeholder="Dirección completa" class="w-full px-2.5 py-1.5 border rounded-lg">
+        <div id="task-client-tabs" class="task-client-tabs" role="tablist" aria-label="Tipo de cliente">
+          <button type="button" id="task-client-tab-new" class="task-client-tab active" role="tab" aria-selected="true" aria-controls="task-client-new-panel" onclick="app.setTaskClientMode('new')">Cliente nuevo</button>
+          <button type="button" id="task-client-tab-saved" class="task-client-tab" role="tab" aria-selected="false" aria-controls="task-client-saved-panel" onclick="app.setTaskClientMode('saved')">Clientes registrados</button>
         </div>
+        <p id="task-client-mode-hint" class="task-client-mode-hint">Ingresa los datos del cliente. Al guardar, estarán disponibles para próximas órdenes.</p>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <section id="task-client-saved-panel" class="hidden">
+          <label for="task-client-search" class="block text-[11px] font-semibold text-slate-700 mb-1">Busca un cliente registrado</label>
+          <input type="text" id="task-client-search" list="task-client-options" autocomplete="off" placeholder="Escribe el nombre del cliente..." oninput="app.searchSavedTaskClients(this.value)" onchange="app.selectSavedTaskClient(this.value)" class="task-client-search w-full px-3 py-2.5 border rounded-xl bg-white"><datalist id="task-client-options"></datalist>
+          <div id="task-client-saved-details" class="task-client-saved-details hidden">
+            <div><span>Razón social / cliente</span><strong id="task-client-saved-name">—</strong></div>
+            <div><span>Dirección</span><strong id="task-client-saved-address">—</strong></div>
+            <div><span>Administrador / contacto</span><strong id="task-client-saved-administrator">—</strong></div>
+          </div>
+        </section>
+
+        <section id="task-client-new-panel" class="space-y-2.5">
           <div>
-            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Tipo de Servicio *</label>
-            <div class="flex items-center gap-1.5">
-              <select id="task-service-type" required class="min-w-0 flex-1 px-2.5 py-1.5 border rounded-lg bg-white"></select>
-              <button id="btn-manage-service-types" type="button" onclick="app.openServiceManager()" class="hidden w-9 h-9 shrink-0 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 font-black text-lg" title="Administrar tipos de servicio" aria-label="Administrar tipos de servicio">➕</button>
+            <label for="task-client" class="block text-[11px] font-semibold text-slate-700 mb-1">Razón social / nombre del cliente *</label>
+            <input type="text" id="task-client" required placeholder="Nombre o razón social" autocomplete="organization" class="w-full px-3 py-2.5 border rounded-xl">
+          </div>
+          <div>
+            <label for="task-address" class="block text-[11px] font-semibold text-slate-700 mb-1">Dirección del inmueble *</label>
+            <div class="task-address-row">
+              <input type="text" id="task-address" required placeholder="Dirección completa" class="w-full px-3 py-2.5 border rounded-xl">
+              <button type="button" onclick="app.openWazeNavigation(document.getElementById('task-address').value)" class="task-map-button" title="Abrir dirección en Waze" aria-label="Abrir dirección en Waze"><img src="assets/media/media-1.png" alt="" aria-hidden="true"></button>
+              <button type="button" onclick="app.openGoogleMapsNavigation(document.getElementById('task-address').value)" class="task-map-button" title="Abrir dirección en Google Maps" aria-label="Abrir dirección en Google Maps"><img src="assets/media/media-2.png" alt="" aria-hidden="true"></button>
             </div>
           </div>
           <div>
-            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Tipo y Marca de Motor (opcional)</label>
-            <input type="text" id="task-equipment" placeholder="Ej: BFT Deimos / LiftMaster" class="w-full px-2.5 py-1.5 border rounded-lg">
+            <label for="task-administrator" class="block text-[11px] font-semibold text-slate-700 mb-1">Administrador / contacto</label>
+            <input type="text" id="task-administrator" placeholder="Nombre del administrador o contacto" autocomplete="name" class="w-full px-3 py-2.5 border rounded-xl">
           </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Técnico Asignado *</label>
-            <select id="task-assigned-to" required class="w-full px-2.5 py-1.5 border rounded-lg bg-white font-semibold"></select>
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Prioridad *</label>
-            <select id="task-priority" required class="w-full px-2.5 py-1.5 border rounded-lg bg-white">
-              <option value="MEDIA">🟡 Media</option>
-              <option value="ALTA">🔴 Alta</option>
-              <option value="BAJA">🟢 Baja</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Fecha *</label>
-            <input type="date" id="task-date" required class="w-full px-2.5 py-1.5 border rounded-lg bg-white">
-          </div>
-        </div>
-
-        <section id="task-checklist-admin-section" class="hidden rounded-xl border border-slate-200 bg-slate-50 p-2.5">
-          <h4 class="text-[11px] font-extrabold uppercase tracking-wider text-slate-700">CHECKLIST TÉCNICO DEL PORTÓN</h4>
-          <div id="task-checklist-admin-list" class="mt-2 space-y-1.5"></div>
-          <button type="button" onclick="app.addChecklistItem()" class="mt-2 w-full rounded-lg border border-dashed border-slate-300 py-2 text-[11px] font-bold text-brand-limeHover hover:bg-white">➕ Agregar Nuevo Punto</button>
         </section>
+
         <div>
-          <label class="block text-[11px] font-semibold text-slate-700 mb-0.5">Instrucciones</label>
-          <textarea id="task-instructions" rows="2" placeholder="Indicaciones para el técnico..." class="w-full px-2.5 py-1.5 border rounded-lg"></textarea>
+          <label for="task-service-type" class="block text-[11px] font-semibold text-slate-700 mb-1">Motivo</label>
+          <input type="text" id="task-service-type" required placeholder="Escribe el motivo del trabajo" class="w-full px-3 py-2.5 border rounded-xl">
+          <button id="btn-manage-service-types" type="button" onclick="app.openServiceManager()" class="hidden" aria-hidden="true" tabindex="-1">Administrar motivos</button>
+        </div>
+        <div>
+          <label for="task-instructions" class="block text-[11px] font-semibold text-slate-700 mb-1">Observación</label>
+          <textarea id="task-instructions" rows="3" placeholder="Escribe una observación para el técnico..." class="w-full px-3 py-2.5 border rounded-xl"></textarea>
+        </div>
+        <div>
+          <label for="task-assigned-trigger" class="block text-[11px] font-semibold text-slate-700 mb-1">Técnico asignado *</label>
+          <div class="task-technician-picker" id="task-technician-picker">
+            <button type="button" id="task-assigned-trigger" class="task-technician-trigger" aria-haspopup="listbox" aria-expanded="false" onclick="app.toggleTaskTechnicianMenu()"><span id="task-assigned-label">Selecciona un técnico</span><i data-lucide="chevron-down" class="task-technician-chevron" aria-hidden="true"></i></button>
+            <div id="task-assigned-menu" class="task-technician-menu hidden" role="listbox" aria-label="Técnico asignado"></div>
+            <select id="task-assigned-to" required class="hidden" aria-hidden="true" tabindex="-1"></select>
+          </div>
         </div>
 
-        <div class="pt-2 border-t flex justify-end gap-2 sticky bottom-0 bg-white">
-          <button type="button" onclick="app.closeTaskModal()" class="px-3.5 py-1.5 border border-slate-300 rounded-xl text-slate-700 font-semibold text-xs">Cancelar</button>
-          <button type="button" onclick="app.submitTaskForm()" class="px-4 py-1.5 bg-brand-dark hover:bg-black text-white rounded-xl font-bold flex items-center gap-1 shadow text-xs">
-            <i data-lucide="save" class="w-3.5 h-3.5 text-brand-lime"></i> Guardar
+        <div class="task-form-actions pt-3 border-t flex justify-end gap-2 sticky bottom-0 bg-white">
+          <button type="button" onclick="app.closeTaskModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 font-semibold text-xs">Cancelar</button>
+          <button type="button" onclick="app.submitTaskForm()" class="px-5 py-2 bg-brand-dark hover:bg-black text-white rounded-xl font-bold flex items-center gap-2 shadow text-xs">
+            <i data-lucide="save" class="w-4 h-4 text-brand-lime"></i> Guardar
           </button>
         </div>
       </form>
@@ -855,7 +884,7 @@
           <label class="block text-xs font-black uppercase tracking-wider text-slate-800 mb-1">
             Resultado de la Visita *
           </label>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <button type="button" id="btn-choice-done" aria-pressed="false" onclick="app.setReportStatus('REALIZADA')" class="py-2 px-2.5 rounded-xl border-2 flex items-center justify-center gap-1 font-bold text-xs">
               <span>✅ Realizada</span>
             </button>
@@ -1024,5 +1053,6 @@
 <link rel="stylesheet" href="assets/css/app-25.css" id="mobile-reactions-and-chat-dark-bottom-fix"><link rel="stylesheet" href="assets/css/app-26.css" id="ios-chat-press-and-worker-admin-identity">
 <script id="ios-chat-press-and-worker-admin-identity" src="assets/js/app-10.js"></script><script id="optimistic-chat-reaction-update" src="assets/js/app-11.js"></script><link rel="stylesheet" href="assets/css/app-27.css" id="chat-header-admin-presence-card-sync">
 <script id="chat-header-admin-presence-card-sync" src="assets/js/app-12.js"></script><link rel="stylesheet" href="assets/css/app-28.css" id="chat-header-admin-identity-cleanup">
-<script id="chat-header-admin-identity-cleanup" src="assets/js/app-13.js"></script><link rel="stylesheet" href="assets/css/app-29.css" id="seasonal-chat-admin-card-and-unread-red-alert"></body>
+<script id="chat-header-admin-identity-cleanup" src="assets/js/app-13.js"></script><link rel="stylesheet" href="assets/css/app-29.css" id="seasonal-chat-admin-card-and-unread-red-alert"><link rel="stylesheet" href="assets/css/app-30.css?v=20261027-orders-dark-theme-5">
+</body>
 </html>
