@@ -378,3 +378,77 @@ body.theme-dark #tasks-container .order-tech-section{border-color:#43566c!import
 body.theme-dark #tasks-container .order-tech-section .text-slate-800{color:#f1f5f9!important;}
 body.theme-dark #tasks-container .order-tech-section .text-slate-500{color:#aab8ca!important;}
 body.theme-dark #tasks-container .order-observations{background:#202f43!important;border-color:#40536a!important;color:#d0dbea!important;}
+
+/* Evita que el botón de asignación quede recortado en la barra de filtros. */
+.orders-filter-controls{overflow:visible}
+.orders-assign-button{width:72px;height:72px;margin:0;flex:0 0 72px;overflow:visible}
+.orders-assign-button img{display:block;width:100%;height:100%;object-fit:contain}
+@media(max-width:767px){
+  .orders-filter-controls{flex-wrap:nowrap;overflow:visible}
+  .orders-assign-button{width:58px;height:58px;flex-basis:58px;margin:0}
+}
+
+/* Mejor contraste y jerarquía para fecha, cliente y servicio en las tarjetas por rol. */
+.order-service-line{color:#334155}
+.order-date-line{display:flex;flex-wrap:wrap;gap:3px}
+.order-administrator{overflow-wrap:anywhere}
+body.theme-dark .order-service-line{color:#cbd5e1}
+body.theme-dark .order-date-line{color:#aab8ca}
+body.theme-dark .order-administrator{color:#cbd5e1}
+.order-phone{overflow-wrap:anywhere}
+body.theme-dark .order-phone{color:#cbd5e1}
+
+/* En celular, el encabezado usa dos filas para mostrar completa la identidad. */
+@media(max-width:639px){
+  #dashboard-header-inner{box-sizing:border-box;height:auto!important;min-height:56px;padding:7px 10px!important;display:flex!important;flex-wrap:wrap;align-content:center;gap:7px 8px;}
+  #dashboard-header-inner>div:first-child{width:100%;min-width:0;justify-content:flex-start;}
+  #dashboard-header-inner>div:nth-child(2){width:100%;min-width:0;justify-content:flex-end;gap:6px!important;}
+  #dashboard-brand-logo{height:34px;}
+  #header-presence-profile{box-sizing:border-box!important;display:flex!important;flex:0 1 auto!important;width:auto!important;min-width:132px!important;max-width:calc(100vw - 175px)!important;min-height:44px;padding:4px 8px 4px 5px!important;gap:7px!important;justify-content:flex-start!important;}
+  #header-profile-copy{display:block!important;flex:1 1 auto;min-width:0;max-width:100%;}
+  #header-user-name{display:block;max-width:100%!important;font-size:11px;line-height:1.15;}
+  #header-role-subtitle{display:block!important;margin-top:2px;font-size:8px!important;line-height:1.1!important;}
+  #header-user-status:not(.hidden){display:block!important;margin-top:2px;font-size:8px!important;line-height:1.1!important;}
+  #admin-presence-control{margin-top:2px!important;}
+  #admin-presence-toggle{font-size:8px!important;line-height:1.1;}
+  #btn-dark-mode{width:38px;height:38px;flex:0 0 38px;}
+  #btn-nav-settings{width:38px;height:38px;min-width:38px;padding:8px!important;justify-content:center;}
+  #dashboard-header-inner>div:nth-child(2)>button[aria-label="Cerrar sesión"]{width:34px;height:38px;display:flex;align-items:center;justify-content:center;flex:0 0 34px;padding:6px!important;}
+}
+
+/* Botón de contacto compacto integrado al encabezado de empleados. */
+.create-contact-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:34px;padding:0 11px;border:1px solid #334155;border-radius:10px;background:#14283d;color:#fff;font-size:11px;font-weight:700;line-height:1;white-space:nowrap;box-shadow:0 1px 2px rgb(15 23 42 / .12);transition:background .16s,border-color .16s,transform .16s,box-shadow .16s;}
+.create-contact-button:hover{background:#1e3a52;border-color:#71a832;box-shadow:0 3px 9px rgb(15 23 42 / .14);}
+.create-contact-button:active{transform:translateY(1px);}
+.create-contact-button:focus-visible{outline:3px solid rgb(132 166 76 / .35);outline-offset:2px;}
+.create-contact-button>svg{color:#a3d45a;flex:0 0 auto;}
+.create-contact-button[aria-expanded="true"]>svg{transform:rotate(45deg);}
+@media(max-width:480px){
+  #settings-admin-users-section>div:first-child{align-items:flex-start;}
+  #settings-admin-users-section>div:first-child>h4{max-width:48%;font-size:10px;line-height:1.35;}
+  #settings-admin-users-section>div:first-child>div{gap:6px;}
+  #settings-users-count-badge{font-size:9px;white-space:nowrap;}
+  .create-contact-button{min-height:32px;padding:0 9px;font-size:10px;gap:5px;}
+}
+
+/* Equilibra la tarjeta de identidad en pantallas estrechas y conserva nombre, rol y estado. */
+@media(max-width:639px){
+  #header-presence-profile{width:158px!important;min-width:150px!important;max-width:calc(100vw - 165px)!important;height:50px!important;min-height:50px!important;flex:0 1 158px!important;padding:4px 7px 4px 5px!important;border-radius:14px!important;gap:7px!important;}
+  #header-presence-profile>div:first-child{box-sizing:border-box!important;width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important;flex:0 0 34px!important;}
+  #header-presence-profile>div:last-child{width:auto!important;min-width:0!important;max-width:none!important;flex:1 1 auto!important;overflow:hidden!important;}
+  #header-presence-profile #header-user-name{font-size:10px!important;line-height:1.15!important;}
+  #header-presence-profile #header-role-subtitle,#header-presence-profile #header-user-status{font-size:7.5px!important;line-height:1.1!important;}
+}
+
+/* La fecha conserva el calendario nativo del campo y elimina espacio para el botón duplicado. */
+.task-date-input{padding-right:14px!important;}
+.task-date-input::-webkit-calendar-picker-indicator{margin-right:3px!important;opacity:.58;}
+
+/* Oculta solo el indicador de sugerencias del input; el autocompletado al escribir sigue activo. */
+.task-client-search{-webkit-appearance:none!important;appearance:none!important;background-image:none!important;}
+.task-client-search::-webkit-list-button{display:none!important;width:0!important;opacity:0!important;}
+.task-client-search::-webkit-calendar-picker-indicator{display:none!important;width:0!important;}
+/* Un único control visible abre y cierra el selector de fecha. */
+.task-date-input{padding-right:48px!important;}
+.task-date-input::-webkit-calendar-picker-indicator{display:none!important;width:0!important;opacity:0!important;pointer-events:none!important;}
+

@@ -14,12 +14,13 @@
                 button.style.display = 'grid';
               };
               video.volume = 0.7;
+              video.muted = true;
               let userChoseAudio = false;
               let loginScreenActive = true;
               let unlockListenerActive = false;
               const startVideo = () => {
                 if (!loginScreenActive) return;
-                video.muted = false;
+                video.muted = true;
                 video.play().then(updateButton).catch(() => {
                   video.muted = true;
                   updateButton();
@@ -64,4 +65,6 @@
               if (video.readyState >= 2) startVideo();
               else video.addEventListener('canplay', startVideo, { once: true });
             })();
-          
+
+// El video del login comienza siempre silenciado; el usuario decide cuándo habilitar el audio.
+

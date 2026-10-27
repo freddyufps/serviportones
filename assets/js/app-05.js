@@ -499,7 +499,7 @@
 
       openGoogleMapsNavigation(address) {
         if (!address) return this.showToast('No hay una dirección registrada', 'error');
-        window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`, '_blank');
       }
 
       initTechTheme() {
@@ -1038,6 +1038,8 @@
 
         document.getElementById('header-user-name').textContent = this.getCurrentDisplayName();
         document.getElementById('header-role-badge').textContent = isAdmin ? 'Admin' : 'Técnico';
+        const headerRoleSubtitle = document.getElementById('header-role-subtitle');
+        if (headerRoleSubtitle) { headerRoleSubtitle.textContent = isAdmin ? 'Administrador' : 'Trabajador'; headerRoleSubtitle.classList.remove('hidden'); }
         document.getElementById('admin-presence-control')?.classList.toggle('hidden', !isAdmin);
 
         const headerPhoto = document.getElementById('header-user-photo');
@@ -1369,6 +1371,12 @@
         const profileStatus = this.currentUser?.role === 'admin' ? info.status : this.getPresenceStatus(this.currentUser);
         profileIndicator?.classList.toggle('presence-card-connected', profileStatus === 'available');
         profileIndicator?.classList.toggle('presence-card-absent', profileStatus === 'absent');
+        const mobileProfileStatus = document.getElementById('header-user-status');
+        if (mobileProfileStatus) {
+          const isAdmin = this.currentUser?.role === 'admin';
+          mobileProfileStatus.textContent = this.getPresenceLabel(profileStatus);
+          mobileProfileStatus.className = `text-[8px] font-semibold ${profileStatus === 'available' ? 'text-emerald-300' : profileStatus === 'absent' ? 'text-amber-300' : 'text-slate-300'}${isAdmin ? ' hidden' : ''}`;
+        }
         if (statusLabel) { statusLabel.textContent = label; statusLabel.className = `${stateClass} text-[9px]`; }
         if (this.currentUser?.role === 'admin') {
           const headerName = document.getElementById('header-user-name');
@@ -3443,6 +3451,7 @@ updateMessengerWindowTyping(workerName) {
         overlay.innerHTML = '<div class="employee-edit-bubble-card"><div class="employee-edit-bubble-header"><div><h3 id="employee-edit-bubble-title">Editar trabajador</h3><p>Actualiza sus datos y guarda los cambios.</p></div><button type="button" onclick="app.cancelUserForm()" aria-label="Cerrar">×</button></div><div class="employee-edit-bubble-content" data-employee-edit-form></div></div>';
         overlay.addEventListener('click', event => { if (event.target === overlay) this.cancelUserForm(); });
         const form = sourceForm.cloneNode(true);
+        form.classList.remove('hidden');
         form.id = 'manage-user-edit-form';
         form.dataset.editingWorker = 'true';
         form.querySelectorAll('[id]').forEach(field => {
@@ -3458,6 +3467,8 @@ updateMessengerWindowTyping(workerName) {
         field('phone').value = worker.phone || '';
         field('national-id').value = worker.nationalId || '';
         field('specialty').value = worker.specialty || '';
+        const photoPreview = form.querySelector('[data-worker-photo-preview]');
+        if (photoPreview && worker.photo) { photoPreview.src = worker.photo; photoPreview.classList.remove('hidden'); }
         field('save').textContent = 'Actualizar en Firestore';
         overlay.querySelector('[data-employee-edit-form]').appendChild(form);
         document.body.appendChild(overlay);
@@ -3486,11 +3497,60 @@ updateMessengerWindowTyping(workerName) {
         if (document.getElementById('employee-edit-bubble')) this.closeEmployeeEditBubble();
         else this.resetUserForm();
       }
+      toggleCreateWorkerForm() {
+        const form = document.getElementById('manage-user-form');
+        const button = document.getElementById('btn-toggle-create-worker');
+        if (!form || !button) return;
+        const opening = form.classList.contains('hidden');
+        if (opening) form.classList.remove('hidden'); else this.resetUserForm();
+        button.setAttribute('aria-expanded', String(opening));
+        if (opening) document.getElementById('manage-fullname')?.focus({ preventScroll: true });
+      }
+
       resetUserForm() {
         document.getElementById('manage-user-id').value = '';
-        document.getElementById('manage-user-form').reset();
+        const form = document.getElementById('manage-user-form');
+        form.reset();
+        form.classList.add('hidden');
+        document.getElementById('btn-toggle-create-worker')?.setAttribute('aria-expanded', 'false');
+        document.querySelector('#manage-user-form [data-worker-photo-preview]')?.removeAttribute('src');
+        document.querySelector('#manage-user-form [data-worker-photo-preview]')?.classList.add('hidden');
         document.getElementById('btn-save-user').textContent = 'Guardar en Firestore';
         if (window.lucide) lucide.createIcons();
+      }
+
+      previewManagedWorkerPhoto(event) {
+        const file = event.target.files?.[0];
+        const preview = event.currentTarget.form?.querySelector("[data-worker-photo-preview]");
+        if (!file || !preview) return;
+        if (!file.type.startsWith("image/")) { this.showToast("Selecciona un archivo de imagen.", "error"); event.target.value = ""; return; }
+        if (file.size > 8 * 1024 * 1024) { this.showToast("La foto debe pesar menos de 8 MB.", "error"); event.target.value = ""; return; }
+        const reader = new FileReader();
+        reader.onload = () => { preview.src = String(reader.result || ""); preview.classList.remove("hidden"); };
+        reader.onerror = () => this.showToast("No se pudo leer la foto seleccionada.", "error");
+        reader.readAsDataURL(file);
+      }
+
+      async encodeManagedWorkerPhoto(file) {
+        if (!file) return "";
+        const source = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || ""));
+          reader.onerror = () => reject(new Error("No se pudo leer la foto."));
+          reader.readAsDataURL(file);
+        });
+        const image = await new Promise((resolve, reject) => {
+          const img = new Image(); img.onload = () => resolve(img); img.onerror = () => reject(new Error("La imagen seleccionada no se pudo abrir.")); img.src = source;
+        });
+        const scale = Math.min(1, 640 / Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale));
+        canvas.height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale));
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("No se pudo procesar la foto.");
+        context.fillStyle = "#ffffff"; context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        return canvas.toDataURL("image/jpeg", 0.78);
       }
 
       async handleSaveUser(e) {
@@ -3506,10 +3566,17 @@ updateMessengerWindowTyping(workerName) {
         const phone = this.normalizeInput(getField('phone').value);
         const nationalId = this.normalizeInput(getField('national-id').value);
         const specialty = this.normalizeInput(getField('specialty').value);
+        const photoFile = getField('photo')?.files?.[0] || null;
+        let photo = this.users.find(user => String(user.id) === String(id))?.photo || '';
 
         if (username.toLowerCase() === 'administrador' && id !== 'admin') {
           this.showToast('El usuario no puede llamarse administrador', 'error');
           return;
+        }
+
+        if (photoFile) {
+          try { photo = await this.encodeManagedWorkerPhoto(photoFile); }
+          catch (error) { this.showToast(error.message || 'No se pudo procesar la foto.', 'error'); return; }
         }
 
         const userData = {
@@ -3519,6 +3586,7 @@ updateMessengerWindowTyping(workerName) {
           phone,
           nationalId,
           specialty: specialty || 'Técnico de Portones',
+          photo,
           role: 'worker',
           active: true
         };
@@ -3530,7 +3598,7 @@ updateMessengerWindowTyping(workerName) {
               this.showToast(`Trabajador ${fullName} actualizado en Firestore`, 'success');
             } else {
               const docId = 'tech-' + Date.now();
-              await db.collection('users').doc(docId).set({ ...userData, photo: '', lastHeartbeat: 0, lastLogin: 'Nunca' });
+              await db.collection('users').doc(docId).set({ ...userData, lastHeartbeat: 0, lastLogin: 'Nunca' });
               this.showToast(`Trabajador ${fullName} registrado en Firestore`, 'success');
             }
             if (id) this.closeEmployeeEditBubble();
@@ -3553,10 +3621,10 @@ updateMessengerWindowTyping(workerName) {
             <tr class="hover:bg-slate-50 transition">
               <td class="p-1.5">
                 <div class="flex items-center gap-1.5">
-                  <div onclick="app.zoomWorkerPhoto('${u.photo || ''}', '${uName}')" class="cursor-pointer w-6 h-6 rounded-full border border-brand-lime overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center">
-                    ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<span class="font-bold text-[9px]">${uName.charAt(0)}</span>`}
+                  <div onclick="app.zoomWorkerPhoto('${u.photo || ''}', '${uName}')" class="cursor-pointer w-10 h-10 rounded-full border-2 border-brand-lime overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center">
+                    ${u.photo ? `<img src="${u.photo}" class="w-full h-full object-cover">` : `<span class="font-bold text-xs">${this.escapeHtml(String(uName).charAt(0))}</span>`}
                   </div>
-                  <span class="font-bold text-slate-800 truncate max-w-[90px]">${uName}</span>
+                  <span class="font-bold text-slate-800 truncate max-w-[140px]">${this.escapeHtml(uName)}</span>
                 </div>
               </td>
               <td class="p-1.5 font-mono text-[10px] text-slate-600">
@@ -3672,8 +3740,8 @@ updateMessengerWindowTyping(workerName) {
         const opening = menu.classList.contains('hidden');
         if (opening) {
           if (menu.parentElement !== document.body) document.body.appendChild(menu);
-          this.positionTaskTechnicianMenu();
           menu.classList.remove('hidden');
+          this.positionTaskTechnicianMenu();
         } else {
           menu.classList.add('hidden');
         }
@@ -3697,18 +3765,22 @@ updateMessengerWindowTyping(workerName) {
         if (!menu || !trigger || menu.classList.contains('hidden')) return;
         const rect = trigger.getBoundingClientRect();
         const gap = 6;
-        const availableBelow = Math.max(0, window.innerHeight - rect.bottom - gap - 12);
-        const availableAbove = Math.max(0, rect.top - gap - 12);
-        const openAbove = availableBelow < 150 && availableAbove > availableBelow;
-        const maxHeight = Math.min(280, openAbove ? availableAbove : availableBelow);
+        const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
+        const availableBelow = Math.max(0, viewportHeight - rect.bottom - gap - 8);
+        const availableAbove = Math.max(0, rect.top - gap - 8);
+        const openAbove = availableBelow < 170 && availableAbove > availableBelow;
+        const available = openAbove ? availableAbove : availableBelow;
+        const maxHeight = Math.max(90, Math.min(280, available));
         menu.style.position = 'fixed';
-        menu.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - rect.width - 8))}px`;
-        menu.style.width = `${rect.width}px`;
-        menu.style.maxHeight = `${Math.max(100, maxHeight)}px`;
-        menu.style.top = openAbove ? 'auto' : `${rect.bottom + gap}px`;
-        menu.style.bottom = openAbove ? `${Math.max(8, window.innerHeight - rect.top + gap)}px` : 'auto';
+        menu.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - rect.width - 8)) + 'px';
+        menu.style.width = Math.min(rect.width, window.innerWidth - 16) + 'px';
+        menu.style.maxHeight = maxHeight + 'px';
+        menu.style.bottom = 'auto';
+        menu.style.top = '0px';
+        const visibleHeight = Math.min(menu.scrollHeight, maxHeight);
+        const top = openAbove ? Math.max(8, rect.top - gap - visibleHeight) : Math.max(8, Math.min(rect.bottom + gap, viewportHeight - visibleHeight - 8));
+        menu.style.top = top + 'px';
       }
-
       closeTaskTechnicianMenu() {
         document.getElementById('task-assigned-menu')?.classList.add('hidden');
         document.getElementById('task-assigned-trigger')?.setAttribute('aria-expanded', 'false');
@@ -3919,6 +3991,12 @@ updateMessengerWindowTyping(workerName) {
           }
 
           const taskIsFree = this.isTaskFree(t);
+          const rawWorkDate = String(t.date || '');
+          const workDate = /^\d{4}-\d{2}-\d{2}$/.test(rawWorkDate) ? rawWorkDate.split('-').reverse().join('/') : rawWorkDate;
+          const adminLine = t.administrator ? `<p class="order-administrator mt-1 text-xs text-slate-600"><span class="font-semibold">Administrador / contacto:</span> ${this.escapeHtml(t.administrator)}</p>` : '';
+          const phoneLine = t.phone ? `<p class="order-phone mt-0.5 text-xs text-slate-600"><span class="font-semibold">Teléfono:</span> ${this.escapeHtml(t.phone)}</p>` : '';
+          const notesLabel = isAdmin || t.status === 'REALIZADA' ? 'Observaciones' : 'Por hacer';
+          const orderNotes = isAdmin || t.status === 'REALIZADA' ? t.observations : t.instructions;
           const techObj = taskIsFree ? null : this.users.find(u => (u.fullName || u.username) === t.assignedTo);
           const techPhoto = techObj && techObj.photo ? techObj.photo : '';
           const techPresenceStatus = this.getPresenceStatus(techObj);
@@ -3938,14 +4016,17 @@ updateMessengerWindowTyping(workerName) {
                   <div>${statusBadge}</div>
                 </div>
 
-                <h3 class="font-extrabold text-slate-900 text-sm sm:text-base leading-snug break-words">${t.serviceType}</h3>
+                <h3 class="font-extrabold text-slate-900 text-sm sm:text-base leading-snug break-words">${this.escapeHtml(t.client || 'Cliente')}</h3>
+                <p class="order-service-line text-xs font-semibold text-slate-700 mt-0.5">${this.escapeHtml(t.serviceType || 'Servicio sin especificar')}</p>
+                <p class="order-date-line mt-1 text-[11px] text-slate-500"><span class="font-semibold">Fecha de realización:</span> ${this.escapeHtml(workDate || 'Sin fecha')}</p>
+                ${adminLine}
+                ${phoneLine}
                 <p class="text-xs font-bold text-brand-limeHover flex items-center gap-1 mt-0.5">
-                  <i data-lucide="cpu" class="w-3.5 h-3.5"></i> ${t.equipment}
+                  <i data-lucide="cpu" class="w-3.5 h-3.5"></i> ${this.escapeHtml(t.equipment || "Equipo sin especificar")}
                 </p>
 
                 <div class="order-client-panel mt-2.5 rounded-xl border border-slate-100 bg-slate-50/80 p-2.5 space-y-1.5 text-xs min-w-0">
-                  <p class="font-bold text-slate-800 truncate flex items-center gap-1.5"><i data-lucide="user-round" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i><span class="truncate">${t.client} <span class="font-medium text-slate-500">(${t.phone})</span></span></p>
-                  <p class="text-slate-600 flex items-start gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5"></i><span class="line-clamp-2 break-words">${t.address}</span></p>
+                  <p class="text-slate-600 flex items-start gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5"></i><span class="line-clamp-2 break-words">${this.escapeHtml(t.address || "Sin dirección")}</span></p>
                   <div class="mt-2 pt-2 border-t border-slate-200/80 flex items-center justify-between gap-2">
                     <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Abrir ruta</span>
                     <div class="flex items-center gap-1.5"><button type="button" onclick="app.openWazeNavigation('${t.address.replace(/'/g, "\\'")}')" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg border border-slate-200 bg-white hover:border-brand-lime hover:bg-brand-limeLight active:scale-95 transition flex items-center justify-center" aria-label="Abrir ruta en Waze" title="Abrir ruta en Waze"><img src="assets/media/media-1.png" alt="" aria-hidden="true" class="w-6 h-6 sm:w-7 sm:h-7 object-contain"></button><button type="button" onclick="app.openGoogleMapsNavigation('${t.address.replace(/'/g, "\\'")}')" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg border border-slate-200 bg-white hover:border-brand-lime hover:bg-brand-limeLight active:scale-95 transition flex items-center justify-center" aria-label="Abrir ruta en Google Maps" title="Abrir ruta en Google Maps"><img src="assets/media/media-2.png" alt="" aria-hidden="true" class="w-6 h-6 sm:w-7 sm:h-7 object-contain"></button></div>
@@ -3959,15 +4040,15 @@ updateMessengerWindowTyping(workerName) {
                     : `<div class="flex items-center gap-2"><div onclick="app.zoomWorkerPhoto('${techPhoto}', '${t.assignedTo}')" class="seasonal-worker-avatar cursor-pointer w-9 h-9 rounded-full overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center border-2 border-brand-lime" title="Ampliar foto">${techPhoto ? `<img src="${this.escapeHtml(techPhoto)}" alt="Foto de ${this.escapeHtml(t.assignedTo)}" class="w-full h-full object-cover">` : `<span class="text-xs font-bold">${this.escapeHtml(String(t.assignedTo || '?').charAt(0).toUpperCase())}</span>`}</div><div class="min-w-0"><div class="font-bold text-slate-800 text-[11px]">${this.escapeHtml(t.assignedTo)}</div><span class="presence-label is-${techPresenceStatus}">${techPresenceLabel}</span>${techDetails.length ? `<div class="mt-0.5 flex flex-wrap gap-x-2 text-[10px] text-slate-500">${techDetails.map(detail => `<span>${detail}</span>`).join('')}</div>` : ''}</div></div>`}
                 </div>
 
-                ${t.observations ? `
-                  <div class="order-observations mt-2 p-1.5 rounded-xl text-xs bg-slate-50 border text-slate-700 italic text-[11px] line-clamp-2">
-                    "${t.observations}"
+                ${orderNotes ? `
+                  <div class="order-observations mt-2 p-2 rounded-xl text-xs bg-slate-50 border text-slate-700 text-[11px]">
+                    <span class="block mb-0.5 font-bold not-italic">${notesLabel}</span><span class="line-clamp-3 whitespace-pre-line">${this.escapeHtml(orderNotes)}</span>
                   </div>
                 ` : ''}
               </div>
 
               <div class="mt-3 pt-2 border-t flex items-center justify-between gap-1">
-                ${t.status === 'REALIZADA' ? `<button type="button" onclick="app.viewOrderDetails('${t.id}')" class="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-brand-dark hover:border-brand-lime flex items-center justify-center" title="Ver orden completada" aria-label="Ver orden completada"><i data-lucide="eye" class="w-4 h-4"></i></button>` : '<span></span>'}
+                <button type="button" onclick="app.viewOrderDetails('${this.escapeHtml(t.id)}')" class="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-brand-dark hover:border-brand-lime flex items-center justify-center" title="Ver orden" aria-label="Ver orden"><i data-lucide="eye" class="w-4 h-4"></i></button>
 
                 <div class="flex items-center gap-1">
                   ${!isAdmin && this.currentUser.role === 'worker' && taskIsFree
@@ -4338,6 +4419,7 @@ updateMessengerWindowTyping(workerName) {
         document.getElementById('task-client-saved-name').textContent = client.name;
         document.getElementById('task-client-saved-address').textContent = client.address || 'Sin dirección guardada';
         document.getElementById('task-client-saved-administrator').textContent = client.administrator || 'Sin contacto guardado';
+        document.getElementById('task-client-saved-phone').textContent = client.phone || 'Sin teléfono guardado';
         document.getElementById('task-client-saved-details').classList.remove('hidden');
       }
       openNewTaskModal() {
@@ -4488,7 +4570,6 @@ updateMessengerWindowTyping(workerName) {
             priority: document.getElementById('task-priority').value,
             date: document.getElementById('task-date').value,
             instructions: document.getElementById('task-instructions').value,
-            checklist: this.activeChecklistDraft.map(item => ({ ...item })),
             fieldFindings: [],
             status: 'PENDIENTE',
             observations: '',
@@ -4861,9 +4942,9 @@ updateMessengerWindowTyping(workerName) {
 
       viewOrderDetails(id) {
         const t = this.tasks.find(x => x.id === id);
-        if (!t || t.status !== 'REALIZADA') return;
+        if (!t) return;
         const myName = this.getCurrentDisplayName();
-        if (this.currentUser?.role !== 'admin' && t.assignedTo !== myName) return;
+        if (this.currentUser?.role !== 'admin' && !this.isTaskFree(t) && t.assignedTo !== myName) return;
         this.selectedTask = t;
 
         document.getElementById('view-order-number').textContent = t.id;
@@ -4875,25 +4956,20 @@ updateMessengerWindowTyping(workerName) {
         document.getElementById('view-equipment-line').textContent = `Equipo: ${t.equipment || 'No especificado'}`;
         document.getElementById('view-instructions').textContent = t.instructions || 'No se registraron instrucciones adicionales.';
         document.getElementById('view-technician').textContent = t.assignedTo || '—';
-        document.getElementById('view-completed-at').textContent = t.completedAt ? `Completada: ${t.completedAt}` : 'Fecha de finalización no registrada';
+        document.getElementById('view-completed-at').textContent = `Fecha del trabajo: ${t.date || '—'}` + (t.completedAt ? ` · Realizada: ${t.completedAt}` : '');
         document.getElementById('view-observations').textContent = t.observations || 'No se registraron observaciones del trabajo realizado.';
 
         const badge = document.getElementById('view-order-badge');
-        badge.textContent = t.status;
-        badge.className = 'px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800';
+        const statusLabels = { PENDIENTE: 'Pendiente', EN_PROCESO: 'En proceso', REALIZADA: 'Realizada', NO_REALIZADA: 'No realizada' };
+        badge.textContent = statusLabels[t.status] || t.status || 'Pendiente';
+        const badgeStyles = { PENDIENTE: 'bg-amber-100 text-amber-800', EN_PROCESO: 'bg-blue-100 text-blue-800', REALIZADA: 'bg-emerald-100 text-emerald-800', NO_REALIZADA: 'bg-rose-100 text-rose-800' };
+        badge.className = `px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${badgeStyles[t.status] || 'bg-slate-100 text-slate-700'}`;
 
         const technician = this.users.find(user => (user.fullName || user.username) === t.assignedTo);
         const avatar = document.getElementById('view-technician-avatar');
         avatar.innerHTML = technician?.photo ? `<img src="${this.escapeHtml(technician.photo)}" alt="" class="w-full h-full object-cover">` : this.escapeHtml((t.assignedTo || '?').charAt(0).toUpperCase());
 
-        const checklist = Array.isArray(t.checklist) ? t.checklist : [];
-        const checklistSection = document.getElementById('view-checklist-section');
-        const checklistList = document.getElementById('view-checklist-list');
-        checklistSection.classList.toggle('hidden', checklist.length === 0);
-        checklistList.innerHTML = checklist.map(entry => {
-          const item = typeof entry === 'string' ? { label: entry, done: false } : entry;
-          return `<div class="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"><span class="font-black ${item.done ? 'text-emerald-600' : 'text-slate-300'}">${item.done ? '✓' : '○'}</span><span class="text-xs text-slate-700">${this.escapeHtml(item.label || '')}</span></div>`;
-        }).join('');
+        // Se conserva el checklist existente en los datos, pero se retiró de la vista de órdenes.
 
         const findings = Array.isArray(t.fieldFindings) ? t.fieldFindings : [];
         const findingsSection = document.getElementById('view-findings-section');

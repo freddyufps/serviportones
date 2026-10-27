@@ -149,7 +149,7 @@
   <!-- VISTA PRINCIPAL (DASHBOARD) -->
   <div id="view-dashboard" class="hidden flex-1 flex flex-col relative z-10 w-full overflow-x-hidden">
     <header class="bg-brand-dark text-white sticky top-0 z-40 shadow-md border-b-2 border-brand-lime">
-      <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
+      <div id="dashboard-header-inner" class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
 
         <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
           <div id="dashboard-brand-logo" class="h-8 sm:h-9 bg-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl flex items-center shadow-sm shrink-0 relative">
@@ -187,8 +187,8 @@
               <span id="header-avatar-initial" class="text-white font-black text-xs">A</span>
 
             </div>
-            <div class="text-left hidden sm:block">
-              <p id="header-user-name" class="text-xs font-bold leading-none text-white truncate max-w-[100px]">Administrador</p><p id="header-role-subtitle" class="hidden text-[8px] leading-none text-slate-300">Administrador</p>
+            <div id="header-profile-copy" class="text-left hidden sm:block">
+              <p id="header-user-name" class="text-xs font-bold leading-none text-white truncate max-w-[100px]">Administrador</p><p id="header-role-subtitle" class="hidden text-[8px] leading-none text-slate-300">Administrador</p><span id="header-user-status" class="hidden text-[8px] font-semibold text-emerald-300"></span>
               <div id="admin-presence-control" class="relative mt-0.5">
                 <button type="button" onclick="app.toggleAdminPresenceMenu()" class="flex items-center gap-1 text-[9px] font-semibold text-emerald-300 hover:text-white" aria-haspopup="true" aria-expanded="false" id="admin-presence-toggle">
 
@@ -552,7 +552,7 @@
 
   <div id="chat-desktop-windows" aria-label="Conversaciones abiertas"><div id="chat-desktop-chat-cells"></div></div>
   <!-- MODAL: AJUSTES, FOTOS Y PREFERENCIAS -->
-  <div id="modal-settings" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+  <div id="modal-settings" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto" onclick="if(event.target===this) app.closeSettingsModal()">
     <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
       <div class="bg-brand-dark text-white px-4 sm:px-5 py-3 sm:py-3.5 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
         <div class="flex items-center gap-2">
@@ -690,17 +690,19 @@
               <i data-lucide="users" class="w-4 h-4 text-brand-limeHover"></i>
               <span>Gestión de Trabajadores (Firestore)</span>
             </h4>
-            <span id="settings-users-count-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-limeLight text-brand-limeHover">0 Trabajadores</span>
+            <div class="flex items-center gap-2"><span id="settings-users-count-badge" class="text-[10px] font-bold px-2 py-1 rounded-lg bg-brand-limeLight text-brand-limeHover">0 Trabajadores</span><button type="button" id="btn-toggle-create-worker" onclick="app.toggleCreateWorkerForm()" aria-expanded="false" class="create-contact-button"><i data-lucide="plus" class="h-3.5 w-3.5"></i><span>Crear contacto</span></button></div>
           </div>
 
-          <form id="manage-user-form" onsubmit="app.handleSaveUser(event)" class="bg-white p-2.5 rounded-xl border border-slate-200 space-y-2">
+
+          <form id="manage-user-form" onsubmit="app.handleSaveUser(event)" class="hidden bg-white p-2.5 rounded-xl border border-slate-200 space-y-2">
             <input type="hidden" id="manage-user-id" value="">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input type="text" id="manage-fullname" required placeholder="Nombre Completo" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg">
               <input type="text" id="manage-username" required placeholder="Usuario" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg">
               <input type="text" id="manage-national-id" maxlength="24" inputmode="numeric" autocomplete="off" placeholder="Cédula (opcional)" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg">
-              <input type="tel" id="manage-phone" required placeholder="WhatsApp" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg">
+              <input type="tel" id="manage-phone" placeholder="WhatsApp (opcional)" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg">
             </div>
+            <div class="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-2"><img data-worker-photo-preview alt="Vista previa de foto del trabajador" class="hidden h-12 w-12 rounded-full border border-slate-200 bg-white object-cover"><label class="min-w-0 flex-1 text-[11px] font-semibold text-slate-700">Foto del trabajador (opcional)<input type="file" id="manage-photo" accept="image/*" onchange="app.previewManagedWorkerPhoto(event)" class="mt-1 block w-full text-[10px] font-normal"></label></div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input type="text" id="manage-password" required placeholder="Contraseña" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg font-mono">
               <input type="text" id="manage-specialty" placeholder="Especialidad" class="w-full px-2 py-1 text-xs bg-slate-50 border rounded-lg">
@@ -746,7 +748,6 @@
 
       <form id="task-form" onsubmit="app.submitTaskForm(event)" onkeydown="app.handleTaskFormKeydown(event)" class="task-form-content p-3.5 sm:p-4 space-y-2.5 text-xs sm:text-sm overflow-y-auto flex-1">
         <input type="hidden" id="task-id" value="">
-        <input type="hidden" id="task-phone" value="">
         <input type="text" id="task-equipment" class="hidden" aria-hidden="true" tabindex="-1">
         <select id="task-priority" class="hidden" aria-hidden="true" tabindex="-1"><option value="MEDIA">Media</option><option value="ALTA">Alta</option><option value="BAJA">Baja</option></select>
 
@@ -760,7 +761,7 @@
             <label for="task-date" class="block text-[11px] font-semibold text-slate-700 mb-1">Fecha del trabajo *</label>
             <div class="task-date-control">
               <i data-lucide="calendar-days" class="task-date-icon" aria-hidden="true"></i>
-              <input type="date" id="task-date" required class="task-date-input" aria-label="Fecha del trabajo" oninput="app.taskDatePickerOpen=false" onkeydown="if(event.key==='Escape'){this.blur();app.taskDatePickerOpen=false}">
+              <input type="date" id="task-date" required class="task-date-input" aria-label="Fecha del trabajo" onclick="app.taskDatePickerOpen=true" oninput="app.taskDatePickerOpen=false">
               <button type="button" class="task-date-toggle" aria-label="Abrir o cerrar calendario" title="Abrir o cerrar calendario" onclick="app.toggleTaskDatePicker()"><i data-lucide="calendar-days" aria-hidden="true"></i></button>
             </div>
           </div>
@@ -779,6 +780,7 @@
             <div><span>Razón social / cliente</span><strong id="task-client-saved-name">—</strong></div>
             <div><span>Dirección</span><strong id="task-client-saved-address">—</strong></div>
             <div><span>Administrador / contacto</span><strong id="task-client-saved-administrator">—</strong></div>
+            <div><span>Teléfono</span><strong id="task-client-saved-phone">—</strong></div>
           </div>
         </section>
 
@@ -798,6 +800,10 @@
           <div>
             <label for="task-administrator" class="block text-[11px] font-semibold text-slate-700 mb-1">Administrador / contacto</label>
             <input type="text" id="task-administrator" placeholder="Nombre del administrador o contacto" autocomplete="name" class="w-full px-3 py-2.5 border rounded-xl">
+          </div>
+          <div>
+            <label for="task-phone" class="block text-[11px] font-semibold text-slate-700 mb-1">Teléfono (opcional)</label>
+            <input type="tel" id="task-phone" placeholder="Número de teléfono" autocomplete="tel" inputmode="tel" class="w-full px-3 py-2.5 border rounded-xl">
           </div>
         </section>
 
@@ -849,7 +855,7 @@
   </div>
 
   <!-- MODAL: REPORTE TÉCNICO -->
-  <div id="modal-report" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+  <div id="modal-report" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto" onclick="if(event.target===this) app.closeReportModal()">
     <div class="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-hidden my-auto">
       <div id="report-modal-header" class="bg-brand-dark text-white px-4 sm:px-5 py-3 flex items-center justify-between border-b-2 border-brand-lime shrink-0">
         <div>
@@ -897,7 +903,7 @@
           </div>
         </div>
 
-        <section id="report-checklist-section" class="hidden rounded-xl border border-slate-200 bg-white p-2.5"><h4 class="text-[11px] font-extrabold uppercase text-slate-700">Checklist técnico</h4><div id="report-checklist-list" class="mt-1 space-y-1"></div></section>
+
         <section class="rounded-xl border border-amber-200 bg-amber-50/60 p-2.5"><div class="flex items-center justify-between gap-2"><h4 class="text-[11px] font-extrabold uppercase text-slate-700">Novedades encontradas en campo</h4><button id="btn-add-field-finding" type="button" onclick="app.addFieldFinding()" class="px-2 py-1 rounded-lg bg-brand-dark text-white text-[10px] font-bold">➕ Agregar Novedad</button></div><div id="report-findings-list" class="mt-1 space-y-1"></div></section>
 
         <div>
@@ -929,7 +935,7 @@
   </div>
 
   <!-- VISOR DETALLADO DE ORDEN COMPLETADA Y FACTURA ANEXA -->
-  <div id="modal-view-order" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-2 sm:p-5 overflow-y-auto">
+  <div id="modal-view-order" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-2 sm:p-5 overflow-y-auto" onclick="if(event.target===this) app.closeViewModal()">
     <div id="printable-order-modal" class="bg-white rounded-2xl max-w-5xl w-full max-h-[94vh] shadow-2xl border border-slate-200 flex flex-col overflow-hidden my-auto">
       <div class="bg-brand-dark text-white px-4 sm:px-6 py-4 flex justify-between items-center gap-3 border-b-2 border-brand-lime shrink-0">
         <div class="min-w-0">
@@ -963,11 +969,6 @@
         <section class="rounded-xl border border-emerald-200 bg-white p-4 shadow-sm">
           <div class="flex items-center gap-2 mb-2"><span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">✅</span><h3 class="text-xs font-black uppercase tracking-wide text-slate-700">Trabajo realizado</h3></div>
           <p id="view-observations" class="whitespace-pre-line text-sm text-slate-800"></p>
-        </section>
-
-        <section id="view-checklist-section" class="hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 class="text-xs font-black uppercase tracking-wide text-slate-700 mb-2">Checklist técnico</h3>
-          <div id="view-checklist-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
         </section>
 
         <section id="view-findings-section" class="hidden rounded-xl border border-amber-200 bg-amber-50/50 p-4 shadow-sm">
@@ -1021,11 +1022,11 @@
   </div>
 
   <!-- JAVASCRIPT: LÓGICA DE LA APLICACIÓN -->
-  <script src="assets/js/app-05.js"></script>
+  <script src="assets/js/app-05.js?v=20261027-mobile-profile-create-contact-1"></script>
 <script src="assets/js/app-06.js"></script>
 <link rel="stylesheet" href="assets/css/app-05.css" id="chat-hidden-overlay-fix">
 <link rel="stylesheet" href="assets/css/app-06.css" id="chat-hide-custom-emojis-mobile">
-<script id="settings-workspace-organizer" src="assets/js/app-07.js"></script>
+<script id="settings-workspace-organizer" src="assets/js/app-07.js?v=20261027-hide-application-setting-1"></script>
 <link rel="stylesheet" href="assets/css/app-07.css" id="settings-workspace-styles">
 <link rel="stylesheet" href="assets/css/app-08.css" id="modal-transparent-backdrops"><link rel="stylesheet" href="assets/css/app-09.css" id="settings-employees-shortcut-style"><link rel="stylesheet" href="assets/css/app-10.css" id="settings-admin-employees-shortcut-style"><link rel="stylesheet" href="assets/css/app-11.css" id="settings-contained-scroll"><link rel="stylesheet" href="assets/css/app-12.css" id="employee-edit-bubble-style">
 <link rel="stylesheet" href="assets/css/app-13.css" id="settings-category-cards-style">
@@ -1053,6 +1054,7 @@
 <link rel="stylesheet" href="assets/css/app-25.css" id="mobile-reactions-and-chat-dark-bottom-fix"><link rel="stylesheet" href="assets/css/app-26.css" id="ios-chat-press-and-worker-admin-identity">
 <script id="ios-chat-press-and-worker-admin-identity" src="assets/js/app-10.js"></script><script id="optimistic-chat-reaction-update" src="assets/js/app-11.js"></script><link rel="stylesheet" href="assets/css/app-27.css" id="chat-header-admin-presence-card-sync">
 <script id="chat-header-admin-presence-card-sync" src="assets/js/app-12.js"></script><link rel="stylesheet" href="assets/css/app-28.css" id="chat-header-admin-identity-cleanup">
-<script id="chat-header-admin-identity-cleanup" src="assets/js/app-13.js"></script><link rel="stylesheet" href="assets/css/app-29.css" id="seasonal-chat-admin-card-and-unread-red-alert"><link rel="stylesheet" href="assets/css/app-30.css?v=20261027-orders-dark-theme-5">
+<script id="chat-header-admin-identity-cleanup" src="assets/js/app-13.js"></script><link rel="stylesheet" href="assets/css/app-29.css" id="seasonal-chat-admin-card-and-unread-red-alert"><link rel="stylesheet" href="assets/css/app-30.css?v=20261027-toggle-date-client-list-arrow-1">
 </body>
 </html>
+

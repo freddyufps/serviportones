@@ -51,6 +51,7 @@
       button.type = 'button';
       button.className = 'settings-category-button';
       button.dataset.settingsCategory = id;
+      if (['chat','application','system','backups'].includes(id)) button.classList.add('hidden');
       if (adminOnly) button.dataset.adminOnly = 'true';
       button.innerHTML = '<i data-lucide="' + icon + '"></i><span><b>' + label + '</b><small>' + description + '</small></span>';
       nav.appendChild(button);
@@ -232,6 +233,7 @@
   };
   PortonProApp.prototype.showSettingsCategory = function (category) {
     const isAdmin = this.currentUser?.role === 'admin';
+    if (['chat','application','system','backups'].includes(category)) category = 'account';
     const button = document.querySelector('[data-settings-category="' + category + '"]');
     if (!button || (button.dataset.adminOnly === 'true' && !isAdmin)) category = 'account';
     this.settingsActiveCategory = category;
@@ -276,3 +278,4 @@
     document.documentElement.classList.remove('settings-modal-open');
     this.settingsScrollLockState = null;
   };})();
+
