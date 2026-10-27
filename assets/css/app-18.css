@@ -1,0 +1,44 @@
+
+.header-professional-tooltip{position:relative}
+.header-professional-tooltip::after{content:attr(data-tooltip);position:absolute;z-index:120;left:50%;top:calc(100% + 9px);transform:translate(-50%,-3px);padding:6px 10px;border:1px solid rgba(148,163,184,.25);border-radius:8px;background:#111c2e;color:#f8fafc;font:600 11px/1.2 system-ui,sans-serif;white-space:nowrap;box-shadow:0 8px 20px rgba(15,23,42,.2);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .14s ease,transform .14s ease,visibility .14s}
+.header-professional-tooltip:hover::after,.header-professional-tooltip:focus-visible::after{opacity:1;visibility:visible;transform:translate(-50%,0)}
+.settings-dark-mode-card{margin-bottom:9px}
+.settings-dark-switch{position:relative;display:inline-flex!important;align-items:center;justify-content:flex-start;width:42px;height:24px;min-height:24px!important;padding:0!important;border:0!important;border-radius:999px!important;background:transparent!important;cursor:pointer;flex:0 0 42px}
+.settings-dark-switch input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.settings-dark-switch-track{width:42px;height:24px;border-radius:999px;background:#cbd5e1;box-shadow:inset 0 0 0 1px rgba(51,65,85,.12);transition:background .18s ease}
+.settings-dark-switch-track::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(15,23,42,.24);transition:transform .18s ease}
+.settings-dark-switch input:checked+.settings-dark-switch-track{background:#70a832}
+.settings-dark-switch input:checked+.settings-dark-switch-track::after{transform:translateX(18px)}
+.settings-dark-switch:focus-within .settings-dark-switch-track{outline:3px solid rgba(112,168,50,.25);outline-offset:2px}
+body.theme-dark{background:#0b1220!important;color:#e5edf7!important;color-scheme:dark}
+body.theme-dark main{color:#e5edf7}
+body.theme-dark .bg-white,body.theme-dark .bg-slate-50,body.theme-dark .bg-slate-100,body.theme-dark .bg-gray-50,body.theme-dark .bg-gray-100{background-color:#172235!important}
+body.theme-dark .bg-white\/80,body.theme-dark .bg-white\/90{background-color:rgba(23,34,53,.92)!important}
+body.theme-dark .text-slate-900,body.theme-dark .text-slate-800,body.theme-dark .text-slate-700,body.theme-dark .text-gray-900,body.theme-dark .text-gray-800{color:#e7eef8!important}
+body.theme-dark .text-slate-600,body.theme-dark .text-slate-500,body.theme-dark .text-gray-600,body.theme-dark .text-gray-500{color:#b5c3d5!important}
+body.theme-dark [class*="border-slate-100"],body.theme-dark [class*="border-slate-200"],body.theme-dark [class*="border-slate-300"],body.theme-dark [class*="border-gray-200"],body.theme-dark [class*="border-gray-300"]{border-color:#34465d!important}
+body.theme-dark input:not([type="checkbox"]):not([type="radio"]),body.theme-dark textarea,body.theme-dark select{background-color:#101a2a!important;color:#e7eef8!important;border-color:#40536a!important;color-scheme:dark}
+body.theme-dark input::placeholder,body.theme-dark textarea::placeholder{color:#91a2b8!important;opacity:1}
+body.theme-dark table thead,body.theme-dark thead.bg-slate-50,body.theme-dark tr.bg-slate-50{background:#1d2b40!important;color:#e7eef8!important}
+body.theme-dark .settings-admin-quick{background:linear-gradient(120deg,#18263a,#1b2d3e)!important;border-color:#354960!important}
+body.theme-dark .settings-admin-quick-heading h4,body.theme-dark .settings-category-title h4,body.theme-dark .settings-account-summary b,body.theme-dark .settings-option-card b,body.theme-dark .settings-chat-preferences h5{color:#e7eef8!important}
+body.theme-dark .settings-admin-quick-heading p,body.theme-dark .settings-category-title p,body.theme-dark .settings-account-summary span,body.theme-dark .settings-option-card p,body.theme-dark .settings-future-note{color:#b4c2d3!important}
+body.theme-dark .settings-category-panel,body.theme-dark .settings-account-summary,body.theme-dark .settings-option-card,body.theme-dark .settings-future-note,body.theme-dark .settings-chat-preferences,body.theme-dark .settings-info-card,body.theme-dark .employee-edit-bubble-card{background:#172235!important;color:#e5edf7!important;border-color:#34465d!important}
+body.theme-dark .settings-category-button{color:#c5d1df!important}
+body.theme-dark .settings-category-button:hover{background:#203148!important;border-color:#34465d!important}
+body.theme-dark .settings-category-button.is-active{background:#263b2c!important;border-color:#476638!important;color:#e4f3d4!important}
+body.theme-dark .settings-category-button small,body.theme-dark .settings-info-card>span,body.theme-dark .settings-info-card p,body.theme-dark .settings-info-card small,body.theme-dark .settings-info-footnote{color:#b1bfd0!important}
+body.theme-dark .settings-chat-preferences label{background:#101a2a!important;border-color:#34465d!important;color:#e5edf7!important}
+body.theme-dark #settings-admin-identities-section,body.theme-dark #seasonal-theme-options:not(.hidden){background:#172235!important;border-color:#34465d!important}
+body.theme-dark #seasonal-theme-options .seasonal-theme-option,body.theme-dark #btn-toggle-seasonal-themes{background:#101a2a!important;color:#e5edf7!important;border-color:#40536a!important}
+body.theme-dark .employee-edit-bubble-header{background:#1d2b40!important;border-color:#34465d!important}
+body.theme-dark .employee-edit-bubble-header h3{color:#e7eef8!important}
+body.theme-dark .employee-edit-bubble-header p{color:#b5c3d5!important}
+body.theme-dark #chat-messages-container,body.theme-dark .messenger-window-messages,body.theme-dark #chat-window-modal .bg-slate-50{background:#111c2c!important}
+body.theme-dark .chat-message-bubble.is-received,body.theme-dark .messenger-window .chat-message-bubble.is-received{background:#202f43!important;color:#e5edf7!important;border-color:#354960!important}
+body.theme-dark .chat-message-text{color:inherit}
+body.theme-dark .chat-composer,body.theme-dark .messenger-window-form{background:#172235!important;border-color:#34465d!important}
+body.theme-dark .chat-emoji-picker,body.theme-dark .chat-reaction-picker{background:#172235!important;color:#e5edf7!important;border-color:#34465d!important}
+body.theme-dark .chat-picker-category{color:#c5d1df!important;border-color:#34465d!important}
+@media(max-width:700px){.header-professional-tooltip::after{display:none}}
+@media(prefers-reduced-motion:reduce){.settings-dark-switch-track,.settings-dark-switch-track::after,.header-professional-tooltip::after{transition:none}}

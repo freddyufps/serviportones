@@ -1,0 +1,13 @@
+
+.settings-info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:10px}
+.settings-info-card{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;padding:12px;border:1px solid #e1e8ef;border-radius:13px;background:linear-gradient(135deg,#fff,#f8fafc);color:#14213b}
+.settings-info-card>span{color:#687b90;font-size:10px;font-weight:650}
+.settings-info-card>b{font-size:13px;font-weight:850;overflow-wrap:anywhere}
+.settings-info-card p{margin:0;color:#64748b;font-size:11px;line-height:1.5}
+.settings-info-card small{color:#8492a3;font-size:10px;line-height:1.45}
+.settings-info-wide{margin-bottom:9px}
+.settings-info-footnote{margin:4px 2px;color:#8795a6;font-size:10px;line-height:1.45}
+.settings-action-button{margin-top:4px;padding:8px 11px;border:1px solid #cfe0bd;border-radius:9px;background:#f3f8ec;color:#3e641d;font-size:11px;font-weight:800;cursor:pointer}
+.settings-action-button:hover{background:#e9f3dc;border-color:#a6c97e}
+.settings-status-pill{display:inline-flex;margin-top:3px;padding:4px 8px;border-radius:999px;background:#eef2f7;color:#65758a;font-size:9px;font-weight:800}
+@media(max-width:600px){.settings-info-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.settings-info-card{padding:9px;border-radius:11px}.settings-info-card>b{font-size:12px}}

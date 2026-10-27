@@ -1,0 +1,6 @@
+
+/* El selector de presencia permanece por encima de la barra y recibe los clics. */
+#header-presence-profile{position:relative;overflow:visible!important;z-index:120!important}
+#admin-presence-control,#admin-presence-toggle,#admin-presence-menu{pointer-events:auto!important}
+#admin-presence-menu{z-index:2147483001!important;min-width:150px}
+#admin-presence-toggle{position:relative;z-index:1;cursor:pointer;touch-action:manipulation}

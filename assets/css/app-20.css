@@ -1,0 +1,22 @@
+
+/* Los logotipos conservan sus colores originales; el fondo claro solo da contraste al arte oscuro. */
+body.theme-dark #view-login>div>div:first-child{background:#fff!important;color:#142033!important}
+body.theme-dark #login-brand-logo{padding:8px 10px!important;border-radius:12px;background:#fff!important}
+body.theme-dark #view-login>div>div:first-child>p{color:#64748b!important}
+body.theme-dark #dashboard-brand-logo,body.theme-dark .chat-brand-mark{background:#fff!important}
+body.theme-dark #dashboard-brand-logo svg,body.theme-dark .chat-brand-logo{filter:none!important;opacity:1!important}
+/* La identidad activa usa fondo oscuro para mantener contraste con el texto claro del tema. */
+body.theme-dark #admin-identities-list>div.bg-lime-50{background:#263a28!important;border-color:#79a943!important}
+body.theme-dark #admin-identities-list>div.bg-lime-50 button,body.theme-dark #admin-identities-list>div.bg-lime-50 button .text-slate-800{color:#f0f7e8!important}
+body.theme-dark #admin-identities-list>div.bg-lime-50 button>span:nth-child(3){color:#f0f7e8!important}
+body.theme-dark #admin-identities-list>div.bg-lime-50 button>span:nth-child(4){color:#bde28b!important}
+body.theme-dark #admin-identities-list>div:not(.bg-lime-50){background:#172235!important;border-color:#34465d!important}
+body.theme-dark #admin-identities-list>div:not(.bg-lime-50) button .text-slate-800{color:#e7eef8!important}
+body.theme-dark #admin-identities-list .seasonal-worker-avatar{background:#24354b!important;color:#e7eef8!important}
+body.theme-dark #settings-admin-users-section table tbody tr{background:#172235!important;color:#e7eef8!important;border-color:#34465d!important}
+body.theme-dark #settings-admin-users-section table tbody tr:hover{background:#203148!important}
+body.theme-dark #settings-admin-users-section table tbody tr .text-slate-800,body.theme-dark #settings-admin-users-section table tbody tr .text-slate-600,body.theme-dark #settings-admin-users-section table tbody tr .text-slate-500{color:#d6e0eb!important}
+body.theme-dark #settings-admin-users-section table thead{background:#1d2b40!important;color:#f1f5f9!important}
+/* Unifica las dos etiquetas del encabezado; evita que top + bottom estiren el globo. */
+.header-professional-tooltip::after{top:auto!important;bottom:calc(100% + 8px)!important;width:max-content!important;height:auto!important;min-height:0!important;max-width:min(220px,80vw)!important;padding:6px 9px!important;line-height:1.25!important}
+[data-professional-tooltip]::after{top:auto!important;width:max-content!important;height:auto!important;min-height:0!important;max-width:min(220px,80vw)!important}

@@ -1,0 +1,46 @@
+
+    /* Escena del login: va en el fondo y usa adornos separados del video para no taparlo. */
+    #login-seasonal-scene{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none}
+    #view-login>div:not(#login-seasonal-scene){position:relative;z-index:2}
+    .login-seasonal-group{display:none;position:absolute;inset:0;pointer-events:none}
+    .login-seasonal-figure{position:absolute;display:block;line-height:1;filter:drop-shadow(0 9px 16px rgba(15,23,42,.2));user-select:none}
+    body.theme-christmas #login-seasonal-scene .login-christmas,
+    body.theme-easter #login-seasonal-scene .login-easter,
+    body.theme-holy-week #login-seasonal-scene .login-holy-week{display:block}
+    body.theme-christmas #login-seasonal-scene::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.95) 0 2px,transparent 3px),radial-gradient(circle,rgba(214,235,246,.88) 0 1.5px,transparent 3px),radial-gradient(circle,rgba(255,255,255,.72) 0 1px,transparent 2px);background-size:93px 93px,137px 137px,61px 61px;background-position:0 -100px,43px -30px,19px -70px;animation:loginSnowDrift 9s linear infinite}
+    .login-santa{left:clamp(20px,5vw,90px);top:20%;font-size:clamp(76px,9vw,126px);animation:loginSantaFloat 4s ease-in-out infinite}
+    .login-reindeer{right:clamp(18px,5vw,86px);bottom:19%;font-size:clamp(76px,9vw,126px);animation:loginReindeerFloat 3.5s ease-in-out infinite}
+    .login-easter-egg{left:clamp(20px,5vw,90px);top:24%;font-size:clamp(78px,9vw,128px);animation:loginEggFloat 4.8s ease-in-out infinite}
+    .login-easter-flower{right:clamp(18px,5vw,86px);bottom:20%;font-size:clamp(86px,10vw,136px);animation:loginFlowerFloat 5s ease-in-out infinite}
+    .login-holy-cross{left:clamp(26px,6vw,100px);top:23%;font-size:clamp(94px,11vw,148px);color:#d4bd7f;text-shadow:0 0 20px rgba(229,207,148,.68);animation:loginCrossGlow 4s ease-in-out infinite}
+    .login-holy-sun{right:clamp(22px,5vw,88px);bottom:20%;font-size:clamp(82px,10vw,132px);color:#e3ca83;text-shadow:0 0 30px rgba(239,218,157,.85);animation:loginSunRise 5s ease-in-out infinite}
+    #login-seasonal-accent{display:none;position:absolute;inset:0;z-index:4;pointer-events:none;overflow:visible}
+    .login-accent-figure{position:absolute;top:-7px;font-size:clamp(38px,5vw,58px);line-height:1;filter:drop-shadow(0 3px 5px rgba(15,23,42,.24));animation:loginAccentFloat 3.4s ease-in-out infinite}
+    .login-accent-santa{left:4px}.login-accent-reindeer{right:4px;animation-delay:.5s}
+    .login-accent-egg{left:4px;animation-name:loginEggFloat}.login-accent-flower{right:4px;animation-name:loginFlowerFloat}
+    .login-accent-cross{left:8px;color:#d4bd7f;text-shadow:0 0 10px #f1dfab}.login-accent-sun{right:8px;color:#e3ca83;text-shadow:0 0 12px #f1dfab}
+    body.theme-christmas #login-seasonal-accent .login-accent-christmas,
+    body.theme-easter #login-seasonal-accent .login-accent-easter,
+    body.theme-holy-week #login-seasonal-accent .login-accent-holy{display:block}
+    #login-seasonal-accent .login-seasonal-group{inset:0}
+    #login-brand-logo{position:relative;z-index:2}
+    @keyframes loginSnowDrift{to{background-position:80px 93px,-37px 107px,52px 61px}}
+    @keyframes loginSantaFloat{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-16px) rotate(3deg)}}
+    @keyframes loginReindeerFloat{0%,100%{transform:translateY(0) rotate(3deg)}50%{transform:translateY(-12px) rotate(-4deg)}}
+    @keyframes loginEggFloat{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-15px) rotate(7deg)}}
+    @keyframes loginFlowerFloat{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-11px) rotate(9deg)}}
+    @keyframes loginCrossGlow{0%,100%{transform:scale(.96);opacity:.72}50%{transform:scale(1.06);opacity:1}}
+    @keyframes loginSunRise{0%,100%{transform:translateY(8px) scale(.96);opacity:.72}50%{transform:translateY(-8px) scale(1.05);opacity:1}}
+    @keyframes loginAccentFloat{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-5px) rotate(4deg)}}
+    @media(max-width:640px){
+      #login-seasonal-scene .login-seasonal-group{display:none!important}
+      #login-seasonal-accent{display:block}
+      #login-brand-logo .login-animated-logo{position:relative;z-index:2}
+      body.theme-christmas #login-seasonal-accent .login-accent-christmas,
+      body.theme-easter #login-seasonal-accent .login-accent-easter,
+      body.theme-holy-week #login-seasonal-accent .login-accent-holy{display:block}
+      .login-accent-figure{font-size:42px;top:-8px}
+      body.theme-christmas #login-seasonal-accent::before{content:'';position:absolute;left:15%;right:15%;top:7px;height:12px;background:radial-gradient(circle at 5px 6px,#e45450 0 3px,transparent 4px),radial-gradient(circle at 18px 6px,#f2d16f 0 3px,transparent 4px),radial-gradient(circle at 31px 6px,#63a779 0 3px,transparent 4px);background-size:39px 12px;filter:drop-shadow(0 0 4px rgba(244,211,111,.8));animation:seasonalLightGlow 2.4s ease-in-out infinite}
+    }
+    @media(prefers-reduced-motion:reduce){#login-seasonal-scene *,#login-seasonal-scene::before,#login-seasonal-accent * ,#login-seasonal-accent::before{animation:none!important}}
+  

@@ -1,0 +1,15 @@
+
+/* Los tooltips salen en una capa flotante debajo del control, sin quedar recortados por modales. */
+[data-professional-tooltip]::after,.header-professional-tooltip::after{display:none!important;content:none!important}
+#professional-tooltip-float{position:fixed;z-index:2147483647;max-width:min(240px,80vw);padding:6px 9px;border:1px solid #34465d;border-radius:8px;background:#101a2a;color:#f5f8fc;font:600 11px/1.25 system-ui,sans-serif;white-space:nowrap;box-shadow:0 5px 16px rgba(0,0,0,.24);pointer-events:none}
+#professional-tooltip-float[hidden]{display:none!important}
+/* Selector de emojis con contraste adecuado al modo oscuro. */
+body.theme-dark .chat-emoji-picker,body.theme-dark .chat-emoji-picker .chat-picker-head,body.theme-dark .chat-emoji-picker .chat-picker-categories,body.theme-dark .chat-emoji-picker .chat-picker-footer,body.theme-dark .chat-emoji-picker .chat-emoji-grid{background:#172438!important;color:#e6edf7!important;border-color:#34465d!important}
+body.theme-dark .chat-emoji-picker .chat-picker-search{background:#0f1a2b!important;color:#f1f5f9!important;border-color:#40536a!important}
+body.theme-dark .chat-emoji-picker .chat-picker-search::placeholder{color:#9eafc4!important}
+body.theme-dark .chat-emoji-picker .chat-picker-category{background:#202f43!important;color:#d8e3ef!important;border-color:#455a72!important}
+body.theme-dark .chat-emoji-picker .chat-picker-category.is-active{background:#314b28!important;color:#f0f8e8!important;border-color:#79a943!important}
+body.theme-dark .chat-emoji-picker .chat-picker-category:hover,body.theme-dark .chat-emoji-picker .chat-emoji-choice:hover{background:#31455f!important;color:#fff!important}
+body.theme-dark .chat-emoji-picker .chat-picker-close{color:#dce6f1!important}
+body.theme-dark .chat-emoji-picker .chat-picker-footer button{background:#22334a!important;color:#e8eef5!important;border-color:#52647a!important}
+@media(prefers-reduced-motion:reduce){.dark-mode-toggle{transition:none!important}}

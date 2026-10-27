@@ -1,0 +1,9 @@
+
+.settings-employees-shortcut{display:flex;align-items:center;gap:10px;width:100%;margin-top:12px;padding:12px;border:1px solid #d9e8c8;border-radius:13px;background:#f4f9ee;color:#365820;text-align:left;cursor:pointer}
+.settings-employees-shortcut>i{width:20px;height:20px;flex:0 0 20px;color:#6f9f2d}
+.settings-employees-shortcut>span:nth-child(2){min-width:0;flex:1}
+.settings-employees-shortcut b,.settings-employees-shortcut small{display:block}
+.settings-employees-shortcut b{font-size:12px;font-weight:900}
+.settings-employees-shortcut small{margin-top:3px;color:#718096;font-size:10px}
+.settings-employees-shortcut>span:last-child{font-size:22px;color:#6f9f2d}
+.settings-employees-shortcut:hover{border-color:#9fc66c;background:#edf6e3}

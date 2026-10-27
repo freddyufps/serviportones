@@ -1,0 +1,41 @@
+
+/* En móvil se reacciona manteniendo pulsado el mensaje; el botón compacto queda solo en escritorio. */
+@media (max-width: 639px) {
+  #chat-messages-container .chat-message-actions .chat-reaction-trigger { display:none !important; }
+  #chat-messages-container .chat-message-row { -webkit-touch-callout:none; }
+}
+/* El modo oscuro cubre también el espacio inferior, el compositor y el área segura del teléfono. */
+html.theme-dark, body.theme-dark { background-color:#0b1220 !important; }
+body.theme-dark #chat-window-modal,
+html.theme-dark #chat-window-modal,
+body.theme-dark #chat-window-modal > .flex-1.flex.overflow-hidden,
+html.theme-dark #chat-window-modal > .flex-1.flex.overflow-hidden,
+body.theme-dark #chat-window-modal #chat-conversation-area,
+html.theme-dark #chat-window-modal #chat-conversation-area,
+body.theme-dark #chat-window-modal #chat-messages-container,
+html.theme-dark #chat-window-modal #chat-messages-container {
+  background-color:#111c2c !important;
+}
+body.theme-dark #chat-window-modal form[onsubmit*="handleSendMessage"],
+html.theme-dark #chat-window-modal form[onsubmit*="handleSendMessage"] {
+  background-color:#111c2c !important;
+  border-color:#34465d !important;
+}
+body.theme-dark #chat-window-modal #chat-input-text,
+html.theme-dark #chat-window-modal #chat-input-text {
+  background-color:#172438 !important;
+  color:#e7eef8 !important;
+  border-color:#40536a !important;
+}
+body.theme-dark #chat-floating-button-container,
+html.theme-dark #chat-floating-button-container { background:transparent !important; }
+body.theme-dark #chat-launcher-button,
+html.theme-dark #chat-launcher-button {
+  background:linear-gradient(120deg,#1e3a5f,#244b74) !important;
+  color:#f8fafc !important;
+  border-color:#71a832 !important;
+}
+@media (max-width: 639px) {
+  body.theme-dark #chat-window-modal,
+  html.theme-dark #chat-window-modal { padding-bottom:env(safe-area-inset-bottom) !important; }
+}

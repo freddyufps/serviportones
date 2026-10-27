@@ -1,0 +1,26 @@
+
+/* La tarjeta conserva el tema estacional activo y su avatar usa los adornos del tema. */
+#chat-window-modal .chat-admin-header-card { overflow:visible!important;transition:background .25s,border-color .25s,box-shadow .25s; }
+body.theme-christmas #chat-window-modal .chat-admin-header-card { background:linear-gradient(125deg,rgba(24,75,61,.9),rgba(22,53,67,.88))!important;border-color:#d2b864!important; }
+body.theme-easter #chat-window-modal .chat-admin-header-card { background:linear-gradient(125deg,rgba(98,77,100,.84),rgba(62,91,84,.82))!important;border-color:#e3c8d8!important; }
+body.theme-holy-week #chat-window-modal .chat-admin-header-card { background:linear-gradient(125deg,rgba(76,61,91,.9),rgba(42,55,78,.9))!important;border-color:#d8bd79!important; }
+body.theme-dark #chat-window-modal .chat-admin-header-card { background:rgba(12,20,34,.82)!important;border-color:#52647a!important; }
+body.theme-dark.theme-christmas #chat-window-modal .chat-admin-header-card { background:linear-gradient(125deg,rgba(19,59,50,.96),rgba(18,34,51,.94))!important;border-color:#d2b864!important; }
+body.theme-dark.theme-easter #chat-window-modal .chat-admin-header-card { background:linear-gradient(125deg,rgba(71,53,77,.94),rgba(31,52,52,.94))!important;border-color:#c9a8bc!important; }
+body.theme-dark.theme-holy-week #chat-window-modal .chat-admin-header-card { background:linear-gradient(125deg,rgba(59,45,75,.96),rgba(28,37,57,.96))!important;border-color:#d8bd79!important; }
+@keyframes chatUnreadRedEdgePulse {
+  0%,100% { border-color:#ef4444!important;box-shadow:0 0 0 1px rgba(239,68,68,.75),0 0 9px rgba(239,68,68,.66),0 6px 18px rgba(15,23,42,.22); }
+  50% { border-color:#fecaca!important;box-shadow:0 0 0 3px rgba(239,68,68,.48),0 0 20px rgba(239,68,68,.88),0 6px 18px rgba(15,23,42,.22); }
+}
+/* Mensaje pendiente: el chat minimizado pulsa en rojo hasta que se abre y se lee. */
+.chat-launcher-cell.has-unread > button#chat-launcher-button,
+.messenger-chat-window.is-minimized.has-unread .messenger-window-header {
+  animation:chatUnreadRedEdgePulse 1.35s ease-in-out infinite!important;
+  border:2px solid #ef4444!important;
+}
+.chat-launcher-cell.has-unread > button#chat-launcher-button { background:linear-gradient(120deg,#1e3a5f,#244b74)!important;color:#fff!important; }
+.chat-launcher-cell.has-unread #chat-unread-badge { background:#dc2626!important;color:#fff!important; }
+@media(prefers-reduced-motion:reduce){
+  .chat-launcher-cell.has-unread > button#chat-launcher-button,
+  .messenger-chat-window.is-minimized.has-unread .messenger-window-header { animation:none!important;border-color:#ef4444!important;box-shadow:0 0 0 2px rgba(239,68,68,.6)!important; }
+}

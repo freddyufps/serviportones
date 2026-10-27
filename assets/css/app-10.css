@@ -1,0 +1,6 @@
+
+.settings-admin-employees-shortcut{display:inline-flex;align-items:center;justify-content:center;gap:6px;margin-left:auto;padding:7px 10px;border:1px solid #cfe2bb;border-radius:10px;background:#fff;color:#456d23;font-size:10px;font-weight:900;white-space:nowrap;cursor:pointer}
+.settings-admin-employees-shortcut i{width:15px;height:15px}
+.settings-admin-employees-shortcut:hover{background:#edf6e3;border-color:#9fc66c}
+.settings-active-admin{margin-left:0!important}
+@media(max-width:700px){.settings-admin-employees-shortcut{padding:6px 8px;font-size:9px}.settings-admin-quick-heading{flex-wrap:wrap}.settings-admin-quick-heading>div{flex:1;min-width:125px}}
