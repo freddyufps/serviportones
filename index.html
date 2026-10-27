@@ -4,6 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>ServiPortones Eléctricos Martínez - Gestión Operativa y Control de Personal</title>
+  <script>
+    (() => {
+      try {
+        const raw = localStorage.getItem('portonpro_session_v4') || sessionStorage.getItem('portonpro_session_v4');
+        if (raw) {
+          const session = JSON.parse(raw);
+          if (session && typeof session === 'object' && session.username && session.role) {
+            document.documentElement.classList.add('auth-session-pending');
+          }
+        }
+      } catch (error) {}
+    })();
+  </script>
+  <style>html.auth-session-pending body { visibility: hidden !important; }</style>
   
   <!-- Configuración PWA Nativa -->
   <meta name="theme-color" content="#111827">
@@ -2223,6 +2237,27 @@
           toggle?.setAttribute('aria-expanded', 'false');
         });
 
+        document.addEventListener('pointerdown', event => {
+          if (!this.currentUser || event.button !== 0) return;
+          const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+          if (!target) return;
+          if (target.closest('#chat-window-modal, #chat-launcher-button, #chat-desktop-windows, .chat-reaction-picker, .chat-emoji-picker, .chat-attach-menu, .chat-sticker-picker, #chat-image-viewer, #chat-attachment-preview, #chat-conversation-options-dropdown')) return;
+
+          // Un clic fuera minimiza las ventanas, pero conserva el historial y los borradores.
+          const chatModal = document.getElementById('chat-window-modal');
+          if (chatModal && !chatModal.classList.contains('hidden')) chatModal.classList.add('hidden');
+          if (this.currentUser.role === 'admin' && window.innerWidth >= 640) {
+            let changed = false;
+            (this.openChatTabs || []).forEach(name => {
+              if (!this.minimizedChatWindows[name]) {
+                this.minimizedChatWindows[name] = true;
+                changed = true;
+              }
+            });
+            if (changed) this.renderMessengerWindows();
+          }
+        }, true);
+
         document.addEventListener('visibilitychange', () => {
           if (!document.hidden && this.currentUser) {
             this.sendHeartbeat();
@@ -2331,6 +2366,7 @@
       }
 
       showLoginView() {
+        document.documentElement.classList.remove('auth-session-pending');
         document.getElementById('view-login').classList.remove('hidden');
         document.getElementById('view-dashboard').classList.add('hidden');
         document.getElementById('chat-floating-button-container').classList.add('hidden');
@@ -2455,6 +2491,7 @@
 
         document.getElementById('view-login').classList.add('hidden');
         document.getElementById('view-dashboard').classList.remove('hidden');
+        document.documentElement.classList.remove('auth-session-pending');
         this.applyDarkMode();
         document.getElementById('chat-floating-button-container').classList.remove('hidden');
         document.getElementById('chat-desktop-windows')?.classList.remove('hidden');
@@ -7121,5 +7158,31 @@ html.theme-dark #chat-launcher-button {
     host.innerHTML='<div class="chat-admin-header-card'+cardClass+'"><span class="chat-admin-header-avatar seasonal-worker-avatar">'+avatar+'</span><span class="chat-admin-header-copy"><span class="chat-admin-header-name">'+safe(activeName)+'</span><span class="chat-admin-header-role">Administrador</span><span class="chat-admin-header-status is-'+safe(status)+'">'+safe(this.getPresenceLabel?.(status)||'Desconectado')+'</span></span></div>';
   };
 })();
-</script></body>
+</script><style id="seasonal-chat-admin-card-and-unread-red-alert">
+/* La tarjeta conserva el tema estacional activo y su avatar usa los adornos del tema. */
+#chat-window-modal .chat-admin-header-card { overflow:visible!important;transition:background .25s,border-color .25s,box-shadow .25s; }
+body.theme-christmas #chat-window-modal .chat-admin-header-card { background:linear-gradient(125deg,rgba(24,75,61,.9),rgba(22,53,67,.88))!important;border-color:#d2b864!important; }
+body.theme-easter #chat-window-modal .chat-admin-header-card { background:linear-gradient(125deg,rgba(98,77,100,.84),rgba(62,91,84,.82))!important;border-color:#e3c8d8!important; }
+body.theme-holy-week #chat-window-modal .chat-admin-header-card { background:linear-gradient(125deg,rgba(76,61,91,.9),rgba(42,55,78,.9))!important;border-color:#d8bd79!important; }
+body.theme-dark #chat-window-modal .chat-admin-header-card { background:rgba(12,20,34,.82)!important;border-color:#52647a!important; }
+body.theme-dark.theme-christmas #chat-window-modal .chat-admin-header-card { background:linear-gradient(125deg,rgba(19,59,50,.96),rgba(18,34,51,.94))!important;border-color:#d2b864!important; }
+body.theme-dark.theme-easter #chat-window-modal .chat-admin-header-card { background:linear-gradient(125deg,rgba(71,53,77,.94),rgba(31,52,52,.94))!important;border-color:#c9a8bc!important; }
+body.theme-dark.theme-holy-week #chat-window-modal .chat-admin-header-card { background:linear-gradient(125deg,rgba(59,45,75,.96),rgba(28,37,57,.96))!important;border-color:#d8bd79!important; }
+@keyframes chatUnreadRedEdgePulse {
+  0%,100% { border-color:#ef4444!important;box-shadow:0 0 0 1px rgba(239,68,68,.75),0 0 9px rgba(239,68,68,.66),0 6px 18px rgba(15,23,42,.22); }
+  50% { border-color:#fecaca!important;box-shadow:0 0 0 3px rgba(239,68,68,.48),0 0 20px rgba(239,68,68,.88),0 6px 18px rgba(15,23,42,.22); }
+}
+/* Mensaje pendiente: el chat minimizado pulsa en rojo hasta que se abre y se lee. */
+.chat-launcher-cell.has-unread > button#chat-launcher-button,
+.messenger-chat-window.is-minimized.has-unread .messenger-window-header {
+  animation:chatUnreadRedEdgePulse 1.35s ease-in-out infinite!important;
+  border:2px solid #ef4444!important;
+}
+.chat-launcher-cell.has-unread > button#chat-launcher-button { background:linear-gradient(120deg,#1e3a5f,#244b74)!important;color:#fff!important; }
+.chat-launcher-cell.has-unread #chat-unread-badge { background:#dc2626!important;color:#fff!important; }
+@media(prefers-reduced-motion:reduce){
+  .chat-launcher-cell.has-unread > button#chat-launcher-button,
+  .messenger-chat-window.is-minimized.has-unread .messenger-window-header { animation:none!important;border-color:#ef4444!important;box-shadow:0 0 0 2px rgba(239,68,68,.6)!important; }
+}
+</style></body>
 </html>
