@@ -981,6 +981,30 @@
         if (window.db) { try { if (String(user.role || '').toLowerCase() === 'admin') { const snap = await db.collection('presencia').doc(String(user.username || '').toLowerCase()).get(); if (snap.exists) this.applyAdminIdentityPresence(snap.data() || {}); } else { const snap = await db.collection('presencia').get(); const adminRecord = snap.docs.map(doc => doc.data() || {}).find(record => String(record.role || '').toLowerCase() === 'admin'); if (adminRecord) this.applyAdminIdentityPresence(adminRecord); } } catch (error) { console.warn('[IDENTIDAD] Usando identidad local hasta sincronizar:', error?.message || error); } }
         if (String(user.role || '').toLowerCase() === 'admin' && !this.activeAdminName) this.activeAdminName = String(user.activeAdminName || '');
         user.activeAdminName = this.activeAdminName || user.activeAdminName || '';
+
+        // Toda sesión válida del administrador vuelve a mostrarse disponible,
+        // incluso al restaurar la sesión guardada después de una recarga.
+        if (String(user.role || '').toLowerCase() === 'admin') {
+          const adminUsername = String(user.username || '').toLowerCase();
+          const heartbeat = Date.now();
+          const activePresence = {
+            username: user.username,
+            fullName: this.getCurrentDisplayName(),
+            role: 'admin',
+            photo: this.getCurrentDisplayPhoto() || user.photo || '',
+            lastHeartbeat: heartbeat,
+            lastLogin: `${this.formatTime(new Date())} (En línea)`,
+            availabilityStatus: 'available'
+          };
+          this.presenceRecords[adminUsername] = { ...(this.presenceRecords[adminUsername] || {}), ...activePresence };
+          if (window.db) {
+            try {
+              await window.db.collection('presencia').doc(adminUsername).set(activePresence, { merge: true });
+            } catch (error) {
+              console.warn('[PRESENCE] No se pudo restablecer el estado al iniciar sesión:', error?.message || error);
+            }
+          }
+        }
         this.applySharedSeasonalTheme();
         SafeStorage.setItem('portonpro_session_v4', JSON.stringify(user));
 
@@ -1712,8 +1736,8 @@
                 <b class="text-slate-900 block">${wName}</b>
                 <span class="text-slate-500 text-[10px] block">Actualizado: ${loc.updatedAt}</span>
                 <div class="flex gap-1 mt-2">
-                  <a href="https://waze.com/ul?ll=${loc.latitude},${loc.longitude}&navigate=yes" target="_blank" class="px-2 py-0.5 bg-cyan-600 text-white rounded text-[10px] font-bold">Waze</a>
-                  <a href="https://www.google.com/maps/dir/?api=1&destination=${loc.latitude},${loc.longitude}" target="_blank" class="px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px] font-bold">Maps</a>
+                  <a href="https://waze.com/ul?ll=${loc.latitude},${loc.longitude}&navigate=yes" target="_blank" class="px-2 py-0.5 bg-cyan-600 text-white rounded text-[10px] font-bold inline-flex items-center gap-1"><img src="assets/media/media-1.png" alt="" aria-hidden="true" class="w-4 h-4 object-contain">Waze</a>
+                  <a href="https://www.google.com/maps/dir/?api=1&destination=${loc.latitude},${loc.longitude}" target="_blank" class="px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px] font-bold inline-flex items-center gap-1"><img src="assets/media/media-2.png" alt="" aria-hidden="true" class="w-4 h-4 object-contain">Maps</a>
                 </div>
               </div>
             `;
