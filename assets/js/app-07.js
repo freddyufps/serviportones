@@ -38,9 +38,9 @@
     const defs = [
       ['account','Cuenta','user-round','Perfil y datos de acceso.',false],
       ['employees','Empleados','users-round','Crear y editar trabajadores.',true],
+      ['appearance','Apariencia','palette','Temas visuales del sistema.',true],
       ['sound','Sonidos','volume-2','Avisos de audio y preferencias.',false],
       ['notifications','Notificaciones','bell','Alertas y contadores.',false],
-      ['appearance','Apariencia','palette','Temas visuales del sistema.',true],
       ['orders','Órdenes de trabajo','clipboard-list','Consecutivos y numeración.',true],
       ['security','Seguridad','shield-check','Contraseña y acceso.',false],
       ['chat','Chat y mensajería','messages-square','Preferencias de conversación.',false],

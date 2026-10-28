@@ -85,7 +85,7 @@
       <div class="login-seasonal-group login-christmas"><span class="login-seasonal-figure login-santa">🎅</span><span class="login-seasonal-figure login-reindeer">🦌</span></div>
       <div class="login-seasonal-group login-easter"><span class="login-seasonal-figure login-easter-egg">🥚</span><span class="login-seasonal-figure login-easter-flower">🌷</span></div>
       <div class="login-seasonal-group login-holy-week"><span class="login-seasonal-figure login-holy-cross">✝</span><span class="login-seasonal-figure login-holy-sun">☀</span></div>
-    </div>    <div class="w-full max-w-sm sm:max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden mx-auto">
+    </div><div id="login-halloween-bat-layer" aria-hidden="true"></div>    <div class="w-full max-w-sm sm:max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden mx-auto">
       <div class="bg-white p-5 sm:p-7 text-center border-b border-slate-100 flex flex-col items-center relative">
         <div id="login-seasonal-accent" aria-hidden="true">
           <div class="login-seasonal-group login-accent-christmas"><span class="login-accent-figure login-accent-santa">🎅</span><span class="login-accent-figure login-accent-reindeer">🦌</span></div>
@@ -93,6 +93,7 @@
           <div class="login-seasonal-group login-accent-holy"><span class="login-accent-figure login-accent-cross">✝</span><span class="login-accent-figure login-accent-sun">☀</span></div>
         </div>        <div id="login-brand-logo" class="w-full max-w-[240px] sm:max-w-[280px] py-1 relative">
           <span id="seasonal-logo-decoration-login" aria-hidden="true" style="display:none"></span>
+          <div class="halloween-video-corner" aria-hidden="true"><div class="halloween-web-art"></div><span class="halloween-spider-thread"></span><img class="halloween-spider-art" src="assets/media/halloween-spider.svg?v=20261028-spider-login-1" alt=""></div>
           <video class="login-animated-logo" autoplay loop playsinline preload="auto" poster="assets/media/media-3.jpg" aria-label="Logo animado ServiPortones">
             <source src="assets/media/media-4.mp4" type="video/mp4">
           </video>
@@ -110,7 +111,7 @@
 
         <div>
           <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Usuario</label>
-          <div class="relative">
+          <div class="relative login-username-field"><img class="login-santa-hat" src="assets/media/santa-hat-3d.svg?v=20261028-hat-svg-mirror-11" alt="" aria-hidden="true">
             <i data-lucide="user" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
             <input type="text" id="login-username" required autocomplete="username" placeholder="Ingresa tu usuario" class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm focus:bg-white focus:ring-2 focus:ring-brand-lime focus:outline-none transition">
           </div>
@@ -347,6 +348,7 @@
               <span id="archived-orders-button-label">📦 Órdenes Archivadas</span>
               <span id="archived-orders-count" class="ml-1 text-slate-400">0</span>
             </button>
+            <button id="btn-archived-document-control" type="button" onclick="app.openDocumentControl()" class="hidden items-center gap-1.5 text-[10px] sm:text-[11px] font-bold text-brand-dark hover:text-emerald-800 border border-brand-limeBorder bg-emerald-50 px-2.5 py-1.5 rounded-lg"><i data-lucide="receipt-text" class="w-3.5 h-3.5"></i><span>Consolidado de facturas</span></button>
             <span class="text-[11px] text-slate-500" id="role-hint-text"></span>
           </div>
         </div>
@@ -571,13 +573,14 @@
         <section id="settings-theme-section" class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
           <div class="flex items-center justify-between gap-2">
             <div><h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800">Temas visuales</h4><p class="text-[11px] text-slate-500 mt-0.5">Personaliza la ambientación de ServiPortones.</p></div>
-            <button id="btn-toggle-seasonal-themes" type="button" aria-expanded="false" onclick="app.toggleThemePicker()" class="shrink-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-100">Mostrar temas</button>
+            <button id="btn-toggle-seasonal-themes" type="button" aria-expanded="false" onclick="app.toggleThemePicker()" class="seasonal-theme-toggle shrink-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-100"><i data-lucide="palette" aria-hidden="true"></i><span>Mostrar temas</span></button>
           </div>
-          <div id="seasonal-theme-options" class="hidden grid-cols-2 gap-2 pt-1">
+          <div id="seasonal-theme-options" class="seasonal-theme-options grid grid-cols-2 gap-2 pt-1" aria-hidden="true">
             <button type="button" data-seasonal-theme="classic" onclick="app.setSeasonalTheme('classic')" class="seasonal-theme-option rounded-lg border bg-white px-2.5 py-2 text-left text-xs font-semibold text-slate-700 transition"><span class="theme-swatch theme-swatch-classic" aria-hidden="true"></span>Tema Clásico</button>
             <button type="button" data-seasonal-theme="christmas" onclick="app.setSeasonalTheme('christmas')" class="seasonal-theme-option rounded-lg border bg-white px-2.5 py-2 text-left text-xs font-semibold text-slate-700 transition"><span class="theme-swatch theme-swatch-christmas" aria-hidden="true"></span>Tema Navidad</button>
             <button type="button" data-seasonal-theme="easter" onclick="app.setSeasonalTheme('easter')" class="seasonal-theme-option rounded-lg border bg-white px-2.5 py-2 text-left text-xs font-semibold text-slate-700 transition"><span class="theme-swatch theme-swatch-easter" aria-hidden="true"></span>Tema Pascua</button>
             <button type="button" data-seasonal-theme="holy-week" onclick="app.setSeasonalTheme('holy-week')" class="seasonal-theme-option rounded-lg border bg-white px-2.5 py-2 text-left text-xs font-semibold text-slate-700 transition"><span class="theme-swatch theme-swatch-holy-week" aria-hidden="true"></span>Tema Semana Santa</button>
+            <button type="button" data-seasonal-theme="halloween" onclick="app.setSeasonalTheme('halloween')" class="seasonal-theme-option rounded-lg border bg-white px-2.5 py-2 text-left text-xs font-semibold text-slate-700 transition"><span class="theme-swatch theme-swatch-halloween" aria-hidden="true"></span>Tema Halloween</button>
           </div>
         </section>
         <section id="settings-admin-identities-section" class="hidden bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
@@ -1022,11 +1025,11 @@
   </div>
 
   <!-- JAVASCRIPT: LÓGICA DE LA APLICACIÓN -->
-  <script src="assets/js/app-05.js?v=20261028-order-notes-mobile-keyboard-1"></script>
+  <script src="assets/js/app-05.js?v=20261028-seasonal-halloween-login-2"></script>
 <script src="assets/js/app-06.js"></script>
 <link rel="stylesheet" href="assets/css/app-05.css" id="chat-hidden-overlay-fix">
 <link rel="stylesheet" href="assets/css/app-06.css" id="chat-hide-custom-emojis-mobile">
-<script id="settings-workspace-organizer" src="assets/js/app-07.js?v=20261027-hide-application-setting-1"></script>
+<script id="settings-workspace-organizer" src="assets/js/app-07.js?v=20261028-settings-theme-order-2"></script>
 <link rel="stylesheet" href="assets/css/app-07.css" id="settings-workspace-styles">
 <link rel="stylesheet" href="assets/css/app-08.css" id="modal-transparent-backdrops"><link rel="stylesheet" href="assets/css/app-09.css" id="settings-employees-shortcut-style"><link rel="stylesheet" href="assets/css/app-10.css" id="settings-admin-employees-shortcut-style"><link rel="stylesheet" href="assets/css/app-11.css" id="settings-contained-scroll"><link rel="stylesheet" href="assets/css/app-12.css" id="employee-edit-bubble-style">
 <link rel="stylesheet" href="assets/css/app-13.css" id="settings-category-cards-style">
@@ -1055,6 +1058,7 @@
 <script id="ios-chat-press-and-worker-admin-identity" src="assets/js/app-10.js"></script><script id="optimistic-chat-reaction-update" src="assets/js/app-11.js"></script><link rel="stylesheet" href="assets/css/app-27.css" id="chat-header-admin-presence-card-sync">
 <script id="chat-header-admin-presence-card-sync" src="assets/js/app-12.js"></script><link rel="stylesheet" href="assets/css/app-28.css" id="chat-header-admin-identity-cleanup">
 <script id="chat-header-admin-identity-cleanup" src="assets/js/app-13.js"></script><link rel="stylesheet" href="assets/css/app-29.css" id="seasonal-chat-admin-card-and-unread-red-alert"><link rel="stylesheet" href="assets/css/app-30.css?v=20261028-order-notes-mobile-keyboard-1">
+<link rel="stylesheet" href="assets/css/app-31.css?v=20261028-payment-invoice-preview-theme-menu-5" id="payments-login-compact-style">
+<script id="payment-document-control" src="assets/js/app-14.js?v=20261028-payment-invoice-preview-theme-menu-5"></script>
 </body>
 </html>
-

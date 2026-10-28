@@ -302,7 +302,7 @@
         this.managedItemMode = null;
         this.managedItemIndex = null;
         this.serviceTypes = this.readStoredList('portonpro_service_types_v1', ['Mantenimiento Preventivo', 'Instalación', 'Reparación', 'Programación']);
-        
+
         // Estado del Chat y Conversaciones
         this.chatMessages = [];
         this.activeChatWorker = 'Jeampaul';
@@ -616,7 +616,7 @@
                   }
                 });
               }
-              
+
               if (!this.isTasksInitialLoad && this.currentUser?.role === 'admin') {
                 const previousTasksById = this.lastObservedTaskStatuses || new Map((this.tasks || []).map(task => [String(task?.id), task?.status]));
                 incomingTasks.forEach(task => {
@@ -1733,7 +1733,7 @@
         const callSessionId = window.crypto?.randomUUID?.() || `call-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
         console.info('[CALL] Iniciando llamada', { sessionId: callSessionId, role: this.currentUser.role, caller: this.getCurrentDisplayName(), documentId: targetWorker });
         let callStage = 'getUserMedia';
-        
+
         try {
           console.log('[CALL] getUserMedia iniciado', { sessionId: callSessionId, role: this.currentUser.role });
           const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
@@ -2049,7 +2049,7 @@
           const remoteTracks = audio.srcObject?.getAudioTracks?.() || [];
           console.log('[CALL] Audio remoto conectado');
           console.log('[CALL] Stream remoto recibido', { active: audio.srcObject?.active, streamCount: event.streams?.length || 0 });
-          console.log('[CALL] Cantidad tracks remotos:', (event.streams?.[0] || audio.srcObject)?.getTracks?.().length || 0, { audioTracks: remoteTracks.length, tracks: remoteTracks.map(track => ({ kind: track.kind, enabled: track.enabled, muted: track.muted, readyState: track.readyState })) }); 
+          console.log('[CALL] Cantidad tracks remotos:', (event.streams?.[0] || audio.srcObject)?.getTracks?.().length || 0, { audioTracks: remoteTracks.length, tracks: remoteTracks.map(track => ({ kind: track.kind, enabled: track.enabled, muted: track.muted, readyState: track.readyState })) });
           console.info('[CALL] srcObject asignado', !!audio.srcObject);
           console.info('[CALL] muted:', audio.muted);
           console.info('[CALL] playsInline:', audio.playsInline);
@@ -2947,7 +2947,7 @@ updateMessengerWindowTyping(workerName) {
             snapshot.docs.slice().reverse().forEach(doc => {
               const data = doc.data();
               const msgId = doc.id;
-              
+
               const myHiddenKey = `hiddenFor_${this.currentUser.role}`;
               if (!data[myHiddenKey]) {
                 msgs.push({ id: msgId, ...data });
@@ -3069,7 +3069,7 @@ updateMessengerWindowTyping(workerName) {
         if (window.db) {
           try {
             await db.collection('chats_internos').doc(threadId).collection('mensajes').add(msgObj);
-            
+
             const updatePayload = {
               lastMessage: text,
               lastTime: this.formatTime(new Date()),
@@ -3238,11 +3238,12 @@ updateMessengerWindowTyping(workerName) {
         const options = document.getElementById('seasonal-theme-options');
         const button = document.getElementById('btn-toggle-seasonal-themes');
         if (!options || !button) return;
-        const opening = options.classList.contains('hidden');
-        options.classList.toggle('hidden', !opening);
-        options.classList.toggle('grid', opening);
+        const opening = !options.classList.contains('is-open');
+        options.classList.toggle('is-open', opening);
+        options.setAttribute('aria-hidden', String(!opening));
         button.setAttribute('aria-expanded', String(opening));
-        button.textContent = opening ? 'Ocultar temas' : 'Mostrar temas';
+        button.innerHTML = '<i data-lucide="' + (opening ? 'chevron-up' : 'palette') + '" aria-hidden="true"></i><span>' + (opening ? 'Ocultar temas' : 'Mostrar temas') + '</span>';
+        if (window.lucide) lucide.createIcons();
       }
 
       applySeasonalTheme(theme) {
@@ -3389,10 +3390,11 @@ updateMessengerWindowTyping(workerName) {
       collapseThemePicker() {
         const options = document.getElementById('seasonal-theme-options');
         const button = document.getElementById('btn-toggle-seasonal-themes');
-        options?.classList.add('hidden');
-        options?.classList.remove('grid');
+        options?.classList.remove('is-open');
+        options?.setAttribute('aria-hidden', 'true');
         button?.setAttribute('aria-expanded', 'false');
-        if (button) button.textContent = 'Mostrar temas';
+        if (button) button.innerHTML = '<i data-lucide="palette" aria-hidden="true"></i><span>Mostrar temas</span>';
+        if (window.lucide) lucide.createIcons();
       }
       openSettingsModal() {
         const isAdmin = this.currentUser.role === 'admin';
@@ -5259,4 +5261,3 @@ updateMessengerWindowTyping(workerName) {
     window.addEventListener('DOMContentLoaded', () => {
       app = new PortonProApp();
     });
-  
