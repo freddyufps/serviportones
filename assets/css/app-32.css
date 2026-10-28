@@ -1,0 +1,32 @@
+/* Ajustes móviles definitivos para la tarjeta de identidad del administrador/trabajador. */
+@media(max-width:700px){
+  #dashboard-header-inner{box-sizing:border-box;min-height:0!important;height:auto!important;padding:7px 10px!important;gap:7px!important;flex-wrap:wrap!important;align-content:center}
+  #dashboard-header-inner>div:first-child{width:100%;min-width:0;justify-content:flex-start}
+  #dashboard-header-inner>div:nth-child(2){width:100%;min-width:0;display:flex!important;align-items:center;justify-content:flex-end;gap:5px!important}
+  #header-presence-profile{box-sizing:border-box!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;width:clamp(110px,40vw,150px)!important;min-width:110px!important;max-width:calc(100vw - 150px)!important;height:44px!important;min-height:44px!important;max-height:44px!important;flex:0 1 auto!important;gap:5px!important;padding:3px 6px 3px 4px!important;border-radius:12px!important;overflow:visible!important}
+  #header-presence-profile>div:first-child{box-sizing:border-box!important;width:27px!important;height:27px!important;min-width:27px!important;min-height:27px!important;flex:0 0 27px!important}
+  #header-presence-profile>div:last-child,#header-profile-copy{display:block!important;box-sizing:border-box!important;min-width:0!important;width:auto!important;max-width:none!important;flex:1 1 auto!important;overflow:hidden!important;text-align:left!important}
+  #header-presence-profile #header-user-name{display:block!important;max-width:100%!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-size:9px!important;line-height:1.08!important}
+  #header-presence-profile #header-role-subtitle{display:block!important;margin-top:2px!important;font-size:7px!important;line-height:1!important;white-space:nowrap!important}
+  #header-presence-profile #header-user-status:not(.hidden){display:block!important;margin-top:2px!important;font-size:7px!important;line-height:1!important;white-space:nowrap!important}
+  #header-presence-profile #admin-presence-control{display:block!important;position:relative!important;max-width:100%!important;margin-top:1px!important;line-height:1!important}
+  #header-presence-profile #admin-presence-toggle{display:flex!important;align-items:center!important;gap:2px!important;max-width:100%!important;min-height:10px!important;overflow:hidden!important;font-size:7px!important;line-height:1!important;white-space:nowrap!important}
+  #header-presence-profile #admin-presence-toggle span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #header-presence-profile #admin-presence-toggle svg,#header-presence-profile #admin-presence-toggle i{width:9px!important;height:9px!important;min-width:9px!important;flex:0 0 9px!important}
+  #btn-dark-mode{box-sizing:border-box!important;width:36px!important;height:36px!important;min-width:36px!important;flex:0 0 36px!important}
+  #btn-nav-settings{box-sizing:border-box!important;width:36px!important;height:36px!important;min-width:36px!important;padding:7px!important;flex:0 0 36px!important}
+  #dashboard-header-inner>div:nth-child(2)>button[aria-label="Cerrar sesión"]{box-sizing:border-box!important;width:32px!important;height:36px!important;min-width:32px!important;flex:0 0 32px!important;padding:5px!important}
+}
+@media(max-width:350px){
+  #header-presence-profile{width:clamp(104px,37vw,130px)!important;min-width:104px!important;max-width:calc(100vw - 142px)!important;gap:4px!important;padding-right:4px!important}
+  #header-presence-profile>div:first-child{width:24px!important;height:24px!important;min-width:24px!important;min-height:24px!important;flex-basis:24px!important}
+  #header-presence-profile #header-user-name{font-size:8px!important}
+  #header-presence-profile #header-role-subtitle,#header-presence-profile #header-user-status,#header-presence-profile #admin-presence-toggle{font-size:6.5px!important}
+}
+/* La pantalla de carga reutiliza la decoración estacional del encabezado. */
+html[data-seasonal-theme="halloween"] #session-restore-splash #seasonal-logo-decoration-restore,
+body.theme-halloween #session-restore-splash #seasonal-logo-decoration-restore{display:block!important;position:absolute;z-index:3;top:6px;right:-11px;width:104px;height:72px;pointer-events:none;overflow:visible;filter:drop-shadow(0 3px 5px rgba(22,12,30,.42))}
+html[data-seasonal-theme="halloween"] #session-restore-splash #seasonal-logo-decoration-restore svg,
+body.theme-halloween #session-restore-splash #seasonal-logo-decoration-restore svg{display:block;width:100%;height:100%;overflow:visible;animation:seasonalLogoFloat 5.6s ease-in-out infinite;transform-origin:70% 35%}
+@media(max-width:420px){html[data-seasonal-theme="halloween"] #session-restore-splash #seasonal-logo-decoration-restore,body.theme-halloween #session-restore-splash #seasonal-logo-decoration-restore{top:4px;right:-7px;width:88px;height:62px}}
+@media(prefers-reduced-motion:reduce){html[data-seasonal-theme="halloween"] #session-restore-splash #seasonal-logo-decoration-restore svg,body.theme-halloween #session-restore-splash #seasonal-logo-decoration-restore svg{animation:none}}
