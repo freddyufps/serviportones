@@ -198,3 +198,78 @@ body.theme-halloween .seasonal-theme-option[aria-pressed="true"]{border-color:#f
 
 /* Logotipos de navegación en la factura y vista consolidada. */
 .payment-order-preview-routes a{gap:7px}.payment-order-preview-routes img{width:21px;height:21px;object-fit:contain;border-radius:4px;background:#fff}
+
+
+/* Navegación por iconos: conservar los enlaces y quitar el botón/recuadro alrededor. */
+.task-map-button,
+button[aria-label="Abrir ruta en Waze"],
+button[aria-label="Abrir ruta en Google Maps"],
+#rep-btn-waze,
+#rep-btn-maps {
+  display:inline-grid!important;
+  place-items:center!important;
+  flex:0 0 36px!important;
+  width:36px!important;
+  min-width:36px!important;
+  height:36px!important;
+  min-height:36px!important;
+  padding:2px!important;
+  border:0!important;
+  border-radius:50%!important;
+  color:transparent!important;
+  font-size:0!important;
+  line-height:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  outline-offset:2px;
+}
+.task-map-button img,
+button[aria-label="Abrir ruta en Waze"] img,
+button[aria-label="Abrir ruta en Google Maps"] img,
+#rep-btn-waze img,
+#rep-btn-maps img {
+  display:block!important;
+  width:30px!important;
+  height:30px!important;
+  max-width:30px!important;
+  max-height:30px!important;
+  object-fit:contain!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+}
+.payment-order-preview-routes a,
+.leaflet-popup-content a[href*="waze.com"],
+.leaflet-popup-content a[href*="google.com/maps"] {
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  flex:0 0 36px!important;
+  width:36px!important;
+  min-width:36px!important;
+  height:36px!important;
+  min-height:36px!important;
+  padding:2px!important;
+  overflow:hidden!important;
+  border:0!important;
+  border-radius:50%!important;
+  color:transparent!important;
+  font-size:0!important;
+  line-height:0!important;
+  text-decoration:none!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.payment-order-preview-routes a img,
+.leaflet-popup-content a[href*="waze.com"] img,
+.leaflet-popup-content a[href*="google.com/maps"] img {
+  display:block!important;
+  width:30px!important;
+  height:30px!important;
+  max-width:30px!important;
+  max-height:30px!important;
+  object-fit:contain!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+}
