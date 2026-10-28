@@ -35,6 +35,7 @@
       try {
         const result = originalView.call(this, task.id);
         document.getElementById('modal-view-order')?.classList.remove('hidden');
+        document.getElementById('btn-view-order-worker-edit')?.classList.toggle('hidden', isAdmin || !isAssignedToMe || this.isTaskFree?.(task));
         return result;
       } catch (error) {
         console.error('[ORDEN] No se pudo abrir el detalle:', error);
@@ -94,6 +95,81 @@
       this.showToast?.(message, 'error');
     }
   };
+  // Renderiza tarjetas con rol canónico para que toda orden libre ofrezca "Tomar orden".
+  const originalRenderTasks = proto.renderTasks;
+  if (typeof originalRenderTasks === 'function') {
+    proto.renderTasks = function (...args) {
+      const previousUser = this.currentUser;
+      const kind = roleKind(previousUser?.role || previousUser?.rol || previousUser?.userType);
+      if (previousUser && kind === 'worker' && previousUser.role !== 'worker') {
+        this.currentUser = { ...previousUser, role: 'worker' };
+      }
+      try { return originalRenderTasks.apply(this, args); }
+      finally { this.currentUser = previousUser; }
+    };
+  }
+
+  const workerOwnsTask = function (task) {
+    const user = this.currentUser;
+    if (roleKind(user?.role || user?.rol || user?.userType) !== 'worker') return true;
+    const name = this.getCurrentDisplayName?.() || user?.fullName || user?.name || user?.username || '';
+    return !!name && !this.isTaskFree?.(task) && normalize(task?.assignedTo) === normalize(name);
+  };
+  const denyFreeEdit = function () {
+    this.showToast?.('Primero debes tomar esta orden. Una orden libre no se puede editar ni cerrar.', 'info');
+  };
+
+  const originalOpenReport = proto.openReportModal;
+  if (typeof originalOpenReport === 'function') {
+    proto.openReportModal = function (id) {
+      const task = (Array.isArray(this.tasks) ? this.tasks : []).find(item => String(item?.id) === String(id));
+      if (!task) return;
+      if (!workerOwnsTask.call(this, task)) return denyFreeEdit.call(this);
+      return originalOpenReport.call(this, task.id);
+    };
+  }
+
+  const originalEditReport = proto.editCompletedOrderReport;
+  if (typeof originalEditReport === 'function') {
+    proto.editCompletedOrderReport = function (...args) {
+      const task = this.selectedTask;
+      if (!task || !workerOwnsTask.call(this, task)) return denyFreeEdit.call(this);
+      const previousUser = this.currentUser;
+      if (previousUser && roleKind(previousUser.role || previousUser.rol || previousUser.userType) === 'worker') {
+        this.currentUser = { ...previousUser, role: 'worker' };
+      }
+      try { return originalEditReport.apply(this, args); }
+      finally { this.currentUser = previousUser; }
+    };
+  }
+
+  const originalSetReportStatus = proto.setReportStatus;
+  if (typeof originalSetReportStatus === 'function') {
+    proto.setReportStatus = function (status) {
+      if (this.selectedTask && !workerOwnsTask.call(this, this.selectedTask)) return denyFreeEdit.call(this);
+      return originalSetReportStatus.call(this, status);
+    };
+  }
+
+  const originalSubmitReport = proto.submitReport;
+  if (typeof originalSubmitReport === 'function') {
+    proto.submitReport = async function (...args) {
+      if (!this.selectedTask || !workerOwnsTask.call(this, this.selectedTask)) return denyFreeEdit.call(this);
+      return originalSubmitReport.apply(this, args);
+    };
+  }
+
+  const originalUploadEvidence = proto.handleUploadEvidence;
+  if (typeof originalUploadEvidence === 'function') {
+    proto.handleUploadEvidence = function (event, ...args) {
+      if (!this.selectedTask || !workerOwnsTask.call(this, this.selectedTask)) {
+        if (event?.target) event.target.value = '';
+        return denyFreeEdit.call(this);
+      }
+      return originalUploadEvidence.call(this, event, ...args);
+    };
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('rep-btn-waze')?.setAttribute('aria-label', 'Abrir ruta en Waze');
     document.getElementById('rep-btn-maps')?.setAttribute('aria-label', 'Abrir ruta en Google Maps');
