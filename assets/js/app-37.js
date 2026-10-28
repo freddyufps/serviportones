@@ -69,6 +69,7 @@
     const orderRef = dbInstance.collection('ordenes').doc('todas');
     this.showToast?.('Asignando la orden…', 'info');
 
+    const isQuotaError = error => error?.code === 'resource-exhausted' || /quota\s*(exceeded|limit)|resource.?exhausted/i.test(String(error?.message || error || ''));
     const taskIsAvailable = task => {
       const assignee = String(task?.assignedTo || '').trim();
       return !assignee || normalize(assignee) === 'libre';
@@ -105,13 +106,13 @@
           });
         } catch (error) {
           transactionError = error;
-          console.warn('[ORDEN] La transacción para tomar la orden falló; intentando actualización compatible:', error);
+          console.warn('[ORDEN] La transacción para tomar la orden falló:', error);
         }
       }
 
       // Compatibility path mirrors the application's normal order save operation.
       // Re-read and re-check assignment immediately before writing.
-      if (!result && transactionError?.code !== 'permission-denied') {
+      if (!result && transactionError?.code !== 'permission-denied' && !isQuotaError(transactionError)) {
         const snapshot = await orderRef.get();
         if (!snapshot.exists) result = { state: 'missing' };
         else {
@@ -140,9 +141,11 @@
       else this.showToast?.('No se encontró la orden en la lista de Firestore. Actualiza e intenta otra vez.', 'error');
     } catch (error) {
       console.error('[ORDEN] No se pudo tomar la orden:', error);
-      const message = error?.code === 'permission-denied'
-        ? 'Firestore rechazó la asignación. La cuenta de trabajador necesita permiso para actualizar la orden.'
-        : 'No se pudo asignar la orden: ' + (error?.message || error?.code || 'error de conexión');
+      const message = isQuotaError(error)
+        ? 'Firestore agotó la cuota diaria del proyecto. No se pudo asignar la orden; intenta de nuevo cuando se restablezca la cuota.'
+        : error?.code === 'permission-denied'
+          ? 'Firestore rechazó la asignación. La cuenta de trabajador necesita permiso para actualizar la orden.'
+          : 'No se pudo asignar la orden: ' + (error?.message || error?.code || 'error de conexión');
       this.showToast?.(message, 'error');
     } finally {
       this.__claimingOrderIds.delete(claimKey);
