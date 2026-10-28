@@ -178,3 +178,16 @@ body.theme-dark .seasonal-theme-option[aria-pressed="true"],body.theme-halloween
 body.theme-dark .seasonal-theme-toggle,body.theme-halloween .seasonal-theme-toggle{border-color:#40536b!important;background:#202e42!important;color:#e6edf6!important}
 body.theme-dark #settings-admin-users-section #manage-user-form,body.theme-halloween #settings-admin-users-section #manage-user-form{border-color:#40536b!important;background:linear-gradient(145deg,#1d2b40,#172235)!important}
 body.theme-dark #settings-admin-users-section #manage-user-form input:not([type=file]),body.theme-halloween #settings-admin-users-section #manage-user-form input:not([type=file]){border-color:#40536b!important;background:#111b2a!important;color:#e6edf6!important}
+/* Contraste y distribución del selector de temas cuando Halloween está activo. */
+body.theme-halloween #settings-theme-section{border-color:#62456f!important;background:linear-gradient(145deg,#21182b,#30213b)!important;color:#f6effa!important}
+body.theme-halloween #settings-theme-section h4,body.theme-halloween #settings-theme-section p{color:#f4eaf9!important}
+body.theme-halloween #seasonal-theme-options:not(.hidden){padding:10px!important;border:1px solid #715681!important;border-radius:14px!important;background:rgba(18,13,27,.78)!important;box-shadow:inset 0 1px 0 #ffffff12}
+body.theme-halloween .seasonal-theme-option{color:#f7effb!important;border-color:#725681!important;background:linear-gradient(145deg,#382743,#261b31)!important;text-shadow:none!important}
+body.theme-halloween .seasonal-theme-option:hover{border-color:#d18a4a!important;background:linear-gradient(145deg,#49304e,#30213b)!important}
+body.theme-halloween .seasonal-theme-option[aria-pressed="true"]{border-color:#f19a4d!important;background:linear-gradient(145deg,#5b382e,#39243b)!important;box-shadow:0 0 0 2px #ed9a4b35,0 6px 16px #09060b80!important}
+/* Reserva una columna fija al lápiz para que no baile según el texto de cada fila. */
+.payment-table .payment-invoice-display,.payment-table .payment-value-editor{display:grid!important;grid-template-columns:minmax(0,1fr) 19px;width:100%;min-width:0;gap:5px}
+.payment-table .payment-invoice-display>span,.payment-table .payment-value-editor>.payment-value-cell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.payment-table .payment-invoice-display>.payment-edit-button,.payment-table .payment-value-editor>.payment-edit-button{grid-column:2;justify-self:end}
+@media(max-width:700px){.payment-mobile-document-row .payment-invoice-display,.payment-mobile-document-row .payment-value-editor{display:grid!important;grid-template-columns:minmax(0,1fr) 19px;flex:1 1 0;width:100%;min-width:0;gap:4px}.payment-mobile-document-row .payment-invoice-display>span,.payment-mobile-document-row .payment-value-cell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+

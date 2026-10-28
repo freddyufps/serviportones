@@ -115,7 +115,8 @@
   PortonProApp.prototype.renderDocumentControlRecords = function () {
     const panel = this.ensureDocumentControlPanel();
     if (!panel) return;
-    const completed = (this.tasks || []).filter(task => task?.status === 'REALIZADA');
+    // El consolidado solo cuenta órdenes que siguen archivadas; al restaurarlas desaparecen y los totales se recalculan.
+    const completed = (this.tasks || []).filter(task => task?.status === 'REALIZADA' && Boolean(task.archivedAt));
     const now = Date.now();
     const overdue = completed.filter(task => statusOf(task) === 'PENDIENTE' && completionTime(task) && now >= completionTime(task) + 30 * DAY);
     const pending = completed.filter(task => statusOf(task) === 'PENDIENTE');
@@ -416,3 +417,4 @@
   syncLoginThemeMark();
   new MutationObserver(syncLoginThemeMark).observe(document.body, { attributes:true, attributeFilter:['class'] });
 })();
+
