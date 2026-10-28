@@ -452,3 +452,5 @@ body.theme-dark .order-phone{color:#cbd5e1}
 .task-date-input{padding-right:48px!important;}
 .task-date-input::-webkit-calendar-picker-indicator{display:none!important;width:0!important;opacity:0!important;pointer-events:none!important;}
 
+@media(max-width:640px){#modal-task-form.task-modal-overlay,#modal-report{height:var(--app-visual-viewport-height,100dvh)!important;min-height:0!important;align-items:flex-start!important;overflow:hidden!important;padding:4px 6px!important}#modal-task-form .task-modal-dialog,#modal-report>div:first-child{max-height:calc(var(--app-visual-viewport-height,100dvh) - 8px)!important;margin:0 auto!important;min-height:0!important}#modal-task-form .task-form-content,#modal-report>div:first-child>.overflow-y-auto{overscroll-behavior:contain;scroll-padding-bottom:18px}#modal-task-form .task-form-actions{position:sticky;bottom:0;z-index:4;padding-bottom:max(.75rem,env(safe-area-inset-bottom))}}
+

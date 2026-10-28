@@ -366,6 +366,28 @@
 
         this.seasonalTheme = this.readSeasonalTheme();
         this.sharedSeasonalTheme = null;
+        const syncMobileViewport = () => {
+          const visualHeight = window.visualViewport?.height || window.innerHeight;
+          document.documentElement.style.setProperty('--app-visual-viewport-height', `${visualHeight}px`);
+          const keyboardOpen = window.matchMedia('(max-width: 640px)').matches && window.innerHeight - visualHeight > 120;
+          document.body.classList.toggle('mobile-keyboard-open', keyboardOpen);
+        };
+        syncMobileViewport();
+        window.visualViewport?.addEventListener('resize', syncMobileViewport, { passive: true });
+        window.visualViewport?.addEventListener('scroll', syncMobileViewport, { passive: true });
+        window.addEventListener('resize', syncMobileViewport, { passive: true });
+        document.addEventListener('focusin', event => {
+          if (!window.matchMedia('(max-width: 640px)').matches || !event.target.matches?.('input, textarea, select')) return;
+          if (!event.target.closest('#modal-task-form, #modal-report')) return;
+          window.setTimeout(() => event.target.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 180);
+        });
+        document.addEventListener('input', event => {
+          if (event.target.id !== 'rep-observations' || !this.selectedTask) return;
+          const card = [...document.querySelectorAll('.order-card[data-task-id]')].find(item => item.dataset.taskId === String(this.selectedTask.id));
+          const preview = card?.querySelector('.order-observations-text');
+          if (preview) preview.textContent = event.target.value.trim() || 'Pendiente de registrar.';
+        });
+
         this.init();
       }
 
@@ -3995,8 +4017,8 @@ updateMessengerWindowTyping(workerName) {
           const workDate = /^\d{4}-\d{2}-\d{2}$/.test(rawWorkDate) ? rawWorkDate.split('-').reverse().join('/') : rawWorkDate;
           const adminLine = t.administrator ? `<p class="order-administrator mt-1 text-xs text-slate-600"><span class="font-semibold">Administrador / contacto:</span> ${this.escapeHtml(t.administrator)}</p>` : '';
           const phoneLine = t.phone ? `<p class="order-phone mt-0.5 text-xs text-slate-600"><span class="font-semibold">Teléfono:</span> ${this.escapeHtml(t.phone)}</p>` : '';
-          const notesLabel = isAdmin || t.status === 'REALIZADA' ? 'Observaciones' : 'Por hacer';
-          const orderNotes = isAdmin || t.status === 'REALIZADA' ? t.observations : t.instructions;
+          const orderInstructions = String(t.instructions || '').trim();
+          const orderObservations = String(t.observations || '').trim();
           const techObj = taskIsFree ? null : this.users.find(u => (u.fullName || u.username) === t.assignedTo);
           const techPhoto = techObj && techObj.photo ? techObj.photo : '';
           const techPresenceStatus = this.getPresenceStatus(techObj);
@@ -4009,7 +4031,7 @@ updateMessengerWindowTyping(workerName) {
           ].filter(Boolean);
 
           return `
-            <div class="order-card bg-white rounded-2xl p-3.5 sm:p-4 border ${borderClass} shadow-sm flex flex-col justify-between min-w-0 overflow-hidden transition-all duration-200 hover:shadow-md ${isAdmin && t.status === 'REALIZADA' && !t.archivedAt ? 'completed-order-alert' : ''}">
+            <div data-task-id="${this.escapeHtml(t.id)}" class="order-card bg-white rounded-2xl p-3.5 sm:p-4 border ${borderClass} shadow-sm flex flex-col justify-between min-w-0 overflow-hidden transition-all duration-200 hover:shadow-md ${isAdmin && t.status === 'REALIZADA' && !t.archivedAt ? 'completed-order-alert' : ''}">
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <span class="text-xs font-mono font-black text-slate-500">${t.id}</span>
@@ -4030,11 +4052,12 @@ updateMessengerWindowTyping(workerName) {
                   </div>
                 </div>
 
-                ${orderNotes ? `
-                  <div class="order-observations mt-2 p-2 rounded-xl text-xs bg-slate-50 border text-slate-700 text-[11px]">
-                    <span class="block mb-0.5 font-bold not-italic">${notesLabel}</span><span class="line-clamp-3 whitespace-pre-line">${this.escapeHtml(orderNotes)}</span>
-                  </div>
-                ` : ''}
+                <div class="order-observations order-instructions mt-2 p-2 rounded-xl text-xs bg-slate-50 border text-slate-700 text-[11px]">
+                  <span class="block mb-0.5 font-bold not-italic">Por hacer</span><span class="line-clamp-3 whitespace-pre-line">${this.escapeHtml(orderInstructions || 'Sin instrucciones registradas.')}</span>
+                </div>
+                <div class="order-observations order-completed-notes mt-1.5 p-2 rounded-xl text-xs bg-emerald-50 border border-emerald-100 text-slate-700 text-[11px]">
+                  <span class="block mb-0.5 font-bold not-italic text-emerald-800">Realizado</span><span class="order-observations-text line-clamp-3 whitespace-pre-line">${this.escapeHtml(orderObservations || 'Pendiente de registrar.')}</span>
+                </div>
 
                 <div class="order-tech-section mt-2.5 pt-2 border-t text-xs">
                   <span class="text-slate-500 text-[11px] block mb-1.5">Técnico:</span>
