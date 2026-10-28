@@ -3324,7 +3324,7 @@ updateMessengerWindowTyping(workerName) {
             const flight = document.createElement('div');
             flight.className = 'login-christmas-flight';
             const art = document.createElement('img');
-            art.src = 'assets/media/santa-sleigh.svg?v=20261028-rudolph-front-4';
+            art.src = 'assets/media/santa-sleigh.svg?v=20261028-santa-hat-front-1';
             art.alt = 'Santa Claus y sus renos vuelan sobre la escena navideña';
             art.className = 'christmas-sleigh-art';
             flight.appendChild(art);
@@ -3368,7 +3368,7 @@ updateMessengerWindowTyping(workerName) {
           const sleigh = document.createElement('div');
           sleigh.className = 'christmas-sleigh-flight';
           const art = document.createElement('img');
-          art.src = 'assets/media/santa-sleigh.svg?v=20261028-rudolph-front-4';
+          art.src = 'assets/media/santa-sleigh.svg?v=20261028-santa-hat-front-1';
           art.alt = 'Santa Claus volando en su trineo con sus renos';
           art.className = 'christmas-sleigh-art';
           sleigh.appendChild(art);
