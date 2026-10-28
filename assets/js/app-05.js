@@ -4168,6 +4168,7 @@ updateMessengerWindowTyping(workerName) {
                 <div class="order-observations order-instructions mt-2 p-2 rounded-xl text-xs bg-slate-50 border text-slate-700 text-[11px]">
                   <span class="block mb-0.5 font-bold not-italic">Por hacer</span><span class="line-clamp-3 whitespace-pre-line">${this.escapeHtml(orderInstructions || 'Sin instrucciones registradas.')}</span>
                 </div>
+                ${this.showArchivedTasks ? '<details class="archived-order-extra mt-2"><summary><span>Ver informe y técnico</span><i data-lucide="chevron-down"></i></summary><div class="archived-order-extra-content">' : ''}
                 <div class="order-observations order-completed-notes mt-1.5 p-2 rounded-xl text-xs bg-emerald-50 border border-emerald-100 text-slate-700 text-[11px]">
                   <span class="block mb-0.5 font-bold not-italic text-emerald-800">Realizado</span><span class="order-observations-text line-clamp-3 whitespace-pre-line">${this.escapeHtml(orderObservations || 'Pendiente de registrar.')}</span>
                 </div>
@@ -4179,6 +4180,7 @@ updateMessengerWindowTyping(workerName) {
                     : `<div class="flex items-center gap-2"><div onclick="app.zoomWorkerPhoto('${techPhoto}', '${t.assignedTo}')" class="seasonal-worker-avatar cursor-pointer w-9 h-9 rounded-full overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center border-2 border-brand-lime" title="Ampliar foto">${techPhoto ? `<img src="${this.escapeHtml(techPhoto)}" alt="Foto de ${this.escapeHtml(t.assignedTo)}" class="w-full h-full object-cover">` : `<span class="text-xs font-bold">${this.escapeHtml(String(t.assignedTo || '?').charAt(0).toUpperCase())}</span>`}</div><div class="min-w-0"><div class="font-bold text-slate-800 text-[11px]">${this.escapeHtml(t.assignedTo)}</div><span class="presence-label is-${techPresenceStatus}">${techPresenceLabel}</span>${techDetails.length ? `<div class="mt-0.5 flex flex-wrap gap-x-2 text-[10px] text-slate-500">${techDetails.map(detail => `<span>${detail}</span>`).join('')}</div>` : ''}</div></div>`}
                 </div>
 
+                ${this.showArchivedTasks ? '</div></details>' : ''}
               </div>
 
               <div class="mt-3 pt-2 border-t flex items-center justify-between gap-1">
