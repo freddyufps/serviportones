@@ -1,0 +1,44 @@
+/* Ficha de orden compacta compartida por los ojos de órdenes y consolidado. */
+.payment-order-preview{position:fixed;inset:0;z-index:10060;display:grid;place-items:center;padding:12px;background:rgba(15,26,42,.48);backdrop-filter:blur(3px)}
+.payment-order-preview.hidden{display:none}
+.payment-order-preview-card{width:min(720px,100%);max-height:min(92dvh,920px);display:flex;flex-direction:column;overflow:hidden;border:1px solid #dbe4ec;border-radius:16px;background:#fff;color:#1e344b;box-shadow:0 24px 70px rgba(8,20,36,.25);animation:invoice-preview-enter .2s ease both}
+.payment-order-preview-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #e5ebf1;background:#fff}
+.payment-order-preview-brand{display:flex;align-items:center;gap:12px;min-width:0}
+.payment-order-preview-brand img{width:116px;height:48px;object-fit:contain;border-radius:8px;background:#fff}
+.payment-order-preview-brand>div>span{display:block;color:#8190a2;font-size:9px;font-weight:850;letter-spacing:.13em}
+.payment-order-preview-brand h2{margin:3px 0 0;color:#1d334c;font-size:16px;font-weight:900}
+.payment-order-preview-header-actions{display:flex;align-items:center;gap:9px}
+.payment-order-preview-header-actions>button{display:grid;place-items:center;width:30px;height:30px;border:1px solid #dfe6ed;border-radius:9px;background:#fff;color:#73849a;font-size:20px;line-height:1;cursor:pointer}
+.payment-order-preview-status{padding:5px 9px;border:1px solid #d8e7ca;border-radius:999px;background:#f3f8ed;color:#57872e;font-size:9px;font-weight:900;white-space:nowrap}
+.payment-order-preview-body{display:grid;gap:9px;padding:12px 16px;overflow-y:auto;overscroll-behavior:contain}
+.payment-order-preview-client{display:grid;grid-template-columns:minmax(0,1fr) minmax(125px,.55fr) auto;align-items:center;gap:12px;padding:10px 12px;border:1px solid #e3eaf0;border-radius:11px;background:#f7f9fb}
+.payment-order-preview-client small{display:block;margin-bottom:3px;color:#8493a4;font-size:8px;font-weight:900;letter-spacing:.1em}
+.payment-order-preview-client h3{margin:0;color:#233950;font-size:13px;font-weight:850;overflow-wrap:anywhere}
+.payment-order-preview-payment{padding:5px 8px;border-radius:8px;background:#fff2cd;color:#95600b;font-size:9px;font-weight:850;white-space:nowrap}
+.payment-order-preview-payment.is-paid{background:#e8f6e8;color:#397737}
+.payment-order-preview-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid #e7edf2;border-bottom:1px solid #e7edf2}
+.payment-order-preview-field{min-width:0;padding:8px 10px;border-bottom:1px solid #edf1f4;background:transparent}
+.payment-order-preview-field>span{display:block;margin-bottom:3px;color:#8694a4;font-size:8px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+.payment-order-preview-field b{display:block;overflow-wrap:anywhere;color:#283e55;font-size:10px;font-weight:750;line-height:1.4;white-space:pre-wrap}
+.payment-order-preview-field.payment-order-preview-tech>div{display:flex;align-items:center;gap:7px}
+.payment-order-preview-tech img{width:30px;height:30px;flex:0 0 30px;object-fit:cover;border:1px solid #d5e3c6;border-radius:50%}
+.payment-order-preview-section,.payment-order-preview-evidence{padding:8px 2px;border:0;border-bottom:1px solid #e7edf2;border-radius:0;background:transparent}
+.payment-order-preview-section h3,.payment-order-preview-evidence h3{margin:0 0 4px;color:#687e94;font-size:8px;font-weight:950;letter-spacing:.1em;text-transform:uppercase}
+.payment-order-preview-section p,.payment-order-preview-evidence p{margin:0;color:#364d64;font-size:10px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+.payment-order-preview-section.is-work-done{border-color:#d6eee0;background:#f6fbf7;border-radius:9px;padding:9px 10px}
+.payment-order-preview-observations{margin-top:7px;padding-top:6px;border-top:1px solid #dcebe1;color:#526a5b;font-size:9px}
+.payment-order-preview-observations p{margin-top:2px}
+.payment-order-preview-section ul,.payment-order-preview-evidence ul{margin:0;padding-left:15px;color:#465d74;font-size:9px;line-height:1.45}
+.payment-order-preview-evidence>div{display:flex;align-items:center;justify-content:space-between;gap:8px}.payment-order-preview-evidence>div h3{margin:0}.payment-order-preview-evidence>div span{color:#7b8b9d;font-size:9px;font-weight:800}
+.payment-order-preview-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 16px;border-top:1px solid #e5ebf1;background:#fff;color:#8b99a9;font-size:8px}
+.payment-order-preview-footer button{padding:6px 12px;border:1px solid #d8e1ea;border-radius:8px;background:#fff;color:#435970;font-size:9px;font-weight:850;cursor:pointer}
+.payment-order-preview-routes{display:flex;gap:7px;margin-top:6px}
+.payment-order-preview-routes a{display:grid;place-items:center;width:30px;height:30px;border:0;border-radius:0;background:transparent}
+.payment-order-preview-routes img{width:26px;height:26px;object-fit:contain}
+body.theme-dark .payment-order-preview-card,body.theme-halloween .payment-order-preview-card{border-color:#40536b;background:#111b2a;color:#e7eef8}
+body.theme-dark .payment-order-preview-header,body.theme-halloween .payment-order-preview-header,body.theme-dark .payment-order-preview-footer,body.theme-halloween .payment-order-preview-footer{border-color:#34465d;background:#172235;color:#e7eef8}
+body.theme-dark .payment-order-preview-brand h2,body.theme-halloween .payment-order-preview-brand h2,body.theme-dark .payment-order-preview-client h3,body.theme-halloween .payment-order-preview-client h3,body.theme-dark .payment-order-preview-field b,body.theme-halloween .payment-order-preview-field b,body.theme-dark .payment-order-preview-section p,body.theme-halloween .payment-order-preview-section p,body.theme-dark .payment-order-preview-evidence p,body.theme-halloween .payment-order-preview-evidence p{color:#e0e9f3}
+body.theme-dark .payment-order-preview-client,body.theme-halloween .payment-order-preview-client{border-color:#34465d;background:#172235}
+body.theme-dark .payment-order-preview-grid,body.theme-halloween .payment-order-preview-grid,body.theme-dark .payment-order-preview-section,body.theme-halloween .payment-order-preview-section,body.theme-dark .payment-order-preview-evidence,body.theme-halloween .payment-order-preview-evidence,body.theme-dark .payment-order-preview-field,body.theme-halloween .payment-order-preview-field{border-color:#34465d}
+body.theme-dark .payment-order-preview-section.is-work-done,body.theme-halloween .payment-order-preview-section.is-work-done{background:#1a2b25}
+@media(max-width:600px){.payment-order-preview{padding:8px}.payment-order-preview-card{max-height:94dvh;border-radius:14px}.payment-order-preview-header{padding:10px 12px}.payment-order-preview-brand img{width:92px;height:38px}.payment-order-preview-brand{gap:8px}.payment-order-preview-brand h2{font-size:14px}.payment-order-preview-body{gap:6px;padding:9px 12px}.payment-order-preview-client{grid-template-columns:minmax(0,1fr) auto;gap:7px;padding:8px}.payment-order-preview-client>div:nth-child(2){grid-column:1}.payment-order-preview-payment{grid-column:2;grid-row:1/3}.payment-order-preview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.payment-order-preview-field{padding:7px 6px}.payment-order-preview-field b{font-size:9px}.payment-order-preview-tech img{width:26px;height:26px;flex-basis:26px}.payment-order-preview-footer{padding:8px 12px}}
