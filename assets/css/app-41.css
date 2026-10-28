@@ -60,3 +60,59 @@ body.theme-dark #chat-window-modal .chat-message-row:not(.is-mine) .chat-message
 @media(prefers-reduced-motion:reduce){.payment-order-preview-card,#chat-window-modal,.messenger-chat-window{animation:none!important}#chat-launcher-button,#chat-window-modal *{scroll-behavior:auto!important;transition:none!important}}
 
 
+/* Correcciones del chat: contraste estable, sin parpadeos y launcher circular también en móvil. */
+#chat-window-modal,
+#chat-window-modal>.flex-1,
+#chat-window-modal #chat-sidebar,
+#chat-window-modal #chat-conversation-area,
+#chat-window-modal #chat-conversations-list,
+#chat-window-modal #chat-contact-search-wrap,
+#chat-window-modal #chat-messages-container,
+#chat-window-modal form{background:#fff!important;color:#17263b!important}
+#chat-window-modal{animation:none!important;backdrop-filter:none!important}
+#chat-window-modal #chat-sidebar{border-color:#e2e8f0!important}
+#chat-window-modal #chat-conversations-list{background:#fff!important}
+#chat-window-modal .chat-contact-row,
+#chat-window-modal .chat-contact-row:hover,
+#chat-window-modal .chat-contact-row.is-active,
+#chat-window-modal .chat-contact-row.has-unread{background:#fff!important;color:#17263b!important;box-shadow:0 3px 12px rgba(23,38,59,.07)!important}
+#chat-window-modal .chat-contact-row.is-active{border-color:#a8cf83!important;box-shadow:inset 3px 0 #70a936,0 3px 12px rgba(23,38,59,.07)!important}
+#chat-window-modal .chat-contact-name,
+#chat-window-modal .chat-contact-preview,
+#chat-window-modal .chat-contact-time,
+#chat-window-modal .chat-message-identity{color:#263b52!important}
+#chat-window-modal #chat-contact-search-wrap{position:relative!important;display:block!important;height:48px!important;margin:8px 12px 12px!important}
+#chat-window-modal #chat-contact-search-wrap svg{position:absolute!important;z-index:2;left:12px!important;top:50%!important;width:19px!important;height:19px!important;transform:translateY(-50%)!important;color:#71839a!important;stroke-width:2!important;pointer-events:none}
+#chat-window-modal #chat-contact-search{display:block!important;width:100%!important;height:48px!important;padding:0 12px 0 42px!important;border:1px solid #d7e0ea!important;border-radius:14px!important;background:#f7f9fc!important;color:#17263b!important;font-size:13px!important}
+#chat-window-modal #chat-contact-search::placeholder{color:#75869a!important}
+#chat-window-modal #chat-messages-container{background:#fff!important;color:#263b52!important}
+#chat-window-modal .chat-message-row:not(.is-mine) .chat-message-bubble{background:#f2f5f8!important;color:#243951!important}
+#chat-window-modal .chat-message-row.is-mine .chat-message-bubble{background:linear-gradient(135deg,#245878,#1c4666)!important;color:#fff!important}
+#chat-window-modal button[data-chat-action="attach"],button[data-chat-action="attach"]{display:none!important}
+#chat-window-modal,.messenger-chat-window,.messenger-window-header,#chat-launcher-button,
+.chat-launcher-cell.has-unread>#chat-launcher-button,
+.messenger-chat-window.is-minimized.has-unread .messenger-window-header{animation:none!important}
+.messenger-chat-window{animation:none!important;background:#fff!important}
+.messenger-chat-window.is-minimized.has-unread .messenger-window-header{border-color:#71a832!important;box-shadow:0 5px 15px rgba(15,23,42,.14)!important}
+body.theme-dark #chat-window-modal,
+body.theme-halloween #chat-window-modal,
+body.theme-dark #chat-window-modal #chat-sidebar,
+body.theme-halloween #chat-window-modal #chat-sidebar,
+body.theme-dark #chat-window-modal #chat-messages-container,
+body.theme-halloween #chat-window-modal #chat-messages-container,
+body.theme-dark #chat-window-modal #chat-conversations-list,
+body.theme-halloween #chat-window-modal #chat-conversations-list{background:#fff!important;color:#17263b!important}
+body.theme-dark #chat-window-modal .chat-contact-name,
+body.theme-halloween #chat-window-modal .chat-contact-name,
+body.theme-dark #chat-window-modal .chat-contact-preview,
+body.theme-halloween #chat-window-modal .chat-contact-preview,
+body.theme-dark #chat-window-modal .chat-contact-time,
+body.theme-halloween #chat-window-modal .chat-contact-time{color:#263b52!important}
+@media(max-width:639px){
+ .chat-launcher-cell{position:fixed!important;z-index:10004!important;right:14px!important;bottom:calc(14px + env(safe-area-inset-bottom,0px))!important;width:56px!important;height:56px!important;min-width:56px!important;max-width:56px!important}
+ #chat-launcher-button{width:56px!important;min-width:56px!important;height:56px!important;min-height:56px!important}
+ #chat-window-modal #chat-sidebar>div:first-child{background:#fff!important}
+ #chat-window-modal #chat-contact-search-wrap{margin:8px 10px 10px!important}
+}
+
+
