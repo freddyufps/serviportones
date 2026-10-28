@@ -67,4 +67,3 @@
             })();
 
 // El video del login comienza siempre silenciado; el usuario decide cuándo habilitar el audio.
-

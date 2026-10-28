@@ -3196,7 +3196,7 @@ updateMessengerWindowTyping(workerName) {
       }
 
       readSeasonalTheme() {
-        const allowed = ['classic', 'christmas', 'easter', 'holy-week'];
+        const allowed = ['classic', 'christmas', 'easter', 'holy-week', 'halloween'];
         try { const saved = localStorage.getItem('serviportones_visual_theme'); return allowed.includes(saved) ? saved : 'classic'; }
         catch (_) { return 'classic'; }
       }
@@ -3206,7 +3206,7 @@ updateMessengerWindowTyping(workerName) {
         if (!adminUser?.username) return;
         const record = this.presenceRecords[String(adminUser.username).toLowerCase()];
         const theme = record?.visualTheme;
-        const allowed = ['classic', 'christmas', 'easter', 'holy-week'];
+        const allowed = ['classic', 'christmas', 'easter', 'holy-week', 'halloween'];
         if (!allowed.includes(theme)) return;
         this.sharedSeasonalTheme = theme;
         if (this.seasonalTheme === theme) return;
@@ -3217,7 +3217,7 @@ updateMessengerWindowTyping(workerName) {
       }
 
       setSeasonalTheme(theme) {
-        const allowed = ['classic', 'christmas', 'easter', 'holy-week'];
+        const allowed = ['classic', 'christmas', 'easter', 'holy-week', 'halloween'];
         if (this.currentUser?.role !== 'admin' || !allowed.includes(theme)) return;
         this.seasonalTheme = theme;
         this.sharedSeasonalTheme = theme;
@@ -3230,7 +3230,7 @@ updateMessengerWindowTyping(workerName) {
           db.collection('presencia').doc(username).set({ visualTheme: theme }, { merge: true })
             .catch(error => console.error('[THEME] No se pudo sincronizar el tema:', error));
         }
-        const themeNames = { classic: 'Clásico', christmas: 'Navidad', easter: 'Pascua', 'holy-week': 'Semana Santa' };
+        const themeNames = { classic: 'Clásico', christmas: 'Navidad', easter: 'Pascua', 'holy-week': 'Semana Santa', halloween: 'Halloween' };
         this.showToast(`Tema ${themeNames[theme]} aplicado a todos`, 'success');
       }
 
@@ -3246,19 +3246,24 @@ updateMessengerWindowTyping(workerName) {
       }
 
       applySeasonalTheme(theme) {
-        const classes = ['theme-classic', 'theme-christmas', 'theme-easter', 'theme-holy-week'];
+        const loginMark = document.querySelector('.login-santa-hat');
+        const loginMarks = { christmas: 'assets/media/santa-hat-3d.svg?v=20261028-hat-svg-mirror-11', halloween: 'assets/media/halloween-avatar.svg?v=20261028-halloween-glow-1', easter: 'assets/media/easter-login-mark.svg?v=20261028-theme-mark-1', 'holy-week': 'assets/media/holy-week-login-mark.svg?v=20261028-theme-mark-1' };
+        if (loginMark) { const source = loginMarks[theme]; if (source) loginMark.src = source; loginMark.alt = ''; loginMark.setAttribute('aria-hidden', 'true'); }
+        const classes = ['theme-classic', 'theme-christmas', 'theme-easter', 'theme-holy-week', 'theme-halloween'];
         document.body.classList.remove(...classes);
         if (theme === 'classic') document.body.classList.add('theme-classic');
         if (theme === 'christmas') document.body.classList.add('theme-christmas');
         if (theme === 'easter') document.body.classList.add('theme-easter');
         if (theme === 'holy-week') document.body.classList.add('theme-holy-week');
+        if (theme === 'halloween') document.body.classList.add('theme-halloween');
         const decorations = {
           classic: '',
+          halloween: "<svg viewBox=\"0 0 180 110\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><defs><radialGradient id=\"season-haunt-glow\"><stop stop-color=\"#ff9b42\" stop-opacity=\".35\"/><stop offset=\"1\" stop-color=\"#ff9b42\" stop-opacity=\"0\"/></radialGradient></defs><circle cx=\"92\" cy=\"56\" r=\"54\" fill=\"url(#season-haunt-glow)\"/><g fill=\"none\" stroke=\"#b8a8c9\" stroke-width=\"1.8\" opacity=\".9\"><path d=\"M118 4v48M118 4L84 52M118 4l34 48M118 4L70 28M118 4l48 24M118 4L58 4M118 4h60M118 4l-42 67M118 4l42 67\"/><path d=\"M92 28q26 12 52 0M82 42q36 18 72 0M72 56q46 21 92 0\"/></g><g fill=\"#21162c\" stroke=\"#f5a24b\" stroke-width=\"1\"><ellipse cx=\"118\" cy=\"61\" rx=\"6\" ry=\"9\"/><circle cx=\"118\" cy=\"52\" r=\"5\"/><path d=\"M114 50l-5-5 1 8m12-3 5-5-1 8M112 62l-8 7m13-6-4 10m8-10 7 7m-4-10 8 3\" fill=\"none\" stroke-linecap=\"round\" stroke-width=\"2\"/></g><circle cx=\"116\" cy=\"52\" r=\"1\" fill=\"#ffbd57\"/><circle cx=\"120\" cy=\"52\" r=\"1\" fill=\"#ffbd57\"/><path d=\"M31 81q12-13 24 0 12-13 24 0-12-4-24 9-12-13-24-9Z\" fill=\"#2c1c3b\" stroke=\"#f29a49\" stroke-width=\"1.5\"/></svg>",
           christmas: `<svg viewBox="0 0 180 110" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="season-hat" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c94743"/><stop offset="1" stop-color="#7f2529"/></linearGradient><linearGradient id="season-gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f4e1a0"/><stop offset="1" stop-color="#b8913e"/></linearGradient></defs><path class="seasonal-hat" d="M28 44 Q39 8 83 11 Q67 23 59 47Z" fill="url(#season-hat)"/><path d="M25 44 Q44 38 63 45 L61 53 Q42 49 24 53Z" fill="#f5f0e6"/><circle cx="81" cy="10" r="7" fill="#f5f0e6"/><path d="M116 42 Q111 30 115 20 M118 29 Q109 24 107 15 M118 28 Q127 20 125 11 M118 32 Q131 31 136 22" fill="none" stroke="url(#season-gold)" stroke-width="3" stroke-linecap="round"/><path d="M111 40 Q124 31 133 42 L130 54 Q123 61 115 53Z" fill="#825c43"/><circle cx="124" cy="44" r="1.6" fill="#f7f1e7"/><path d="M131 47l8 2-8 3" fill="#b8913e"/><path d="M20 74l3 5 5 1-5 2-2 5-2-5-5-2 5-1zM91 67l2 4 4 1-4 2-2 4-2-4-4-2 4-1zM157 72l2 4 4 1-4 2-2 4-2-4-4-2 4-1z" fill="#d7e6ec" opacity=".9"/><g class="seasonal-logo-lights"><circle cx="88" cy="57" r="3" fill="#cb514e"/><circle cx="101" cy="59" r="3" fill="#e5c86e"/><circle cx="114" cy="59" r="3" fill="#4e916b"/><circle cx="127" cy="58" r="3" fill="#cb514e"/></g><circle cx="99" cy="24" r="2" fill="#fff"/><circle cx="148" cy="59" r="1.5" fill="#fff"/></svg>`,
           easter: `<svg viewBox="0 0 180 110" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="season-egg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f3e6e8"/><stop offset="1" stop-color="#c9a8bb"/></linearGradient><linearGradient id="season-leaf" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b9c9a7"/><stop offset="1" stop-color="#708d68"/></linearGradient></defs><path class="seasonal-egg" d="M40 18 C25 20 20 47 25 63 C30 80 55 82 62 65 C69 48 56 16 40 18Z" fill="url(#season-egg)" stroke="#b895a9" stroke-width="1.5"/><path d="M27 43 Q43 36 61 44 M27 54 Q43 48 64 55" fill="none" stroke="#f8f1e8" stroke-width="3"/><path d="M88 75 Q112 49 137 35" fill="none" stroke="url(#season-leaf)" stroke-width="3" stroke-linecap="round"/><path d="M103 62 Q88 51 88 42 Q104 43 108 56 M119 49 Q117 34 124 26 Q134 37 126 48 M93 72 Q78 68 72 59 Q87 55 98 66" fill="url(#season-leaf)"/><g fill="#e6c9d6" stroke="#c29bac" stroke-width="1"><ellipse cx="143" cy="27" rx="5" ry="9"/><ellipse cx="143" cy="45" rx="5" ry="9"/><ellipse cx="134" cy="36" rx="8" ry="5"/><ellipse cx="152" cy="36" rx="8" ry="5"/></g><circle cx="143" cy="36" r="4" fill="#d7b66f"/><circle cx="76" cy="24" r="2" fill="#d9c487"/><circle cx="158" cy="65" r="1.8" fill="#d9c487"/></svg>`,
           'holy-week': `<svg viewBox="0 0 180 110" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="season-cross" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ead89d"/><stop offset="1" stop-color="#a88c55"/></linearGradient><radialGradient id="season-glow"><stop stop-color="#f4e7c6" stop-opacity=".78"/><stop offset="1" stop-color="#f4e7c6" stop-opacity="0"/></radialGradient></defs><circle cx="77" cy="44" r="38" fill="url(#season-glow)"/><path class="seasonal-cross-art" d="M76 16 V72 M58 34 H94" stroke="url(#season-cross)" stroke-width="6" stroke-linecap="round"/><path d="M76 79 Q104 68 127 79" fill="none" stroke="#9c8aaa" stroke-width="2" opacity=".75"/><path d="M126 24v17m-6-11h12" stroke="#c7b27a" stroke-width="2" stroke-linecap="round"/><circle cx="127" cy="51" r="2" fill="#d8c58d"/><path d="M42 23l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#d8c58d" opacity=".8"/></svg>`
         };
-        ['seasonal-logo-decoration-header', 'seasonal-logo-decoration-chat'].forEach(id => {
+        ['seasonal-logo-decoration-header', 'seasonal-logo-decoration-chat', 'seasonal-logo-decoration-restore'].forEach(id => {
           const element = document.getElementById(id);
           if (!element) return;
           const svg = decorations[theme] || '';
@@ -3272,26 +3277,102 @@ updateMessengerWindowTyping(workerName) {
         const layer = document.getElementById('seasonal-effects-layer');
         if (!layer) return;
         const loginView = document.getElementById('view-login');
-        if (loginView && !loginView.classList.contains('hidden')) {
+        const loginScene = document.getElementById('login-seasonal-scene');
+        const loginBatLayer = document.getElementById('login-halloween-bat-layer');
+        const isLogin = Boolean(loginView && !loginView.classList.contains('hidden'));
+        const setRandomFlightPath = (flight, loginOnly = false) => {
+          const choosePath = () => {
+            const fromLeft = Math.random() < 0.5;
+            flight.querySelector('.christmas-sleigh-art')?.classList.toggle('is-reversed', !fromLeft);
+            const startY = loginOnly ? 2 + Math.random() * 5 : 24 + Math.random() * 42;
+            const endY = loginOnly ? 4 + Math.random() * 7 : 32 + Math.random() * 48;
+            flight.style.setProperty('--flight-start-x', fromLeft ? '-125vw' : '125vw');
+            flight.style.setProperty('--flight-end-x', fromLeft ? '130vw' : '-130vw');
+            flight.style.setProperty('--flight-start-y', `${startY}%`);
+            flight.style.setProperty('--flight-end-y', `${endY}%`);
+          };
+          const restart = () => {
+            if (!flight.isConnected) return;
+            flight.style.animation = 'none';
+            choosePath();
+            void flight.offsetWidth;
+            flight.style.animation = '';
+            flight.addEventListener('animationend', restart, { once: true });
+          };
+          choosePath();
+          flight.addEventListener('animationend', restart, { once: true });
+        };        loginScene?.classList.remove('theme-christmas');
+        loginScene?.querySelectorAll('.seasonal-login-snow, .login-christmas-flight, .login-halloween-bat').forEach(element => element.remove());
+        loginBatLayer?.replaceChildren();
+        if (isLogin) {
           layer.innerHTML = '';
           layer.className = 'seasonal-effects-layer hidden';
+          if (theme === 'christmas' && loginScene) {
+            loginScene.classList.add('theme-christmas');
+            for (let index = 0; index < 38; index++) {
+              const particle = document.createElement('i');
+              particle.className = 'seasonal-particle seasonal-login-snow';
+              particle.style.setProperty('--particle-x', `${Math.random() * 100}%`);
+              particle.style.setProperty('--particle-size', `${12 + Math.random() * 10}px`);
+              particle.style.setProperty('--particle-opacity', `${.58 + Math.random() * .38}`);
+              particle.style.setProperty('--particle-duration', `${10 + Math.random() * 8}s`);
+              particle.style.setProperty('--particle-delay', `${-Math.random() * 20}s`);
+              particle.style.setProperty('--particle-drift', `${-35 + Math.random() * 70}px`);
+              loginScene.appendChild(particle);
+            }
+            const flight = document.createElement('div');
+            flight.className = 'login-christmas-flight';
+            const art = document.createElement('img');
+            art.src = 'assets/media/santa-sleigh.svg?v=20261028-rudolph-front-4';
+            art.alt = 'Santa Claus y sus renos vuelan sobre la escena navideña';
+            art.className = 'christmas-sleigh-art';
+            flight.appendChild(art);
+            loginScene.appendChild(flight);
+            setRandomFlightPath(flight, true);
+          } else if (theme === 'halloween' && loginScene) {
+            for (let index = 0; index < 6; index++) { const bat=document.createElement('img'); bat.src='assets/media/halloween-bat-flight.svg?v=20261028-flock-1'; bat.className='login-halloween-bat'+(Math.random()<.5?' is-reversed':''); bat.alt=''; bat.setAttribute('aria-hidden','true'); bat.style.setProperty('--bat-y',(8+Math.random()*82)+'%'); bat.style.setProperty('--bat-scale',(0.62+Math.random()*0.58).toFixed(2)); bat.style.setProperty('--bat-duration',(15+Math.random()*13)+'s'); bat.style.setProperty('--bat-delay',(-Math.random()*28)+'s'); loginBatLayer?.appendChild(bat); }
+          }
           return;
         }
         layer.innerHTML = '';
         layer.className = 'seasonal-effects-layer';
         if (theme === 'classic') { layer.classList.add('hidden'); return; }
         layer.classList.add(`theme-${theme}`);
-        const count = theme === 'christmas' ? 38 : theme === 'easter' ? 18 : 16;
+        const count = theme === 'christmas' ? 38 : theme === 'halloween' ? 0 : theme === 'easter' ? 18 : 16;
         for (let index = 0; index < count; index++) {
           const particle = document.createElement('i');
           particle.className = 'seasonal-particle';
           particle.style.setProperty('--particle-x', `${Math.random() * 100}%`);
-          particle.style.setProperty('--particle-size', `${theme === 'christmas' ? 12 + Math.random() * 10 : 10 + Math.random() * 9}px`);
+          particle.style.setProperty('--particle-size', `${theme === 'christmas' ? 12 + Math.random() * 10 : theme === 'halloween' ? 16 + Math.random() * 12 : 10 + Math.random() * 9}px`);
           particle.style.setProperty('--particle-opacity', `${.58 + Math.random() * .38}`);
-          particle.style.setProperty('--particle-duration', `${theme === 'christmas' ? 10 + Math.random() * 8 : 12 + Math.random() * 9}s`);
+          particle.style.setProperty('--particle-duration', `${theme === 'christmas' ? 10 + Math.random() * 8 : theme === 'halloween' ? 16 + Math.random() * 12 : 12 + Math.random() * 9}s`);
           particle.style.setProperty('--particle-delay', `${-Math.random() * 20}s`);
           particle.style.setProperty('--particle-drift', `${-35 + Math.random() * 70}px`);
           layer.appendChild(particle);
+        }
+        if (theme === 'halloween') {
+          for (let index = 0; index < 12; index++) {
+            const bat = document.createElement('img');
+            bat.src = 'assets/media/halloween-bat-flight.svg?v=20261028-flock-1';
+            bat.alt = '';
+            bat.setAttribute('aria-hidden', 'true');
+            bat.className = 'halloween-flight-bat' + (Math.random() < .5 ? ' is-reversed' : '');
+            bat.style.setProperty('--bat-y', `${Math.random() * 88}%`);
+            bat.style.setProperty('--bat-scale', (0.52 + Math.random() * .62).toFixed(2));
+            bat.style.setProperty('--bat-duration', `${15 + Math.random() * 17}s`);
+            bat.style.setProperty('--bat-delay', `${-Math.random() * 30}s`);
+            layer.appendChild(bat);
+          }
+        }        if (theme === 'christmas') {
+          const sleigh = document.createElement('div');
+          sleigh.className = 'christmas-sleigh-flight';
+          const art = document.createElement('img');
+          art.src = 'assets/media/santa-sleigh.svg?v=20261028-rudolph-front-4';
+          art.alt = 'Santa Claus volando en su trineo con sus renos';
+          art.className = 'christmas-sleigh-art';
+          sleigh.appendChild(art);
+          layer.appendChild(sleigh);
+          setRandomFlightPath(sleigh);
         }
       }
       renderSeasonalThemeSelector() {
@@ -3959,6 +4040,8 @@ updateMessengerWindowTyping(workerName) {
         const countTag = document.getElementById('filtered-count');
         const isAdmin = this.currentUser.role === 'admin';
         const archiveButton = document.getElementById('btn-toggle-archived-orders');
+        const archivedDocumentsButton = document.getElementById('btn-archived-document-control');
+        if (archivedDocumentsButton) { archivedDocumentsButton.classList.toggle('hidden', !isAdmin || !this.showArchivedTasks); archivedDocumentsButton.classList.toggle('inline-flex', isAdmin && this.showArchivedTasks); }
         const archivedCount = this.tasks.filter(task => !!task.archivedAt).length;
         if (archiveButton) archiveButton.classList.toggle('hidden', !isAdmin);
         const archiveLabel = document.getElementById('archived-orders-button-label');
@@ -3966,6 +4049,17 @@ updateMessengerWindowTyping(workerName) {
         if (archiveLabel) archiveLabel.textContent = this.showArchivedTasks ? '↩ Volver a órdenes' : '📦 Órdenes Archivadas';
         if (archiveCount) archiveCount.textContent = String(archivedCount);
         const myName = this.getCurrentDisplayName();
+        this.ensurePaymentNotificationScheduler?.();
+        const documentsPanel = document.getElementById('archived-documents-panel');
+        if (this.showDocumentControl && isAdmin) {
+          container.classList.add('hidden');
+          emptyState.classList.add('hidden');
+          documentsPanel?.classList.remove('hidden');
+          this.renderDocumentControlRecords?.();
+          return;
+        }
+        container.classList.remove('hidden');
+        documentsPanel?.classList.add('hidden');
 
         let filtered = this.tasks.filter(t => {
           if (this.showArchivedTasks ? (!isAdmin || !t.archivedAt) : !!t.archivedAt) return false;
@@ -4017,6 +4111,7 @@ updateMessengerWindowTyping(workerName) {
           const workDate = /^\d{4}-\d{2}-\d{2}$/.test(rawWorkDate) ? rawWorkDate.split('-').reverse().join('/') : rawWorkDate;
           const adminLine = t.administrator ? `<p class="order-administrator mt-1 text-xs text-slate-600"><span class="font-semibold">Administrador / contacto:</span> ${this.escapeHtml(t.administrator)}</p>` : '';
           const phoneLine = t.phone ? `<p class="order-phone mt-0.5 text-xs text-slate-600"><span class="font-semibold">Teléfono:</span> ${this.escapeHtml(t.phone)}</p>` : '';
+          const workValueLine = isAdmin && t.workValue !== null && t.workValue !== undefined && t.workValue !== '' ? `<p class="order-work-value mt-1 text-xs font-bold text-emerald-800"><span class="font-semibold">Valor del trabajo:</span> ${new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Number(t.workValue) || 0)}</p>` : '';
           const orderInstructions = String(t.instructions || '').trim();
           const orderObservations = String(t.observations || '').trim();
           const techObj = taskIsFree ? null : this.users.find(u => (u.fullName || u.username) === t.assignedTo);
@@ -4043,6 +4138,7 @@ updateMessengerWindowTyping(workerName) {
                 <p class="order-date-line mt-1 text-[11px] text-slate-500"><span class="font-semibold">Fecha de realización:</span> ${this.escapeHtml(workDate || 'Sin fecha')}</p>
                 ${adminLine}
                 ${phoneLine}
+                ${workValueLine}
 
                 <div class="order-client-panel mt-2.5 rounded-xl border border-slate-100 bg-slate-50/80 p-2.5 space-y-1.5 text-xs min-w-0">
                   <p class="text-slate-600 flex items-start gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5"></i><span class="line-clamp-2 break-words">${this.escapeHtml(t.address || "Sin dirección")}</span></p>
@@ -4083,7 +4179,8 @@ updateMessengerWindowTyping(workerName) {
                     }">${t.status === 'REALIZADA' || t.status === 'NO_REALIZADA' ? 'Editar Informe' : 'Registrar Informe'}</button>`}
 
                   ${isAdmin ? `
-                    ${this.showArchivedTasks ? `<button type="button" onclick="app.unarchiveCompletedTask('${t.id}')" class="p-1 text-slate-400 hover:text-emerald-700 rounded-lg" title="Desarchivar orden" aria-label="Desarchivar orden"><i data-lucide="archive-restore" class="w-3.5 h-3.5"></i></button>` : (t.status === 'REALIZADA' && !t.archivedAt ? `<button type="button" onclick="app.archiveCompletedTask('${t.id}')" class="p-1 text-slate-400 hover:text-amber-700 rounded-lg" title="Archivar orden"><i data-lucide="archive" class="w-3.5 h-3.5"></i></button>` : '')}
+                    ${isAdmin && t.status === 'REALIZADA' ? `<button type="button" class="order-invoice-shortcut" onclick="app.openOrderInvoiceNumber('${t.id}')" title="Gestionar factura FE y valor"><i data-lucide="receipt-text" class="w-3.5 h-3.5"></i><span>Gestión FE</span></button>` : ''}
+                    ${this.showArchivedTasks ? `<button type="button" onclick="app.unarchiveCompletedTask('${t.id}')" class="p-1 text-slate-400 hover:text-emerald-700 rounded-lg" title="Desarchivar orden" aria-label="Desarchivar orden"><i data-lucide="archive-restore" class="w-3.5 h-3.5"></i></button>` : ''}
                     <button onclick="app.openEditTaskModal('${t.id}')" class="p-1 text-slate-400 hover:text-brand-dark rounded-lg" title="Editar"><i data-lucide="file-edit" class="w-3.5 h-3.5"></i></button>
                     <button onclick="app.deleteTask('${t.id}')" class="p-1 text-slate-400 hover:text-rose-600 rounded-lg" title="Eliminar"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                   ` : ''}
@@ -4478,7 +4575,7 @@ updateMessengerWindowTyping(workerName) {
         orderNumberInput.required = true;
         orderNumberInput.value = orderNumber || this.getNextAvailableOrderNumber();
         document.getElementById('task-client').value = t.client;
-        document.getElementById('task-phone').value = t.phone;
+        document.getElementById('task-phone').value = t.phone || '';
         document.getElementById('task-address').value = t.address;
         document.getElementById('task-administrator').value = t.administrator || t.contact || '';
         this.setTaskClientMode('new');
@@ -4635,6 +4732,7 @@ updateMessengerWindowTyping(workerName) {
       toggleArchivedOrders() {
         if (this.currentUser?.role !== 'admin') return;
         this.showArchivedTasks = !this.showArchivedTasks;
+        this.showDocumentControl = false;
         this.renderTasks();
       }
 
@@ -4879,10 +4977,18 @@ updateMessengerWindowTyping(workerName) {
 
         const taskIndex = this.tasks.findIndex(t => t.id === this.selectedTask.id);
         if (taskIndex !== -1) {
+          const wasCompleted = this.tasks[taskIndex].status === 'REALIZADA';
           this.tasks[taskIndex].status = this.activeReportStatus;
           this.tasks[taskIndex].observations = observations;
           this.tasks[taskIndex].evidence = this.currentReportEvidence;
           this.tasks[taskIndex].completedAt = this.formatFullDateTime(new Date());
+          if (this.activeReportStatus === 'REALIZADA') {
+            if (!wasCompleted || !this.tasks[taskIndex].completedAtMs) this.tasks[taskIndex].completedAtMs = Date.now();
+            this.tasks[taskIndex].paymentDueAt = this.tasks[taskIndex].completedAtMs + 30 * 86400000;
+          } else if (wasCompleted) {
+            this.tasks[taskIndex].completedAtMs = null;
+            this.tasks[taskIndex].paymentDueAt = null;
+          }
 
           const myName = this.getCurrentDisplayName();
           this.addActivityNotification(myName, this.selectedTask.id, this.activeReportStatus, observations, 'order');
@@ -4972,6 +5078,10 @@ updateMessengerWindowTyping(workerName) {
         document.getElementById('view-order-subtitle').textContent = `${t.client || 'Cliente'} · ${t.serviceType || 'Servicio'}`;
         document.getElementById('view-client').textContent = t.client || '—';
         document.getElementById('view-phone').textContent = t.phone || '—';
+        const workValueRow = document.getElementById('view-work-value-row');
+        const canSeeWorkValue = this.currentUser?.role === 'admin' && t.workValue !== null && t.workValue !== undefined && t.workValue !== '';
+        workValueRow?.classList.toggle('hidden', !canSeeWorkValue);
+        if (canSeeWorkValue) document.getElementById('view-work-value').textContent = new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Number(t.workValue) || 0);
         document.getElementById('view-address').textContent = t.address || '—';
         document.getElementById('view-service-line').textContent = t.serviceType || 'Servicio sin especificar';
         document.getElementById('view-equipment-line').textContent = `Equipo: ${t.equipment || 'No especificado'}`;

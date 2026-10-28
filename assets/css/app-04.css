@@ -6,7 +6,7 @@
     .login-seasonal-figure{position:absolute;display:block;line-height:1;filter:drop-shadow(0 9px 16px rgba(15,23,42,.2));user-select:none}
     body.theme-christmas #login-seasonal-scene .login-christmas,
     body.theme-easter #login-seasonal-scene .login-easter,
-    body.theme-holy-week #login-seasonal-scene .login-holy-week{display:block}
+    body.theme-holy-week #login-seasonal-scene .login-holy-week,body.theme-halloween #login-seasonal-scene .login-halloween{display:block}
     body.theme-christmas #login-seasonal-scene::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.95) 0 2px,transparent 3px),radial-gradient(circle,rgba(214,235,246,.88) 0 1.5px,transparent 3px),radial-gradient(circle,rgba(255,255,255,.72) 0 1px,transparent 2px);background-size:93px 93px,137px 137px,61px 61px;background-position:0 -100px,43px -30px,19px -70px;animation:loginSnowDrift 9s linear infinite}
     .login-santa{left:clamp(20px,5vw,90px);top:20%;font-size:clamp(76px,9vw,126px);animation:loginSantaFloat 4s ease-in-out infinite}
     .login-reindeer{right:clamp(18px,5vw,86px);bottom:19%;font-size:clamp(76px,9vw,126px);animation:loginReindeerFloat 3.5s ease-in-out infinite}
@@ -21,7 +21,7 @@
     .login-accent-cross{left:8px;color:#d4bd7f;text-shadow:0 0 10px #f1dfab}.login-accent-sun{right:8px;color:#e3ca83;text-shadow:0 0 12px #f1dfab}
     body.theme-christmas #login-seasonal-accent .login-accent-christmas,
     body.theme-easter #login-seasonal-accent .login-accent-easter,
-    body.theme-holy-week #login-seasonal-accent .login-accent-holy{display:block}
+    body.theme-holy-week #login-seasonal-accent .login-accent-holy,body.theme-halloween #login-seasonal-accent .login-accent-halloween{display:block}
     #login-seasonal-accent .login-seasonal-group{inset:0}
     #login-brand-logo{position:relative;z-index:2}
     @keyframes loginSnowDrift{to{background-position:80px 93px,-37px 107px,52px 61px}}
@@ -43,4 +43,24 @@
       body.theme-christmas #login-seasonal-accent::before{content:'';position:absolute;left:15%;right:15%;top:7px;height:12px;background:radial-gradient(circle at 5px 6px,#e45450 0 3px,transparent 4px),radial-gradient(circle at 18px 6px,#f2d16f 0 3px,transparent 4px),radial-gradient(circle at 31px 6px,#63a779 0 3px,transparent 4px);background-size:39px 12px;filter:drop-shadow(0 0 4px rgba(244,211,111,.8));animation:seasonalLightGlow 2.4s ease-in-out infinite}
     }
     @media(prefers-reduced-motion:reduce){#login-seasonal-scene *,#login-seasonal-scene::before,#login-seasonal-accent * ,#login-seasonal-accent::before{animation:none!important}}
-  
+
+
+/* Halloween login corner and atmospheric layer */
+body.theme-halloween #login-seasonal-scene .login-halloween{display:block}
+body.theme-halloween #login-seasonal-scene::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 14% 18%,rgba(255,165,94,.52) 0 1px,transparent 2px),radial-gradient(circle at 81% 29%,rgba(191,147,218,.5) 0 1px,transparent 2px),radial-gradient(circle at 53% 76%,rgba(255,165,94,.35) 0 1px,transparent 2px);background-size:103px 119px,157px 139px,83px 91px;animation:halloweenEmbers 14s linear infinite}
+body.theme-halloween #login-seasonal-accent .login-accent-halloween{display:block}
+@keyframes halloweenEmbers{to{background-position:31px 119px,-22px 139px,18px 91px}}
+@media(max-width:640px){body.theme-halloween #login-seasonal-accent .login-accent-halloween{display:block}}
+@media(prefers-reduced-motion:reduce){body.theme-halloween #login-seasonal-scene::before{animation:none!important}}
+
+/* Fondo del login de Halloween: imagen original en alta resolución, sin deformarla. */
+body.theme-halloween #view-login{background-color:#090d1b!important;background-image:linear-gradient(180deg,rgba(8,10,25,.14),rgba(8,10,25,.22)),url('../media/halloween-login-background.jpg?v=20261028-halloween-bg-1')!important;background-size:cover!important;background-position:center 52%!important;background-repeat:no-repeat!important;background-attachment:scroll!important;image-rendering:auto}
+body.theme-halloween #view-login::before{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;mix-blend-mode:screen;background:radial-gradient(ellipse at 36% 50%,rgba(255,141,31,.28) 0 1.5%,rgba(255,115,20,.13) 4%,transparent 11%),radial-gradient(ellipse at 39% 60%,rgba(255,129,24,.24) 0 2%,rgba(255,111,18,.12) 5%,transparent 12%),radial-gradient(ellipse at 15% 73%,rgba(255,140,34,.18) 0 2%,transparent 8%),radial-gradient(ellipse at 64% 68%,rgba(255,129,27,.16) 0 2%,transparent 8%);animation:halloweenPumpkinEyesGlow 2.8s ease-in-out infinite alternate}
+@keyframes halloweenPumpkinEyesGlow{from{opacity:.62;filter:brightness(.94)}to{opacity:1;filter:brightness(1.2)}}
+@media(max-width:640px){body.theme-halloween #view-login{background-position:42% center!important;background-size:cover!important}body.theme-halloween #view-login::before{background:radial-gradient(ellipse at 40% 46%,rgba(255,141,31,.26) 0 2%,rgba(255,115,20,.13) 5%,transparent 13%),radial-gradient(ellipse at 42% 56%,rgba(255,129,24,.22) 0 2%,rgba(255,111,18,.12) 5%,transparent 13%),radial-gradient(ellipse at 13% 75%,rgba(255,140,34,.16) 0 2%,transparent 9%)}}
+body.theme-halloween .login-santa-hat{filter:drop-shadow(0 0 4px rgba(255,135,28,.85)) drop-shadow(0 2px 4px rgba(30,13,18,.45))!important}
+@media(prefers-reduced-motion:reduce){body.theme-halloween #view-login::before{animation:none!important;opacity:.82}}
+
+/* La bandada de Halloween cruza por delante del formulario sin interceptar clics. */
+#view-login>#login-halloween-bat-layer{position:absolute!important;inset:0!important;z-index:4!important;overflow:hidden!important;pointer-events:none!important}
+#view-login>#login-halloween-bat-layer .login-halloween-bat{z-index:1}

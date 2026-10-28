@@ -2,8 +2,7 @@
     /* Mantener el video de login limpio y sin capas estacionales encima. */
     body.seasonal-login-visible { animation:none !important; }
     body.seasonal-login-visible #seasonal-effects-layer,
-    body.seasonal-login-visible #seasonal-logo-decoration-login,
-    body.seasonal-login-visible #login-brand-logo::after { display:none !important; animation:none !important; }
+    body.seasonal-login-visible #seasonal-logo-decoration-login { display:none !important; animation:none !important; }
     #seasonal-logo-decoration-login { display:none !important; }
 
     /* En el panel principal las partículas son más visibles y tienen movimiento por tema. */
@@ -78,4 +77,126 @@
       .seasonal-effects-layer .seasonal-particle,.seasonal-effects-layer .seasonal-particle::before,
       #dashboard-banner::after { animation:none !important; }
     }
-  
+  /* Santa and his sleigh fly only in the signed-in app; the login scene stays untouched. */
+.seasonal-effects-layer .christmas-sleigh-flight{position:fixed;z-index:2;left:0;top:3%;width:clamp(210px,30vw,410px);max-width:66vw;pointer-events:none;user-select:none;filter:drop-shadow(0 12px 18px rgba(23,50,74,.22));animation:christmas-sleigh-flight 18s linear forwards;will-change:transform,top}
+.christmas-sleigh-art{display:block;width:100%;height:auto;overflow:visible}
+@keyframes christmas-sleigh-flight{from{transform:translate3d(var(--flight-start-x),0,0) rotate(-5deg);top:var(--flight-start-y)}to{transform:translate3d(var(--flight-end-x),0,0) rotate(5deg);top:var(--flight-end-y)}}
+@media(max-width:640px){.seasonal-effects-layer .christmas-sleigh-flight{width:min(56vw,230px);animation-duration:14s}.seasonal-effects-layer{overflow:hidden!important}}
+@media(prefers-reduced-motion:reduce){.seasonal-effects-layer .christmas-sleigh-flight{animation:none;transform:translateX(3vw);top:12%}}
+
+/* Navidad refinada: copos vectoriales iguales a los del área privada; fuera los puntos antiguos. */
+body.theme-christmas{background-image:none!important;animation:none!important}
+body.theme-christmas #login-seasonal-scene::before{display:none!important;content:none!important}
+body.theme-christmas #login-seasonal-scene .login-christmas,body.theme-christmas #login-seasonal-accent .login-accent-christmas,body.theme-christmas #login-seasonal-accent{display:none!important}
+#login-seasonal-scene.theme-christmas .seasonal-login-snow{width:auto!important;height:auto!important;background:none!important;box-shadow:none!important;display:grid;place-items:center}
+#login-seasonal-scene.theme-christmas .seasonal-login-snow::before{content:'❄';color:rgba(255,255,255,.94);font-size:var(--particle-size);line-height:1;text-shadow:0 0 6px rgba(99,170,206,.72),0 1px 3px rgba(20,42,64,.32);animation:seasonalSnowTwinkle 3.2s ease-in-out infinite alternate}
+.login-christmas-flight{position:absolute;z-index:1;left:0;top:1.5%;width:min(560px,42vw);max-width:58vw;pointer-events:none;filter:drop-shadow(0 10px 14px rgba(5,15,29,.42));animation:login-sleigh-flight 28s linear forwards;will-change:transform}
+@keyframes login-sleigh-flight{from{transform:translate3d(var(--flight-start-x),0,0) rotate(-2deg);top:var(--flight-start-y)}to{transform:translate3d(var(--flight-end-x),0,0) rotate(2deg);top:var(--flight-end-y)}}
+body.theme-christmas #login-brand-logo{overflow:visible!important}
+body.theme-christmas #login-brand-logo::after{left:-4px!important;top:-13px!important;width:calc(100% + 8px)!important;height:24px!important;border:0!important;border-radius:0!important;background:linear-gradient(180deg,rgba(91,61,35,.8),rgba(238,212,148,.78),rgba(91,61,35,.65)) center 11px/100% 2px no-repeat,radial-gradient(circle at 7px 10px,#fff8dc 0 1px,#f17870 2px 5px,#9d1f2c 6px,transparent 7px) 0 0/36px 24px repeat-x,radial-gradient(circle at 7px 10px,#fff9d8 0 1px,#f3d175 2px 5px,#ab762e 6px,transparent 7px) 12px 0/36px 24px repeat-x,radial-gradient(circle at 7px 10px,#eafff0 0 1px,#69c28c 2px 5px,#287349 6px,transparent 7px) 24px 0/36px 24px repeat-x!important;filter:drop-shadow(0 0 7px rgba(244,215,128,.86));animation:seasonalLightGlow 1.6s ease-in-out infinite;pointer-events:none}
+@media(max-width:640px){.login-christmas-flight{display:block!important;width:min(94vw,470px);max-width:96vw}body.theme-christmas #login-brand-logo::after{top:-1px!important}}
+@media(prefers-reduced-motion:reduce){.login-christmas-flight{animation:none!important;transform:translateX(3vw)}}
+
+.login-santa-hat{display:none!important}.login-username-field{position:relative}
+body.theme-christmas .login-username-field{padding-bottom:0!important}body.theme-christmas .login-santa-hat{display:block!important;position:absolute;z-index:6;top:-22px;bottom:auto;left:100px;right:auto;width:36px;height:36px;object-fit:contain;pointer-events:none;filter:drop-shadow(0 8px 9px rgba(12,24,39,.3));transform:scaleX(-1) rotate(8deg);transform-origin:70% 90%;animation:login-santa-hat-float 3.6s ease-in-out infinite}
+@keyframes login-santa-hat-float{0%,100%{transform:translateY(0) scaleX(-1) rotate(8deg)}50%{transform:translateY(-5px) scaleX(-1) rotate(11deg)}}
+@media(max-width:640px){body.theme-christmas .login-username-field{padding-bottom:0!important}body.theme-christmas .login-santa-hat{top:-21px;bottom:auto;left:96px;width:34px;height:34px}}
+@media(prefers-reduced-motion:reduce){body.theme-christmas .login-santa-hat{animation:none;transform:scaleX(-1) rotate(8deg)}}
+
+
+/* Ajustes de composición Navidad: gorro bajo el usuario, nieve sobre el panel y recorrido en ambos sentidos. */
+body.theme-christmas #login-seasonal-scene .seasonal-login-snow{z-index:4!important;pointer-events:none!important}
+body.theme-christmas #login-seasonal-scene .login-christmas-flight{animation-direction:normal!important}
+body.theme-christmas .login-santa-hat{top:-22px!important;bottom:auto!important;left:102px!important;right:auto!important;transform:scaleX(-1) rotate(8deg)!important}
+@media(max-width:640px){body.theme-christmas .login-santa-hat{top:-21px!important;bottom:auto!important;left:96px!important;width:34px!important;height:34px!important}}
+
+body.theme-christmas #login-seasonal-scene{z-index:3!important}
+body.theme-christmas .login-username-field{padding-bottom:0!important}
+body.theme-christmas .login-santa-hat{top:-22px!important;bottom:auto!important;left:100px!important;right:auto!important;width:36px!important;height:36px!important}
+@media(max-width:640px){body.theme-christmas .login-username-field{padding-bottom:0!important}}
+
+/* Gorro y guirnalda pegados al borde del campo de usuario, sin ocupar espacio. */
+body.theme-christmas .login-username-field{padding-bottom:0!important}
+body.theme-christmas .login-username-input{position:relative!important}
+
+body.theme-christmas .login-santa-hat{top:-27px!important;left:-4px!important;right:auto!important;bottom:auto!important;width:42px!important;height:42px!important;transform:scaleX(-1) rotate(8deg)!important}
+.christmas-sleigh-art.is-reversed{transform:scaleX(-1)}
+@media(max-width:640px){body.theme-christmas .login-santa-hat{top:-25px!important;left:-5px!important;right:auto!important;width:36px!important;height:36px!important}}
+body.theme-christmas .login-santa-hat{top:-13px!important;left:-16px!important;right:auto!important;bottom:auto!important;width:32px!important;height:32px!important}
+@media(max-width:640px){body.theme-christmas .login-santa-hat{top:-12px!important;left:-15px!important;width:29px!important;height:29px!important}}
+body.theme-christmas .login-santa-hat{transform:scaleX(-1) rotate(-34deg)!important;transform-origin:50% 88%!important}
+@media(max-width:640px){body.theme-christmas .login-santa-hat{transform:scaleX(-1) rotate(-34deg)!important;transform-origin:50% 88%!important}}
+
+/* Fijar el gorro sobre el borde externo de la esquina superior izquierda. */
+body.theme-christmas .login-santa-hat{top:-20px!important;left:-18px!important;right:auto!important;width:28px!important;height:28px!important;transform:scaleX(-1) rotate(-24deg)!important;transform-origin:50% 88%!important}
+@media(max-width:640px){body.theme-christmas .login-santa-hat{top:-19px!important;left:-17px!important;width:26px!important;height:26px!important}}
+body.theme-christmas .login-santa-hat{transform:scaleX(-1) rotate(-24deg)!important;transform-origin:50% 88%!important}
+@media(max-width:640px){body.theme-christmas .login-santa-hat{transform:scaleX(-1) rotate(-24deg)!important;transform-origin:50% 88%!important}}
+body.theme-christmas .login-santa-hat{animation:none!important;transform:rotate(-24deg)!important;transform-origin:50% 88%!important}
+@media(max-width:640px){body.theme-christmas .login-santa-hat{animation:none!important;transform:rotate(-24deg)!important;transform-origin:50% 88%!important}}
+/* Ajuste fino: gorro uniforme y alineado con la curva izquierda del campo. */
+body.theme-christmas .login-santa-hat{top:-12px!important;left:-24px!important;right:auto!important;width:30px!important;height:30px!important;transform:rotate(-18deg)!important;transform-origin:50% 88%!important;object-fit:contain!important}
+@media(max-width:640px){body.theme-christmas .login-santa-hat{top:-11px!important;left:-21px!important;width:27px!important;height:27px!important}}
+body.theme-christmas .login-santa-hat{left:-3px!important}
+@media(max-width:640px){body.theme-christmas .login-santa-hat{left:-3px!important}}
+@media(max-width:639px){body:has(#chat-window-modal:not(.hidden)) .seasonal-effects-layer .christmas-sleigh-flight{visibility:hidden!important;animation-play-state:paused!important}}
+#session-restore-splash .restore-card{position:relative;overflow:visible}
+#session-restore-splash #seasonal-logo-decoration-restore{position:absolute;z-index:3;top:16px;right:-8px;width:112px;height:76px;pointer-events:none;overflow:visible;filter:drop-shadow(0 2px 3px rgba(15,23,42,.18))}
+#session-restore-splash #seasonal-logo-decoration-restore svg{width:100%;height:100%;overflow:visible}
+body.theme-christmas #session-restore-splash #seasonal-logo-decoration-restore svg{animation:seasonalLogoFloat 4.5s ease-in-out infinite;transform-origin:50% 65%}
+body.theme-easter #session-restore-splash #seasonal-logo-decoration-restore svg{animation:seasonalLogoFloat 6s ease-in-out infinite;transform-origin:50% 65%}
+body.theme-holy-week #session-restore-splash #seasonal-logo-decoration-restore svg{animation:seasonalLogoGlow 4s ease-in-out infinite;transform-origin:50% 55%}
+@media(max-width:420px){#session-restore-splash .restore-card{width:min(340px,82vw)}#session-restore-splash #seasonal-logo-decoration-restore{top:13px;right:-5px;width:90px;height:62px}}
+@media(prefers-reduced-motion:reduce){#session-restore-splash #seasonal-logo-decoration-restore svg{animation:none!important}}
+/* Mismo bloque de luces del logo superior, aplicado únicamente al logo de carga. */
+body.theme-christmas #session-restore-splash .restore-logo-wrap::after{content:'';position:absolute;z-index:3;left:34%;top:1px;width:58%;height:10px;pointer-events:none;background:radial-gradient(circle at 5px 5px,#d04b48 0 2px,transparent 3px) 0 0/24px 10px repeat-x,radial-gradient(circle at 16px 5px,#e5c86e 0 2px,transparent 3px) 0 0/24px 10px repeat-x,radial-gradient(circle at 22px 5px,#55926e 0 2px,transparent 3px) 0 0/24px 10px repeat-x;animation:seasonalLightGlow 2.8s ease-in-out infinite;filter:drop-shadow(0 0 3px rgba(245,217,126,.65))}
+/* Compactar el adorno del chat y mantenerlo sobre el borde superior del logo. */
+#seasonal-logo-decoration-chat{top:-18px!important;right:2px!important;width:50px!important;height:36px!important}
+@media(max-width:639px){#seasonal-logo-decoration-chat{top:-17px!important;right:2px!important;width:46px!important;height:33px!important}}
+
+
+/* Halloween: telaraña en la esquina del video, araña que sube y baja, murciélagos de fondo */
+.halloween-video-corner{display:none;position:absolute;z-index:5;top:-8px;right:-10px;width:58px;height:68px;overflow:visible;pointer-events:none;filter:drop-shadow(0 2px 4px rgba(29,16,40,.26))}
+body.theme-halloween #login-brand-logo{overflow:visible!important}
+body.theme-halloween .halloween-video-corner{display:block}
+.halloween-web-art{position:absolute;inset:0 0 auto auto;width:56px;height:56px;background:repeating-radial-gradient(ellipse at 100% 0%,transparent 0 7px,rgba(106,71,130,.56) 7.6px 8.4px,transparent 9px 14px);clip-path:polygon(20% 0,100% 0,100% 100%,0 18%)}
+.halloween-web-art::before{content:'';position:absolute;inset:0;background:linear-gradient(22deg,transparent 48.5%,rgba(106,71,130,.65) 49.5% 51%,transparent 52%),linear-gradient(48deg,transparent 48.5%,rgba(106,71,130,.65) 49.5% 51%,transparent 52%),linear-gradient(72deg,transparent 48.5%,rgba(106,71,130,.65) 49.5% 51%,transparent 52%)}
+.halloween-spider-thread{position:absolute;right:16px;top:0;width:1px;height:43px;background:linear-gradient(#493658,#856293)}
+.halloween-spider-art{position:absolute;right:7px;top:0;font-size:13px;line-height:1;filter:drop-shadow(0 0 4px rgba(239,153,78,.55));animation:halloweenSpiderTravel 4.8s ease-in-out infinite}
+.login-halloween-bat{position:absolute;z-index:1;left:-14%;top:var(--bat-y);font-size:calc(20px * var(--bat-scale));line-height:1;color:#251634;text-shadow:0 1px 1px #e6a16c,0 0 9px rgba(229,129,65,.42);animation:halloweenLoginBatFlight var(--bat-duration) linear var(--bat-delay) infinite;will-change:transform}
+@keyframes halloweenLoginBatFlight{0%{transform:translate3d(-5vw,0,0) scale(var(--bat-scale))}40%{transform:translate3d(48vw,-22px,0) scale(var(--bat-scale)) rotate(5deg)}70%{transform:translate3d(83vw,14px,0) scale(var(--bat-scale)) rotate(-4deg)}100%{transform:translate3d(125vw,-8px,0) scale(var(--bat-scale))}}
+@keyframes halloweenSpiderTravel{0%,100%{transform:translateY(0)}45%,60%{transform:translateY(36px)}}
+@media(max-width:640px){.halloween-video-corner{top:-5px;right:-7px;transform:scale(.88);transform-origin:top right}.login-halloween-bat{font-size:calc(15px * var(--bat-scale));opacity:.78}}
+@media(prefers-reduced-motion:reduce){.login-halloween-bat,.halloween-spider-art{animation:none!important}.login-halloween-bat{transform:translateX(18vw)}}
+
+/* Un solo punto de anclaje para el distintivo del tema elegido en el usuario del login. */
+body.theme-halloween .login-santa-hat,body.theme-easter .login-santa-hat,body.theme-holy-week .login-santa-hat{display:block!important;position:absolute!important;z-index:6!important;top:-12px!important;left:-3px!important;right:auto!important;bottom:auto!important;width:30px!important;height:30px!important;object-fit:contain!important;transform:rotate(-16deg)!important;transform-origin:50% 88%!important;filter:drop-shadow(0 2px 4px rgba(25,16,35,.32))!important;animation:login-theme-mark-float 4.4s ease-in-out infinite!important;pointer-events:none!important}
+@media(max-width:640px){body.theme-halloween .login-santa-hat,body.theme-easter .login-santa-hat,body.theme-holy-week .login-santa-hat{top:-11px!important;left:-3px!important;width:27px!important;height:27px!important}}
+@keyframes login-theme-mark-float{0%,100%{translate:0 0}50%{translate:0 -2px}}
+@media(prefers-reduced-motion:reduce){body.theme-halloween .login-santa-hat,body.theme-easter .login-santa-hat,body.theme-holy-week .login-santa-hat{animation:none!important}}
+/* Halloween: esquina de logo con telaraña y araña colgante bien ancladas. */
+body.theme-halloween .halloween-video-corner{top:-7px;right:-7px;width:94px;height:124px;z-index:8;overflow:visible;filter:drop-shadow(0 3px 5px rgba(22,12,30,.42))}
+body.theme-halloween .halloween-web-art{width:90px;height:82px;opacity:.9;background:repeating-radial-gradient(ellipse at 100% 0%,transparent 0 10px,rgba(87,57,108,.78) 10.8px 11.8px,transparent 12.6px 19px);clip-path:polygon(18% 0,100% 0,100% 100%,0 22%)}
+body.theme-halloween .halloween-web-art::before{background:linear-gradient(22deg,transparent 48%,rgba(87,57,108,.85) 49% 50.5%,transparent 51.5%),linear-gradient(48deg,transparent 48%,rgba(87,57,108,.85) 49% 50.5%,transparent 51.5%),linear-gradient(72deg,transparent 48%,rgba(87,57,108,.85) 49% 50.5%,transparent 51.5%)}
+body.theme-halloween .halloween-spider-thread{right:24px;top:0;width:2px;height:76px;background:linear-gradient(#493658,#9479a7 72%,rgba(148,121,167,.25));box-shadow:0 0 3px rgba(87,57,108,.35)}
+body.theme-halloween .halloween-spider-art{position:absolute;display:block;right:7px;top:0;width:42px;height:50px;object-fit:contain;line-height:1;animation:halloweenSpiderTravel 5.6s ease-in-out infinite;transform-origin:50% 0;filter:drop-shadow(0 2px 3px rgba(18,12,27,.5))}
+body.theme-halloween #login-username,body.theme-halloween #login-password{color:#21162c!important;-webkit-text-fill-color:#21162c!important;caret-color:#c45d25!important;font-weight:600}
+body.theme-halloween #login-username::placeholder,body.theme-halloween #login-password::placeholder{color:#756b7e!important;opacity:1!important;-webkit-text-fill-color:#756b7e!important}
+body.theme-halloween #login-username:focus,body.theme-halloween #login-password:focus{background:#fff!important;border-color:#d67a3e!important;box-shadow:0 0 0 3px rgba(214,122,62,.2)!important}
+body.theme-halloween .login-username-field label,body.theme-halloween #view-login form>div>label{color:#352343!important}
+body.theme-halloween .login-santa-hat{width:38px!important;height:38px!important;left:-8px!important;top:-17px!important;transform:rotate(-10deg)!important}
+@media(max-width:640px){body.theme-halloween .halloween-video-corner{top:-5px;right:-4px;width:78px;height:106px}body.theme-halloween .halloween-web-art{width:76px;height:70px}body.theme-halloween .halloween-spider-thread{right:20px;height:65px}body.theme-halloween .halloween-spider-art{width:36px;height:43px;right:5px}body.theme-halloween .login-santa-hat{width:34px!important;height:34px!important;top:-15px!important;left:-7px!important}}
+
+@keyframes halloweenSpiderTravel{0%,100%{transform:translateY(0) rotate(-2deg)}45%,60%{transform:translateY(58px) rotate(4deg)}}
+
+/* Ajuste fino solicitado: telaraña desde el borde blanco y araña suspendida cabeza abajo. */
+body.theme-halloween .halloween-video-corner{top:-27px;right:-7px;width:94px;height:130px}
+body.theme-halloween .halloween-web-art{width:90px;height:84px}
+body.theme-halloween .halloween-spider-thread{height:82px}
+body.theme-halloween .halloween-spider-art{animation:halloweenSpiderTravel 5.6s ease-in-out infinite}
+@keyframes halloweenSpiderTravel{0%,100%{transform:translateY(0) rotate(180deg)}45%,60%{transform:translateY(68px) rotate(180deg)}}
+@media(max-width:640px){body.theme-halloween .halloween-video-corner{top:-23px;right:-4px;width:78px;height:112px}body.theme-halloween .halloween-web-art{width:76px;height:72px}body.theme-halloween .halloween-spider-thread{height:70px}body.theme-halloween .halloween-spider-art{animation:halloweenSpiderTravel 5.6s ease-in-out infinite}}
+/* Halloween: la calabaza queda debajo del texto de la etiqueta Usuario. */
+body.theme-halloween .login-username-field{isolation:isolate}
+body.theme-halloween .login-username-field>label{position:relative;z-index:7}
+body.theme-halloween .login-username-input{z-index:1}

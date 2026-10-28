@@ -11,3 +11,22 @@
 .settings-action-button:hover{background:#e9f3dc;border-color:#a6c97e}
 .settings-status-pill{display:inline-flex;margin-top:3px;padding:4px 8px;border-radius:999px;background:#eef2f7;color:#65758a;font-size:9px;font-weight:800}
 @media(max-width:600px){.settings-info-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.settings-info-card{padding:9px;border-radius:11px}.settings-info-card>b{font-size:12px}}
+
+
+/* Identificación de versión y flujo de respaldo Firestore */
+.settings-version-card{box-sizing:border-box;display:flex;align-items:center;gap:13px;margin:0 0 12px;padding:15px 17px;border:1px solid #d7e5ce;border-radius:15px;background:linear-gradient(115deg,#f5faef,#fff 70%);box-shadow:0 5px 16px rgba(28,54,74,.05)}
+.settings-version-icon{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;border-radius:12px;background:#e7f2dc;color:#4f7f25;font-size:18px;font-weight:900}
+.settings-version-card>div{min-width:0;flex:1}
+.settings-version-card small{color:#64748b;font-size:9px;font-weight:850;letter-spacing:.11em}
+.settings-version-card h5{margin:3px 0;color:#14213b;font-size:17px;font-weight:900}
+.settings-version-card p{margin:0;color:#64748b;font-size:11px}
+.settings-version-status{padding:5px 9px;border-radius:999px;background:#e8f5df;color:#477523;font-size:9px;font-weight:900;letter-spacing:.05em}
+.backup-primary-card{border-color:#cbdcc0;background:linear-gradient(135deg,#f5faef,#fff 75%)}
+.backup-action-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:5px 0}
+.backup-action-row #settings-backup-progress{color:#64748b;font-size:10px;line-height:1.4}
+.backup-restore-button{background:#f8fafc;color:#334155;border-color:#d7e0e8}
+.settings-action-button:disabled{opacity:.6;cursor:wait}
+body.theme-dark .settings-version-card,body.theme-dark .backup-primary-card{background:linear-gradient(120deg,#1c2b3d,#172235)!important;border-color:#3d566b!important}
+body.theme-dark .settings-version-card h5{color:#edf4fb}
+body.theme-dark .settings-version-card p,body.theme-dark .settings-version-card small,body.theme-dark .backup-action-row #settings-backup-progress{color:#b8c6d6}
+@media(max-width:600px){.settings-version-card{gap:9px;padding:12px}.settings-version-icon{flex-basis:34px;width:34px;height:34px}.settings-version-status{padding:4px 7px;font-size:8px}.backup-action-row{align-items:flex-start;flex-direction:column}}

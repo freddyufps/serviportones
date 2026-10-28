@@ -3,6 +3,8 @@
   if (typeof PortonProApp === 'undefined' || PortonProApp.prototype.__settingsWorkspaceInstalled) return;
   PortonProApp.prototype.__settingsWorkspaceInstalled = true;
 
+  const SETTINGS_APP_VERSION = '1.001.0';
+
   PortonProApp.prototype.ensureSettingsWorkspace = function () {
     if (document.getElementById('settings-workspace')) return;
     const modal = document.getElementById('modal-settings');
@@ -51,7 +53,7 @@
       button.type = 'button';
       button.className = 'settings-category-button';
       button.dataset.settingsCategory = id;
-      if (['chat','application','system','backups'].includes(id)) button.classList.add('hidden');
+      if (['chat','application'].includes(id)) button.classList.add('hidden');
       if (adminOnly) button.dataset.adminOnly = 'true';
       button.innerHTML = '<i data-lucide="' + icon + '"></i><span><b>' + label + '</b><small>' + description + '</small></span>';
       nav.appendChild(button);
@@ -143,10 +145,13 @@
     applicationPanel.insertAdjacentHTML('beforeend', '<div class="settings-info-grid"><div class="settings-info-card"><span>Conexión del dispositivo</span><b id="settings-app-network">—</b></div><div class="settings-info-card"><span>Firestore</span><b id="settings-app-firestore">—</b></div><div class="settings-info-card"><span>Firebase Storage</span><b id="settings-app-storage">—</b></div><div class="settings-info-card"><span>Aplicación</span><b>HTML independiente</b></div></div><div class="settings-info-card settings-info-wide"><b>Mantenimiento local</b><p>Elimina únicamente la caché web temporal de este sitio. No borra la sesión, las órdenes ni los datos guardados en Firestore.</p><button type="button" class="settings-action-button" onclick="app.clearTemporaryAppCache()">Limpiar caché temporal</button></div>');
 
     const systemPanel = content.querySelector('#settings-category-system');
-    systemPanel.insertAdjacentHTML('beforeend', '<div class="settings-info-grid"><div class="settings-info-card"><span>Órdenes cargadas</span><b id="settings-system-orders">0</b></div><div class="settings-info-card"><span>Órdenes activas</span><b id="settings-system-active-orders">0</b></div><div class="settings-info-card"><span>Completadas</span><b id="settings-system-completed">0</b></div><div class="settings-info-card"><span>Archivadas</span><b id="settings-system-archived">0</b></div><div class="settings-info-card"><span>Trabajadores</span><b id="settings-system-workers">0</b></div><div class="settings-info-card"><span>Conversaciones conocidas</span><b id="settings-system-chats">0</b></div><div class="settings-info-card"><span>Evidencias y facturas asociadas</span><b id="settings-system-files">0</b></div><div class="settings-info-card"><span>Sincronización de red</span><b id="settings-system-sync">—</b></div></div><p class="settings-info-footnote">Los valores reflejan los datos cargados en esta sesión; los archivos externos no se descargan para calcular espacio usado.</p>');
+    systemPanel.insertAdjacentHTML('beforeend', "<div class=\"settings-version-card\"><span class=\"settings-version-icon\">✓</span><div><small>SERVIPORTONES · APLICACIÓN WEB</small><h5>Versión 1.001.0</h5><p>Edición estable · Interfaz HTML independiente</p></div><span class=\"settings-version-status\">ACTUAL</span></div><div class=\"settings-info-grid\"><div class=\"settings-info-card\"><span>Órdenes cargadas</span><b id=\"settings-system-orders\">0</b></div><div class=\"settings-info-card\"><span>Órdenes activas</span><b id=\"settings-system-active-orders\">0</b></div><div class=\"settings-info-card\"><span>Completadas</span><b id=\"settings-system-completed\">0</b></div><div class=\"settings-info-card\"><span>Archivadas</span><b id=\"settings-system-archived\">0</b></div><div class=\"settings-info-card\"><span>Trabajadores</span><b id=\"settings-system-workers\">0</b></div><div class=\"settings-info-card\"><span>Conversaciones conocidas</span><b id=\"settings-system-chats\">0</b></div><div class=\"settings-info-card\"><span>Evidencias y facturas asociadas</span><b id=\"settings-system-files\">0</b></div><div class=\"settings-info-card\"><span>Sincronización de red</span><b id=\"settings-system-sync\">—</b></div></div><p class=\"settings-info-footnote\">Estado operativo de los datos cargados en esta sesión.</p>");
 
     const backupsPanel = content.querySelector('#settings-category-backups');
-    backupsPanel.insertAdjacentHTML('beforeend', '<div class="settings-info-card settings-info-wide"><b>Respaldo local</b><p>Descarga un archivo JSON con las órdenes cargadas, perfiles básicos de trabajadores (sin contraseñas), preferencias, tema y consecutivo actual.</p><button type="button" class="settings-action-button" onclick="app.downloadLocalSettingsBackup()">Descargar respaldo JSON</button><small>Es una copia de los datos disponibles en esta sesión. No incluye el historial completo del chat ni los archivos binarios y no reemplaza una copia integral de Firestore.</small></div><div class="settings-info-card settings-info-wide"><b>Restauración</b><p>La restauración automática aún no está habilitada para evitar sobrescribir información de producción por accidente.</p><span class="settings-status-pill">Preparada para una mejora futura</span></div>');
+    backupsPanel.insertAdjacentHTML('beforeend', "<div class=\"settings-info-card settings-info-wide backup-primary-card\"><b>Respaldo de Firestore</b><p>Descarga las colecciones utilizadas por ServiPortones: órdenes, usuarios (sin contraseñas), presencia, GPS, notificaciones, llamadas, conversaciones con sus mensajes y control de documentos.</p><div class=\"backup-action-row\"><button type=\"button\" class=\"settings-action-button\" id=\"settings-download-firestore-backup\" onclick=\"app.downloadFirestoreBackup()\">Descargar respaldo de Firestore</button><span id=\"settings-backup-progress\" role=\"status\">Solo administrador · requiere conexión y permisos</span></div><small>No incluye Firebase Authentication ni archivos de Storage (fotos, evidencias y facturas); se conservan sus referencias en Firestore. Guarda una copia periódica en un lugar seguro.</small></div><div class=\"settings-info-card settings-info-wide\"><b>Restaurar desde respaldo</b><p>Combina los documentos del archivo con Firestore sin eliminar registros existentes. Requiere permisos de escritura.</p><input type=\"file\" id=\"settings-restore-file\" accept=\".json,application/json\" class=\"hidden\"><button type=\"button\" class=\"settings-action-button backup-restore-button\">Seleccionar respaldo JSON</button><small>Las contraseñas no se exportan; las cuentas que deban recrearse requieren restablecerla. No restaura archivos de Storage ni Firebase Authentication.</small></div>");
+    const restoreInput = backupsPanel.querySelector('#settings-restore-file');
+    backupsPanel.querySelector('.backup-restore-button')?.addEventListener('click', () => restoreInput?.click());
+    restoreInput?.addEventListener('change', event => this.restoreFirestoreBackupFromFile(event.target.files?.[0]));
     const layout = document.createElement('div');
     layout.className = 'settings-workspace-layout';
     layout.append(nav, content);
@@ -206,34 +211,37 @@
     }
   };
 
-  PortonProApp.prototype.downloadLocalSettingsBackup = function () {
-    if (this.currentUser?.role !== 'admin') return this.showToast('Solo el administrador puede descargar respaldos.', 'error');
-    const workers = (Array.isArray(this.workers) ? this.workers : []).map(worker => ({
-      id: worker.id, fullName: worker.fullName || '', username: worker.username || '',
-      phone: worker.phone || '', nationalId: worker.nationalId || '', specialty: worker.specialty || '',
-      role: worker.role || 'worker', active: worker.active !== false, photo: worker.photo || ''
-    }));
-    const backup = {
-      product: 'ServiPortones', kind: 'respaldo-local-de-datos-cargados', generatedAt: new Date().toISOString(),
-      scope: 'Datos disponibles en esta sesión. No contiene historial completo de chats ni archivos binarios.',
-      orders: Array.isArray(this.tasks) ? this.tasks : [], workers,
-      preferences: this.prefs || {}, seasonalTheme: this.seasonalTheme || 'classic',
-      nextOrderNumber: this.orderSequenceNext || null
-    };
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `serviportones-respaldo-${new Date().toISOString().slice(0,10)}.json`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    this.showToast('Respaldo local descargado.', 'success');
+  PortonProApp.prototype.downloadFirestoreBackup = async function () {
+    if(this.currentUser?.role!=='admin')return this.showToast('Solo el administrador puede descargar respaldos.','error');
+    if(!window.db||!navigator.onLine)return this.showToast('Conéctate a internet para leer Firestore.','error');
+    const button=document.getElementById('settings-download-firestore-backup'),progress=document.getElementById('settings-backup-progress');
+    if(button?.disabled)return;if(button){button.disabled=true;button.textContent='Preparando respaldo…';}
+    const errors=[],collections={},subcollections=[];
+    const read=async(name,parent)=>{try{const ref=parent?db.collection(parent[0]).doc(parent[1]).collection(name):db.collection(name);const snap=await ref.get();return snap.docs.map(doc=>{const data={...doc.data()};['password','passwordHash','pass','token','accessToken','refreshToken'].forEach(k=>delete data[k]);return{id:doc.id,data};});}catch(e){errors.push({path:parent?parent.join('/')+'/'+name:name,message:e?.message||String(e)});return null;}};
+    try{
+      for(const name of ['users','ordenes','presencia','gps_locations','notificaciones','webrtc_calls','chats_internos','control_documentos']){if(progress)progress.textContent='Respaldando '+name+'…';const docs=await read(name);if(docs)collections[name]=docs;}
+      for(const [parentCollection,collection] of [['chats_internos','mensajes'],['webrtc_calls','callerCandidates'],['webrtc_calls','calleeCandidates']])for(const parent of collections[parentCollection]||[]){const documents=await read(collection,[parentCollection,parent.id]);if(documents)subcollections.push({parentCollection,parentId:parent.id,collection,documents});}
+      const backup={product:'ServiPortones',format:'serviportones-firestore-backup',formatVersion:1,appVersion:SETTINGS_APP_VERSION,generatedAt:new Date().toISOString(),collections,subcollections,readErrors:errors,limitations:['No incluye Firebase Authentication ni archivos binarios de Firebase Storage.','Incluye las colecciones Firestore utilizadas por ServiPortones y accesibles con los permisos actuales.']};
+      const blob=new Blob([JSON.stringify(backup,(k,v)=>{if(v&&typeof v.toDate==='function')return{$type:'timestamp',value:v.toDate().toISOString()};if(v?.type==='firestore/timestamp/1.0')return{$type:'timestamp',value:new Date(v.seconds*1000+Math.floor(v.nanoseconds/1e6)).toISOString()};if(v?.type==='firestore/geopoint/1.0')return{$type:'geopoint',latitude:v.latitude,longitude:v.longitude};if(v&&typeof v.latitude==='number'&&typeof v.longitude==='number')return{$type:'geopoint',latitude:v.latitude,longitude:v.longitude};if(v?.type==='firestore/reference/1.0'&&v.path)return{$type:'reference',path:v.path};if(v&&v.path&&v.firestore)return{$type:'reference',path:v.path};return v;},2)],{type:'application/json'});
+      const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='serviportones-firestore-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+      if(progress)progress.textContent=errors.length?'Descargado con '+errors.length+' aviso(s) de acceso. Revisa readErrors.':'Respaldo listo · '+Object.values(collections).reduce((n,a)=>n+a.length,0)+' documentos.';
+      this.showToast(errors.length?'Respaldo descargado con avisos de permisos.':'Respaldo Firestore descargado.',errors.length?'info':'success');
+    }catch(e){console.error('[BACKUP] Error creando respaldo',e);if(progress)progress.textContent='No se pudo completar: '+(e?.message||'error');this.showToast('No se pudo generar el respaldo.','error');}
+    finally{if(button){button.disabled=false;button.textContent='Descargar respaldo de Firestore';}}
+  };
+  PortonProApp.prototype.restoreFirestoreBackupFromFile = async function(file){
+    if(!file)return;if(this.currentUser?.role!=='admin'||!window.db||!navigator.onLine)return this.showToast('Se requieren permisos de administrador y conexión.','error');
+    let backup;try{backup=JSON.parse(await file.text());if(backup?.format!=='serviportones-firestore-backup'||backup.formatVersion!==1)throw new Error('Archivo de respaldo incompatible.');}catch(e){return this.showToast(e.message||'JSON inválido.','error');}
+    const allowedCollections=['users','ordenes','presencia','gps_locations','notificaciones','webrtc_calls','chats_internos','control_documentos'];if(Object.keys(backup.collections||{}).some(name=>!allowedCollections.includes(name)))return this.showToast('El respaldo contiene colecciones no reconocidas.','error');
+    const docs=Object.values(backup.collections||{}).flat(),count=docs.length+(backup.subcollections||[]).reduce((n,g)=>n+(g.documents||[]).length,0);if(!confirm('Se combinarán '+count+' documentos por ID; no se eliminarán datos. ¿Continuar?'))return;
+    const decode=v=>{if(Array.isArray(v))return v.map(decode);if(!v||typeof v!=='object')return v;if(v.$type==='timestamp')return firebase.firestore.Timestamp.fromDate(new Date(v.value));if(v.$type==='geopoint')return new firebase.firestore.GeoPoint(v.latitude,v.longitude);if(v.$type==='reference')return db.doc(v.path);return Object.fromEntries(Object.entries(v).map(([k,x])=>[k,decode(x)]));};
+    const writes=[];for(const [name,items] of Object.entries(backup.collections||{}))for(const item of items||[]){const data=decode(item.data||{});if(name==='users'){['password','passwordHash','pass','token','accessToken','refreshToken'].forEach(k=>delete data[k]);const current=await db.collection(name).doc(item.id).get();if(current.exists&&current.data()?.password)data.password=current.data().password;}writes.push({ref:db.collection(name).doc(item.id),data});}
+    for(const group of backup.subcollections||[]){if(![['chats_internos','mensajes'],['webrtc_calls','callerCandidates'],['webrtc_calls','calleeCandidates']].some(([parent,child])=>group.parentCollection===parent&&group.collection===child))continue;for(const item of group.documents||[])writes.push({ref:db.collection(group.parentCollection).doc(group.parentId).collection(group.collection).doc(item.id),data:decode(item.data||{})});}
+    try{for(let i=0;i<writes.length;i+=400){const batch=db.batch();writes.slice(i,i+400).forEach(w=>batch.set(w.ref,w.data,{merge:true}));await batch.commit();}this.showToast('Restauración combinada: '+writes.length+' documentos.','success');}catch(e){console.error('[BACKUP] Error restaurando',e);this.showToast('Restauración detenida por permisos o conexión.','error');}
   };
   PortonProApp.prototype.showSettingsCategory = function (category) {
     const isAdmin = this.currentUser?.role === 'admin';
-    if (['chat','application','system','backups'].includes(category)) category = 'account';
+    if (['chat','application'].includes(category)) category = 'account';
     const button = document.querySelector('[data-settings-category="' + category + '"]');
     if (!button || (button.dataset.adminOnly === 'true' && !isAdmin)) category = 'account';
     this.settingsActiveCategory = category;
@@ -278,4 +286,3 @@
     document.documentElement.classList.remove('settings-modal-open');
     this.settingsScrollLockState = null;
   };})();
-

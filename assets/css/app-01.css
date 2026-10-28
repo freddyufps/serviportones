@@ -28,4 +28,5 @@
     #session-restore-splash .restore-spinner { width:17px;height:17px;border:2px solid #dce8d0;border-top-color:#71a832;border-radius:50%;animation:sessionRestoreSpin .8s linear infinite; }
     @keyframes sessionRestoreSpin { to { transform:rotate(360deg); } }
     @media(prefers-reduced-motion:reduce){#session-restore-splash .restore-spinner{animation:none;border-color:#71a832}}
-  
+
+#session-restore-splash .restore-logo-wrap{position:relative;width:100%}
