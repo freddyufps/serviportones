@@ -1,0 +1,42 @@
+/* Ajuste móvil de la tarjeta de identidad: legible y con espacio para el estado. */
+@media (max-width: 700px) {
+  html body #dashboard-header-inner { gap: 4px !important; padding-left: 7px !important; padding-right: 7px !important; }
+  html body #dashboard-header-inner > div:first-child { flex: 0 1 auto !important; min-width: 0 !important; gap: 4px !important; }
+  html body #dashboard-header-inner > div:nth-child(2) { flex: 1 1 auto !important; min-width: 0 !important; gap: 3px !important; }
+  html body #dashboard-header-inner #header-presence-profile {
+    box-sizing: border-box !important; width: clamp(122px, 38vw, 150px) !important; min-width: 122px !important; max-width: 150px !important;
+    flex: 0 1 clamp(122px, 38vw, 150px) !important; height: 50px !important; min-height: 50px !important; max-height: 50px !important;
+    gap: 6px !important; padding: 4px 6px !important; border-radius: 13px !important;
+  }
+  html body #dashboard-header-inner #header-presence-profile > div:first-child {
+    width: 30px !important; height: 30px !important; min-width: 30px !important; min-height: 30px !important; flex: 0 0 30px !important;
+  }
+  html body #dashboard-header-inner #header-presence-profile #header-user-name { font-size: 10px !important; line-height: 1.1 !important; }
+  html body #dashboard-header-inner #header-presence-profile #header-role-subtitle,
+  html body #dashboard-header-inner #header-presence-profile #header-user-status { margin-top: 2px !important; font-size: 8px !important; line-height: 1.05 !important; }
+  html body #dashboard-header-inner #header-presence-profile #admin-presence-control { margin-top: 2px !important; }
+  html body #dashboard-header-inner #header-presence-profile #admin-presence-toggle { min-height: 14px !important; font-size: 8px !important; line-height: 1 !important; }
+}
+@media (max-width: 360px) {
+  html body #dashboard-header-inner #dashboard-brand-logo { height: 25px !important; padding: 2px 3px !important; }
+  html body #dashboard-header-inner #dashboard-brand-logo svg { height: 19px !important; max-width: 58px !important; }
+  html body #dashboard-header-inner #header-role-badge { font-size: 6px !important; padding: 2px 3px !important; }
+  html body #dashboard-header-inner #btn-dark-mode, html body #dashboard-header-inner #btn-nav-settings {
+    width: 26px !important; height: 29px !important; min-width: 26px !important; flex-basis: 26px !important;
+  }
+  html body #dashboard-header-inner > div:nth-child(2) > button[aria-label="Cerrar sesión"] {
+    width: 22px !important; height: 29px !important; min-width: 22px !important; flex-basis: 22px !important;
+  }
+  html body #dashboard-header-inner #header-presence-profile {
+    width: clamp(116px, 38vw, 136px) !important; min-width: 116px !important; max-width: 136px !important;
+    flex-basis: clamp(116px, 38vw, 136px) !important; height: 46px !important; min-height: 46px !important; max-height: 46px !important;
+    gap: 4px !important; padding: 3px 4px !important;
+  }
+  html body #dashboard-header-inner #header-presence-profile > div:first-child {
+    width: 27px !important; height: 27px !important; min-width: 27px !important; min-height: 27px !important; flex-basis: 27px !important;
+  }
+}
+/* Oculta el acceso rápido de reacciones dentro del chat móvil para ambos roles. */
+@media (max-width: 639px) {
+  #chat-window-modal #chat-messages-container .chat-message-actions .chat-reaction-trigger { display: none !important; }
+}
