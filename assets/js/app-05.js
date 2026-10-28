@@ -1448,6 +1448,20 @@
         if (!menu || !toggle) return;
         const opening = menu.classList.contains('hidden');
         menu.classList.toggle('hidden', !opening);
+        if (opening) {
+          const rect = toggle.getBoundingClientRect();
+          menu.style.setProperty('position', 'fixed', 'important');
+          menu.style.setProperty('left', Math.max(8, Math.min(rect.left, window.innerWidth - 188)) + 'px', 'important');
+          menu.style.setProperty('top', Math.min(rect.bottom + 8, window.innerHeight - 150) + 'px', 'important');
+          menu.style.setProperty('right', 'auto', 'important');
+          menu.style.setProperty('z-index', '2147483647', 'important');
+        } else {
+          menu.style.removeProperty('position');
+          menu.style.removeProperty('left');
+          menu.style.removeProperty('top');
+          menu.style.removeProperty('right');
+          menu.style.removeProperty('z-index');
+        }
         toggle.setAttribute('aria-expanded', String(opening));
       }
 
@@ -1456,6 +1470,7 @@
         if (String(this.currentUser?.role || '').toLowerCase() !== 'admin' || !allowed.includes(status)) return;
         const menu = document.getElementById('admin-presence-menu');
         menu?.classList.add('hidden');
+        if (menu) ['position','left','top','right','z-index'].forEach(property => menu.style.removeProperty(property));
         document.getElementById('admin-presence-toggle')?.setAttribute('aria-expanded', 'false');
         if (!window.db) return this.showToast('No hay conexión para guardar tu estado', 'error');
         const username = String(this.currentUser.username || '').toLowerCase();
@@ -4420,7 +4435,8 @@ updateMessengerWindowTyping(workerName) {
           const result = await db.runTransaction(async transaction => {
             const snapshot = await transaction.get(orderRef);
             if (!snapshot.exists || !Array.isArray(snapshot.data()?.tasks)) return { state: 'missing' };
-            const storedTasks = snapshot.data().tasks;
+            const documentData = snapshot.data() || {};
+            const storedTasks = Array.isArray(documentData.tasks) ? documentData.tasks : [];
             const task = storedTasks.find(item => String(item?.id) === String(id));
             if (!task) return { state: 'missing' };
             if (task.archivedAt) return { state: 'archived', tasks: storedTasks };
@@ -4428,7 +4444,7 @@ updateMessengerWindowTyping(workerName) {
               return { state: task.assignedTo === myName ? 'already-mine' : 'already-assigned', tasks: storedTasks };
             }
             const updatedTasks = storedTasks.map(item => String(item?.id) === String(id) ? { ...item, assignedTo: myName } : item);
-            transaction.set(orderRef, { tasks: updatedTasks });
+            transaction.set(orderRef, { ...documentData, tasks: updatedTasks }, { merge: true });
             return { state: 'claimed', tasks: updatedTasks };
           });
 
