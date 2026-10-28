@@ -1,0 +1,43 @@
+/* Aviso animado compartido dentro del panel amplio de operaciones. */
+#dashboard-banner{position:relative!important;overflow:hidden!important}
+#dashboard-banner>div:first-child{flex:1 1 auto;min-width:0}
+.dashboard-announcement-display{width:100%;max-width:100%;height:48px;margin-top:14px;overflow:hidden;display:flex;align-items:center;border-top:1px solid rgba(255,255,255,.2);border-bottom:1px solid rgba(255,255,255,.12);background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent)}
+.dashboard-announcement-track{display:flex;align-items:center;gap:14px;min-width:max-content;padding-left:100%;animation:team-announcement-marquee 22s linear infinite}
+.dashboard-announcement-label{flex:0 0 auto;padding:5px 9px;border:1px solid rgba(244,202,111,.55);border-radius:999px;background:rgba(244,202,111,.14);color:#ffe6a3;font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
+.dashboard-announcement-text{flex:0 0 auto;color:#fff;font-family:Georgia,'Times New Roman',serif;font-size:clamp(18px,2.2vw,28px);font-weight:700;letter-spacing:.015em;line-height:1.15;text-shadow:0 2px 12px rgba(0,0,0,.35);white-space:nowrap}
+@keyframes team-announcement-marquee{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+.settings-announcement-card{margin-top:12px;padding:15px;border:1px solid #d6e3ed;border-radius:15px;background:linear-gradient(145deg,#fff,#f5f8fb);box-shadow:0 4px 14px rgba(15,23,42,.055);color:#24364b}
+.settings-announcement-heading{display:flex;align-items:flex-start;gap:11px;margin-bottom:13px}
+.settings-announcement-icon{display:grid;place-items:center;width:36px;height:36px;flex:0 0 36px;border-radius:11px;background:#edf6e3;color:#629e2c;font-size:20px}
+.settings-announcement-heading b{display:block;font-size:13px;font-weight:850}
+.settings-announcement-heading p{margin:3px 0 0;color:#6a7c90;font-size:11px;line-height:1.45}
+.settings-announcement-label{display:block;margin-bottom:5px;font-size:11px;font-weight:800;color:#43576d}
+#settings-announcement-input{display:block;width:100%;min-height:68px;resize:vertical;padding:10px 12px;border:1px solid #cfdae5;border-radius:10px;background:#fff;color:#1e293b;font-family:inherit;font-size:13px;font-weight:500;line-height:1.45;outline:none}
+#settings-announcement-input:focus{border-color:#71a832;box-shadow:0 0 0 3px rgba(113,168,50,.16)}
+.settings-announcement-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.settings-announcement-actions small{color:#72849a;font-size:10px}
+.settings-announcement-actions>div{display:flex;gap:7px}
+.settings-announcement-save,.settings-announcement-clear{min-height:34px;padding:0 12px;border:1px solid #d2dce7;border-radius:9px;background:#fff;color:#31445b;font-size:11px;font-weight:800;cursor:pointer;touch-action:manipulation}
+.settings-announcement-save{border-color:#639c2d;background:#6fa832;color:white}
+.settings-announcement-save:disabled{opacity:.65;cursor:wait}
+body.theme-dark .settings-announcement-card,body.theme-halloween .settings-announcement-card{background:linear-gradient(145deg,#1d2b40,#172235);border-color:#40536b;color:#e7eef7}
+body.theme-dark .settings-announcement-heading p,body.theme-halloween .settings-announcement-heading p,body.theme-dark .settings-announcement-actions small,body.theme-halloween .settings-announcement-actions small{color:#a9b8ca}
+body.theme-dark #settings-announcement-input,body.theme-halloween #settings-announcement-input{background:#101a2a;border-color:#40536b;color:#edf3fb}
+body.theme-dark .settings-announcement-label,body.theme-halloween .settings-announcement-label{color:#d3deea}
+/* Reacciones visibles y cómodas en móvil para no depender de mantener pulsado. */
+@media(max-width:639px){
+ #chat-messages-container .chat-message-actions .chat-reaction-trigger{display:inline-flex!important;align-items:center;justify-content:center;width:30px;height:28px;min-width:30px;min-height:28px;font-size:15px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+ .chat-reaction-picker{position:fixed!important;z-index:2147483646!important;gap:5px!important;padding:6px!important;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);touch-action:manipulation}
+ .chat-reaction-picker button{width:38px!important;height:40px!important;min-width:38px!important;min-height:40px!important;flex:0 0 38px!important;font-size:23px!important;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+}
+/* El selector de estado del administrador conserva área táctil y menú dentro del móvil. */
+@media(max-width:700px){
+ html body #dashboard-header-inner #header-presence-profile{width:clamp(96px,29vw,124px)!important;min-width:96px!important;max-width:124px!important;flex:0 1 124px!important;height:50px!important;min-height:50px!important;max-height:50px!important}
+ html body #dashboard-header-inner #header-presence-profile #admin-presence-control{display:block!important;position:relative!important;z-index:100!important;margin-top:1px!important;overflow:visible!important}
+ html body #dashboard-header-inner #header-presence-profile #admin-presence-toggle{display:flex!important;align-items:center!important;justify-content:flex-start!important;width:100%!important;min-width:0!important;min-height:22px!important;padding:3px 4px!important;border:1px solid rgba(16,185,129,.32)!important;border-radius:7px!important;background:rgba(16,185,129,.1)!important;color:#6ee7b7!important;font-size:7px!important;line-height:1!important;position:relative!important;z-index:101!important;pointer-events:auto!important;cursor:pointer!important;touch-action:manipulation!important}
+ html body #dashboard-header-inner #header-presence-profile #admin-presence-menu{left:auto!important;right:0!important;top:calc(100% + 5px)!important;z-index:2147483647!important;min-width:170px!important;max-width:calc(100vw - 16px)!important;pointer-events:auto!important;touch-action:manipulation!important}
+ #admin-presence-menu button{min-height:40px!important;touch-action:manipulation!important}
+}
+@media(max-width:360px){html body #dashboard-header-inner #header-presence-profile{width:96px!important;min-width:96px!important;max-width:96px!important;flex-basis:96px!important}}
+@media(max-width:639px){.dashboard-announcement-display{height:42px;margin-top:10px}.dashboard-announcement-track{animation-duration:20s}.dashboard-announcement-text{font-size:18px}.settings-announcement-actions{align-items:flex-start;flex-direction:column}.settings-announcement-actions>div{width:100%}.settings-announcement-actions>div button{flex:1}}
+@media(prefers-reduced-motion:reduce){.dashboard-announcement-track{animation:none;transform:none;padding-left:0}.dashboard-announcement-display{justify-content:flex-start}}
