@@ -51,31 +51,82 @@
   proto.takeFreeOrder = async function (id) {
     const user = this.currentUser;
     const kind = roleKind(user?.role || user?.rol || user?.userType);
-    if (kind !== 'worker') { this.showToast?.('Solo un trabajador puede tomar una orden libre.', 'error'); return; }
+    if (kind !== 'worker') {
+      this.showToast?.('Solo un trabajador puede tomar una orden libre.', 'error');
+      return;
+    }
     const dbInstance = window.db;
     const displayName = this.getCurrentDisplayName?.() || user?.fullName || user?.name || user?.username || '';
-    if (!displayName || !dbInstance || typeof dbInstance.runTransaction !== 'function') {
-      this.showToast?.('No se pudo conectar para tomar la orden. Revisa tu sesión e intenta de nuevo.', 'error'); return;
+    if (!displayName || !dbInstance || typeof dbInstance.collection !== 'function') {
+      this.showToast?.('No se pudo conectar para tomar la orden. Revisa tu sesión e intenta de nuevo.', 'error');
+      return;
     }
+
+    this.__claimingOrderIds = this.__claimingOrderIds || new Set();
+    const claimKey = String(id);
+    if (this.__claimingOrderIds.has(claimKey)) return;
+    this.__claimingOrderIds.add(claimKey);
     const orderRef = dbInstance.collection('ordenes').doc('todas');
-    this.showToast?.('Verificando disponibilidad de la orden…', 'info');
+    this.showToast?.('Asignando la orden…', 'info');
+
+    const taskIsAvailable = task => {
+      const assignee = String(task?.assignedTo || '').trim();
+      return !assignee || normalize(assignee) === 'libre';
+    };
+    const claimInSnapshot = (documentData, storedTasks) => {
+      const task = storedTasks.find(item => String(item?.id) === claimKey);
+      if (!task) return { state: 'missing' };
+      if (task.archivedAt || task.archived === true) return { state: 'archived' };
+      if (!taskIsAvailable(task)) {
+        return { state: normalize(task.assignedTo) === normalize(displayName) ? 'already-mine' : 'already-assigned' };
+      }
+      const claimedTasks = storedTasks.map(item => String(item?.id) === claimKey
+        ? { ...item, assignedTo: displayName, assignedAt: new Date().toISOString() }
+        : item);
+      return { state: 'claimed', tasks: claimedTasks };
+    };
+
     try {
-      const result = await dbInstance.runTransaction(async transaction => {
-        const snapshot = await transaction.get(orderRef);
-        if (!snapshot.exists) return { state: 'missing' };
-        const documentData = snapshot.data() || {};
-        const storedTasks = Array.isArray(documentData.tasks) ? documentData.tasks : [];
-        const task = storedTasks.find(item => String(item?.id) === String(id));
-        if (!task) return { state: 'missing' };
-        if (task.archivedAt || task.archived === true) return { state: 'archived' };
-        const free = !String(task.assignedTo || '').trim() || normalize(task.assignedTo) === 'libre';
-        if (!free) return { state: normalize(task.assignedTo) === normalize(displayName) ? 'already-mine' : 'already-assigned' };
-        const updatedTasks = storedTasks.map(item => String(item?.id) === String(id)
-          ? { ...item, assignedTo: displayName, assignedAt: new Date().toISOString() }
-          : item);
-        transaction.set(orderRef, { ...documentData, tasks: updatedTasks }, { merge: true });
-        return { state: 'claimed', tasks: updatedTasks };
-      });
+      let result = null;
+      let transactionError = null;
+
+      // Try atomic assignment first so two technicians cannot claim the same order.
+      if (typeof dbInstance.runTransaction === 'function') {
+        try {
+          result = await dbInstance.runTransaction(async transaction => {
+            const snapshot = await transaction.get(orderRef);
+            if (!snapshot.exists) return { state: 'missing' };
+            const data = snapshot.data() || {};
+            const storedTasks = Array.isArray(data.tasks) ? data.tasks : [];
+            const claim = claimInSnapshot(data, storedTasks);
+            if (claim.state !== 'claimed') return claim;
+            transaction.update(orderRef, { tasks: claim.tasks });
+            return claim;
+          });
+        } catch (error) {
+          transactionError = error;
+          console.warn('[ORDEN] La transacción para tomar la orden falló; intentando actualización compatible:', error);
+        }
+      }
+
+      // Compatibility path mirrors the application's normal order save operation.
+      // Re-read and re-check assignment immediately before writing.
+      if (!result && transactionError?.code !== 'permission-denied') {
+        const snapshot = await orderRef.get();
+        if (!snapshot.exists) result = { state: 'missing' };
+        else {
+          const data = snapshot.data() || {};
+          const storedTasks = Array.isArray(data.tasks) ? data.tasks : [];
+          const claim = claimInSnapshot(data, storedTasks);
+          if (claim.state !== 'claimed') result = claim;
+          else {
+            await orderRef.update({ tasks: claim.tasks });
+            result = claim;
+          }
+        }
+      }
+      if (!result && transactionError) throw transactionError;
+
       if (Array.isArray(result?.tasks)) {
         this.tasks = result.tasks;
         try { localStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks)); } catch (_) {}
@@ -86,15 +137,18 @@
       else if (result?.state === 'already-mine') this.showToast?.('Esta orden ya está asignada a tu usuario.', 'info');
       else if (result?.state === 'already-assigned') this.showToast?.('Esta orden ya fue asignada a otro técnico.', 'error');
       else if (result?.state === 'archived') this.showToast?.('Esta orden ya fue archivada por el administrador.', 'info');
-      else this.showToast?.('No se encontró la orden. Actualiza la lista e intenta otra vez.', 'error');
+      else this.showToast?.('No se encontró la orden en la lista de Firestore. Actualiza e intenta otra vez.', 'error');
     } catch (error) {
       console.error('[ORDEN] No se pudo tomar la orden:', error);
       const message = error?.code === 'permission-denied'
-        ? 'Firestore no permite asignar esta orden con los permisos actuales. Revisa las reglas de escritura de órdenes.'
-        : 'No se pudo tomar la orden: ' + (error?.message || 'error de conexión');
+        ? 'Firestore rechazó la asignación. La cuenta de trabajador necesita permiso para actualizar la orden.'
+        : 'No se pudo asignar la orden: ' + (error?.message || error?.code || 'error de conexión');
       this.showToast?.(message, 'error');
+    } finally {
+      this.__claimingOrderIds.delete(claimKey);
     }
   };
+
   // Renderiza tarjetas con rol canónico para que toda orden libre ofrezca "Tomar orden".
   const originalRenderTasks = proto.renderTasks;
   if (typeof originalRenderTasks === 'function') {
