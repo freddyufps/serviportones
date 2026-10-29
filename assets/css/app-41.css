@@ -193,3 +193,15 @@ body:has(#chat-window-modal:not(.hidden)) #chat-desktop-windows{right:calc(var(-
 #chat-floating-button-container{z-index:2147481500!important}
 @media(max-width:639px){#chat-desktop-windows,#chat-desktop-chat-cells{display:none!important}#chat-window-modal{z-index:2147482000!important}}
 
+
+
+/* Desktop: keep the contacts panel and active conversation side by side. */
+@media(min-width:900px){
+ #chat-window-modal:not(.hidden){inset:auto 18px 88px auto!important;width:min(380px,calc(100vw - 36px))!important;height:min(620px,calc(100dvh - 120px))!important;max-height:calc(100dvh - 120px)!important}
+ #chat-window-modal #chat-sidebar{width:100%!important;min-width:100%!important;max-width:100%!important}
+ #chat-window-modal #chat-conversation-area{display:none!important}
+ #chat-desktop-windows:not(.hidden){left:12px!important;right:420px!important;bottom:88px!important;height:min(620px,calc(100dvh - 120px))!important;align-items:stretch!important;justify-content:flex-end!important;overflow-x:auto!important;overflow-y:visible!important}
+ #chat-desktop-chat-cells{height:100%!important;align-items:stretch!important;justify-content:flex-end!important}
+ #chat-desktop-chat-cells>.messenger-chat-window{width:min(360px,calc(100vw - 460px))!important;min-width:280px!important;height:100%!important;flex:0 0 min(360px,calc(100vw - 460px))!important}
+ #chat-desktop-chat-cells>.messenger-chat-window.is-minimized{height:62px!important;min-height:62px!important;align-self:flex-end!important}
+}
