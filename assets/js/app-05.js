@@ -2841,7 +2841,13 @@ updateMessengerWindowTyping(workerName) {
         const restoring = Boolean(this.minimizedChatWindows[workerName]);
         this.minimizedChatWindows[workerName] = !restoring;
         if (restoring && this.currentUser?.role === 'admin' && window.innerWidth >= 640) {
+          this.chatDockUnreadByWorker?.delete(workerName);
+          const summary = this.chatThreadSummaries[workerName];
+          if (summary) summary.unreadCount = 0;
+          if (this.conversations[workerName]) this.conversations[workerName].unreadByAdmin = 0;
           document.getElementById('chat-desktop-windows')?.classList.remove('hidden');
+          this.markChatConversationAsRead(workerName);
+          this.renderConversationsSidebar();
         }
         this.renderMessengerWindows();
       }
@@ -3164,6 +3170,28 @@ updateMessengerWindowTyping(workerName) {
           } catch(err) {
             console.error("Error al enviar mensaje:", err);
           }
+        }
+      }
+
+      async markChatConversationAsRead(workerName) {
+        if (!window.db || this.currentUser?.role !== 'admin' || !workerName) return;
+        try {
+          const threadRef = db.collection('chats_internos').doc(workerName);
+          const snapshot = await threadRef.collection('mensajes')
+            .orderBy('timestamp', 'desc')
+            .limit(80)
+            .get();
+          const batch = db.batch();
+          snapshot.forEach(doc => {
+            const message = doc.data();
+            if (message.senderRole !== this.currentUser.role && message.status !== 'read') {
+              batch.update(doc.ref, { status: 'read' });
+            }
+          });
+          batch.set(threadRef, { unreadByAdmin: 0 }, { merge: true });
+          await batch.commit();
+        } catch (error) {
+          console.warn('[CHAT] No se pudo marcar la conversación como leída:', error);
         }
       }
 
