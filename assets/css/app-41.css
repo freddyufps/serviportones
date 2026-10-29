@@ -177,4 +177,11 @@ body:has(#chat-window-modal:not(.hidden)) #chat-desktop-windows{right:calc(var(-
 #chat-desktop-windows{z-index:10010!important}
 #chat-floating-button-container{z-index:10020!important}
 @media(max-width:639px){#chat-window-modal{z-index:10030!important}#chat-floating-button-container{z-index:10020!important}}
+/* Keep the minimized dock visible while the contact panel is open; active conversations float above it. */
+#chat-desktop-windows{z-index:10040!important}
+#chat-desktop-chat-cells{position:relative!important;z-index:10040!important;overflow:visible!important}
+.messenger-chat-window{position:relative!important;z-index:2!important}
+.messenger-chat-window.is-minimized{position:relative!important;z-index:1!important}
+#chat-window-modal{z-index:10030!important}
+@media(max-width:639px){#chat-window-modal{z-index:10030!important}}
 
