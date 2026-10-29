@@ -2785,12 +2785,11 @@
             const presenceText = typing ? 'Escribiendo...' : presenceLabel;
             const presenceClass = typing ? 'is-typing' : 'presence-label is-' + presenceStatus;
             return '<section class="messenger-chat-window is-minimized chat-persistent-tab ' + (unreadCount > 0 && this.prefs.chatBadge ? 'has-unread' : '') + '" data-messenger-window="' + this.escapeHtml(name) + '" style="--chat-cell-width:' + cellWidth + 'px">' +
-              '<header class="messenger-window-header" onclick="app.selectChatConversation(decodeURIComponent(\'' + encodeURIComponent(name) + '\'))">' +
+              '<header class="messenger-window-header" role="button" tabindex="0" title="Abrir o minimizar conversación" onclick="app.toggleMessengerWindow(decodeURIComponent(\\'' + encodeURIComponent(name) + '\\'))" onkeydown="if(event.key===\\'Enter\\'||event.key===\\' \\'){event.preventDefault();app.toggleMessengerWindow(decodeURIComponent(\\'' + encodeURIComponent(name) + '\\'))}">' +
                 '<span class="messenger-window-avatar seasonal-worker-avatar">' + avatar + '</span><span class="messenger-window-identity"><span class="messenger-window-title">' + this.escapeHtml(name) + '</span><span class="messenger-window-activity ' + presenceClass + '">' + this.escapeHtml(presenceText) + '</span></span>' +
                 (unreadCount > 0 && this.prefs.chatBadge ? '<span class="messenger-window-unread-badge">' + (unreadCount > 99 ? '99+' : String(unreadCount)) + '</span>' : '') +
                 '<span class="messenger-window-controls">' +
-                  '<button class="messenger-window-minimize" type="button" title="' + (isMinimized ? 'Restaurar' : 'Minimizar') + '" aria-label="' + (isMinimized ? 'Restaurar' : 'Minimizar') + ' ' + this.escapeHtml(name) + '" onclick="event.stopPropagation();app.toggleMessengerWindow(decodeURIComponent(\'' + encodeURIComponent(name) + '\'))">' + (isMinimized ? '+' : '−') + '</button>' +
-                  '<button class="messenger-window-close" type="button" title="Cerrar" aria-label="Cerrar ' + this.escapeHtml(name) + '" onclick="event.stopPropagation();app.closeChatTab(decodeURIComponent(\'' + encodeURIComponent(name) + '\'))">×</button>' +
+                  '<button class="messenger-window-close" type="button" title="Cerrar" aria-label="Cerrar ' + this.escapeHtml(name) + '" onclick="event.stopPropagation();app.closeChatTab(decodeURIComponent(\\'' + encodeURIComponent(name) + '\\'))">×</button>' +
                 '</span></header></section>';
           }).join('');
           minimizedDock.classList.toggle('hidden', names.length === 0);
