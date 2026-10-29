@@ -172,4 +172,9 @@ body:has(#chat-window-modal:not(.hidden)) #chat-desktop-windows{right:calc(var(-
  #chat-window-modal form[onsubmit*="handleSendMessage"]{position:relative!important;z-index:10021!important;flex:0 0 auto!important;margin-bottom:calc(78px + env(safe-area-inset-bottom,0px))!important;padding-bottom:8px!important}
  #chat-floating-button-container{z-index:10020!important}
 }
+/* Keep an open conversation above the launcher and minimized chat tabs. */
+#chat-window-modal{z-index:10030!important}
+#chat-desktop-windows{z-index:10010!important}
+#chat-floating-button-container{z-index:10020!important}
+@media(max-width:639px){#chat-window-modal{z-index:10030!important}#chat-floating-button-container{z-index:10020!important}}
 
