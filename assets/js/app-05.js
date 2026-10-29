@@ -706,7 +706,13 @@
 
         }
 
-        // Los chats permanecen abiertos hasta usar su propio control de minimizar o cerrar.
+        document.addEventListener('pointerdown', event => {
+          const menu = document.getElementById('admin-presence-menu');
+          const toggle = document.getElementById('admin-presence-toggle');
+          if (!menu || menu.classList.contains('hidden') || menu.contains(event.target) || toggle?.contains(event.target)) return;
+          menu.classList.add('hidden');
+          toggle?.setAttribute('aria-expanded', 'false');
+        }, true);
 
 
         document.addEventListener('click', event => {
@@ -725,26 +731,9 @@
           toggle?.setAttribute('aria-expanded', 'false');
         });
 
-        document.addEventListener('pointerdown', event => {
-          if (!this.currentUser || event.button !== 0) return;
-          const target = event.target instanceof Element ? event.target : event.target?.parentElement;
-          if (!target) return;
-          if (target.closest('#chat-window-modal, #chat-launcher-button, #chat-desktop-windows, .chat-reaction-picker, .chat-emoji-picker, .chat-attach-menu, .chat-sticker-picker, #chat-image-viewer, #chat-attachment-preview, #chat-conversation-options-dropdown')) return;
+        // Los chats se minimizan o cierran solo desde sus controles individuales.
 
-          // Un clic fuera minimiza las ventanas, pero conserva el historial y los borradores.
-          const chatModal = document.getElementById('chat-window-modal');
-          if (chatModal && !chatModal.classList.contains('hidden')) chatModal.classList.add('hidden');
-          if (this.currentUser.role === 'admin' && window.innerWidth >= 640) {
-            let changed = false;
-            (this.openChatTabs || []).forEach(name => {
-              if (!this.minimizedChatWindows[name]) {
-                this.minimizedChatWindows[name] = true;
-                changed = true;
-              }
-            });
-            if (changed) this.renderMessengerWindows();
-          }
-        }, true);
+
 
         document.addEventListener('visibilitychange', () => {
           if (!document.hidden && this.currentUser) {
