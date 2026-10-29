@@ -205,3 +205,23 @@ body:has(#chat-window-modal:not(.hidden)) #chat-desktop-windows{right:calc(var(-
  #chat-desktop-chat-cells>.messenger-chat-window{width:min(360px,calc(100vw - 460px))!important;min-width:280px!important;height:100%!important;flex:0 0 min(360px,calc(100vw - 460px))!important}
  #chat-desktop-chat-cells>.messenger-chat-window.is-minimized{height:62px!important;min-height:62px!important;align-self:flex-end!important}
 }
+
+
+/* Final viewport layout and square image crops for iOS/Android chat. */
+@media (max-width:800px), (pointer:coarse){
+ #chat-window-modal:not(.hidden){position:fixed!important;inset:auto 12px calc(84px + env(safe-area-inset-bottom,0px)) 12px!important;width:auto!important;height:min(74dvh,620px)!important;max-height:calc(100dvh - 110px - env(safe-area-inset-bottom,0px))!important;min-height:300px!important;overflow:hidden!important;border-radius:20px!important}
+ #chat-floating-button-container{position:fixed!important;right:12px!important;bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;z-index:2147483001!important;display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
+ body:has(#chat-window-modal:not(.hidden)) #chat-floating-button-container{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;z-index:2147483001!important}
+ #chat-window-modal .chat-message-avatar{box-sizing:border-box!important;position:relative!important;width:28px!important;height:28px!important;min-width:28px!important;max-width:28px!important;min-height:28px!important;max-height:28px!important;flex:0 0 28px!important;aspect-ratio:1/1!important}
+ #chat-window-modal .chat-message-avatar img{position:absolute!important;inset:0!important;display:block!important;box-sizing:border-box!important;width:100%!important;height:100%!important;min-width:100%!important;max-width:none!important;min-height:100%!important;max-height:none!important;flex:none!important;aspect-ratio:1/1!important;object-fit:cover!important;border-radius:50%!important}
+ #chat-window-modal .chat-contact-avatar,#chat-window-modal .chat-active-avatar,#chat-window-modal .messenger-window-avatar{box-sizing:border-box!important;aspect-ratio:1/1!important;flex-shrink:0!important}
+ #chat-window-modal .chat-contact-avatar img,#chat-window-modal .chat-active-avatar img,#chat-window-modal .messenger-window-avatar img{display:block!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;flex:none!important;aspect-ratio:1/1!important;object-fit:cover!important;border-radius:50%!important}
+}
+@media(min-width:900px){
+ #chat-window-modal:not(.hidden){position:fixed!important;top:auto!important;right:18px!important;bottom:84px!important;left:auto!important;width:380px!important;height:min(620px,calc(100dvh - 110px))!important;max-height:calc(100dvh - 110px)!important}
+ #chat-window-modal #chat-sidebar{width:100%!important;min-width:100%!important;max-width:100%!important}
+ #chat-desktop-windows:not(.hidden){position:fixed!important;top:auto!important;right:414px!important;bottom:84px!important;left:12px!important;width:auto!important;height:min(620px,calc(100dvh - 110px))!important;max-height:calc(100dvh - 110px)!important;align-items:stretch!important;overflow-x:auto!important;overflow-y:visible!important}
+ #chat-desktop-chat-cells{height:100%!important;align-items:stretch!important}
+ #chat-desktop-chat-cells>.messenger-chat-window{height:100%!important;max-height:100%!important;align-self:stretch!important}
+ #chat-desktop-chat-cells>.messenger-chat-window.is-minimized{height:62px!important;min-height:62px!important;align-self:flex-end!important}
+}
