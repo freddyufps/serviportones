@@ -225,3 +225,16 @@ body:has(#chat-window-modal:not(.hidden)) #chat-desktop-windows{right:calc(var(-
  #chat-desktop-chat-cells>.messenger-chat-window{height:100%!important;max-height:100%!important;align-self:stretch!important}
  #chat-desktop-chat-cells>.messenger-chat-window.is-minimized{height:62px!important;min-height:62px!important;align-self:flex-end!important}
 }
+
+
+/* Desktop dock: compact conversations above a persistent bottom row for minimized chats. */
+@media(min-width:900px) and (pointer:fine){
+ #chat-floating-button-container{position:fixed!important;right:14px!important;bottom:14px!important;width:62px!important;height:62px!important;display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;z-index:2147483005!important}
+ body:has(#chat-window-modal:not(.hidden)) #chat-floating-button-container{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
+ #chat-window-modal:not(.hidden){right:16px!important;bottom:88px!important;width:360px!important;height:min(560px,calc(100dvh - 110px))!important;max-height:calc(100dvh - 110px)!important}
+ #chat-desktop-windows:not(.hidden){position:fixed!important;top:auto!important;left:12px!important;right:390px!important;bottom:12px!important;width:auto!important;height:min(520px,calc(100dvh - 100px))!important;max-height:calc(100dvh - 100px)!important;display:flex!important;align-items:stretch!important;justify-content:flex-end!important;overflow-x:auto!important;overflow-y:visible!important;padding:0 4px 0 0!important;pointer-events:none!important}
+ body:has(#chat-window-modal:not(.hidden)) #chat-desktop-windows:not(.hidden){right:390px!important}
+ #chat-desktop-chat-cells{display:flex!important;width:max-content!important;max-width:none!important;height:100%!important;align-items:flex-end!important;justify-content:flex-end!important;gap:10px!important;pointer-events:none!important}
+ #chat-desktop-chat-cells>.messenger-chat-window{box-sizing:border-box!important;width:310px!important;min-width:310px!important;max-width:310px!important;height:410px!important;min-height:0!important;max-height:min(410px,calc(100dvh - 180px))!important;flex:0 0 310px!important;align-self:flex-end!important;position:relative!important;transform:translateY(-74px)!important;pointer-events:auto!important}
+ #chat-desktop-chat-cells>.messenger-chat-window.is-minimized{width:230px!important;min-width:230px!important;max-width:230px!important;height:62px!important;min-height:62px!important;max-height:62px!important;flex:0 0 230px!important;align-self:flex-end!important;transform:none!important;pointer-events:auto!important}
+}
