@@ -166,4 +166,10 @@ body:has(#chat-window-modal:not(.hidden)) #chat-desktop-windows{right:calc(var(-
  #chat-desktop-windows,#chat-desktop-chat-cells{display:none!important}
  #chat-window-modal form[onsubmit*="handleSendMessage"]{margin-bottom:calc(64px + env(safe-area-inset-bottom,0px))!important}
 }
+/* Mobile composer sits above the floating open/close chat control. */
+@media(max-width:639px){
+ #chat-window-modal #chat-conversation-area{position:relative!important;min-height:0!important}
+ #chat-window-modal form[onsubmit*="handleSendMessage"]{position:relative!important;z-index:10021!important;flex:0 0 auto!important;margin-bottom:calc(78px + env(safe-area-inset-bottom,0px))!important;padding-bottom:8px!important}
+ #chat-floating-button-container{z-index:10020!important}
+}
 
