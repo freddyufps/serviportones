@@ -3,22 +3,3 @@
 
 // Selecting a desktop contact keeps both the contact list and its conversation visible.
 (function(){const proto=window.PortonProApp?.prototype;if(!proto||typeof proto.selectChatConversation!=="function"||proto.selectChatConversation.__keepContactsAndChat)return;const original=proto.selectChatConversation;const wrapped=function(...args){const result=original.apply(this,args);if(this.currentUser?.role==="admin"&&window.innerWidth>=640){document.getElementById("chat-window-modal")?.classList.remove("hidden");document.getElementById("chat-desktop-windows")?.classList.remove("hidden");this.renderMessengerWindows?.()}return result};wrapped.__keepContactsAndChat=true;proto.selectChatConversation=wrapped})();
-
-/* Move minimized chat windows into their own persistent desktop tray. */
-(function(){
-  const proto=window.PortonProApp?.prototype;
-  if(!proto||typeof proto.renderMessengerWindows!=="function"||proto.renderMessengerWindows.__separateMinimizedTray)return;
-  const original=proto.renderMessengerWindows;
-  const wrapped=function(...args){
-    const dock=document.getElementById("chat-desktop-chat-cells");
-    const tray=document.getElementById("chat-minimized-windows");
-    if(tray) tray.replaceChildren();
-    const result=original.apply(this,args);
-    if(!dock||!tray)return result;
-    dock.querySelectorAll(".messenger-chat-window.is-minimized").forEach(windowEl=>tray.appendChild(windowEl));
-    tray.classList.toggle("hidden",tray.childElementCount===0);
-    return result;
-  };
-  wrapped.__separateMinimizedTray=true;
-  proto.renderMessengerWindows=wrapped;
-})();
