@@ -551,7 +551,7 @@
 
         <!-- Input de mensaje -->
         <form onsubmit="app.handleSendMessage(event)" class="p-2 sm:p-2.5 bg-white border-t border-slate-200 flex items-center gap-2 shrink-0">
-          <input type="text" id="chat-input-text" oninput="app.handleTypingInput()" placeholder="Escribe un mensaje..." autocomplete="off" required class="flex-1 px-3 py-2 text-xs sm:text-sm bg-slate-100 rounded-xl border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-lime">
+          <input type="text" id="chat-input-text" name="chat-message" oninput="app.handleTypingInput()" placeholder="Escribe un mensaje..." autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false" inputmode="text" enterkeyhint="send" data-lpignore="true" data-1p-ignore="true" required class="flex-1 px-3 py-2 text-xs sm:text-sm bg-slate-100 rounded-xl border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-lime">
           <button type="submit" class="p-2.5 bg-brand-dark hover:bg-black text-white rounded-xl shadow active:scale-95 transition" title="Enviar">
             <span class="chat-send-arrow" aria-hidden="true">➤</span>
           </button>
@@ -1082,5 +1082,7 @@
 <script id="task-date-toggle-fix" src="assets/js/app-40.js?v=20261028-order-form-date-1"></script>
 <link rel="stylesheet" href="assets/css/app-41.css?v=20261029-chat-brand-icon-white-close-15" id="premium-order-chat-style">
 <script id="premium-order-chat-presentation" src="assets/js/app-41.js?v=20261029-chat-minimized-toggle-13"></script>
+<link rel="stylesheet" href="assets/css/app-42.css?v=20261029-chat-mobile-keyboard-clean-1" id="chat-mobile-keyboard-clean-style">
+<script id="chat-mobile-keyboard-clean" src="assets/js/app-42.js?v=20261029-chat-mobile-keyboard-clean-1"></script>
 </body>
 </html>
