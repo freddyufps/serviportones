@@ -1090,7 +1090,6 @@
         const filterTech = document.getElementById('filter-tech');
         const filterTechControl = document.getElementById('filter-tech-control');
         const auditLogSection = document.getElementById('section-admin-audit-log');
-        const roleHint = document.getElementById('role-hint-text');
         this.installOrderFilterDismissHandlers();
 
         const btnResetPending = document.getElementById('btn-reset-pending');
@@ -1099,7 +1098,6 @@
         const btnAssignOrderFilter = document.getElementById('btn-assign-order-filter');
         const ordersToolbar = document.getElementById('orders-toolbar');
 
-        roleHint?.classList.toggle('hidden', !isAdmin);
         if (isAdmin) {
           ordersToolbar?.classList.remove('hidden');
           btnAssignOrderFilter?.classList.remove('hidden');
@@ -1108,7 +1106,6 @@
           filterTechControl?.classList.remove('hidden');
           filterTech.disabled = false;
           auditLogSection.classList.remove('hidden');
-          roleHint.textContent = 'Supervisión en vivo, GPS y control total';
 
           if (btnResetPending) btnResetPending.classList.remove('hidden');
           if (btnResetDone) btnResetDone.classList.remove('hidden');
@@ -1121,7 +1118,6 @@
           filterTechControl?.classList.add('hidden');
           filterTech.disabled = true;
           auditLogSection.classList.add('hidden');
-          roleHint.textContent = '';
 
           if (btnResetPending) btnResetPending.classList.add('hidden');
           if (btnResetDone) btnResetDone.classList.add('hidden');
@@ -5388,4 +5384,6 @@ updateMessengerWindowTyping(workerName) {
     let app;
     window.addEventListener('DOMContentLoaded', () => {
       app = new PortonProApp();
+      // Expose the singleton to auxiliary modules that initialize through window.app.
+      window.app = app;
     });

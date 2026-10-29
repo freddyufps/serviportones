@@ -38,10 +38,12 @@
       nav.id = 'orders-view-navigation';
       nav.setAttribute('aria-label', 'Navegación de órdenes');
       nav.innerHTML = '<button type="button" data-order-view="archived" onclick="app.showArchivedOrdersView()" aria-current="false"><i data-lucide="archive"></i><span>Órdenes archivadas</span><b id="orders-nav-archive-count">0</b></button>' +
+        '<button id="btn-archived-quotes" type="button" class="quote-archive-button" onclick="app.openQuotesArchive()" aria-label="Abrir cotizaciones archivadas"><span aria-hidden="true">▣</span><span>Cotizaciones archivadas</span><span id="quotes-archive-count" class="quote-archive-count">0</span></button>' +
         '<button type="button" data-order-view="invoices" onclick="app.openDocumentControl()" aria-current="false"><i data-lucide="receipt-text"></i><span>Consolidado de facturas</span></button>' +
         '<button type="button" data-order-view="active" onclick="app.showActiveOrdersView()" aria-current="false"><i data-lucide="arrow-left"></i><span>Volver a órdenes</span></button>';
       header.parentElement.insertBefore(nav, header);
     }
+    if (typeof app.renderQuotesCount === 'function') app.renderQuotesCount();
     return nav;
   };
 
