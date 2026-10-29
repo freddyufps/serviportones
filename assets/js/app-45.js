@@ -100,3 +100,50 @@
     if(!event.target.closest?.('.chat-reaction-picker'))window.app?.closeReactionPicker?.();
   },false);
 })();
+// No dejar la restauración de sesión bloqueada si Firestore queda pendiente.
+(function(){
+  const database=window.db;
+  if(!database||typeof database.collection!=='function'||database.__sessionRestoreTimeout)return;
+  const originalCollection=database.collection.bind(database);
+  const settleWithin=(promise,fallback,label)=>new Promise((resolve,reject)=>{
+    let settled=false;
+    const timer=setTimeout(()=>{
+      if(settled)return;
+      settled=true;
+      console.warn('[INICIO] Firestore tardó; se continúa con la sesión local:',label);
+      resolve(typeof fallback==='function'?fallback():fallback);
+    },1600);
+    Promise.resolve(promise).then(value=>{
+      if(settled)return;
+      settled=true;clearTimeout(timer);resolve(value);
+    },error=>{
+      if(settled)return;
+      settled=true;clearTimeout(timer);reject(error);
+    });
+  });
+  database.collection=function(name,...args){
+    const collection=originalCollection(name,...args);
+    if(String(name)!=='presencia')return collection;
+    if(typeof collection.get==='function'){
+      const get=collection.get.bind(collection);
+      collection.get=(...options)=>settleWithin(get(...options),{docs:[]},'consulta de presencia');
+    }
+    if(typeof collection.doc==='function'){
+      const doc=collection.doc.bind(collection);
+      collection.doc=(...parts)=>{
+        const reference=doc(...parts);
+        if(typeof reference.get==='function'){
+          const get=reference.get.bind(reference);
+          reference.get=(...options)=>settleWithin(get(...options),{exists:false,data:()=>({})},'lectura de presencia');
+        }
+        if(typeof reference.set==='function'){
+          const set=reference.set.bind(reference);
+          reference.set=(...options)=>settleWithin(set(...options),undefined,'actualización de presencia');
+        }
+        return reference;
+      };
+    }
+    return collection;
+  };
+  database.__sessionRestoreTimeout=true;
+})();
