@@ -238,3 +238,17 @@ body:has(#chat-window-modal:not(.hidden)) #chat-desktop-windows{right:calc(var(-
  #chat-desktop-chat-cells>.messenger-chat-window{box-sizing:border-box!important;width:310px!important;min-width:310px!important;max-width:310px!important;height:410px!important;min-height:0!important;max-height:min(410px,calc(100dvh - 180px))!important;flex:0 0 310px!important;align-self:flex-end!important;position:relative!important;transform:translateY(-74px)!important;pointer-events:auto!important}
  #chat-desktop-chat-cells>.messenger-chat-window.is-minimized{width:230px!important;min-width:230px!important;max-width:230px!important;height:62px!important;min-height:62px!important;max-height:62px!important;flex:0 0 230px!important;align-self:flex-end!important;transform:none!important;pointer-events:auto!important}
 }
+
+
+/* Desktop fix: minimized chats form a persistent row beside the launcher, with clean window edges. */
+@media(min-width:900px) and (pointer:fine){
+ #chat-desktop-windows:not(.hidden),#chat-desktop-chat-cells{background:transparent!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;filter:none!important;overflow:visible!important}
+ #chat-desktop-windows:not(.hidden){right:390px!important;bottom:12px!important}
+ #chat-desktop-chat-cells>.messenger-chat-window:not(.is-minimized){background:#fff!important;box-shadow:0 10px 26px rgba(15,23,42,.16)!important;backdrop-filter:none!important;filter:none!important}
+ #chat-desktop-chat-cells>.messenger-chat-window.is-minimized{position:fixed!important;bottom:14px!important;align-self:auto!important;transform:none!important;z-index:2147483004!important;box-shadow:0 7px 20px rgba(15,23,42,.16)!important}
+ #chat-desktop-chat-cells>.messenger-chat-window.is-minimized:nth-child(1 of .messenger-chat-window.is-minimized){right:88px!important}
+ #chat-desktop-chat-cells>.messenger-chat-window.is-minimized:nth-child(2 of .messenger-chat-window.is-minimized){right:326px!important}
+ #chat-desktop-chat-cells>.messenger-chat-window.is-minimized:nth-child(3 of .messenger-chat-window.is-minimized){right:564px!important}
+ #chat-desktop-chat-cells>.messenger-chat-window.is-minimized:nth-child(4 of .messenger-chat-window.is-minimized){right:802px!important}
+ #chat-desktop-chat-cells>.messenger-chat-window.is-minimized:nth-child(n+5 of .messenger-chat-window.is-minimized){display:none!important}
+}
