@@ -2726,32 +2726,38 @@
       renderMessengerWindows() {
         const dock = document.getElementById('chat-desktop-chat-cells');
         const dockRoot = document.getElementById('chat-desktop-windows');
+        const minimizedDock = document.getElementById('chat-minimized-windows');
         if (!dock || !dockRoot) return;
-        if (window.innerWidth < 640 || this.currentUser?.role !== 'admin') { dock.innerHTML = ''; this.renderChatTypingIndicators(); return; }
+        if (window.innerWidth < 640 || this.currentUser?.role !== 'admin') {
+          dock.innerHTML = '';
+          if (minimizedDock) { minimizedDock.innerHTML = ''; minimizedDock.classList.add('hidden'); }
+          this.renderChatTypingIndicators();
+          return;
+        }
         const focusedInput = document.activeElement?.matches('.messenger-window-form input') ? document.activeElement : null;
         const focusedWindow = focusedInput?.closest('[data-messenger-window]')?.dataset.messengerWindow || '';
         const cursorStart = focusedInput?.selectionStart;
         const cursorEnd = focusedInput?.selectionEnd;
-        dock.querySelectorAll('[data-messenger-window]').forEach(windowEl => {
+        const existingWindows = document.querySelectorAll('#chat-desktop-chat-cells [data-messenger-window], #chat-minimized-windows [data-messenger-window]');
+        existingWindows.forEach(windowEl => {
           const name = windowEl.dataset.messengerWindow;
           const input = windowEl.querySelector('.messenger-window-form input');
           if (input) this.messengerDrafts[name] = input.value;
-        });
-        dock.querySelectorAll('[data-messenger-window]').forEach(windowEl => {
-          const name = windowEl.dataset.messengerWindow;
           const messages = windowEl.querySelector('.messenger-window-messages');
-          if (!messages) return;
-          this.chatScrollPositions[name] = messages.scrollTop;
-          this.chatWasNearBottom[name] = messages.scrollHeight - messages.clientHeight - messages.scrollTop < 80;
+          if (messages) {
+            this.chatScrollPositions[name] = messages.scrollTop;
+            this.chatWasNearBottom[name] = messages.scrollHeight - messages.clientHeight - messages.scrollTop < 80;
+          }
         });
         const names = Array.isArray(this.openChatTabs) ? this.openChatTabs : [];
-        const cellCount = names.length + 1;
+        const visibleCount = names.filter(name => !this.minimizedChatWindows[name]).length;
+        const cellCount = visibleCount + 1;
         const availableWidth = window.innerWidth - 44 - 11 * Math.max(0, cellCount - 1);
         const cellWidth = Math.min(300, Math.max(96, Math.floor(availableWidth / Math.max(cellCount, 1))));
         dockRoot.style.setProperty('--chat-cell-width', cellWidth + 'px');
         document.getElementById('chat-floating-button-container')?.style.setProperty('--chat-cell-width', cellWidth + 'px');
         document.getElementById('chat-window-modal')?.style.setProperty('--chat-cell-width', cellWidth + 'px');
-        dock.innerHTML = names.map(name => {
+        const renderedWindows = names.map(name => {
           const worker = this.workers.find(item => (item.fullName || item.username) === name);
           const avatar = worker?.photo ? '<img src="' + this.escapeHtml(worker.photo) + '" alt="">' : this.escapeHtml(String(name).charAt(0).toUpperCase());
           const isMinimized = Boolean(this.minimizedChatWindows[name]);
@@ -2774,8 +2780,13 @@
               '</span></header>' +
             (isMinimized ? '' : '<div class="messenger-window-messages">' + cached + '</div><form class="messenger-window-form" onsubmit="app.handleMessengerWindowSend(event,decodeURIComponent(\'' + encodeURIComponent(name) + '\'))"><input type="text" autocomplete="off" placeholder="Escribe un mensaje..." aria-label="Mensaje para ' + this.escapeHtml(name) + '"><button type="submit" title="Enviar" aria-label="Enviar">➤</button></form>') +
           '</section>';
-        }).join('');
-        dock.querySelectorAll('[data-messenger-window]').forEach(windowEl => {
+        });
+        dock.innerHTML = renderedWindows.filter((_, index) => !this.minimizedChatWindows[names[index]]).join('');
+        if (minimizedDock) {
+          minimizedDock.innerHTML = renderedWindows.filter((_, index) => this.minimizedChatWindows[names[index]]).join('');
+          minimizedDock.classList.toggle('hidden', minimizedDock.childElementCount === 0);
+        }
+        [dock, minimizedDock].filter(Boolean).forEach(container => container.querySelectorAll('[data-messenger-window]').forEach(windowEl => {
           const name = windowEl.dataset.messengerWindow;
           const messages = windowEl.querySelector('.messenger-window-messages');
           if (messages) {
@@ -2791,7 +2802,7 @@
             input.value = this.messengerDrafts[name] || '';
             input.addEventListener('input', event => this.handleMessengerWindowTyping(event, name));
           }
-        });
+        }));
         if (focusedWindow) {
           const restoredInput = dock.querySelector('[data-messenger-window="' + CSS.escape(focusedWindow) + '"] .messenger-window-form input');
           if (restoredInput) {
