@@ -2770,7 +2770,11 @@
             (isMinimized ? '' : '<div class="messenger-window-messages">' + cached + '</div><form class="messenger-window-form" onsubmit="app.handleMessengerWindowSend(event,decodeURIComponent(\'' + encodeURIComponent(name) + '\'))"><input type="text" autocomplete="off" placeholder="Escribe un mensaje..." aria-label="Mensaje para ' + this.escapeHtml(name) + '"><button type="submit" title="Enviar" aria-label="Enviar">➤</button></form>') +
           '</section>';
         });
-        dock.innerHTML = renderedWindows.filter((_, index) => !this.minimizedChatWindows[names[index]]).join('');
+        dock.innerHTML = visibleCount
+          ? renderedWindows.map((markup, index) => this.minimizedChatWindows[names[index]]
+            ? '<div class="messenger-window-position-slot" aria-hidden="true" style="width:' + cellWidth + 'px;min-width:' + cellWidth + 'px;max-width:' + cellWidth + 'px;flex:0 0 ' + cellWidth + 'px;height:1px;pointer-events:none"></div>'
+            : markup).join('')
+          : '';
         if (minimizedDock) {
           minimizedDock.innerHTML = names.map(name => {
             const worker = this.workers.find(item => (item.fullName || item.username) === name);
