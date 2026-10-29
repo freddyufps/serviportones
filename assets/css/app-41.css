@@ -275,3 +275,10 @@ body:has(#chat-window-modal:not(.hidden)) #chat-desktop-windows{right:calc(var(-
  #chat-minimized-windows>.chat-persistent-tab .messenger-window-controls button:last-child{display:flex!important}
 }
 @media(max-width:899px){#chat-minimized-windows{display:none!important}}
+
+/* Bandeja compacta debajo de los chats; los grupos se recogen junto al lanzador al ocultar Contactos. */
+@media(min-width:900px) and (pointer:fine){
+ #chat-minimized-windows:not(.hidden){left:auto!important;right:390px!important;width:min(calc(100vw - 420px),920px)!important;justify-content:flex-end!important}
+ body:not(:has(#chat-window-modal:not(.hidden))) #chat-desktop-windows:not(.hidden){left:auto!important;right:88px!important;width:max-content!important;max-width:calc(100vw - 100px)!important;justify-content:flex-end!important}
+ body:not(:has(#chat-window-modal:not(.hidden))) #chat-minimized-windows:not(.hidden){left:auto!important;right:88px!important;width:max-content!important;max-width:calc(100vw - 100px)!important;justify-content:flex-end!important}
+}
