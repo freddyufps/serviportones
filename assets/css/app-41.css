@@ -184,4 +184,12 @@ body:has(#chat-window-modal:not(.hidden)) #chat-desktop-windows{right:calc(var(-
 .messenger-chat-window.is-minimized{position:relative!important;z-index:1!important}
 #chat-window-modal{z-index:10030!important}
 @media(max-width:639px){#chat-window-modal{z-index:10030!important}}
+/* Final stacking order: active chat windows and minimized tabs stay above the contacts panel. */
+#chat-desktop-windows:not(.hidden){position:fixed!important;z-index:2147483000!important;visibility:visible!important;opacity:1!important;pointer-events:none!important}
+#chat-desktop-chat-cells{position:relative!important;z-index:2147483000!important;pointer-events:none!important}
+#chat-desktop-chat-cells>.messenger-chat-window{position:relative!important;z-index:2147483001!important;pointer-events:auto!important}
+#chat-desktop-chat-cells>.messenger-chat-window.is-minimized{z-index:2147483000!important}
+#chat-window-modal{z-index:2147482000!important}
+#chat-floating-button-container{z-index:2147481500!important}
+@media(max-width:639px){#chat-desktop-windows,#chat-desktop-chat-cells{display:none!important}#chat-window-modal{z-index:2147482000!important}}
 
