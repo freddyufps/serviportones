@@ -963,7 +963,21 @@
 
       async loginSuccess(user, notify = true) {
         this.currentUser = user;
-        if (window.db) { try { if (String(user.role || '').toLowerCase() === 'admin') { const snap = await db.collection('presencia').doc(String(user.username || '').toLowerCase()).get(); if (snap.exists) this.applyAdminIdentityPresence(snap.data() || {}); } else { const snap = await db.collection('presencia').get(); const adminRecord = snap.docs.map(doc => doc.data() || {}).find(record => String(record.role || '').toLowerCase() === 'admin'); if (adminRecord) this.applyAdminIdentityPresence(adminRecord); } } catch (error) { console.warn('[IDENTIDAD] Usando identidad local hasta sincronizar:', error?.message || error); } }
+        // Mostrar el espacio de trabajo sin esperar a que Firestore responda.
+        // Una conexión lenta no debe dejar el indicador de carga bloqueado.
+        if (window.db) {
+          const presence = window.db.collection('presencia');
+          const applyIdentity = record => { if (record) this.applyAdminIdentityPresence(record); };
+          if (String(user.role || '').toLowerCase() === 'admin') {
+            presence.doc(String(user.username || '').toLowerCase()).get()
+              .then(snap => { if (snap.exists) applyIdentity(snap.data() || {}); })
+              .catch(error => console.warn('[IDENTIDAD] Usando identidad local hasta sincronizar:', error?.message || error));
+          } else {
+            presence.get()
+              .then(snap => applyIdentity(snap.docs.map(doc => doc.data() || {}).find(record => String(record.role || '').toLowerCase() === 'admin')))
+              .catch(error => console.warn('[IDENTIDAD] Usando identidad local hasta sincronizar:', error?.message || error));
+          }
+        }
         if (String(user.role || '').toLowerCase() === 'admin' && !this.activeAdminName) this.activeAdminName = String(user.activeAdminName || '');
         user.activeAdminName = this.activeAdminName || user.activeAdminName || '';
 
@@ -984,7 +998,7 @@
           this.presenceRecords[adminUsername] = { ...(this.presenceRecords[adminUsername] || {}), ...activePresence };
           if (window.db) {
             try {
-              await window.db.collection('presencia').doc(adminUsername).set(activePresence, { merge: true });
+              window.db.collection('presencia').doc(adminUsername).set(activePresence, { merge: true }).catch(error => console.warn('[PRESENCE] No se pudo restablecer el estado al iniciar sesión:', error?.message || error));
             } catch (error) {
               console.warn('[PRESENCE] No se pudo restablecer el estado al iniciar sesión:', error?.message || error);
             }
