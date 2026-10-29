@@ -1,2984 +1,1921 @@
-
-    const SafeStorage = {
-      memStore: {},
-      setItem(key, value) {
-        try { localStorage.setItem(key, value); }
-        catch (e) {
-          try { sessionStorage.setItem(key, value); }
-          catch (e2) { this.memStore[key] = String(value); }
-        }
-      },
-      getItem(key) {
-        try {
-          const item = localStorage.getItem(key);
-          if (item !== null) return item;
-        } catch (e) {}
-        try {
-          const itemSession = sessionStorage.getItem(key);
-          if (itemSession !== null) return itemSession;
-        } catch (e2) {}
-        return this.memStore[key] || null;
-      },
-      removeItem(key) {
-        try { localStorage.removeItem(key); } catch (e) {}
-        try { sessionStorage.removeItem(key); } catch (e2) {}
-        delete this.memStore[key];
-      }
-    };
-
-    const SoundEngine = {
-      ctx: null,
-      pendingWorkerConnectedSound: false,
-      async unlock() {
-        try {
-          const ctx = this.getCtx();
-          if (ctx && ctx.state === 'suspended') await ctx.resume();
-          console.info('[ORDER] Audio habilitado por interacciÃ³n', { state: ctx?.state || 'unavailable' });
-          if (ctx?.state === 'running' && this.pendingWorkerConnectedSound) {
-            this.pendingWorkerConnectedSound = false;
-            this.playWorkerConnectedSound();
-          }
-        } catch (error) {
-          console.warn('[ORDER] No se pudo habilitar el audio:', error);
-        }
-      },
-      getCtx() {
-        if (!this.ctx) {
-          const AudioContext = window.AudioContext || window.webkitAudioContext;
-          if (AudioContext) this.ctx = new AudioContext();
-        }
-        if (this.ctx && this.ctx.state === 'suspended') {
-          this.ctx.resume();
-        }
-        return this.ctx;
-      },
-
-      async playMessageSound() {
-        try {
-          const ctx = this.getCtx();
-          if (!ctx) return;
-          if (ctx.state === 'suspended') await ctx.resume();
-          const now = ctx.currentTime;
-
-          const osc1 = ctx.createOscillator();
-          const osc2 = ctx.createOscillator();
-          const gain = ctx.createGain();
-
-          osc1.type = 'sine';
-          osc2.type = 'sine';
-
-          osc1.frequency.setValueAtTime(587.33, now);
-          osc1.frequency.exponentialRampToValueAtTime(880, now + 0.12);
-
-          osc2.frequency.setValueAtTime(880, now);
-          osc2.frequency.exponentialRampToValueAtTime(1174.66, now + 0.15);
-
-          gain.gain.setValueAtTime(0.001, now);
-          gain.gain.linearRampToValueAtTime(0.25, now + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
-
-          osc1.connect(gain);
-          osc2.connect(gain);
-          gain.connect(ctx.destination);
-
-          osc1.start(now);
-          osc2.start(now);
-          osc1.stop(now + 0.5);
-          osc2.stop(now + 0.5);
-        } catch (e) {
-          console.warn("Audio Context bloqueado:", e);
-        }
-      },
-
-      async playWorkerConnectedSound() {
-        try {
-          const ctx = this.getCtx();
-          if (!ctx) return;
-          if (ctx.state === 'suspended') await ctx.resume();
-          if (ctx.state !== 'running') {
-            this.pendingWorkerConnectedSound = true;
-            console.info('[PRESENCE] Sonido de conexiÃ³n en espera de interacciÃ³n para habilitar audio');
-            return;
-          }
-          const now = ctx.currentTime;
-          console.info('[PRESENCE] Reproduciendo sonido de conexiÃ³n de trabajador');
-          [783.99, 987.77, 1318.51].forEach((frequency, index) => {
-            const start = now + index * 0.14;
-            const oscillator = ctx.createOscillator();
-            const gain = ctx.createGain();
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(frequency, start);
-            gain.gain.setValueAtTime(0.0001, start);
-            gain.gain.linearRampToValueAtTime(0.24, start + 0.025);
-            gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.42);
-            oscillator.connect(gain);
-            gain.connect(ctx.destination);
-            oscillator.start(start);
-            oscillator.stop(start + 0.44);
-          });
-        } catch (error) {
-          console.warn('[PRESENCE] No se pudo reproducir el sonido de conexiÃ³n:', error);
-        }
-      },
-      async playOrderCompletedSound() {
-        try {
-          const ctx = this.getCtx();
-          if (!ctx) { console.warn('[ORDER] Web Audio no estÃ¡ disponible'); return; }
-          if (ctx.state === 'suspended') await ctx.resume();
-          if (ctx.state !== 'running') { console.warn('[ORDER] AudioContext sigue suspendido; aviso no reproducido', { state: ctx.state }); return; }
-          const now = ctx.currentTime;
-          console.info('[ORDER] Reproduciendo sonido de orden completada');
-          [659.25, 783.99, 1046.5].forEach((frequency, index) => {
-            const start = now + index * 0.13;
-            const oscillator = ctx.createOscillator();
-            const gain = ctx.createGain();
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(frequency, start);
-            gain.gain.setValueAtTime(0.0001, start);
-            gain.gain.linearRampToValueAtTime(0.42, start + 0.025);
-            gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.38);
-            oscillator.connect(gain);
-            gain.connect(ctx.destination);
-            oscillator.start(start);
-            oscillator.stop(start + 0.4);
-          });
-        } catch (error) {
-          console.warn('[ORDER] No se pudo reproducir el sonido de orden completada:', error);
-        }
-      },
-      playOrderSound() {
-        try {
-          const ctx = this.getCtx();
-          if (!ctx) return;
-          const now = ctx.currentTime;
-
-          [0, 0.14].forEach((delay, idx) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'triangle';
-
-            const freq = idx === 0 ? 523.25 : 783.99;
-            osc.frequency.setValueAtTime(freq, now + delay);
-
-            gain.gain.setValueAtTime(0.001, now + delay);
-            gain.gain.linearRampToValueAtTime(0.3, now + delay + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.45);
-
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-
-            osc.start(now + delay);
-            osc.stop(now + delay + 0.5);
-          });
-        } catch (e) {
-          console.warn("Audio Context bloqueado:", e);
-        }
-      },
-
-      playGeneralNotificationSound() {
-        try {
-          const ctx = this.getCtx();
-          if (!ctx) return;
-          const now = ctx.currentTime;
-
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sine';
-
-          osc.frequency.setValueAtTime(659.25, now);
-          osc.frequency.exponentialRampToValueAtTime(987.77, now + 0.18);
-
-          gain.gain.setValueAtTime(0.001, now);
-          gain.gain.linearRampToValueAtTime(0.2, now + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
-
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-
-          osc.start(now);
-          osc.stop(now + 0.45);
-        } catch (e) {
-          console.warn("Audio Context bloqueado:", e);
-        }
-      },
-
-      async playCallAlertSound() {
-        try {
-          const ctx = this.getCtx();
-          if (!ctx) return;
-          if (ctx.state === 'suspended') await ctx.resume();
-          const now = ctx.currentTime;
-
-          [0, 0.15, 0.3].forEach(delay => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'sine';
-
-            osc.frequency.setValueAtTime(750, now + delay);
-            osc.frequency.linearRampToValueAtTime(1050, now + delay + 0.09);
-
-            gain.gain.setValueAtTime(0.001, now + delay);
-            gain.gain.linearRampToValueAtTime(0.95, now + delay + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.17);
-
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-
-            osc.start(now + delay);
-            osc.stop(now + delay + 0.18);
-          });
-        } catch (e) {
-          console.warn("Audio Context bloqueado:", e);
-        }
-      }
-    };
-
-    const unlockNotificationAudio = () => {
-      const context = SoundEngine.getCtx();
-      if (context && context.state === 'running') {
-        window.removeEventListener('pointerdown', unlockNotificationAudio);
-        window.removeEventListener('touchstart', unlockNotificationAudio);
-        window.removeEventListener('click', unlockNotificationAudio);
-      }
-    };
-    window.addEventListener('pointerdown', unlockNotificationAudio, { passive: true });
-    window.addEventListener('touchstart', unlockNotificationAudio, { passive: true });
-    window.addEventListener('click', unlockNotificationAudio, { passive: true });
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && SoundEngine.ctx?.state === 'suspended') SoundEngine.ctx.resume().catch(error => console.warn('No se pudo reactivar el sonido:', error));
-    });
-
-    const INITIAL_TASKS = [
-      {
-        id: 'ORD-101',
-        client: 'Condominio Campestre El PeÃ±Ã³n',
-        phone: '315 889 4521',
-        address: 'Km 3 VÃ­a Silvania, PorterÃ­a Principal',
-        serviceType: 'Mantenimiento Preventivo General',
-        equipment: 'PortÃ³n Corredizo BFT ICARO 2000',
-        assignedTo: 'Jeampaul',
-        priority: 'ALTA',
-        date: '2026-10-25',
-        instructions: 'RevisiÃ³n periÃ³dica. Verificar tensiÃ³n de cremallera y finales de carrera.',
-        status: 'PENDIENTE',
-        checklist: [],
-        observations: '',
-        evidence: [],
-        completedAt: null
-      }
-    ];
-
-    class PortonProApp {
-      constructor() {
-        this.currentUser = null;
-        this.users = [];
-        this.workers = [];
-        this.tasks = INITIAL_TASKS;
-        this.orderSequenceNext = 101;
-        this.taskClientMode = 'new';
-        this.showArchivedTasks = false;
-        this.invoiceUploadTaskId = null;
-        this.notifications = [];
-        this.selectedTask = null;
-        this.activeReportStatus = null;
-        this.heartbeatTimer = null;
-        this.presenceRecords = {};
-        this.presenceRefreshTimer = null;
-        this.adminIdentityNames = ['Lisbeth', 'Gabriela'];
-        this.adminIdentityPhotos = {};
-        this.activeAdminName = '';
-        try { const cache = JSON.parse(SafeStorage.getItem('portonpro_admin_identity_cache_v1') || '{}'); if (Array.isArray(cache.names) && cache.names.length === 2) this.adminIdentityNames = cache.names; if (cache.photos && typeof cache.photos === 'object') this.adminIdentityPhotos = { ...cache.photos }; if (cache.activeName) this.activeAdminName = String(cache.activeName); } catch (_) {}
-        this.adminIdentityEditingIndex = null;
-
-        this.adminIdentityPhotoDraft = null;
-        this.currentReportEvidence = [];
-        this.pendingEvidenceReads = [];
-        this.removedEvidenceStoragePaths = [];
-        this.checklistTemplate = this.readStoredList('portonpro_checklist_template_v1', ['Engrase de cremallera', 'FotocÃ©lulas', 'CalibraciÃ³n finales de carrera', 'Verificar baterÃ­a de respaldo']);
-        this.activeChecklistDraft = [];
-        this.checklistDraftDirty = false;
-        this.serviceTypeEditingIndex = null;
-        this.serviceMenuOpenIndex = null;
-        this.managedItemMode = null;
-        this.managedItemIndex = null;
-        this.serviceTypes = this.readStoredList('portonpro_service_types_v1', ['Mantenimiento Preventivo', 'InstalaciÃ³n', 'ReparaciÃ³n', 'ProgramaciÃ³n']);
-
-        // Estado del Chat y Conversaciones
-        this.chatMessages = [];
-        this.activeChatWorker = 'Jeampaul';
-        this.openChatTabs = [];
-        this.chatConversationHtmlCache = {};
-        this.chatScrollPositions = {};
-        this.chatWasNearBottom = {};
-        this.minimizedChatWindows = {};
-        this.messengerDrafts = {};
-        this.chatTypingByWorker = {};
-        this.chatDockUnreadByWorker = new Set();
-        this.chatUnsubscribe = null;
-        this.chatThreadUnsubscribe = null;
-        this.chatThreadsUnsubscribe = null;
-        this.conversations = {};
-        this.chatThreadSummaries = {};
-        this.chatActivityRanks = {};
-        this.chatActivitySequence = 0;
-        this.workerUnreadCount = null;
-        this.typingTimeout = null;
-        this.showArchived = false;
-
-        // Listeners Globales dedicados por tÃ©cnico
-        this.dedicatedWorkerUnsubscribes = {};
-
-        // Estado del GPS
-        this.gpsWatchId = null;
-        this.gpsConnectedAt = null;
-        this.isGpsSharing = false;
-        this.adminMap = null;
-        this.adminMapMarkers = {};
-        this.gpsLocationsUnsubscribe = null;
-        this.locationsData = {};
-
-        // Estado WebRTC (Llamadas de Voz)
-        this.peerConnection = null;
-        this.localStream = null;
-        this.callUnsubscribe = null;
-        this.callSignalingUnsubscribes = [];
-        this.pendingIceCandidates = [];
-        this.currentCallData = null;
-        this.callTimerInterval = null;
-        this.callRingtoneInterval = null;
-        this.callSeconds = 0;
-        this.callIceCounters = { generated: 0, received: 0, added: 0 };
-        this.isMuted = false;
-        this.lastIncomingCallId = null;
-        this.notifiedChatMessageIds = new Set();
-
-        // Preferencias de NotificaciÃ³n
-        this.prefs = {
-          sound: true,
-          popup: true,
-          chatBadge: true,
-        };
-
-        this.processedEventIds = new Set();
-        this.lastObservedTaskStatuses = null;
-        this.isTasksInitialLoad = true;
-        this.isNotifsInitialLoad = true;
-
-        this.seasonalTheme = this.readSeasonalTheme();
-        this.sharedSeasonalTheme = null;
-        const syncMobileViewport = () => {
-          const visualHeight = window.visualViewport?.height || window.innerHeight;
-          document.documentElement.style.setProperty('--app-visual-viewport-height', `${visualHeight}px`);
-          const keyboardOpen = window.matchMedia('(max-width: 640px)').matches && window.innerHeight - visualHeight > 120;
-          document.body.classList.toggle('mobile-keyboard-open', keyboardOpen);
-        };
-        syncMobileViewport();
-        window.visualViewport?.addEventListener('resize', syncMobileViewport, { passive: true });
-        window.visualViewport?.addEventListener('scroll', syncMobileViewport, { passive: true });
-        window.addEventListener('resize', syncMobileViewport, { passive: true });
-        document.addEventListener('focusin', event => {
-          if (!window.matchMedia('(max-width: 640px)').matches || !event.target.matches?.('input, textarea, select')) return;
-          if (!event.target.closest('#modal-task-form, #modal-report')) return;
-          window.setTimeout(() => event.target.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 180);
-        });
-        document.addEventListener('input', event => {
-          if (event.target.id !== 'rep-observations' || !this.selectedTask) return;
-          const card = [...document.querySelectorAll('.order-card[data-task-id]')].find(item => item.dataset.taskId === String(this.selectedTask.id));
-          const preview = card?.querySelector('.order-observations-text');
-          if (preview) preview.textContent = event.target.value.trim() || 'Pendiente de registrar.';
-        });
-
-        this.init();
-      }
-
-      loadPreferences() {
-        const saved = SafeStorage.getItem('portonpro_preferences');
-        if (saved) {
-          try {
-            this.prefs = { ...this.prefs, ...JSON.parse(saved) };
-          } catch (e) {}
-        }
-        document.getElementById('pref-sound').checked = this.prefs.sound;
-        document.getElementById('pref-popup').checked = this.prefs.popup;
-        document.getElementById('pref-chat-badge').checked = this.prefs.chatBadge;
-      }
-
-      updatePref(key, value) {
-        this.prefs[key] = value;
-        const preferenceIds = { sound: ['pref-sound','chat-pref-sound'], popup: ['pref-popup','chat-pref-popup'], chatBadge: ['pref-chat-badge','chat-pref-chatBadge'] };
-        (preferenceIds[key] || []).forEach(id => { const input = document.getElementById(id); if (input) input.checked = Boolean(value); });
-        SafeStorage.setItem('portonpro_preferences', JSON.stringify(this.prefs));
-        if (key === 'chatBadge') {
-          if (this.currentUser?.role === 'admin') this.renderConversationsSidebar();
-          else {
-            const threadId = this.getCurrentDisplayName();
-            const summary = this.chatThreadSummaries[threadId];
-            const count = summary?.hasMessages ? summary.unreadCount : Number(this.workerUnreadCount || 0);
-            this.updateChatLauncherUnread(value ? count : 0);
-          }
-        }
-        this.showToast('Preferencia guardada', 'info');
-      }
-
-      showPopupNotification({ title, subtitle, details, type, icon, onClick, force = false }) {
-        if (!force && !this.prefs.popup) return;
-
-        const stack = document.getElementById('toast-notification-stack');
-        if (!stack) return;
-
-        const toastId = 'pop_' + Date.now() + Math.random().toString(36).substring(2, 6);
-        const card = document.createElement('div');
-        card.id = toastId;
-        card.className = "pointer-events-auto bg-slate-900/95 text-white border border-slate-700/80 rounded-2xl shadow-2xl p-3.5 popup-slide-in backdrop-blur-md flex items-start gap-3 relative overflow-hidden transition cursor-pointer hover:border-brand-lime";
-
-        let badgeBg = "bg-brand-lime/20 text-brand-lime border border-brand-lime/40";
-        if (type === 'chat') badgeBg = "bg-cyan-500/20 text-cyan-400 border border-cyan-500/40";
-        if (type === 'order') badgeBg = "bg-amber-500/20 text-amber-400 border border-amber-500/40";
-
-        card.innerHTML = `
-          <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${badgeBg} font-black text-sm">
-            ${icon || 'ğŸ“£'}
-          </div>
-          <div class="flex-1 min-w-0 pr-4">
-            <div class="flex items-center justify-between gap-1">
-              <h5 class="text-xs font-black uppercase tracking-wider text-slate-100 truncate">${this.escapeHtml(title)}</h5>
-              <span class="text-[9px] text-slate-400 font-mono">Ahora</span>
-            </div>
-            ${subtitle ? `<p class="text-xs font-extrabold text-brand-lime truncate mt-0.5">${this.escapeHtml(subtitle)}</p>` : ''}
-            ${details ? `<p class="text-[11px] text-slate-300 line-clamp-2 mt-0.5 italic">"${this.escapeHtml(details)}"</p>` : ''}
-          </div>
-          <button type="button" class="absolute top-2 right-2 text-slate-400 hover:text-white p-1 rounded-lg" onclick="event.stopPropagation(); app.closePopup('${toastId}')">
-            âœ•
-          </button>
-          <div class="absolute bottom-0 left-0 h-1 bg-brand-lime transition-all duration-[6500ms] w-full" id="${toastId}_bar"></div>
-        `;
-
-        if (onClick) {
-          card.onclick = () => {
-            onClick();
-            this.closePopup(toastId);
-          };
-        }
-
-        stack.appendChild(card);
-
-        setTimeout(() => {
-          const bar = document.getElementById(`${toastId}_bar`);
-          if (bar) bar.style.width = '0%';
-        }, 50);
-
-        setTimeout(() => {
-          this.closePopup(toastId);
-        }, 6500);
-      }
-
-      closePopup(toastId) {
-        const elem = document.getElementById(toastId);
-        if (elem) {
-          elem.classList.remove('popup-slide-in');
-          elem.classList.add('popup-slide-out');
-          setTimeout(() => elem.remove(), 320);
-        }
-      }
-
-      showToast(message, type = 'info') {
-        const toast = document.getElementById('toast');
-        const text = document.getElementById('toast-message');
-        const icon = document.getElementById('toast-icon');
-        if (!toast || !text || !icon) return;
-
-        const icons = { success: 'âœ…', error: 'âš ï¸', info: 'â„¹ï¸' };
-        icon.textContent = icons[type] || icons.info;
-        text.textContent = String(message ?? '');
-        toast.classList.remove('translate-y-20', 'opacity-0');
-        toast.classList.add('translate-y-0', 'opacity-100');
-        clearTimeout(this.toastTimer);
-        this.toastTimer = setTimeout(() => {
-          toast.classList.remove('translate-y-0', 'opacity-100');
-          toast.classList.add('translate-y-20', 'opacity-0');
-        }, 2800);
-      }
-
-      normalizeInput(val) {
-        if (!val && val !== 0) return '';
-        return String(val).trim().normalize('NFC').replace(/[\u200B-\u200D\uFEFF]/g, '');
-      }
-
-      formatTime(dateObj = new Date()) {
-        return dateObj.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true });
-      }
-
-      formatFullDateTime(dateObj = new Date()) {
-        const time = this.formatTime(dateObj);
-        const day = dateObj.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        return `${day} ${time}`;
-      }
-
-      openWazeNavigation(address) {
-        if (!address) return this.showToast('No hay una direcciÃ³n registrada', 'error');
-        window.open(`https://waze.com/ul?q=${encodeURIComponent(address)}&navigate=yes`, '_blank');
-      }
-
-      openGoogleMapsNavigation(address) {
-        if (!address) return this.showToast('No hay una direcciÃ³n registrada', 'error');
-        window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`, '_blank');
-      }
-
-      initTechTheme() {
-        // El tema ClÃ¡sico conserva la interfaz limpia y sin partÃ­culas heredadas.
-        document.getElementById('tech-particles-container')?.remove();
-      }
-
-      async init() {
-        const unlockOrderAudio = () => SoundEngine.unlock();
-        window.addEventListener('pointerdown', unlockOrderAudio, { once: true, capture: true });
-        window.addEventListener('touchstart', unlockOrderAudio, { once: true, passive: true, capture: true });
-        window.addEventListener('keydown', unlockOrderAudio, { once: true, capture: true });
-        this.applyDarkMode();
-        this.applySeasonalTheme(this.seasonalTheme);
-        this.renderSeasonalThemeSelector();
-        this.initTechTheme();
-        this.loadPreferences();
-
-        SafeStorage.removeItem('portonpro_admin_v4');
-        SafeStorage.removeItem('portonpro_users_v4');
-
-        const savedTasks = SafeStorage.getItem('portonpro_tasks_v4');
-        if (savedTasks) {
-          try { this.tasks = JSON.parse(savedTasks); } catch(e) { this.tasks = INITIAL_TASKS; }
-        }
-        const savedOrderSequence = Number(SafeStorage.getItem('portonpro_order_sequence_next'));
-        this.orderSequenceNext = Number.isSafeInteger(savedOrderSequence) && savedOrderSequence > 0 ? savedOrderSequence : this.getDefaultNextOrderNumber();
-
-        const remembered = SafeStorage.getItem('portonpro_remembered');
-        if (remembered) {
-          try {
-            const remObj = JSON.parse(remembered);
-            document.getElementById('login-username').value = remObj.u || '';
-            document.getElementById('login-password').value = remObj.p || '';
-            document.getElementById('login-remember').checked = true;
-          } catch(e) {}
-        }
-
-        if (window.db) {
-          db.collection('users').onSnapshot((snapshot) => {
-            const list = [];
-            snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-            this.users = list;
-            this.applySharedSeasonalTheme();
-            this.workers = list.filter(u => String(u.role).toLowerCase() === 'worker');
-            if (this.currentUser) this.renderAdminPresence();
-
-            this.renderTechOptionsInSelects();
-            this.renderUsersTable();
-
-            if (this.currentUser && this.currentUser.role === 'admin') {
-              this.renderTechniciansMonitor();
-              this.renderConversationsSidebar();
-              this.renderTasks();
-              this.setupMultiWorkerChatListeners();
-              this.listenIncomingVoiceCalls();
-            } else if (this.currentUser && this.currentUser.role === 'worker') {
-              const myUpdated = list.find(u => String(u.username || '').toLowerCase() === this.currentUser.username.toLowerCase());
-              if (myUpdated && myUpdated.photo !== this.currentUser.photo) {
-                this.currentUser.photo = myUpdated.photo;
-                SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
-                this.setupDashboardUI();
-              }
-            }
-          }, err => console.error("Snapshot users error:", err));
-
-          db.collection('ordenes').doc('todas').onSnapshot((doc) => {
-            if (doc.exists && Array.isArray(doc.data().tasks)) {
-              const orderDocument = doc.data();
-              const incomingTasks = orderDocument.tasks;
-              const remoteSequence = Number(orderDocument.nextOrderNumber);
-              this.orderSequenceNext = Number.isSafeInteger(remoteSequence) && remoteSequence > 0 ? remoteSequence : this.getDefaultNextOrderNumber(incomingTasks);
-              SafeStorage.setItem('portonpro_order_sequence_next', String(this.orderSequenceNext));
-              incomingTasks.forEach(task => {
-                const evidenceList = Array.isArray(task?.evidence) ? task.evidence : [];
-                const evidenceUrls = evidenceList.map(item => typeof item === 'string' ? item : item?.url || item?.src || null);
-                console.info('[ORDER] Evidencias leÃ­das desde Firestore', { taskId: task?.id, cantidad: evidenceList.length, urls: evidenceUrls });
-                if (evidenceUrls.filter(Boolean).length) console.info('[ORDER] URL leÃ­da de Firestore', { taskId: task.id, cantidad: evidenceUrls.filter(Boolean).length, urls: evidenceUrls.filter(Boolean) });
-                const invoiceUrl = task?.invoice?.url || task?.invoiceUrl || task?.facturaUrl;
-                if (invoiceUrl) console.info('[ORDER] Factura cargada', { taskId: task.id, url: invoiceUrl, origen: 'Firestore' });
-              });
-              if (this.isTasksInitialLoad) {
-                const cachedTasks = Array.isArray(this.tasks) ? this.tasks : [];
-                incomingTasks.forEach(remoteTask => {
-                  const cachedTask = cachedTasks.find(item => item?.id === remoteTask?.id);
-                  if (!cachedTask) return;
-                  const remoteEvidence = [remoteTask.evidence, remoteTask.report?.evidence, remoteTask.workEvidence, remoteTask.evidences, remoteTask.attachments].find(items => Array.isArray(items) && items.length) || [];
-                  const cachedEvidence = [cachedTask.evidence, cachedTask.report?.evidence, cachedTask.workEvidence, cachedTask.evidences, cachedTask.attachments].find(items => Array.isArray(items) && items.length) || [];
-                  if (!remoteEvidence.length && cachedEvidence.length) {
-                    remoteTask.evidence = cachedEvidence;
-                    console.warn('[EVIDENCIA] Se recuperÃ³ evidencia local pendiente de sincronizar', { taskId: remoteTask.id, cantidad: cachedEvidence.length });
-                  }
-                });
-              }
-
-              if (!this.isTasksInitialLoad && this.currentUser?.role === 'admin') {
-                const previousTasksById = this.lastObservedTaskStatuses || new Map((this.tasks || []).map(task => [String(task?.id), task?.status]));
-                incomingTasks.forEach(task => {
-                  const taskId = String(task?.id || '');
-                  const previousTask = previousTasksById.get(taskId);
-                  if (!taskId || task?.status !== 'REALIZADA' || previousTask === 'REALIZADA' || task?.archivedAt) return;
-
-
-
-                  console.info('[ORDER] Orden pasÃ³ a REALIZADA', { taskId, previousStatus: previousTask || 'sin estado anterior' });
-                  if (this.prefs.sound) SoundEngine.playOrderCompletedSound();
-                  else console.info('[ORDER] Sonido omitido: la preferencia estÃ¡ desactivada');
-                });
-              }
-              if (!this.isTasksInitialLoad && incomingTasks.length > this.tasks.length) {
-                const latestTask = incomingTasks[0];
-                if (latestTask && !this.processedEventIds.has(latestTask.id)) {
-                  this.processedEventIds.add(latestTask.id);
-
-                  if (this.prefs.sound) SoundEngine.playOrderSound();
-                  this.showPopupNotification({
-                    title: 'ğŸ“‹ Nueva Orden de Trabajo',
-                    subtitle: `${latestTask.client} &bull; ${latestTask.serviceType}`,
-                    details: `Equipo: ${latestTask.equipment} | TÃ©cnico: ${latestTask.assignedTo}`,
-                    type: 'order',
-                    icon: 'ğŸ“‹',
-                    onClick: () => this.viewOrderDetails(latestTask.id)
-                  });
-                }
-              }
-
-              this.lastObservedTaskStatuses = new Map(incomingTasks.filter(task => task?.id != null).map(task => [String(task.id), task.status]));
-              this.isTasksInitialLoad = false;
-              this.tasks = incomingTasks;
-              SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
-              if (this.currentUser) {
-                this.updateStats();
-                this.renderTasks();
-                if (this.currentUser.role === 'admin') {
-                  this.renderTechniciansMonitor();
-                  this.renderAdminAuditLog();
-                }
-              }
-            }
-          }, e => console.error("Snapshot Ã³rdenes:", e));
-
-          db.collection('presencia').onSnapshot((snapshot) => {
-            snapshot.forEach(doc => {
-              const data = doc.data() || {};
-              const presenceId = doc.id.toLowerCase();
-              const existingPresenceUser = this.users.find(x => String(x.username || '').toLowerCase() === presenceId) || (Array.isArray(this.workers) ? this.workers.find(x => String(x.username || '').toLowerCase() === presenceId) : null);
-              const previousRecord = this.presenceRecords[presenceId];
-              const previousStatus = previousRecord ? this.getPresenceStatus(existingPresenceUser || { username: presenceId }) : 'disconnected';
-              this.presenceRecords[presenceId] = data;
-              if (String(data.role || '').toLowerCase() === 'admin') this.applyAdminIdentityPresence(data);
-              if (this.currentUser?.role === 'admin' && presenceId === String(this.currentUser.username || '').toLowerCase()) {
-                if (Array.isArray(data.adminIdentityNames) && data.adminIdentityNames.length === 2) this.adminIdentityNames = data.adminIdentityNames.map(name => String(name || '').trim()).filter(Boolean).length === 2 ? data.adminIdentityNames.map(name => String(name || '').trim()) : this.adminIdentityNames;
-                if (data.activeAdminName) this.activeAdminName = String(data.activeAdminName);
-                if (data.adminIdentityPhotos && typeof data.adminIdentityPhotos === 'object') this.adminIdentityPhotos = { ...data.adminIdentityPhotos };
-              }
-              const u = this.users.find(x => String(x.username || '').toLowerCase() === presenceId);
-              if (u) {
-                if (data.lastHeartbeat !== undefined) u.lastHeartbeat = data.lastHeartbeat;
-                if (data.photo) u.photo = data.photo;
-                if (data.lastLogin) u.lastLogin = data.lastLogin;
-              }
-              const presenceUser = u || existingPresenceUser || { username: presenceId, ...data };
-              const isWorkerPresence = ['worker', 'trabajador'].includes(String(data.role || presenceUser.role || '').toLowerCase().trim());
-              const becameAvailable = this.getPresenceStatus(presenceUser) === 'available';
-              if (this.presenceSnapshotInitialized && this.currentUser?.role === 'admin' && isWorkerPresence && previousStatus !== 'available' && becameAvailable && this.prefs?.sound !== false) {
-                console.info('[PRESENCE] TransiciÃ³n de trabajador a disponible', { username: presenceId });
-                SoundEngine.playWorkerConnectedSound();
-              }
-            });
-            this.presenceSnapshotInitialized = true;
-            this.applySharedSeasonalTheme();
-            if (this.currentUser) {
-              this.renderTasks();
-              this.renderAdminPresence();
-            }
-            if (this.currentUser && this.currentUser.role === 'admin') {
-              this.renderTechniciansMonitor();
-              this.renderConversationsSidebar();
-            }
-          });
-
-
-        }
-
-        document.addEventListener('pointerdown', event => {
-          const menu = document.getElementById('admin-presence-menu');
-          const toggle = document.getElementById('admin-presence-toggle');
-          if (!menu || menu.classList.contains('hidden') || menu.contains(event.target) || toggle?.contains(event.target)) return;
-          menu.classList.add('hidden');
-          toggle?.setAttribute('aria-expanded', 'false');
-        }, true);
-
-
-        document.addEventListener('click', event => {
-          const menu = document.getElementById('admin-presence-menu');
-          const toggle = document.getElementById('admin-presence-toggle');
-          if (!menu || menu.classList.contains('hidden') || menu.contains(event.target) || toggle?.contains(event.target)) return;
-          menu.classList.add('hidden');
-          toggle?.setAttribute('aria-expanded', 'false');
-        });
-        document.addEventListener('keydown', event => {
-          if (event.key !== 'Escape') return;
-          const menu = document.getElementById('admin-presence-menu');
-          const toggle = document.getElementById('admin-presence-toggle');
-          if (!menu || menu.classList.contains('hidden')) return;
-          menu.classList.add('hidden');
-          toggle?.setAttribute('aria-expanded', 'false');
-        });
-
-        // Los chats se minimizan o cierran solo desde sus controles individuales.
-
-
-
-        document.addEventListener('visibilitychange', () => {
-          if (!document.hidden && this.currentUser) {
-            this.sendHeartbeat();
-          }
-        });
-
-        const savedSession = SafeStorage.getItem('portonpro_session_v4');
-        if (savedSession) {
-          try {
-            const user = JSON.parse(savedSession);
-            await this.loginSuccess(user, false);
-          } catch(e) {
-            this.showLoginView();
-          }
-        } else {
-          this.showLoginView();
-        }
-
-        if (window.lucide) lucide.createIcons();
-      }
-
-      getOrderNumberFromId(id) {
-        const match = String(id || '').match(/^ORD-(\d+)$/i);
-        return match ? Number(match[1]) : null;
-      }
-
-      getDefaultNextOrderNumber(tasks = this.tasks) {
-        const numbers = (Array.isArray(tasks) ? tasks : []).map(task => this.getOrderNumberFromId(task?.id)).filter(Number.isSafeInteger);
-        return Math.max(101, ...numbers.map(number => number + 1));
-      }
-
-      getNextAvailableOrderNumber(start = this.orderSequenceNext, tasks = this.tasks, excludedId = null) {
-        const used = new Set((Array.isArray(tasks) ? tasks : []).filter(task => task?.id !== excludedId).map(task => this.getOrderNumberFromId(task?.id)).filter(Number.isSafeInteger));
-        let candidate = Number(start);
-        if (!Number.isSafeInteger(candidate) || candidate < 1) candidate = this.getDefaultNextOrderNumber(tasks);
-        while (used.has(candidate)) candidate += 1;
-        return candidate;
-      }
-
-      renderOrderSequenceSetting() {
-        const input = document.getElementById('settings-order-sequence-input');
-        if (input) input.value = this.getNextAvailableOrderNumber();
-      }
-
-      async saveOrderSequence() {
-        if (this.currentUser?.role !== 'admin') return;
-        const input = document.getElementById('settings-order-sequence-input');
-        const requested = Number(input?.value);
-        if (!Number.isSafeInteger(requested) || requested < 1) return this.showToast('Escribe un nÃºmero de orden vÃ¡lido.', 'error');
-        if (this.tasks.some(task => this.getOrderNumberFromId(task?.id) === requested)) {
-          return this.showToast(`El nÃºmero ORD-${requested} ya estÃ¡ en uso. Elige un consecutivo libre.`, 'error');
-        }
-        const previous = this.orderSequenceNext;
-        this.orderSequenceNext = requested;
-        const result = await this.saveTasks(true);
-        if (!result.ok) { this.orderSequenceNext = previous; SafeStorage.setItem('portonpro_order_sequence_next', String(previous)); }
-        this.renderOrderSequenceSetting();
-        if (result.ok) this.showToast(`La prÃ³xima orden comenzarÃ¡ en ORD-${requested}.`, 'success');
-      }
-
-      async resetOrderSequence() {
-        if (this.currentUser?.role !== 'admin') return;
-        const previous = this.orderSequenceNext;
-        this.orderSequenceNext = this.getNextAvailableOrderNumber(101);
-        const result = await this.saveTasks(true);
-        if (!result.ok) { this.orderSequenceNext = previous; SafeStorage.setItem('portonpro_order_sequence_next', String(previous)); }
-        this.renderOrderSequenceSetting();
-        if (result.ok) this.showToast(`Consecutivo reiniciado. La prÃ³xima orden serÃ¡ ORD-${this.orderSequenceNext}.`, 'success');
-      }
-
-      saveTasks(reportError = false) {
-        SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
-        SafeStorage.setItem('portonpro_order_sequence_next', String(this.orderSequenceNext));
-        if (!window.db) return Promise.resolve({ ok: true, localOnly: true });
-        try {
-          return db.collection('ordenes').doc('todas').set({ tasks: this.tasks, nextOrderNumber: this.orderSequenceNext }, { merge: true })
-            .then(() => ({ ok: true }))
-            .catch(error => {
-              console.error('[ORDEN] FallÃ³ la escritura de Ã³rdenes:', error);
-              if (reportError) this.showToast(`No se guardÃ³ en la nube: ${error.message || error}`, 'error');
-              return { ok: false, error };
-            });
-        } catch (error) {
-          console.error('[ORDEN] No se pudo iniciar la escritura de Ã³rdenes:', error);
-          if (reportError) this.showToast(`No se pudo guardar: ${error.message || error}`, 'error');
-          return Promise.resolve({ ok: false, error });
-        }
-      }
-      async addActivityNotification(techName, taskId, actionType, details, type = 'order') {
-        const notifData = {
-          techName: techName,
-          taskId: taskId || '',
-          actionType: actionType,
-          details: details || '',
-          type: type,
-          time: this.formatTime(new Date()),
-          timestamp: Date.now(),
-          read: false
-        };
-
-        if (window.db) {
-          db.collection('notificaciones').add(notifData).catch(e => console.error("Error notificaciÃ³n:", e));
-        } else {
-          this.showPopupNotification({ title: 'ActualizaciÃ³n (' + actionType + ')', subtitle: techName, details: details || '', type: type || 'general', icon: 'ğŸ“£' });
-        }
-      }
-
-      showLoginView() {
-        document.documentElement.classList.remove('auth-session-pending');
-        document.body.classList.add('seasonal-login-visible');
-        document.getElementById('view-login').classList.remove('hidden');
-        window.resumeLoginBrandVideo?.();
-        document.getElementById('view-dashboard').classList.add('hidden');
-        this.updateSeasonalEffects(this.seasonalTheme);
-        document.getElementById('chat-floating-button-container').classList.add('hidden');
-        document.getElementById('chat-window-modal').classList.add('hidden');
-        document.getElementById('chat-desktop-windows')?.classList.add('hidden');
-        if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
-        if (this.chatUnsubscribe) { this.chatUnsubscribe(); this.chatUnsubscribe = null; }
-        if (this.chatThreadUnsubscribe) { this.chatThreadUnsubscribe(); this.chatThreadUnsubscribe = null; }
-        if (this.chatThreadsUnsubscribe) { this.chatThreadsUnsubscribe(); this.chatThreadsUnsubscribe = null; }
-        if (this.callUnsubscribe) { this.callUnsubscribe(); this.callUnsubscribe = null; }
-        if (this.gpsLocationsUnsubscribe) { this.gpsLocationsUnsubscribe(); this.gpsLocationsUnsubscribe = null; }
-        this.clearDedicatedWorkerChatListeners();
-        this.stopGpsSharing(true);
-        this.endVoiceCall();
-      }
-
-      async handleLogin(e) {
-        e.preventDefault();
-        const rawUser = document.getElementById('login-username').value;
-        const rawPass = document.getElementById('login-password').value;
-        const rememberChecked = document.getElementById('login-remember').checked;
-        const errorAlert = document.getElementById('login-error-alert');
-        const errorText = document.getElementById('login-error-text');
-        const btnSubmit = document.getElementById('btn-submit-login');
-        const btnText = document.getElementById('btn-submit-text');
-
-        const userVal = String(rawUser || '').trim().toLowerCase();
-        const passVal = String(rawPass || '').trim();
-
-        if (!userVal || !passVal) {
-          errorText.textContent = "Por favor ingresa usuario y contraseÃ±a.";
-          errorAlert.classList.remove('hidden');
-          return;
-        }
-
-        if (btnSubmit) {
-          btnSubmit.disabled = true;
-          if (btnText) btnText.textContent = "Verificando en Firestore...";
-        }
-
-        if (rememberChecked) {
-          SafeStorage.setItem('portonpro_remembered', JSON.stringify({ u: userVal, p: passVal }));
-        } else {
-          SafeStorage.removeItem('portonpro_remembered');
-        }
-
-        let authenticatedUser = null;
-
-        if (window.db) {
-          try {
-            const snapshot = await db.collection('users').get();
-            snapshot.forEach(doc => {
-              const uData = doc.data() || {};
-              const dbUser = String(uData.username !== undefined ? uData.username : '').trim().toLowerCase();
-              const dbPass = String(uData.password !== undefined ? uData.password : '').trim();
-
-              if (dbUser === userVal && dbPass === passVal) {
-                const isActive = (uData.active !== false);
-                authenticatedUser = {
-                  id: doc.id,
-                  username: uData.username || userVal,
-                  fullName: uData.fullName || uData.username || userVal,
-                  role: String(uData.role || 'worker').toLowerCase().trim(),
-                  phone: uData.phone || '',
-                  photo: uData.photo || '',
-                  active: isActive
-                };
-              }
-            });
-          } catch (err) {
-            console.error("Error al consultar Firestore:", err);
-            errorText.textContent = "Error de conexiÃ³n con Firestore: " + (err.message || "Fallo de red");
-            errorAlert.classList.remove('hidden');
-            if (btnSubmit) { btnSubmit.disabled = false; if (btnText) btnText.textContent = "Iniciar SesiÃ³n"; }
-            return;
-          }
-        }
-
-        if (btnSubmit) {
-          btnSubmit.disabled = false;
-          if (btnText) btnText.textContent = "Iniciar SesiÃ³n";
-        }
-
-        if (authenticatedUser) {
-          if (authenticatedUser.active === false) {
-            errorText.textContent = 'Esta cuenta estÃ¡ desactivada. Consulta al Administrador.';
-            errorAlert.classList.remove('hidden');
-            return;
-          }
-
-          errorAlert.classList.add('hidden');
-          const now = new Date();
-          const formattedTime = this.formatTime(now);
-
-          if (window.db) {
-            db.collection('presencia').doc(authenticatedUser.username.toLowerCase()).set({
-              username: authenticatedUser.username,
-              fullName: authenticatedUser.fullName,
-              lastHeartbeat: Date.now(),
-              photo: authenticatedUser.photo || '',
-              lastLogin: `${formattedTime} (En lÃ­nea)`,
-              ...(String(authenticatedUser.role || '').toLowerCase() === 'admin' ? { availabilityStatus: 'available' } : {})
-            }, { merge: true }).catch(e => console.error(e));
-          }
-
-          await this.loginSuccess(authenticatedUser, true);
-          return;
-        }
-
-        errorText.textContent = 'Usuario o contraseÃ±a incorrectos en Firestore.';
-        errorAlert.classList.remove('hidden');
-        if (window.lucide) lucide.createIcons();
-      }
-
-      async loginSuccess(user, notify = true) {
-        this.currentUser = user;
-        if (window.db) { try { if (String(user.role || '').toLowerCase() === 'admin') { const snap = await db.collection('presencia').doc(String(user.username || '').toLowerCase()).get(); if (snap.exists) this.applyAdminIdentityPresence(snap.data() || {}); } else { const snap = await db.collection('presencia').get(); const adminRecord = snap.docs.map(doc => doc.data() || {}).find(record => String(record.role || '').toLowerCase() === 'admin'); if (adminRecord) this.applyAdminIdentityPresence(adminRecord); } } catch (error) { console.warn('[IDENTIDAD] Usando identidad local hasta sincronizar:', error?.message || error); } }
-        if (String(user.role || '').toLowerCase() === 'admin' && !this.activeAdminName) this.activeAdminName = String(user.activeAdminName || '');
-        user.activeAdminName = this.activeAdminName || user.activeAdminName || '';
-
-        // Toda sesiÃ³n vÃ¡lida del administrador vuelve a mostrarse disponible,
-        // incluso al restaurar la sesiÃ³n guardada despuÃ©s de una recarga.
-        if (String(user.role || '').toLowerCase() === 'admin') {
-          const adminUsername = String(user.username || '').toLowerCase();
-          const heartbeat = Date.now();
-          const activePresence = {
-            username: user.username,
-            fullName: this.getCurrentDisplayName(),
-            role: 'admin',
-            photo: this.getCurrentDisplayPhoto() || user.photo || '',
-            lastHeartbeat: heartbeat,
-            lastLogin: `${this.formatTime(new Date())} (En lÃ­nea)`,
-            availabilityStatus: 'available'
-          };
-          this.presenceRecords[adminUsername] = { ...(this.presenceRecords[adminUsername] || {}), ...activePresence };
-          if (window.db) {
-            try {
-              await window.db.collection('presencia').doc(adminUsername).set(activePresence, { merge: true });
-            } catch (error) {
-              console.warn('[PRESENCE] No se pudo restablecer el estado al iniciar sesiÃ³n:', error?.message || error);
-            }
-          }
-        }
-        this.applySharedSeasonalTheme();
-        SafeStorage.setItem('portonpro_session_v4', JSON.stringify(user));
-
-        window.stopLoginBrandVideo?.();
-        document.getElementById('view-login').classList.add('hidden');
-        document.body.classList.remove('seasonal-login-visible');
-        document.getElementById('view-dashboard').classList.remove('hidden');
-        this.updateSeasonalEffects(this.seasonalTheme);
-        document.documentElement.classList.remove('auth-session-pending');
-        this.applyDarkMode();
-        document.getElementById('chat-floating-button-container').classList.remove('hidden');
-        document.getElementById('chat-desktop-windows')?.classList.remove('hidden');
-
-        this.sendHeartbeat();
-        if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
-        this.heartbeatTimer = setInterval(() => this.sendHeartbeat(), 6000);
-        if (this.presenceRefreshTimer) clearInterval(this.presenceRefreshTimer);
-        this.presenceRefreshTimer = setInterval(() => this.renderAdminPresence(), 10000);
-
-        this.setupDashboardUI();
-        this.renderTechOptionsInSelects();
-        this.updateStats();
-        this.renderTasks();
-
-        if (this.currentUser.role === 'admin') {
-          this.renderTechniciansMonitor();
-          this.renderAdminAuditLog();
-        }
-
-        this.initChatModule();
-        this.listenIncomingVoiceCalls();
-
-      }
-
-      logout() {
-        const now = new Date();
-        const formattedLogout = `${this.formatTime(now)} (Desconectado)`;
-
-        if (this.currentUser && window.db) {
-          db.collection('presencia').doc(this.currentUser.username.toLowerCase()).set({
-            lastHeartbeat: 0,
-            lastLogin: formattedLogout,
-            ...(this.currentUser.role === 'admin' ? { availabilityStatus: 'disconnected' } : {})
-          }, { merge: true }).catch(e => console.error(e));
-        }
-
-        this.currentUser = null;
-        this.applyDarkMode();
-        SafeStorage.removeItem('portonpro_session_v4');
-        if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
-        if (this.presenceRefreshTimer) clearInterval(this.presenceRefreshTimer);
-        this.showLoginView();
-      }
-
-      sendHeartbeat() {
-        if (!this.currentUser) return;
-        const now = Date.now();
-        if (window.db) {
-          db.collection('presencia').doc(this.currentUser.username.toLowerCase()).set({
-            username: this.currentUser.username,
-            fullName: this.getCurrentDisplayName(),
-            lastHeartbeat: now,
-            photo: this.currentUser.photo || '',
-            role: this.currentUser.role
-          }, { merge: true }).catch(e => console.error(e));
-        }
-        if (this.currentUser.role === 'admin') this.renderTechniciansMonitor();
-      }
-
-      togglePasswordVisibility(fieldId) {
-        const input = document.getElementById(fieldId);
-        input.type = input.type === 'password' ? 'text' : 'password';
-      }
-
-      setupDashboardUI() {
-        const isAdmin = this.currentUser.role === 'admin';
-
-        document.getElementById('header-user-name').textContent = this.getCurrentDisplayName();
-        document.getElementById('header-role-badge').textContent = isAdmin ? 'Admin' : 'TÃ©cnico';
-        const headerRoleSubtitle = document.getElementById('header-role-subtitle');
-        if (headerRoleSubtitle) { headerRoleSubtitle.textContent = isAdmin ? 'Administrador' : 'Trabajador'; headerRoleSubtitle.classList.remove('hidden'); }
-        document.getElementById('admin-presence-control')?.classList.toggle('hidden', !isAdmin);
-
-        const headerPhoto = document.getElementById('header-user-photo');
-        const headerInit = document.getElementById('header-avatar-initial');
-        const headerDisplayPhoto = this.getCurrentDisplayPhoto();
-        if (headerDisplayPhoto) {
-          headerPhoto.src = headerDisplayPhoto;
-          headerPhoto.classList.remove('hidden');
-          headerInit.classList.add('hidden');
-        } else {
-          headerPhoto.classList.add('hidden');
-          headerInit.classList.remove('hidden');
-          headerInit.textContent = (this.getCurrentDisplayName() || 'A').charAt(0);
-        }
-
-        const monitorSection = document.getElementById('section-technicians-monitor');
-        const filterTech = document.getElementById('filter-tech');
-        const filterTechControl = document.getElementById('filter-tech-control');
-        const auditLogSection = document.getElementById('section-admin-audit-log');
-        const roleHint = document.getElementById('role-hint-text');
-        this.installOrderFilterDismissHandlers();
-
-        const btnResetPending = document.getElementById('btn-reset-pending');
-        const btnResetDone = document.getElementById('btn-reset-done');
-        const btnResetFailed = document.getElementById('btn-reset-failed');
-        const btnAssignOrderFilter = document.getElementById('btn-assign-order-filter');
-        const ordersToolbar = document.getElementById('orders-toolbar');
-
-        roleHint?.classList.toggle('hidden', !isAdmin);
-        if (isAdmin) {
-          ordersToolbar?.classList.remove('hidden');
-          btnAssignOrderFilter?.classList.remove('hidden');
-          monitorSection.classList.remove('hidden');
-          filterTech.classList.remove('hidden');
-          filterTechControl?.classList.remove('hidden');
-          filterTech.disabled = false;
-          auditLogSection.classList.remove('hidden');
-          roleHint.textContent = 'SupervisiÃ³n en vivo, GPS y control total';
-
-          if (btnResetPending) btnResetPending.classList.remove('hidden');
-          if (btnResetDone) btnResetDone.classList.remove('hidden');
-          if (btnResetFailed) btnResetFailed.classList.remove('hidden');
-        } else {
-          ordersToolbar?.classList.add('hidden');
-          btnAssignOrderFilter?.classList.add('hidden');
-          monitorSection.classList.add('hidden');
-          filterTech.classList.add('hidden');
-          filterTechControl?.classList.add('hidden');
-          filterTech.disabled = true;
-          auditLogSection.classList.add('hidden');
-          roleHint.textContent = '';
-
-          if (btnResetPending) btnResetPending.classList.add('hidden');
-          if (btnResetDone) btnResetDone.classList.add('hidden');
-          if (btnResetFailed) btnResetFailed.classList.add('hidden');
-        }
-
-        this.renderOrderFilterMenus();
-        const banner = document.getElementById('dashboard-banner');
-        if (isAdmin) {
-          banner.className = 'mb-4 sm:mb-5 p-3.5 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm bg-gradient-to-r from-slate-950 via-brand-dark to-slate-900 text-white border-brand-lime/40';
-          banner.innerHTML = `
-            <div>
-              <h3 class="font-extrabold text-xs sm:text-sm text-white">Panel Central de Operaciones</h3>
-              <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5">Asigna Ã³rdenes, supervisa tÃ©cnicos en mapa GPS y comunÃ­cate por chat y voz.</p>
-            </div>
-            <div class="mt-2 sm:mt-0 flex items-center justify-center sm:justify-end gap-2 self-center sm:self-auto">
-              <button type="button" aria-label="Ver mapa GPS" title="Ver mapa GPS" onclick="app.openAdminGpsModal()" class="group shrink-0 cursor-pointer rounded-2xl border-0 bg-transparent p-0 shadow-none transition-transform hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400">
-                <img src="assets/media/boton-ver-mapa-gps.png" alt="Ver mapa GPS" class="block h-20 w-20 object-contain sm:h-24 sm:w-24 md:h-28 md:w-28">
-              </button>
-            </div>
-          `;
-        } else {
-          banner.className = 'mb-4 sm:mb-5 p-3.5 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm bg-gradient-to-r from-slate-900 via-brand-dark to-slate-950 text-white border-brand-lime/40';
-          banner.innerHTML = `
-            <div>
-              <h3 class="font-extrabold text-xs sm:text-sm text-white">Bienvenido, ${this.getCurrentDisplayName()}</h3>
-              <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5">Revisa tus visitas asignadas, comparte posiciÃ³n o llama al administrador.</p>
-              <div id="worker-admin-presence-dashboard" class="mt-2"></div>
-            </div>
-            <div class="mt-2 sm:mt-0 flex items-center gap-2">
-              <button onclick="app.startVoiceCall()" class="text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1 shadow transition active:scale-95">
-                <i data-lucide="phone" class="w-3.5 h-3.5"></i> Llamar Admin
-              </button>
-              <button id="btn-worker-toggle-gps" onclick="app.toggleWorkerGps()" class="text-xs font-bold px-3 py-1.5 rounded-xl border flex items-center gap-1.5 shadow transition active:scale-95 bg-slate-800 text-slate-200 border-slate-700 hover:border-cyan-400">
-                <span class="w-2 h-2 rounded-full bg-slate-400" id="worker-gps-dot"></span>
-                <span id="worker-gps-label">ğŸ“ Activar GPS</span>
-              </button>
-            </div>
-          `;
-        }
-
-        this.renderAdminPresence();
-        if (window.lucide) lucide.createIcons();
-      }
-
-      getCurrentDisplayPhoto(user = this.currentUser) {
-        if (!user) return '';
-        if (String(user.role || '').toLowerCase() === 'admin') return this.adminIdentityPhotos[this.activeAdminName] || user.photo || '';
-        return user.photo || '';
-      }
-
-      applyAdminIdentityPresence(record = {}) {
-        if (Array.isArray(record.adminIdentityNames) && record.adminIdentityNames.length === 2) { const names = record.adminIdentityNames.map(name => String(name || '').trim()); if (names.every(Boolean)) this.adminIdentityNames = names; }
-        if (record.adminIdentityPhotos && typeof record.adminIdentityPhotos === 'object') this.adminIdentityPhotos = { ...record.adminIdentityPhotos };
-        if (record.activeAdminName) this.activeAdminName = String(record.activeAdminName);
-        if (this.currentUser?.role === 'admin' && record.activeAdminName) { this.currentUser.activeAdminName = this.activeAdminName; SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser)); }
-        if (this.activeAdminName) SafeStorage.setItem('portonpro_admin_identity_cache_v1', JSON.stringify({ names: this.adminIdentityNames, photos: this.adminIdentityPhotos, activeName: this.activeAdminName }));
-      }
-
-      getChatMessageSender(message) {
-        const senderName = String(message?.senderName || '').trim();
-        const senderRole = String(message?.senderRole || '').toLowerCase();
-        if (senderRole === 'admin') {
-          const adminInfo = this.getAdminPresenceInfo();
-          const name = senderName || adminInfo.name || 'Administrador';
-          const photo = this.adminIdentityPhotos[name] || (name === this.getCurrentDisplayName() ? this.getCurrentDisplayPhoto() : '') || adminInfo.photo || '';
-          return { name, photo };
-        }
-        const worker = this.workers.find(item => [item.fullName, item.username].some(value => String(value || '').toLocaleLowerCase() === senderName.toLocaleLowerCase()));
-        return { name: senderName || worker?.fullName || worker?.username || 'TÃ©cnico', photo: worker?.photo || '' };
-      }
-      getCurrentDisplayName(user = this.currentUser) {
-        if (!user) return '';
-        if (String(user.role || '').toLowerCase() === 'admin') return this.activeAdminName || user.activeAdminName || user.fullName || user.username || 'Administrador';
-        return user.fullName || user.username || '';
-      }
-
-      renderAdminIdentities() {
-        const list = document.getElementById('admin-identities-list');
-        if (!list || this.currentUser?.role !== 'admin') return;
-        const active = this.activeAdminName;
-        list.innerHTML = this.adminIdentityNames.map((name, index) => {
-          const photo = this.adminIdentityPhotos[name] || '';
-          const avatar = photo
-            ? `<img src="${this.escapeHtml(photo)}" alt="Foto de ${this.escapeHtml(name)}" class="h-full w-full object-cover">`
-            : this.escapeHtml(name.charAt(0).toUpperCase());
-          return `
-            <div class="flex items-center gap-2 rounded-lg border ${active === name ? 'border-brand-lime bg-lime-50' : 'border-slate-200 bg-white'} px-2.5 py-2">
-              <button type="button" onclick="app.selectAdminIdentity(${index})" class="flex min-w-0 flex-1 items-center gap-2 text-left">
-                <span class="seasonal-worker-avatar relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-xs font-black text-slate-600">${avatar}</span>
-                <span class="h-4 w-4 shrink-0 rounded-full border ${active === name ? 'border-brand-lime bg-brand-lime ring-2 ring-lime-200' : 'border-slate-300 bg-white'}"></span>
-                <span class="truncate text-xs font-bold text-slate-800">${this.escapeHtml(name)}</span>
-                ${active === name ? '<span class="ml-auto text-[9px] font-bold uppercase text-emerald-700">En uso</span>' : ''}
-              </button>
-              <button type="button" onclick="app.beginAdminIdentityEdit(${index})" class="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-brand-dark" title="Editar ${this.escapeHtml(name)}" aria-label="Editar ${this.escapeHtml(name)}"><i data-lucide="pencil" class="h-3.5 w-3.5"></i></button>
-            </div>
-          `;
-        }).join('');
-        if (window.lucide) lucide.createIcons();
-      }
-      async saveAdminIdentitySettings(names, activeName, photos = this.adminIdentityPhotos) {
-        if (!window.db || this.currentUser?.role !== 'admin') throw new Error('No hay sesiÃ³n de administrador conectada');
-        const username = String(this.currentUser.username || '').toLowerCase();
-        await db.collection('presencia').doc(username).set({
-          username: this.currentUser.username,
-          fullName: activeName || this.currentUser.fullName || this.currentUser.username,
-          role: 'admin',
-          photo: this.currentUser.photo || '',
-          adminIdentityNames: names,
-          adminIdentityPhotos: photos,
-          activeAdminName: activeName || ''
-        }, { merge: true });
-        this.adminIdentityNames = names;
-        this.adminIdentityPhotos = { ...photos };
-        this.activeAdminName = activeName || '';
-        this.currentUser.activeAdminName = this.activeAdminName;
-        SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
-        SafeStorage.setItem('portonpro_admin_identity_cache_v1', JSON.stringify({ names, photos: this.adminIdentityPhotos, activeName: this.activeAdminName }));
-        this.presenceRecords[username] = { ...(this.presenceRecords[username] || {}), adminIdentityNames: names, adminIdentityPhotos: { ...photos }, activeAdminName: activeName || '', fullName: activeName || this.currentUser.fullName || this.currentUser.username, photo: this.currentUser.photo || '' };
-        this.setupDashboardUI();
-        this.renderAdminIdentities();
-        this.renderAdminPresence();
-        this.renderMySettingsPhotoPreview();
-        if (this.activeChatWorker) this.renderConversationsSidebar();
-      }
-
-      async selectAdminIdentity(index) {
-        if (this.currentUser?.role !== 'admin' || !this.adminIdentityNames[index]) return;
-        try {
-          await this.saveAdminIdentitySettings([...this.adminIdentityNames], this.adminIdentityNames[index], this.adminIdentityPhotos);
-          this.showToast(`Ahora apareces como ${this.adminIdentityNames[index]}`, 'success');
-        } catch (error) {
-          console.error('[IDENTIDAD] No se pudo seleccionar el nombre:', error);
-          this.showToast('No se pudo guardar el nombre elegido', 'error');
-        }
-      }
-
-      beginAdminIdentityEdit(index) {
-        if (this.currentUser?.role !== 'admin' || !this.adminIdentityNames[index]) return;
-        this.adminIdentityEditingIndex = index;
-        this.adminIdentityPhotoDraft = null;
-        const editor = document.getElementById('admin-identity-editor');
-        const input = document.getElementById('admin-identity-name-input');
-        const photoInput = document.getElementById('admin-identity-photo-file');
-        if (photoInput) photoInput.value = '';
-        if (!editor || !input) return;
-        input.value = this.adminIdentityNames[index];
-        this.updateAdminIdentityPhotoPreview(this.adminIdentityPhotos[this.adminIdentityNames[index]] || '');
-        editor.classList.remove('hidden');
-        input.focus();
-        input.select();
-      }
-
-      cancelAdminIdentityEdit() {
-        this.adminIdentityEditingIndex = null;
-
-        this.adminIdentityPhotoDraft = null;
-        document.getElementById('admin-identity-editor')?.classList.add('hidden');
-      }
-
-      async saveAdminIdentityEdit() {
-        const index = this.adminIdentityEditingIndex;
-        const input = document.getElementById('admin-identity-name-input');
-        const photoInput = document.getElementById('admin-identity-photo-file');
-        if (photoInput) photoInput.value = '';
-        const newName = String(input?.value || '').trim();
-        if (index === null || !this.adminIdentityNames[index]) return;
-        if (!newName) return this.showToast('Escribe un nombre vÃ¡lido', 'error');
-        if (this.adminIdentityNames.some((name, otherIndex) => otherIndex !== index && name.toLocaleLowerCase() === newName.toLocaleLowerCase())) return this.showToast('Los dos nombres deben ser diferentes', 'error');
-        const oldName = this.adminIdentityNames[index];
-        const names = [...this.adminIdentityNames];
-        names[index] = newName;
-        const activeName = this.activeAdminName === oldName ? newName : this.activeAdminName;
-        const photos = { ...this.adminIdentityPhotos };
-        const oldPhoto = photos[oldName] || '';
-        delete photos[oldName];
-        photos[newName] = this.adminIdentityPhotoDraft === null ? oldPhoto : this.adminIdentityPhotoDraft;
-        try {
-          await this.saveAdminIdentitySettings(names, activeName, photos);
-          this.cancelAdminIdentityEdit();
-          this.showToast('Nombre actualizado', 'success');
-        } catch (error) {
-          console.error('[IDENTIDAD] No se pudo editar el nombre:', error);
-          this.showToast('No se pudo guardar el nombre', 'error');
-        }
-      }
-      updateAdminIdentityPhotoPreview(photoData) {
-        const preview = document.getElementById('admin-identity-photo-preview');
-        if (!preview) return;
-        if (photoData) preview.innerHTML = `<img src="${this.escapeHtml(photoData)}" alt="Vista previa de la foto" class="h-full w-full object-cover">`;
-        else {
-          const name = this.adminIdentityNames[this.adminIdentityEditingIndex] || '?';
-          preview.textContent = name.charAt(0).toUpperCase();
-        }
-      }
-
-      async handleAdminIdentityPhoto(event) {
-        const file = event.target.files?.[0];
-        if (!file || this.adminIdentityEditingIndex === null) return;
-        if (!file.type.startsWith('image/')) { this.showToast('Selecciona un archivo de imagen', 'error'); event.target.value = ''; return; }
-        if (file.size > 10 * 1024 * 1024) { this.showToast('La imagen debe pesar menos de 10 MB', 'error'); event.target.value = ''; return; }
-        try {
-          const source = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = () => reject(new Error('No se pudo leer la imagen'));
-            reader.readAsDataURL(file);
-          });
-          const image = await new Promise((resolve, reject) => {
-            const element = new Image();
-            element.onload = () => resolve(element);
-            element.onerror = () => reject(new Error('La imagen no es vÃ¡lida'));
-            element.src = source;
-          });
-          const maxSide = 480;
-          const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
-          const canvas = document.createElement('canvas');
-          canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-          canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-          canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
-          this.adminIdentityPhotoDraft = canvas.toDataURL('image/jpeg', 0.78);
-          this.updateAdminIdentityPhotoPreview(this.adminIdentityPhotoDraft);
-          this.showToast('Foto lista. Pulsa Guardar cambios para compartirla.', 'success');
-        } catch (error) {
-          console.error('[IDENTIDAD] No se pudo preparar la foto:', error);
-          this.showToast('No se pudo procesar la imagen', 'error');
-        }
-      }
-
-      removeAdminIdentityPhoto() {
-        if (this.adminIdentityEditingIndex === null) return;
-        this.adminIdentityPhotoDraft = '';
-        this.updateAdminIdentityPhotoPreview('');
-        const input = document.getElementById('admin-identity-photo-file');
-        if (input) input.value = '';
-      }
-      getPresenceStatus(user) {
-        if (!user) return 'disconnected';
-        const username = String(user.username || '').toLowerCase();
-        const record = this.presenceRecords[username] || {};
-        const heartbeat = Number(record.lastHeartbeat ?? user.lastHeartbeat ?? 0);
-        const savedStatus = record.availabilityStatus;
-        if (savedStatus === 'absent') return 'absent';
-        if (savedStatus === 'disconnected') return 'disconnected';
-        const isActiveAdminSession = String(this.currentUser?.role || '').toLowerCase() === 'admin' && username === String(this.currentUser?.username || '').toLowerCase();
-        if (savedStatus === 'available' && isActiveAdminSession) return 'available';
-        return heartbeat > 0 && Date.now() - heartbeat < 60000 ? 'available' : 'disconnected';
-      }
-
-      getPresenceLabel(status) {
-        return ({ available: 'Disponible', absent: 'Ausente', disconnected: 'Desconectado' })[status] || 'Desconectado';
-      }
-
-      getAdminPresenceInfo() {
-        const admin = this.users.find(user => String(user.role || '').toLowerCase() === 'admin');
-        const presenceAdminEntry = Object.entries(this.presenceRecords).find(([, record]) => String(record?.role || '').toLowerCase() === 'admin');
-        const isAdminSession = String(this.currentUser?.role || '').toLowerCase() === 'admin';
-        const adminUser = isAdminSession ? this.currentUser : (admin || null);
-        const username = String(adminUser?.username || presenceAdminEntry?.[0] || '').toLowerCase();
-        const record = username ? (this.presenceRecords[username] || {}) : {};
-        const presenceUser = adminUser || (username ? { username, ...record } : null);
-        const status = this.getPresenceStatus(presenceUser);
-        return {
-          name: record.activeAdminName || adminUser?.activeAdminName || this.activeAdminName || adminUser?.fullName || record.fullName || 'Administrador',
-          photo: record.adminIdentityPhotos?.[record.activeAdminName || this.activeAdminName] || this.adminIdentityPhotos[record.activeAdminName || this.activeAdminName] || record.photo || adminUser?.photo || '',
-          identityReady: !!(record.activeAdminName || adminUser?.activeAdminName || this.activeAdminName),
-          status,
-          isHeartbeatFresh: status !== 'disconnected'
-        };
-      }
-
-      renderAdminPresence() {
-        const info = this.getAdminPresenceInfo();
-        const label = this.getPresenceLabel(info.status);
-        const stateClass = `presence-label is-${info.status}`;
-        const statusLabel = document.getElementById('admin-presence-label');
-        const profileIndicator = document.getElementById('header-presence-profile');
-        const profileStatus = this.currentUser?.role === 'admin' ? info.status : this.getPresenceStatus(this.currentUser);
-        profileIndicator?.classList.toggle('presence-card-connected', profileStatus === 'available');
-        profileIndicator?.classList.toggle('presence-card-absent', profileStatus === 'absent');
-        const mobileProfileStatus = document.getElementById('header-user-status');
-        if (mobileProfileStatus) {
-          const isAdmin = this.currentUser?.role === 'admin';
-          mobileProfileStatus.textContent = this.getPresenceLabel(profileStatus);
-          mobileProfileStatus.className = `text-[8px] font-semibold ${profileStatus === 'available' ? 'text-emerald-300' : profileStatus === 'absent' ? 'text-amber-300' : 'text-slate-300'}${isAdmin ? ' hidden' : ''}`;
-        }
-        if (statusLabel) { statusLabel.textContent = label; statusLabel.className = `${stateClass} text-[9px]`; }
-        if (this.currentUser?.role === 'admin') {
-          const headerName = document.getElementById('header-user-name');
-          const headerInitial = document.getElementById('header-avatar-initial');
-          const headerPhoto = document.getElementById('header-user-photo');
-          const displayPhoto = this.getCurrentDisplayPhoto();
-          if (headerName) headerName.textContent = this.getCurrentDisplayName();
-          const headerRole = document.getElementById('header-role-subtitle');
-          if (headerRole) { headerRole.textContent = 'Administrador'; headerRole.classList.remove('hidden'); }
-          if (headerInitial) headerInitial.textContent = (this.getCurrentDisplayName() || 'A').charAt(0);
-          if (headerPhoto && displayPhoto) { headerPhoto.src = displayPhoto; headerPhoto.classList.remove('hidden'); headerInitial?.classList.add('hidden'); }
-          else if (headerPhoto) { headerPhoto.classList.add('hidden'); headerInitial?.classList.remove('hidden'); }
-          if (!document.getElementById('settings-admin-identities-section')?.classList.contains('hidden')) this.renderAdminIdentities();
-        }
-
-        const dashboard = document.getElementById('worker-admin-presence-dashboard');
-        if (dashboard) {
-          dashboard.style.display = info.identityReady ? '' : 'none';
-          dashboard.innerHTML = `<div id="worker-admin-presence-card" class="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-2.5 py-1.5 ${info.status === 'available' ? 'presence-card-connected' : info.status === 'absent' ? 'presence-card-absent' : ''}"><div class="seasonal-worker-avatar relative w-8 h-8 rounded-full border border-white/40 bg-slate-700 overflow-hidden flex items-center justify-center text-xs font-bold">${info.photo ? `<img src="${this.escapeHtml(info.photo)}" alt="Foto del Administrador" class="w-full h-full object-cover">` : this.escapeHtml(info.name.charAt(0))}</div><div class="leading-tight"><p class="text-[10px] font-bold text-white">${this.escapeHtml(info.name)}</p><p class="text-[8px] uppercase tracking-wide text-slate-300">Administrador</p><span class="${stateClass}">${label}</span></div></div>`;
-        }
-
-        if (this.currentUser?.role === 'worker') {
-          const chatTitle = document.getElementById('chat-header-title');
-          if (chatTitle) chatTitle.textContent = `Chat: ${info.name}`;
-        }
-        const chatCard = document.getElementById('chat-admin-presence');
-        if (chatCard) {
-          const shouldShow = this.currentUser?.role === 'worker';
-          chatCard.classList.toggle('hidden', !shouldShow || !info.identityReady);
-          chatCard.classList.toggle('flex', shouldShow && info.identityReady);
-          const avatar = document.getElementById('chat-admin-presence-avatar');
-          if (avatar) avatar.innerHTML = info.photo ? `<img src="${this.escapeHtml(info.photo)}" alt="Foto del Administrador" class="w-full h-full object-cover">` : this.escapeHtml(info.name.charAt(0));
-          const chatName = document.getElementById('chat-admin-presence-name');
-          if (chatName) chatName.textContent = info.name;
-          const chatRole = document.getElementById('chat-admin-presence-role');
-          if (chatRole) chatRole.textContent = 'Administrador';
-          const chatLabel = document.getElementById('chat-admin-presence-label');
-          if (chatLabel) { chatLabel.textContent = label; chatLabel.className = `${stateClass} text-[9px]`; }
-        }
-        this.renderActiveChatHeader();
-      }
-
-      toggleAdminPresenceMenu() {
-        if (String(this.currentUser?.role || '').toLowerCase() !== 'admin') return;
-        const menu = document.getElementById('admin-presence-menu');
-        const toggle = document.getElementById('admin-presence-toggle');
-        if (!menu || !toggle) return;
-        const opening = menu.classList.contains('hidden');
-        menu.classList.toggle('hidden', !opening);
-        if (opening) {
-          const rect = toggle.getBoundingClientRect();
-          menu.style.setProperty('position', 'fixed', 'important');
-          menu.style.setProperty('left', Math.max(8, Math.min(rect.left, window.innerWidth - 188)) + 'px', 'important');
-          menu.style.setProperty('top', Math.min(rect.bottom + 8, window.innerHeight - 150) + 'px', 'important');
-          menu.style.setProperty('right', 'auto', 'important');
-          menu.style.setProperty('z-index', '2147483647', 'important');
-        } else {
-          menu.style.removeProperty('position');
-          menu.style.removeProperty('left');
-          menu.style.removeProperty('top');
-          menu.style.removeProperty('right');
-          menu.style.removeProperty('z-index');
-        }
-        toggle.setAttribute('aria-expanded', String(opening));
-      }
-
-      async setAdminAvailability(status) {
-        const allowed = ['available', 'absent', 'disconnected'];
-        if (String(this.currentUser?.role || '').toLowerCase() !== 'admin' || !allowed.includes(status)) return;
-        const menu = document.getElementById('admin-presence-menu');
-        menu?.classList.add('hidden');
-        if (menu) ['position','left','top','right','z-index'].forEach(property => menu.style.removeProperty(property));
-        document.getElementById('admin-presence-toggle')?.setAttribute('aria-expanded', 'false');
-        if (!window.db) return this.showToast('No hay conexiÃ³n para guardar tu estado', 'error');
-        const username = String(this.currentUser.username || '').toLowerCase();
-        const previousRecord = { ...(this.presenceRecords[username] || {}) };
-        const lastHeartbeat = Date.now();
-        this.presenceRecords[username] = { ...previousRecord, username: this.currentUser.username, fullName: this.getCurrentDisplayName(), role: 'admin', photo: this.currentUser.photo || '', lastHeartbeat, availabilityStatus: status };
-        this.renderAdminPresence();
-        try {
-          await db.collection('presencia').doc(username).set({
-            username: this.currentUser.username,
-            fullName: this.getCurrentDisplayName(),
-            role: 'admin',
-            photo: this.currentUser.photo || '',
-            lastHeartbeat,
-            availabilityStatus: status
-          }, { merge: true });
-          console.info('[PRESENCE] Estado del administrador guardado', { username, status });
-          this.showToast('Estado actualizado: ' + this.getPresenceLabel(status), 'success');
-        } catch (error) {
-          this.presenceRecords[username] = previousRecord;
-          this.renderAdminPresence();
-          console.error('[PRESENCE] No se pudo actualizar el estado del administrador:', error);
-          this.showToast('No se pudo guardar el estado. Revisa la conexiÃ³n y permisos de Firestore.', 'error');
-        }
-      }
-
-      zoomWorkerPhoto(photoUrl, name) {
-        const modal = document.getElementById('modal-photo-zoom');
-        const img = document.getElementById('zoom-modal-img');
-        const initial = document.getElementById('zoom-modal-initial');
-        const nameElem = document.getElementById('zoom-modal-name');
-
-        nameElem.textContent = name || 'Trabajador';
-
-        if (photoUrl) {
-          img.src = photoUrl;
-          img.classList.remove('hidden');
-          initial.classList.add('hidden');
-        } else {
-          img.classList.add('hidden');
-          initial.classList.remove('hidden');
-          initial.textContent = (name || 'A').charAt(0);
-        }
-
-        modal.classList.remove('hidden');
-      }
-
-      closePhotoZoom() {
-        document.getElementById('modal-photo-zoom').classList.add('hidden');
-      }
-
-      toggleWorkerGps() {
-        if (this.isGpsSharing) {
-          this.stopGpsSharing();
-        } else {
-          this.startGpsSharing();
-        }
-      }
-
-      startGpsSharing() {
-        if (!navigator.geolocation) {
-          this.showToast("Tu navegador no soporta geolocalizaciÃ³n", "error");
-          return;
-        }
-
-        const myName = this.getCurrentDisplayName();
-        this.gpsConnectedAt = Date.now();
-        const btnLabel = document.getElementById('worker-gps-label');
-        const btnDot = document.getElementById('worker-gps-dot');
-
-        this.gpsWatchId = navigator.geolocation.watchPosition(
-          pos => {
-            const coords = {
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude,
-              workerName: myName,
-              active: true,
-              updatedAt: this.formatTime(new Date()),
-              timestamp: Date.now(),
-              connectedAt: this.gpsConnectedAt || Date.now()
-            };
-
-            if (window.db) {
-              db.collection('gps_locations').doc(myName).set(coords, { merge: true }).catch(() => {});
-            }
-
-            this.isGpsSharing = true;
-            if (btnLabel) btnLabel.textContent = "ğŸ“ Desactivar GPS";
-            if (btnDot) btnDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
-          },
-          err => {
-            console.warn("Error GPS:", err);
-            this.showToast("Permiso de GPS denegado", "error");
-            this.stopGpsSharing();
-          },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-        );
-
-        this.showToast("GPS Activado: compartiendo posiciÃ³n", "success");
-      }
-
-      stopGpsSharing(silent = false) {
-        if (this.gpsWatchId !== null) {
-          navigator.geolocation.clearWatch(this.gpsWatchId);
-          this.gpsWatchId = null;
-        }
-        this.isGpsSharing = false;
-        this.gpsConnectedAt = null;
-
-        const myName = this.getCurrentDisplayName();
-        if (window.db && myName) {
-          db.collection('gps_locations').doc(myName).set({
-            active: false,
-            timestamp: Date.now(),
-            updatedAt: this.formatTime(new Date())
-          }, { merge: true }).catch(() => {});
-        }
-
-        const btnLabel = document.getElementById('worker-gps-label');
-        const btnDot = document.getElementById('worker-gps-dot');
-        if (btnLabel) btnLabel.textContent = "ğŸ“ Activar GPS";
-        if (btnDot) btnDot.className = "w-2 h-2 rounded-full bg-slate-400";
-
-        if (!silent) this.showToast("GPS Desactivado", "info");
-      }
-
-      openAdminGpsModal() {
-        document.getElementById('modal-admin-gps').classList.remove('hidden');
-        if (!this.adminMap) {
-          setTimeout(() => this.initAdminMap(), 150);
-        } else {
-          setTimeout(() => this.adminMap.invalidateSize(), 200);
-        }
-        this.subscribeGpsLocations();
-      }
-
-      closeAdminGpsModal() {
-        document.getElementById('modal-admin-gps').classList.add('hidden');
-      }
-
-      initAdminMap() {
-        const mapContainer = document.getElementById('gps-map-container');
-        if (!mapContainer || this.adminMap) return;
-
-        this.adminMap = L.map('gps-map-container').setView([4.6097, -74.0817], 12);
-
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          referrerPolicy: 'strict-origin-when-cross-origin',
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>'
-        }).addTo(this.adminMap);
-      }
-
-      subscribeGpsLocations() {
-        if (!window.db || this.gpsLocationsUnsubscribe) return;
-
-        this.gpsLocationsUnsubscribe = db.collection('gps_locations').onSnapshot(snap => {
-          const locs = {};
-          let activeCount = 0;
-
-          snap.forEach(doc => {
-            const data = doc.data();
-            locs[doc.id] = data;
-            const lastSignal = Number(data.timestamp || 0);
-            if (data.active && lastSignal && Date.now() - lastSignal < 180000) activeCount++;
-          });
-
-          this.locationsData = locs;
-          document.getElementById('gps-active-count').textContent = `${activeCount} Activos`;
-          this.renderGpsWorkersList();
-          this.updateGpsMarkersOnMap();
-        }, e => console.error("Snapshot GPS:", e));
-      }
-
-      renderGpsWorkersList() {
-        const listElem = document.getElementById('gps-workers-list');
-        if (!listElem) return;
-
-        const workers = this.workers;
-        if (workers.length === 0) {
-          listElem.innerHTML = `<p class="text-center py-4 text-slate-400 italic">No hay trabajadores registrados.</p>`;
-          return;
-        }
-
-        const now = Date.now();
-        const orderedWorkers = workers.map((worker, index) => {
-          const name = worker.fullName || worker.username;
-          const location = this.locationsData[name];
-          const timestamp = Number(location?.timestamp || 0);
-          const isGpsActive = Boolean(location?.active && timestamp && now - timestamp < 180000);
-          return { worker, index, name, location, isGpsActive };
-        }).sort((a, b) => {
-          if (a.isGpsActive !== b.isGpsActive) return Number(b.isGpsActive) - Number(a.isGpsActive);
-          if (a.isGpsActive) {
-            const aConnectedAt = Number(a.location.connectedAt || a.location.timestamp || 0);
-            const bConnectedAt = Number(b.location.connectedAt || b.location.timestamp || 0);
-            if (aConnectedAt !== bConnectedAt) return bConnectedAt - aConnectedAt;
-          }
-          return a.index - b.index;
-        });
-
-        listElem.innerHTML = orderedWorkers.map(({ worker: w, name: wName, location: loc, isGpsActive }) => {
-          const safeName = this.escapeHtml(wName);
-          const photo = w.photo ? this.escapeHtml(w.photo) : '';
-          const avatar = photo
-            ? `<img src="${photo}" alt="Foto de ${safeName}" loading="lazy">`
-            : `<span>${this.escapeHtml(String(wName).charAt(0).toUpperCase())}</span>`;
-          const lastUpdate = this.escapeHtml(loc?.updatedAt || 'Sin seÃ±al');
-
-          return `
-            <article class="gps-worker-card ${isGpsActive ? 'is-active' : ''}">
-              <div class="gps-worker-card-main">
-                <span class="gps-worker-avatar seasonal-worker-avatar" aria-hidden="true"><span class="gps-worker-photo-crop">${avatar}</span></span>
-                <span class="gps-worker-card-identity">
-                  <span class="gps-worker-card-name"><span class="gps-worker-state-dot ${isGpsActive ? 'is-active' : ''}"></span>${safeName}</span>
-                  <span class="gps-worker-card-status ${isGpsActive ? 'is-active' : ''}">${isGpsActive ? 'Transmitiendo GPS' : 'GPS inactivo'}</span>
-                </span>
-                <span class="gps-worker-card-time">${lastUpdate}</span>
-              </div>
-              ${isGpsActive ? `
-                <div class="gps-worker-card-actions">
-                  <button type="button" onclick="app.focusWorkerOnMap('${encodeURIComponent(wName)}')" class="gps-worker-action">ğŸ“ Ver en mapa</button>
-                  <button type="button" onclick="app.openExternalRoute(${loc.latitude}, ${loc.longitude})" class="gps-worker-action is-route">ğŸ§­ Trazar ruta</button>
-                </div>
-              ` : ''}
-            </article>
-          `;
-        }).join('');
-      }
-
-      updateGpsMarkersOnMap() {
-        if (!this.adminMap) return;
-
-        Object.keys(this.locationsData).forEach(wName => {
-          const loc = this.locationsData[wName];
-          if (loc.active && loc.latitude && loc.longitude) {
-            const popupHtml = `
-              <div class="p-1 text-xs">
-                <b class="text-slate-900 block">${wName}</b>
-                <span class="text-slate-500 text-[10px] block">Actualizado: ${loc.updatedAt}</span>
-                <div class="flex gap-1 mt-2">
-                  <a href="https://waze.com/ul?ll=${loc.latitude},${loc.longitude}&navigate=yes" target="_blank" class="px-2 py-0.5 bg-cyan-600 text-white rounded text-[10px] font-bold inline-flex items-center gap-1"><img src="assets/media/media-1.png" alt="" aria-hidden="true" class="w-4 h-4 object-contain">Waze</a>
-                  <a href="https://www.google.com/maps/dir/?api=1&destination=${loc.latitude},${loc.longitude}" target="_blank" class="px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px] font-bold inline-flex items-center gap-1"><img src="assets/media/media-2.png" alt="" aria-hidden="true" class="w-4 h-4 object-contain">Maps</a>
-                </div>
-              </div>
-            `;
-
-            if (this.adminMapMarkers[wName]) {
-              this.adminMapMarkers[wName].setLatLng([loc.latitude, loc.longitude]).bindPopup(popupHtml);
-            } else {
-              const marker = L.marker([loc.latitude, loc.longitude]).addTo(this.adminMap).bindPopup(popupHtml);
-              this.adminMapMarkers[wName] = marker;
-            }
-          } else if (this.adminMapMarkers[wName]) {
-            this.adminMap.removeLayer(this.adminMapMarkers[wName]);
-            delete this.adminMapMarkers[wName];
-          }
-        });
-      }
-
-      focusWorkerOnMap(wName) {
-        const marker = this.adminMapMarkers[wName];
-        if (marker && this.adminMap) {
-          this.adminMap.setView(marker.getLatLng(), 15);
-          marker.openPopup();
-        }
-      }
-
-      openExternalRoute(lat, lng) {
-        window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
-      }
-
-      async startVoiceCall() {
-        const targetWorker = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
-        const callSessionId = window.crypto?.randomUUID?.() || `call-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-        console.info('[CALL] Iniciando llamada', { sessionId: callSessionId, role: this.currentUser.role, caller: this.getCurrentDisplayName(), documentId: targetWorker });
-        let callStage = 'getUserMedia';
-
-        try {
-          console.log('[CALL] getUserMedia iniciado', { sessionId: callSessionId, role: this.currentUser.role });
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
-          callStage = 'configurar stream local';
-          this.localStream = stream;
-          console.log('[CALL] MicrÃ³fono obtenido');
-          console.log('[CALL] Stream local obtenido', { active: stream.active });
-          console.log('[CALL] Cantidad audio tracks:', stream.getAudioTracks().length);
-          console.log('[CALL] Detalle audio tracks', stream.getAudioTracks().map(track => ({ label: track.label, enabled: track.enabled, muted: track.muted, readyState: track.readyState })));
-          this.pendingIceCandidates = [];
-          this.callIceCounters = { generated: 0, received: 0, added: 0 };
-          this.callSignalingUnsubscribes = [];
-
-          this.openVoiceCallModal({
-            name: this.currentUser.role === 'admin' ? targetWorker : this.getAdminPresenceInfo().name,
-            status: 'Llamando...',
-            isIncoming: false
-          });
-
-
-          callStage = 'crear RTCPeerConnection';
-          this.peerConnection = new RTCPeerConnection({
-            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-          });
-
-          console.log('[CALL] Cantidad de pistas locales:', this.localStream.getAudioTracks().length);
-          this.localStream.getTracks().forEach(track => {
-            this.peerConnection.addTrack(track, this.localStream);
-            console.log('[CALL] Track agregado', { kind: track.kind, enabled: track.enabled, muted: track.muted, readyState: track.readyState });
-          });
-          console.log('[CALL] Cantidad de tracks agregados:', this.peerConnection.getSenders().filter(sender => sender.track?.kind === 'audio').length);
-          this.configureRemoteAudio();
-
-          const callDoc = db.collection('webrtc_calls').doc(targetWorker);
-          this.currentCallData = { id: targetWorker, threadId: targetWorker, sessionId: callSessionId, callSessionId, caller: this.getCurrentDisplayName(), callerRole: this.currentUser.role, recipient: this.currentUser.role === 'admin' ? targetWorker : this.getAdminPresenceInfo().name, wasAnswered: false, connectedAt: null };
-          console.info('[CALL] SesiÃ³n de llamada', { sessionId: callSessionId, role: this.currentUser.role, side: 'caller' });
-          const callerCandidates = callDoc.collection('callerCandidates');
-
-          this.peerConnection.onicecandidate = event => {
-            if (event.candidate) {
-              const candidateData = event.candidate.toJSON();
-              if (callSessionId) candidateData.callSessionId = callSessionId;
-              this.callIceCounters.generated++;
-              console.info('[CALL] ICE generado', { callSessionId: this.currentCallData?.callSessionId || this.currentCallData?.sessionId || null, currentSessionId: this.currentCallData?.sessionId || null, count: this.callIceCounters.generated, role: this.currentUser.role, type: event.candidate.type, protocol: event.candidate.protocol, usernameFragment: event.candidate.usernameFragment || null, sdpMid: event.candidate.sdpMid });
-              callerCandidates.add(candidateData).then(() => console.info('[CALL] ICE enviado al canal de seÃ±alizaciÃ³n', { count: this.callIceCounters.generated, side: 'caller' })).catch(error => console.error('[CALL] Error enviando ICE del llamante:', error));
-            } else { console.info('[CALL] ICE gathering completado', { role: this.currentUser.role, generatedCount: this.callIceCounters.generated }); }
-          };
-
-          callStage = 'createOffer';
-          console.info('[CALL] createOffer iniciado');
-          console.info('[CALL] audio tracks locales antes de createOffer:', this.localStream.getAudioTracks().length);
-          const offer = await this.peerConnection.createOffer();
-          console.log('[CALL] Oferta creada', { type: offer.type, hasSdp: !!offer.sdp, audioLines: (offer.sdp || '').split(/\r?\n/).filter(line => /^m=audio|^a=(sendrecv|sendonly|recvonly|inactive)$/.test(line)) });
-          callStage = 'setLocalDescription oferta';
-          await this.peerConnection.setLocalDescription(offer);
-          console.log('[CALL] setLocalDescription OK', { side: 'caller', type: this.peerConnection.localDescription?.type });
-
-          callStage = 'guardar oferta';
-          await callDoc.set({
-            caller: this.getCurrentDisplayName(),
-            callerRole: this.currentUser.role,
-            recipient: this.currentUser.role === 'admin' ? targetWorker : this.getAdminPresenceInfo().name,
-            status: 'calling',
-            callSessionId,
-            offer: { type: offer.type, sdp: offer.sdp },
-            timestamp: Date.now()
-          });
-          console.log('[CALL] Oferta enviada');
-          this.callSignalingUnsubscribes.push(callDoc.onSnapshot(async doc => {
-            if (doc.exists) {
-              const data = doc.data();
-              if (data.callSessionId && this.currentCallData?.sessionId && data.callSessionId !== this.currentCallData.sessionId) return;
-              if (data.status === 'answered' && data.answer && !this.peerConnection.currentRemoteDescription) {
-                if (this.currentCallData) this.currentCallData.wasAnswered = true;
-                const answerDesc = new RTCSessionDescription(data.answer);
-                try {
-                  await this.peerConnection.setRemoteDescription(answerDesc);
-                  console.log('[CALL] setRemoteDescription OK', { side: 'caller', type: this.peerConnection.remoteDescription?.type, audioTransceivers: this.peerConnection.getTransceivers().filter(item => item.receiver?.track?.kind === 'audio').map(item => ({ mid: item.mid, direction: item.direction, currentDirection: item.currentDirection, trackState: item.receiver.track.readyState, trackMuted: item.receiver.track.muted })) });
-                } catch (error) {
-                  console.error('[CALL] setRemoteDescription error', { name: error?.name, message: error?.message }, error);
-                  throw error;
-                }
-                console.log('[CALL] Respuesta recibida');
-                await this.flushPendingIceCandidates();
-                const label = document.getElementById('call-status-label');
-                if (label) label.textContent = 'Conectando audio...';
-              } else if (data.status === 'rejected' || data.status === 'ended') {
-                this.endVoiceCall(false);
-              }
-            }
-          }, error => console.error('[CALL] Error de seÃ±alizaciÃ³n:', error)));
-
-          this.callSignalingUnsubscribes.push(callDoc.collection('calleeCandidates').where('callSessionId', '==', callSessionId).onSnapshot(snap => {
-            snap.docChanges().forEach(change => {
-              if (change.type === 'added') {
-                const candidate = change.doc.data();
-                this.callIceCounters.received++;
-                const candidateUfrag = candidate.usernameFragment || candidate.candidate?.match(/(?:^|\s)ufrag\s+([^\s]+)/)?.[1] || null;
-                const sessionMatches = !!candidate.callSessionId && candidate.callSessionId === this.currentCallData?.sessionId;
-                console.info('[CALL] ICE recibido', { callSessionId: this.currentCallData?.callSessionId || this.currentCallData?.sessionId || null, candidateSessionId: candidate.callSessionId || null, currentSessionId: this.currentCallData?.sessionId || null, count: this.callIceCounters.received, type: candidate.candidate ? new RTCIceCandidate(candidate).type : null, protocol: candidate.candidate ? new RTCIceCandidate(candidate).protocol : null, usernameFragment: candidateUfrag, sessionMatches });
-                this.addRemoteIceCandidate(candidate);
-              }
-            });
-          }, error => console.error('[CALL] Error recibiendo candidatos ICE:', error)));
-
-        } catch (err) {
-          console.error('[CALL] Fallo en etapa', callStage, { name: err?.name, message: err?.message }, err);
-          console.error('[CALL] getUserMedia o inicio de llamada fallÃ³', { name: err?.name, message: err?.message }, err);
-          console.error("Error al iniciar llamada WebRTC:", err);
-          this.showToast(`No se pudo iniciar la llamada: ${err.message || err}`, "error");
-          this.endVoiceCall(false);
-        }
-      }
-
-      listenIncomingVoiceCalls() {
-        if (!window.db) return;
-        if (this.callUnsubscribe) { this.callUnsubscribe(); this.callUnsubscribe = null; }
-        const myName = this.getCurrentDisplayName();
-        const isAdmin = this.currentUser.role === 'admin';
-        const calls = db.collection('webrtc_calls');
-        const onCall = (id, data) => {
-          if (this.currentCallData?.id === id && (data.status === 'ended' || data.status === 'rejected')) {
-            console.info('[CALL] FinalizaciÃ³n recibida por el otro extremo', { status: data.status, callSessionId: data.callSessionId });
-            this.lastIncomingCallId = null;
-            this.endVoiceCall(false);
-            return;
-          }
-          if (this.lastIncomingCallId === id && (data.status === 'ended' || data.status === 'rejected')) {
-            console.info('[CALL] FinalizaciÃ³n recibida por el otro extremo', { status: data.status, callSessionId: data.callSessionId });
-            this.lastIncomingCallId = null;
-            this.endVoiceCall(false);
-            return;
-          }
-          const timestamp = Number(data.timestamp || 0);
-          const ageMs = timestamp ? Date.now() - timestamp : 0;
-          const recentEnough = !timestamp || (Number.isFinite(ageMs) && Math.abs(ageMs) <= 10 * 60 * 1000);
-          const callerRole = String(data.callerRole || '').trim().toLowerCase();
-          const normalizedId = String(id || '').trim().toLowerCase();
-          const normalizedMyName = String(myName || '').trim().toLowerCase();
-          const workerCaller = callerRole === 'worker' || (callerRole !== 'admin' && this.workers.some(worker =>
-            [worker.fullName, worker.username].some(name => String(name || '').trim().toLowerCase() === normalizedId)
-          ));
-          const isForMe = isAdmin
-            ? workerCaller
-            : normalizedId === normalizedMyName && callerRole === 'admin';
-          if (data.status !== 'calling' || !isForMe || !recentEnough || this.lastIncomingCallId === id) return;
-          console.info('[CALL] Llamada entrante detectada', { id, caller: data.caller, callerRole, recipient: data.recipient });
-          const callSessionId = data.callSessionId || data.sessionId || null;
-          this.currentCallData = { id, ...data, callSessionId, sessionId: callSessionId };
-          console.info('[CALL] SesiÃ³n entrante normalizada', { callSessionId, currentSessionId: this.currentCallData.sessionId, hasSessionId: !!callSessionId });
-          if (!callSessionId) console.error('[CALL] La llamada entrante no tiene callSessionId; no se puede verificar de forma segura la pertenencia de sus ICE candidates.');
-          this.lastIncomingCallId = id;
-          this.triggerIncomingCallAlert(isAdmin ? (data.caller || 'Trabajador') : this.getAdminPresenceInfo().name);
-        };
-        if (isAdmin) {
-          // Escucha documentos conocidos de tÃ©cnicos, sin requerir permiso de listar toda la colecciÃ³n.
-          const workerDocumentIds = [...new Set(this.workers.flatMap(worker => [worker.fullName, worker.username])
-            .map(name => String(name || '').trim()).filter(Boolean))];
-          const unsubscribers = workerDocumentIds.map(workerId =>
-            calls.doc(workerId).onSnapshot(doc => {
-              if (doc.exists) onCall(doc.id, doc.data());
-            }, error => console.error(`[CALL] Error escuchando llamada de ${workerId}:`, error))
-          );
-          try {
-            unsubscribers.push(calls.onSnapshot(snapshot => {
-              snapshot.docChanges().forEach(change => {
-                if (change.type === 'added' || change.type === 'modified') onCall(change.doc.id, change.doc.data());
-              });
-            }, error => console.warn('[CALL] La escucha global no estÃ¡ permitida; se mantienen las escuchas por tÃ©cnico:', error)));
-          } catch (error) {
-            console.warn('[CALL] No se pudo iniciar la escucha global de llamadas:', error);
-          }
-          this.callUnsubscribe = () => unsubscribers.forEach(unsubscribe => { try { unsubscribe(); } catch (_) {} });
-        } else {
-          this.callUnsubscribe = calls.doc(myName).onSnapshot(doc => {
-            if (doc.exists) onCall(doc.id, doc.data());
-          }, error => console.error('[CALL] Error escuchando llamada entrante:', error));
-        }
-      }
-
-      triggerIncomingCallAlert(callerName) {
-        this.openVoiceCallModal({
-          name: callerName,
-          status: 'Llamada Entrante...',
-          isIncoming: true
-        });
-        this.stopIncomingCallRingtone();
-        SoundEngine.playCallAlertSound();
-        this.callRingtoneInterval = setInterval(() => SoundEngine.playCallAlertSound(), 1800);
-      }
-
-      stopIncomingCallRingtone() {
-        clearInterval(this.callRingtoneInterval);
-        this.callRingtoneInterval = null;
-      }
-
-      async acceptIncomingCall() {
-        if (!this.currentCallData) return;
-        console.info('[CALL] SesiÃ³n de llamada', { sessionId: this.currentCallData.sessionId, role: this.currentUser.role, side: 'callee' });
-        this.stopIncomingCallRingtone();
-        const acceptButton = document.getElementById('btn-accept-call');
-        if (acceptButton) acceptButton.disabled = true;
-        const callStatusLabel = document.getElementById('call-status-label');
-        if (callStatusLabel) callStatusLabel.textContent = 'Conectando audio...';
-        let callStage = 'getUserMedia';
-
-        try {
-          console.log('[CALL] getUserMedia iniciado', { sessionId: this.currentCallData.sessionId, role: this.currentUser.role, direction: 'incoming' });
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
-          console.log('[CALL] MicrÃ³fono obtenido');
-          console.log('[CALL] Stream local obtenido', { active: stream.active });
-          console.log('[CALL] Cantidad audio tracks:', stream.getAudioTracks().length);
-          console.log('[CALL] Detalle audio tracks', stream.getAudioTracks().map(track => ({ label: track.label, enabled: track.enabled, muted: track.muted, readyState: track.readyState })));
-          if (!this.currentCallData) { stream.getTracks().forEach(track => track.stop()); console.info('[CALL] Stream liberado: la llamada terminÃ³ antes de completar getUserMedia'); return; }
-          callStage = 'configurar stream local';
-          this.localStream = stream;
-          this.pendingIceCandidates = [];
-          this.callIceCounters = { generated: 0, received: 0, added: 0 };
-          this.callSignalingUnsubscribes = [];
-
-          callStage = 'crear RTCPeerConnection';
-          this.peerConnection = new RTCPeerConnection({
-            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-          });
-
-          console.log('[CALL] Cantidad de pistas locales:', this.localStream.getAudioTracks().length);
-          this.localStream.getTracks().forEach(track => {
-            this.peerConnection.addTrack(track, this.localStream);
-            console.log('[CALL] Track agregado', { kind: track.kind, enabled: track.enabled, muted: track.muted, readyState: track.readyState });
-          });
-          console.log('[CALL] Cantidad de tracks agregados:', this.peerConnection.getSenders().filter(sender => sender.track?.kind === 'audio').length);
-          this.configureRemoteAudio();
-
-          const callDoc = db.collection('webrtc_calls').doc(this.currentCallData.id);
-          this.callSignalingUnsubscribes.push(callDoc.onSnapshot(doc => {
-            if (!doc.exists) return;
-            const call = doc.data();
-            if (call.callSessionId && this.currentCallData?.sessionId && call.callSessionId !== this.currentCallData.sessionId) return;
-            if (call.status === 'ended' || call.status === 'rejected') {
-              console.info('[CALL] FinalizaciÃ³n recibida por el otro extremo', { status: call.status, callSessionId: call.callSessionId });
-              this.endVoiceCall(false);
-            }
-          }, error => console.error('[CALL] Error siguiendo el estado de la llamada:', error)));
-          const calleeCandidates = callDoc.collection('calleeCandidates');
-
-          this.peerConnection.onicecandidate = event => {
-            if (event.candidate) {
-              const candidateData = event.candidate.toJSON();
-              if (this.currentCallData?.sessionId) candidateData.callSessionId = this.currentCallData.sessionId;
-              this.callIceCounters.generated++;
-              console.info('[CALL] ICE generado', { callSessionId: this.currentCallData?.callSessionId || this.currentCallData?.sessionId || null, currentSessionId: this.currentCallData?.sessionId || null, count: this.callIceCounters.generated, role: this.currentUser.role, type: event.candidate.type, protocol: event.candidate.protocol, usernameFragment: event.candidate.usernameFragment || null, sdpMid: event.candidate.sdpMid });
-              calleeCandidates.add(candidateData).then(() => console.info('[CALL] ICE enviado al canal de seÃ±alizaciÃ³n', { count: this.callIceCounters.generated, side: 'callee' })).catch(error => console.error('[CALL] Error enviando ICE del receptor:', error));
-            } else { console.info('[CALL] ICE gathering completado', { role: this.currentUser.role, generatedCount: this.callIceCounters.generated }); }
-          };
-
-          callStage = 'setRemoteDescription oferta';
-          console.info('[CALL] Oferta remota recibida; aplicando');
-          await this.peerConnection.setRemoteDescription(new RTCSessionDescription(this.currentCallData.offer));
-          console.log('[CALL] setRemoteDescription OK', { side: 'callee', type: this.peerConnection.remoteDescription?.type, audioTransceivers: this.peerConnection.getTransceivers().filter(item => item.receiver?.track?.kind === 'audio').map(item => ({ mid: item.mid, direction: item.direction, currentDirection: item.currentDirection, trackState: item.receiver.track.readyState, trackMuted: item.receiver.track.muted })) });
-          console.info('[CALL] Oferta remota aplicada');
-          callStage = 'createAnswer';
-          console.info('[CALL] createAnswer iniciado');
-          const answer = await this.peerConnection.createAnswer();
-          console.log('[CALL] Respuesta creada', { type: answer.type, hasSdp: !!answer.sdp, audioLines: (answer.sdp || '').split(/\r?\n/).filter(line => /^m=audio|^a=(sendrecv|sendonly|recvonly|inactive)$/.test(line)) });
-          callStage = 'setLocalDescription respuesta';
-          await this.peerConnection.setLocalDescription(answer);
-          console.log('[CALL] setLocalDescription OK', { side: 'callee', type: this.peerConnection.localDescription?.type });
-
-          callStage = 'guardar respuesta';
-          await callDoc.update({
-            status: 'answered',
-            answer: { type: answer.type, sdp: answer.sdp }
-          });
-          if (this.currentCallData) this.currentCallData.wasAnswered = true;
-          console.log('[CALL] Respuesta enviada');
-          document.getElementById('btn-accept-call')?.classList.add('hidden');
-          await this.flushPendingIceCandidates();
-          const callStatus = document.getElementById('call-status-label');
-          if (callStatus) callStatus.textContent = 'Conectando audio...';
-
-          this.callSignalingUnsubscribes.push(callDoc.collection('callerCandidates').where('callSessionId', '==', this.currentCallData.sessionId).onSnapshot(snap => {
-            snap.docChanges().forEach(change => {
-              if (change.type === 'added') {
-                const candidate = change.doc.data();
-                this.callIceCounters.received++;
-                const candidateUfrag = candidate.usernameFragment || candidate.candidate?.match(/(?:^|\s)ufrag\s+([^\s]+)/)?.[1] || null;
-                const sessionMatches = !!candidate.callSessionId && candidate.callSessionId === this.currentCallData?.sessionId;
-                console.info('[CALL] ICE recibido', { callSessionId: this.currentCallData?.callSessionId || this.currentCallData?.sessionId || null, candidateSessionId: candidate.callSessionId || null, currentSessionId: this.currentCallData?.sessionId || null, count: this.callIceCounters.received, type: candidate.candidate ? new RTCIceCandidate(candidate).type : null, protocol: candidate.candidate ? new RTCIceCandidate(candidate).protocol : null, usernameFragment: candidateUfrag, sessionMatches });
-                this.addRemoteIceCandidate(candidate);
-              }
-            });
-          }, error => console.error('[CALL] Error recibiendo candidatos ICE:', error)));
-
-
-        } catch (err) {
-          console.error('[CALL] Fallo en etapa', callStage, { name: err?.name, message: err?.message }, err);
-          console.error('[CALL] getUserMedia o aceptaciÃ³n fallÃ³', { name: err?.name, message: err?.message }, err);
-          console.error("Error al aceptar llamada:", err);
-          this.endVoiceCall();
-        }
-      }
-
-      configureRemoteAudio() {
-        const audio = document.getElementById('remote-audio-stream'); if (!audio) { console.error('[CALL] Elemento de audio remoto no encontrado'); return; }
-        const peerConnection = this.peerConnection;
-        audio.autoplay = true; audio.playsInline = true; audio.volume = 1;
-        const audioStyle = getComputedStyle(audio);
-        console.info('[CALL] Elemento audio verificado', { display: audioStyle.display, visibility: audioStyle.visibility, muted: audio.muted, playsInline: audio.playsInline });
-        this.peerConnection.ontrack = async event => {
-          console.log('[CALL] ontrack ejecutado', { sessionId: this.currentCallData?.sessionId, kind: event.track?.kind, readyState: event.track?.readyState, streamCount: event.streams?.length || 0 });
-          if (event.streams && event.streams[0]) audio.srcObject = event.streams[0];
-          else if (event.track) { const stream = new MediaStream(); stream.addTrack(event.track); audio.srcObject = stream; }
-          const remoteTracks = audio.srcObject?.getAudioTracks?.() || [];
-          console.log('[CALL] Audio remoto conectado');
-          console.log('[CALL] Stream remoto recibido', { active: audio.srcObject?.active, streamCount: event.streams?.length || 0 });
-          console.log('[CALL] Cantidad tracks remotos:', (event.streams?.[0] || audio.srcObject)?.getTracks?.().length || 0, { audioTracks: remoteTracks.length, tracks: remoteTracks.map(track => ({ kind: track.kind, enabled: track.enabled, muted: track.muted, readyState: track.readyState })) });
-          console.info('[CALL] srcObject asignado', !!audio.srcObject);
-          console.info('[CALL] muted:', audio.muted);
-          console.info('[CALL] playsInline:', audio.playsInline);
-          const remoteAudioStyle = getComputedStyle(audio);
-          console.info('[CALL] Estilo calculado del audio', { display: remoteAudioStyle.display, visibility: remoteAudioStyle.visibility });
-          try {
-            console.log('[CALL] audio.play ejecutado');
-            await audio.play();
-            document.getElementById('btn-enable-remote-audio')?.classList.add('hidden');
-            console.log('[CALL] Audio reproduciÃ©ndose');
-          } catch (e) {
-            document.getElementById('btn-enable-remote-audio')?.classList.remove('hidden');
-            console.error('[CALL] Error reproduciendo audio', e);
-            console.warn('[CALL] Autoplay bloqueado; toca Activar audio para habilitar la salida.', e);
-          }
-        };
-        console.info('[CALL] ontrack registrado antes de recibir descripciÃ³n remota', { registered: typeof this.peerConnection.ontrack === 'function', signalingState: this.peerConnection.signalingState });
-        this.peerConnection.oniceconnectionstatechange = () => {
-          const state = peerConnection?.iceConnectionState;
-          console.log('[CALL] iceConnectionState', state, { sessionId: this.currentCallData?.sessionId, connectionState: peerConnection.connectionState, signalingState: peerConnection.signalingState });
-          this.logIceDiagnostics(peerConnection, 'iceConnectionState');
-          if (state === 'connected' || state === 'completed') console.info('[CALL] ICE alcanzÃ³ estado', state);
-          if (state === 'connected' || state === 'completed') this.onCallConnected();
-          else if (state === 'failed') {
-            const label = document.getElementById('call-status-label');
-            if (label) label.textContent = 'Sin ruta de audio';
-            console.error('[CALL] ICE alcanzÃ³ estado failed; revisar candidatos generados, recibidos y agregados en ambos extremos.');
-          }
-        };
-        peerConnection.onconnectionstatechange = () => {
-          console.log('[CALL] connectionState', peerConnection.connectionState, { sessionId: this.currentCallData?.sessionId, signalingState: peerConnection.signalingState, iceConnectionState: peerConnection.iceConnectionState });
-          this.logIceDiagnostics(peerConnection, 'connectionState');
-        };
-        peerConnection.onsignalingstatechange = () => {
-          console.log('[CALL] signalingState', peerConnection.signalingState, { sessionId: this.currentCallData?.sessionId });
-          this.logIceDiagnostics(peerConnection, 'signalingState');
-        };
-        peerConnection.onicegatheringstatechange = () => console.log('[CALL] Estado ICE gathering', peerConnection.iceGatheringState, { sessionId: this.currentCallData?.sessionId });
-        this.peerConnection.onicecandidateerror = event => console.warn('[CALL] Error ICE:', event.errorCode, event.errorText);
-        clearInterval(peerConnection._callStatsInterval);
-        this.logIceDiagnostics(peerConnection, 'diagnÃ³stico inicial');
-        peerConnection._callStatsInterval = setInterval(() => {
-          if (peerConnection.connectionState === 'connected' || peerConnection.connectionState === 'failed' || peerConnection.connectionState === 'closed') {
-            clearInterval(peerConnection._callStatsInterval);
-            peerConnection._callStatsInterval = null;
-            if (peerConnection.connectionState !== 'connected') this.logIceDiagnostics(peerConnection, 'estado terminal');
-            return;
-          }
-          this.logIceDiagnostics(peerConnection, 'seguimiento');
-        }, 2500);
-      }
-
-      async logIceDiagnostics(peerConnection, trigger) {
-        if (!peerConnection || typeof peerConnection.getStats !== 'function') return;
-        try {
-          const report = await peerConnection.getStats();
-          const stats = Array.from(report.values());
-          const transports = stats.filter(item => item.type === 'transport' && item.selectedCandidatePairId);
-          const candidatePairs = stats.filter(item => item.type === 'candidate-pair');
-          const candidateById = new Map(stats.filter(item => item.type === 'local-candidate' || item.type === 'remote-candidate').map(item => [item.id, item]));
-          let selectedPair = null;
-          for (const transport of transports) {
-            const pair = report.get(transport.selectedCandidatePairId);
-            if (pair) { selectedPair = pair; break; }
-          }
-          if (!selectedPair) selectedPair = candidatePairs.find(pair => pair.selected === true) || null;
-          const describePair = pair => {
-            const local = candidateById.get(pair.localCandidateId);
-            const remote = candidateById.get(pair.remoteCandidateId);
-            return {
-              id: pair.id, state: pair.state, nominated: pair.nominated, selected: pair.selected === true,
-              local: local ? { type: local.candidateType, protocol: local.protocol, relayProtocol: local.relayProtocol || null } : null,
-              remote: remote ? { type: remote.candidateType, protocol: remote.protocol, relayProtocol: remote.relayProtocol || null } : null,
-              currentRoundTripTime: pair.currentRoundTripTime ?? null,
-              bytesSent: pair.bytesSent ?? 0, bytesReceived: pair.bytesReceived ?? 0
-            };
-          };
-          const state = { trigger, sessionId: this.currentCallData?.sessionId || null, connectionState: peerConnection.connectionState, iceConnectionState: peerConnection.iceConnectionState, signalingState: peerConnection.signalingState, generated: this.callIceCounters?.generated ?? null, received: this.callIceCounters?.received ?? null, added: this.callIceCounters?.added ?? null };
-          if (selectedPair) console.info('[CALL] selectedCandidatePair ' + JSON.stringify({ ...state, pair: describePair(selectedPair) }));
-          else console.info('[CALL] no selectedCandidatePair ' + JSON.stringify({ ...state, candidatePairCount: candidatePairs.length, pairs: candidatePairs.map(describePair) }));
-        } catch (error) {
-          console.error('[CALL] getStats failed', { trigger, sessionId: this.currentCallData?.sessionId || null, name: error?.name, message: error?.message }, error);
-        }
-      }
-
-      async resumeRemoteAudio() {
-        const audio = document.getElementById('remote-audio-stream');
-        if (!audio?.srcObject) return;
-        try {
-          await audio.play();
-          document.getElementById('btn-enable-remote-audio')?.classList.add('hidden');
-          console.log('[CALL] Audio reproduciÃ©ndose');
-        } catch (error) { console.warn('[CALL] No se pudo iniciar el audio remoto:', error); }
-      }
-
-      async addRemoteIceCandidate(candidateData) {
-        const currentSessionId = this.currentCallData?.sessionId || null;
-        const callSessionId = this.currentCallData?.callSessionId || currentSessionId;
-        const candidateSessionId = candidateData?.callSessionId || null;
-        const correlation = { callSessionId, candidateSessionId, currentSessionId };
-        if (!this.peerConnection || !candidateData) { console.warn('[CALL] ICE recibido pero no agregado: falta PeerConnection o candidato', correlation); return; }
-        if (!currentSessionId || !candidateSessionId || candidateSessionId !== currentSessionId) {
-          console.warn('[CALL] ICE descartado: candidato sin sessionId verificable o de otra llamada', { ...correlation, reason: !currentSessionId ? 'no hay sesiÃ³n activa identificada' : !candidateSessionId ? 'candidateSessionId ausente' : 'sesiÃ³n distinta' });
-          return;
-        }
-        if (!this.peerConnection.remoteDescription) {
-          this.pendingIceCandidates.push(candidateData);
-          console.info('[CALL] ICE en cola hasta aplicar descripciÃ³n remota', { ...correlation, queued: this.pendingIceCandidates.length, remoteDescription: false, iceConnectionState: this.peerConnection.iceConnectionState });
-          return;
-        }
-        const { callSessionId: _candidateSessionId, ...iceCandidate } = candidateData;
-        try {
-          await this.peerConnection.addIceCandidate(new RTCIceCandidate(iceCandidate));
-          this.callIceCounters.added++;
-          const parsedCandidate = iceCandidate.candidate ? new RTCIceCandidate(iceCandidate) : null;
-          console.info('[CALL] ICE agregado', { callSessionId, candidateSessionId, currentSessionId, count: this.callIceCounters.added, type: parsedCandidate?.type || null, protocol: parsedCandidate?.protocol || null, usernameFragment: iceCandidate.usernameFragment || iceCandidate.candidate?.match(/(?:^|\s)ufrag\s+([^\s]+)/)?.[1] || null, sdpMid: iceCandidate.sdpMid });
-        } catch (error) { console.warn('[CALL] Error al agregar ICE', { name: error?.name, message: error?.message, sdpMid: iceCandidate.sdpMid }, error); }
-      }
-
-      async flushPendingIceCandidates() {
-        const queued = this.pendingIceCandidates.splice(0);
-        const before = this.callIceCounters?.added || 0;
-        console.info('[CALL] Vaciando cola ICE', { callSessionId: this.currentCallData?.callSessionId || this.currentCallData?.sessionId || null, currentSessionId: this.currentCallData?.sessionId || null, queued: queued.length, remoteDescription: !!this.peerConnection?.remoteDescription });
-        for (const candidate of queued) await this.addRemoteIceCandidate(candidate);
-        console.info('[CALL] Cola ICE procesada', { queued: queued.length, added: (this.callIceCounters?.added || 0) - before, remaining: this.pendingIceCandidates.length, iceConnectionState: this.peerConnection?.iceConnectionState });
-      }
-
-      openVoiceCallModal({ name, status, isIncoming }) {
-        document.getElementById('call-user-name').textContent = name;
-        document.getElementById('call-status-label').textContent = status;
-        document.getElementById('modal-voice-call').classList.remove('hidden');
-
-        const btnAccept = document.getElementById('btn-accept-call');
-        if (isIncoming) {
-          btnAccept.disabled = false;
-          btnAccept.classList.remove('hidden');
-        } else {
-          btnAccept.classList.add('hidden');
-        }
-      }
-
-      onCallConnected() {
-        if (this.callTimerInterval) return;
-        if (this.currentCallData) this.currentCallData.connectedAt = Date.now();
-        document.getElementById('call-status-label').textContent = 'Conectado';
-        document.getElementById('btn-accept-call').classList.add('hidden');
-        const timerElem = document.getElementById('call-duration-timer');
-        timerElem.classList.remove('hidden');
-
-        this.callSeconds = 0;
-        clearInterval(this.callTimerInterval);
-        this.callTimerInterval = setInterval(() => {
-          this.callSeconds++;
-          const mins = String(Math.floor(this.callSeconds / 60)).padStart(2, '0');
-          const secs = String(this.callSeconds % 60).padStart(2, '0');
-          timerElem.textContent = `${mins}:${secs}`;
-        }, 1000);
-      }
-
-      toggleMuteCall() {
-        if (!this.localStream) return;
-        this.isMuted = !this.isMuted;
-        this.localStream.getAudioTracks().forEach(t => t.enabled = !this.isMuted);
-
-        const icon = document.getElementById('btn-mute-icon');
-        const btn = document.getElementById('btn-mute-call');
-        if (this.isMuted) {
-          btn.className = "p-3.5 bg-rose-800 text-white rounded-full transition";
-          icon.setAttribute('data-lucide', 'mic-off');
-        } else {
-          btn.className = "p-3.5 bg-slate-800 text-slate-200 rounded-full transition";
-          icon.setAttribute('data-lucide', 'mic');
-        }
-        if (window.lucide) lucide.createIcons();
-      }
-
-      async saveCallHistory(callData, durationSeconds) {
-        if (!window.db || !callData?.id) return;
-        const threadId = callData.threadId || callData.id;
-        const callerName = callData.caller || callData.callerName || 'Usuario';
-        const callerRole = callData.callerRole || 'worker';
-        const callDate = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        const callTime = this.formatTime(new Date());
-        const callOutcome = callData.connectedAt ? 'completed' : callData.wasAnswered ? 'failed' : 'missed';
-        const summary = callOutcome === 'completed' ? `ğŸ“ Llamada â€¢ ${durationSeconds}s` : callOutcome === 'missed' ? 'ğŸ“ Llamada perdida' : 'ğŸ“ Llamada sin conexiÃ³n';
-        const record = {
-          type: 'call',
-          text: summary,
-          callId: callData.sessionId || `call-${callData.id}-${Date.now()}`,
-          callerName, callerRole, callOutcome, durationSeconds: Math.max(0, Number(durationSeconds || 0)),
-          callDate, senderName: callerName, senderRole: callerRole, recipient: callData.recipient || '',
-          time: callTime, timestamp: Date.now(), status: 'read'
-        };
-        try {
-          await db.collection('chats_internos').doc(threadId).collection('mensajes').doc(`call_${record.callId}`).set(record, { merge: true });
-          await db.collection('chats_internos').doc(threadId).set({ lastMessage: summary, lastTime: callTime, lastTimestamp: record.timestamp, workerName: threadId }, { merge: true });
-          console.info('[CALL] Registro guardado en conversaciÃ³n', { threadId, callId: record.callId, callOutcome });
-        } catch (error) { console.error('[CALL] No se pudo guardar el historial de llamada:', error); }
-      }
-
-      endVoiceCall(notifyServer = true) {
-        console.info('[CALL] Finalizando llamada', { notifyServer, callId: this.currentCallData?.id, sessionId: this.currentCallData?.sessionId });
-        console.info('[CALL] Conteo ICE al finalizar', { ...(this.callIceCounters || {}) });
-        const endedCallData = this.currentCallData ? { ...this.currentCallData } : null;
-        const endedDurationSeconds = endedCallData?.connectedAt ? Math.max(this.callSeconds, Math.round((Date.now() - endedCallData.connectedAt) / 1000)) : 0;
-        if (notifyServer && endedCallData?.id) this.saveCallHistory(endedCallData, endedDurationSeconds);
-        this.stopIncomingCallRingtone();
-        clearInterval(this.callTimerInterval);
-        this.callTimerInterval = null;
-        this.callSeconds = 0;
-
-        if (this.localStream) {
-          this.localStream.getTracks().forEach(t => t.stop());
-          this.localStream = null;
-        }
-
-        if (this.peerConnection) {
-          clearInterval(this.peerConnection._callStatsInterval);
-          this.peerConnection._callStatsInterval = null;
-          this.peerConnection.close();
-          this.peerConnection = null;
-        }
-        this.callSignalingUnsubscribes.forEach(unsubscribe => { try { unsubscribe(); } catch (_) {} });
-        this.callSignalingUnsubscribes = [];
-        this.pendingIceCandidates = [];
-
-        if (notifyServer && window.db && this.currentCallData?.id) {
-          const endedCallId = this.currentCallData.id;
-          db.collection('webrtc_calls').doc(endedCallId).update({
-            status: 'ended'
-          }).then(() => console.info('[CALL] FinalizaciÃ³n enviada al otro extremo', { callId: endedCallId }))
-            .catch(error => console.error('[CALL] No se pudo avisar que la llamada terminÃ³:', error));
-        }
-
-        document.getElementById('modal-voice-call').classList.add('hidden');
-        document.getElementById('call-duration-timer').classList.add('hidden');
-        const remoteAudio = document.getElementById('remote-audio-stream');
-        if (remoteAudio) { remoteAudio.pause(); remoteAudio.srcObject = null; }
-        document.getElementById('btn-enable-remote-audio')?.classList.add('hidden');
-        if (this.lastIncomingCallId === endedCallData?.id) this.lastIncomingCallId = null;
-        this.currentCallData = null;
-      }
-
-      initChatModule() {
-        const isAdmin = this.currentUser.role === 'admin';
-        const sidebar = document.getElementById('chat-sidebar');
-        const backBar = document.getElementById('chat-mobile-back-bar');
-        document.getElementById('chat-window-modal')?.classList.toggle('worker-chat-mode', !isAdmin);
-
-        const options = document.getElementById('chat-conversation-options-dropdown');
-        if (options?.parentElement) options.parentElement.classList.toggle('hidden', !isAdmin);
-        const archivedButton = document.getElementById('btn-toggle-archived');
-        if (archivedButton) archivedButton.classList.toggle('hidden', !isAdmin);
-        if (isAdmin) {
-          sidebar.classList.remove('hidden');
-          if (backBar) backBar.classList.remove('hidden');
-          const firstWorker = this.workers[0]?.fullName || this.workers[0]?.username || 'Jeampaul';
-          this.activeChatWorker = firstWorker;
-          this.openChatTabs = [];
-          this.subscribeAllChatThreads();
-          this.renderChatTabs();
-          this.renderActiveChatHeader();
-        } else {
-          sidebar.classList.add('hidden');
-          if (backBar) backBar.classList.add('hidden');
-          this.activeChatWorker = this.getCurrentDisplayName();
-          this.renderActiveChatHeader();
-        }
-
-        this.subscribeChatMessages();
-        this.setupMultiWorkerChatListeners();
-      }
-
-      setupMultiWorkerChatListeners() {
-        if (!window.db || !this.currentUser) return;
-        const isAdmin = this.currentUser.role === 'admin';
-        const names = isAdmin ? this.workers.map(w => w.fullName || w.username) : [this.getCurrentDisplayName()];
-        names.forEach(wName => {
-          if (this.dedicatedWorkerUnsubscribes[wName]) return;
-          const query = db.collection('chats_internos').doc(wName).collection('mensajes').orderBy('timestamp', 'asc');
-          let cancelled = false, unsubscribe = null, unsubscribeThreadDoc = null, baselineIds = new Set(), firstSnapshot = true;
-          this.dedicatedWorkerUnsubscribes[wName] = () => { cancelled = true; if (unsubscribe) unsubscribe(); if (unsubscribeThreadDoc) unsubscribeThreadDoc(); };
-          unsubscribeThreadDoc = db.collection('chats_internos').doc(wName).onSnapshot(threadDoc => {
-            const threadData = threadDoc.exists ? threadDoc.data() : {};
-            const otherRole = isAdmin ? 'worker' : 'admin';
-            const isOtherTyping = Boolean(threadData.typing && threadData.typing[otherRole]);
-            if (this.chatTypingByWorker[wName] === isOtherTyping) return;
-            this.chatTypingByWorker[wName] = isOtherTyping;
-            if (isAdmin) this.renderConversationsSidebar();
-            this.updateMessengerWindowTyping(wName);
-            this.renderChatTypingIndicators();
-          }, error => console.error('[CHAT] Error escuchando escritura de ' + wName + ':', error));
-          const attach = () => {
-            if (cancelled) return;
-            unsubscribe = query.onSnapshot(snap => {
-              this.refreshChatThreadSummary(wName, snap, isAdmin);
-              snap.docChanges().forEach(change => {
-                if (change.type !== 'added') return;
-                const msgId = change.doc.id;
-                if (baselineIds.has(msgId)) return;
-                const data = change.doc.data();
-                if (data.type === 'call') return;
-                const fromOther = isAdmin ? data.senderRole === 'worker' : data.senderRole === 'admin';
-                if (!fromOther) return;
-                this.notifyIncomingChatMessage(wName, msgId, data);
-              });
-              if (firstSnapshot) { firstSnapshot = false; baselineIds.clear(); }
-            }, error => console.error('[CHAT] Error escuchando mensajes de ' + wName + ':', error));
-          };
-          query.get().then(snapshot => {
-            if (cancelled) return;
-            snapshot.forEach(doc => baselineIds.add(doc.id));
-            attach();
-          }).catch(error => {
-            console.warn('[CHAT] No se pudo cargar la lÃ­nea base de mensajes; se omitirÃ¡ solo la primera lectura:', error);
-            if (cancelled) return;
-            let ignoreFirstSnapshot = true;
-            unsubscribe = query.onSnapshot(snap => {
-              this.refreshChatThreadSummary(wName, snap, isAdmin);
-              if (ignoreFirstSnapshot) {
-                snap.docChanges().forEach(change => { if (change.type === 'added') baselineIds.add(change.doc.id); });
-                ignoreFirstSnapshot = false;
-                baselineIds.clear();
-                return;
-              }
-              snap.docChanges().forEach(change => {
-                if (change.type !== 'added' || baselineIds.has(change.doc.id)) return;
-                const data = change.doc.data();
-                if (data.type === 'call') return;
-                const fromOther = isAdmin ? data.senderRole === 'worker' : data.senderRole === 'admin';
-                if (!fromOther) return;
-                this.notifyIncomingChatMessage(wName, change.doc.id, data);
-              });
-            }, listenError => console.error('[CHAT] Error escuchando mensajes de ' + wName + ':', listenError));
-          });
-        });
-      }
-
-      refreshChatThreadSummary(wName, snapshot, isAdmin) {
-        const docs = snapshot?.docs || [];
-        const myRole = this.currentUser?.role;
-        let latest = null;
-        let unreadCount = 0;
-        docs.forEach(doc => {
-          const data = doc.data();
-          const timestamp = Number(data.timestamp || 0);
-          if (!latest || timestamp >= latest.timestamp) latest = { data, timestamp };
-          const isIncoming = isAdmin ? data.senderRole === 'worker' : data.senderRole === 'admin';
-          if (isIncoming && data.status !== 'read' && !data[`hiddenFor_${myRole}`]) unreadCount++;
-        });
-        const summary = {
-          hasMessages: docs.length > 0,
-          lastMessage: latest?.data.text || '',
-          lastTime: latest?.data.time || '',
-          lastTimestamp: latest?.timestamp || 0,
-          unreadCount
-        };
-        this.chatThreadSummaries[wName] = summary;
-        if (latest && this.chatActivityRanks[wName] === undefined) {
-          this.chatActivityRanks[wName] = ++this.chatActivitySequence;
-        }
-        if (isAdmin) this.renderConversationsSidebar();
-        else if (wName === this.getCurrentDisplayName()) {
-          const count = summary.hasMessages ? summary.unreadCount : Number(this.workerUnreadCount || 0);
-          this.updateChatLauncherUnread(count);
-        }
-      }
-
-      ensureIncomingWorkerWindow(wName) {
-        if (this.currentUser?.role !== 'admin' || window.innerWidth < 640) return;
-        if (!Array.isArray(this.openChatTabs)) this.openChatTabs = [];
-        const alreadyOpen = this.openChatTabs.includes(wName);
-        if (!alreadyOpen) {
-          this.openChatTabs.push(wName);
-          this.minimizedChatWindows[wName] = true;
-        }
-        if (!alreadyOpen || this.minimizedChatWindows[wName]) this.chatDockUnreadByWorker.add(wName);
-        this.renderMessengerWindows();
-      }
-
-      notifyIncomingChatMessage(wName, msgId, data) {
-        const uniqueId = `${wName}:${msgId}`;
-        if (this.notifiedChatMessageIds.has(uniqueId)) return;
-        this.notifiedChatMessageIds.add(uniqueId);
-        if (this.notifiedChatMessageIds.size > 500) {
-          const oldestId = this.notifiedChatMessageIds.values().next().value;
-          this.notifiedChatMessageIds.delete(oldestId);
-        }
-        this.chatActivityRanks[wName] = ++this.chatActivitySequence;
-        this.ensureIncomingWorkerWindow(wName);
-        if (this.prefs.sound) SoundEngine.playMessageSound();
-        this.showPopupNotification({
-          title: `${data.senderName || wName} te enviÃ³ un mensaje`,
-          details: data.text || '', type: 'chat', icon: 'ğŸ’¬',
-          onClick: () => this.openDirectWorkerChat(wName)
-        });
-        if (this.currentUser?.role === 'admin') this.renderConversationsSidebar();
-      }
-
-      clearDedicatedWorkerChatListeners() {
-        Object.keys(this.dedicatedWorkerUnsubscribes).forEach(k => {
-          this.dedicatedWorkerUnsubscribes[k]();
-        });
-        this.dedicatedWorkerUnsubscribes = {};
-      }
-
-      subscribeAllChatThreads() {
-        if (!window.db || this.chatThreadsUnsubscribe) return;
-
-        this.chatThreadsUnsubscribe = db.collection('chats_internos')
-          .orderBy('lastTimestamp', 'desc')
-          .onSnapshot(snap => {
-            const convs = {};
-            snap.forEach(doc => {
-              const data = doc.data();
-              const previous = this.conversations[doc.id];
-              if (previous && (previous.lastTimestamp !== data.lastTimestamp || previous.lastMessage !== data.lastMessage)) {
-                this.chatActivityRanks[doc.id] = ++this.chatActivitySequence;
-              }
-              convs[doc.id] = data;
-            });
-            this.conversations = convs;
-            this.renderConversationsSidebar();
-          });
-      }
-
-      formatChatLastActivity(timestamp, online) {
-        if (online) return 'Ahora';
-        const elapsed = Date.now() - Number(timestamp || 0);
-        if (!timestamp || elapsed < 0) return 'Sin registro';
-        const minutes = Math.floor(elapsed / 60000);
-        if (minutes < 1) return 'Hace un momento';
-        if (minutes < 60) return `Hace ${minutes} min`;
-        const hours = Math.floor(minutes / 60);
-        if (hours < 24) return `Hace ${hours} h`;
-        const days = Math.floor(hours / 24);
-        return `Hace ${days} dÃ­a${days === 1 ? '' : 's'}`;
-      }
-
-      filterChatContacts(query) {
-        const normalized = String(query || '').trim().toLocaleLowerCase();
-        document.querySelectorAll('#chat-conversations-list .chat-contact-row').forEach(row => {
-          row.style.display = normalized && !row.dataset.chatContact?.includes(normalized) ? 'none' : 'flex';
-        });
-      }
-
-      updateChatLauncherUnread(count) {
-        const visibleCount = this.prefs.chatBadge ? Math.max(0, Number(count) || 0) : 0;
-        const badge = document.getElementById('chat-unread-badge');
-        const launcher = document.getElementById('chat-floating-button-container');
-        if (badge) {
-          badge.textContent = visibleCount > 99 ? '99+' : String(visibleCount);
-          badge.classList.toggle('hidden', !visibleCount);
-        }
-        launcher?.classList.toggle('has-unread', Boolean(visibleCount));
-      }
-
-      renderConversationsSidebar() {
-        const listElem = document.getElementById('chat-conversations-list');
-        if (!listElem) return;
-
-        const ONLINE_THRESHOLD_MS = 60 * 1000;
-        const now = Date.now();
-        const sortedWorkers = [...this.workers].sort((a, b) => {
-          const nameA = a.fullName || a.username;
-          const nameB = b.fullName || b.username;
-          const rankA = this.chatActivityRanks[nameA] || 0;
-          const rankB = this.chatActivityRanks[nameB] || 0;
-          if (rankA !== rankB) return rankB - rankA;
-          const timeA = Math.max(Number(this.conversations[nameA]?.lastTimestamp || 0), Number(this.chatThreadSummaries[nameA]?.lastTimestamp || 0));
-          const timeB = Math.max(Number(this.conversations[nameB]?.lastTimestamp || 0), Number(this.chatThreadSummaries[nameB]?.lastTimestamp || 0));
-          return timeB - timeA;
-        });
-
-        const unreadTotal = sortedWorkers.reduce((sum, worker) => {
-          const name = worker.fullName || worker.username;
-          const summary = this.chatThreadSummaries[name];
-          const count = summary?.hasMessages ? summary.unreadCount : Number(this.conversations[name]?.unreadByAdmin || 0);
-          return sum + count;
-        }, 0);
-        this.updateChatLauncherUnread(unreadTotal);
-
-        const filtered = sortedWorkers.filter(worker => {
-          const name = worker.fullName || worker.username;
-          const thread = this.conversations[name];
-          if (this.showArchived) return thread && thread.archived;
-          return !(thread && thread.archived);
-        });
-
-        if (filtered.length === 0) {
-          listElem.innerHTML = `<p class="p-4 text-center text-slate-400 italic text-[11px]">No hay conversaciones ${this.showArchived ? 'archivadas' : ''}.</p>`;
-          return;
-        }
-
-        listElem.innerHTML = filtered.map(worker => {
-          const workerName = worker.fullName || worker.username;
-          const safeName = this.escapeHtml(workerName);
-          const thread = this.conversations[workerName] || {};
-          const summary = this.chatThreadSummaries[workerName];
-          const presenceStatus = this.getPresenceStatus(worker);
-          const isOnline = presenceStatus === 'available';
-          const presenceLabel = this.getPresenceLabel(presenceStatus);
-          const unread = this.prefs.chatBadge ? (summary?.hasMessages ? summary.unreadCount : Number(thread.unreadByAdmin || 0)) : 0;
-          const preview = summary?.hasMessages ? summary.lastMessage : (thread.lastMessage || 'Sin mensajes');
-          const previewTime = summary?.hasMessages ? summary.lastTime : (thread.lastTime || '');
-          const activity = this.formatChatLastActivity(worker.lastHeartbeat, isOnline);
-          const isTyping = Boolean(this.chatTypingByWorker[workerName]);
-          return `
-            <button type="button" data-chat-contact="${safeName.toLocaleLowerCase()}" onclick="app.selectChatConversation(decodeURIComponent('${encodeURIComponent(workerName)}'))" class="chat-contact-row ${isOnline ? 'is-online' : ''} ${unread > 0 ? 'has-unread' : ''}">
-              <span class="chat-contact-avatar seasonal-worker-avatar">${worker.photo ? `<img src="${this.escapeHtml(worker.photo)}" alt="Foto de ${safeName}">` : this.escapeHtml(String(workerName).charAt(0).toUpperCase())}${isOnline ? '<span class="chat-online-ring"></span>' : ''}</span>
-              <span class="chat-contact-copy">
-                <span class="chat-contact-topline"><span class="chat-contact-name-status"><span class="chat-contact-name">${safeName}</span><span class="presence-label is-${presenceStatus}">${presenceLabel}</span></span><span class="chat-contact-time">${this.escapeHtml(previewTime)}</span></span>
-                <span class="chat-contact-preview">${this.escapeHtml(preview || 'Sin mensajes')}</span>
-                ${isTyping ? '<span class="chat-contact-typing">Escribiendo<span class="chat-typing-dots" aria-label="Escribiendo"><i></i><i></i><i></i></span></span>' : ''}
-                <span class="chat-contact-activity">Ãšltima actividad: ${activity}</span>
-              </span>
-              ${unread > 0 ? `<span class="chat-unread-pill">${unread > 99 ? '99+' : unread} ${unread === 1 ? 'mensaje nuevo' : 'mensajes nuevos'}</span>` : ''}
-            </button>
-          `;
-        }).join('');
-        const search = document.getElementById('chat-contact-search');
-        if (search?.value) this.filterChatContacts(search.value);
-        this.renderMessengerWindows();
-      }
-      toggleShowArchivedChats() {
-        this.showArchived = !this.showArchived;
-        const btn = document.getElementById('btn-toggle-archived');
-        if (btn) btn.textContent = this.showArchived ? 'Ver Activas' : 'Ver Archivadas';
-        this.renderConversationsSidebar();
-      }
-
-      selectChatConversation(wName) {
-        const previousWorker = this.activeChatWorker;
-        const previousMessages = document.getElementById('chat-messages-container');
-        if (previousWorker && previousMessages) this.chatConversationHtmlCache[previousWorker] = previousMessages.innerHTML;
-        this.activeChatWorker = wName;
-        this.chatDockUnreadByWorker?.delete(wName);
-        if (this.currentUser?.role === 'admin') {
-          const summary = this.chatThreadSummaries[wName];
-          if (summary) summary.unreadCount = 0;
-          if (this.conversations[wName]) this.conversations[wName].unreadByAdmin = 0;
-          this.markChatConversationAsRead(wName);
-          this.renderConversationsSidebar();
-        }
-        if (this.currentUser?.role === 'admin') {
-          if (!Array.isArray(this.openChatTabs)) this.openChatTabs = [];
-          const isNewTab = !this.openChatTabs.includes(wName);
-          if (isNewTab) this.openChatTabs.push(wName);
-          this.minimizedChatWindows[wName] = false;
-          if (window.innerWidth >= 640) {
-            document.getElementById('chat-window-modal')?.classList.remove('hidden');
-            document.getElementById('chat-desktop-windows')?.classList.remove('hidden');
-          }
-        }
-        document.getElementById('chat-header-title').textContent = 'ServiPortones';
-        document.getElementById('chat-mobile-active-name').textContent = wName;
-
-        if (window.innerWidth < 640) {
-          document.getElementById('chat-sidebar').classList.add('mobile-conversation-open');
-          document.getElementById('chat-conversation-area').classList.remove('mobile-list-open');
-        }
-
-        this.subscribeChatMessages();
-        this.renderConversationsSidebar();
-        this.renderChatTabs();
-        this.renderActiveChatHeader();
-        this.renderMessengerWindows();
-      }
-
-      renderActiveChatHeader() {
-        const header = document.getElementById('chat-active-contact-header');
-        if (!header || !this.currentUser) return;
-        let name = '';
-        let photo = '';
-        let status = 'disconnected';
-        if (this.currentUser.role === 'admin') {
-          name = this.activeChatWorker || '';
-          const worker = this.workers.find(item => (item.fullName || item.username) === name);
-          if (!worker) { header.innerHTML = ''; return; }
-          photo = worker.photo || '';
-          status = this.getPresenceStatus(worker);
-        } else {
-          const admin = this.getAdminPresenceInfo();
-          name = admin.name;
-          photo = admin.photo;
-          status = admin.status;
-        }
-        const safeName = this.escapeHtml(name);
-        const avatar = photo ? `<img src="${this.escapeHtml(photo)}" alt="Foto de ${safeName}">` : `<span>${this.escapeHtml(String(name).charAt(0).toUpperCase())}</span>`;
-        const title = document.getElementById('chat-header-title');
-        if (title) title.textContent = 'ServiPortones';
-        header.innerHTML = `<span class="chat-active-avatar seasonal-worker-avatar">${avatar}</span><div class="chat-active-contact-copy"><span class="chat-active-contact-name truncate">${safeName}</span><span class="presence-label is-${status}">${this.getPresenceLabel(status)}</span></div>`;
-        const mobileAvatar = document.getElementById('chat-mobile-contact-avatar');
-        if (mobileAvatar) mobileAvatar.innerHTML = avatar;
-        const mobileName = document.getElementById('chat-mobile-active-name');
-        if (mobileName) mobileName.textContent = name;
-        const mobileStatus = document.getElementById('chat-mobile-active-status');
-        if (mobileStatus) { mobileStatus.textContent = this.getPresenceLabel(status); mobileStatus.className = `presence-label is-${status}`; }
-      }
-      renderChatTypingIndicators() {
-        document.querySelectorAll('.chat-inline-typing-indicator').forEach(indicator => indicator.remove());
-        const targets = [];
-        const activeThread = this.currentUser?.role === 'admin' ? this.activeChatWorker : this.getCurrentDisplayName();
-        const mainMessages = document.getElementById('chat-messages-container');
-        const mainHost = document.getElementById('chat-conversation-area');
-        if (mainMessages && mainHost && activeThread) targets.push({ host: mainHost, scroller: mainMessages, threadId: activeThread });
-        document.querySelectorAll('#chat-desktop-chat-cells [data-messenger-window]').forEach(windowEl => {
-          const scroller = windowEl.querySelector('.messenger-window-messages');
-          if (scroller) targets.push({ host: windowEl, scroller, threadId: windowEl.dataset.messengerWindow });
-        });
-        targets.forEach(({ host, scroller, threadId }) => {
-          if (!this.chatTypingByWorker[threadId]) return;
-          const wasNearBottom = scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop < 80;
-          let name = threadId;
-          let photo = '';
-          if (this.currentUser?.role === 'admin') {
-            const worker = this.workers.find(item => (item.fullName || item.username) === threadId);
-            photo = worker?.photo || '';
-          } else {
-            const admin = this.getAdminPresenceInfo();
-            name = admin.name;
-            photo = admin.photo || '';
-          }
-          const safeName = this.escapeHtml(name);
-          const indicator = document.createElement('div');
-          indicator.className = 'chat-inline-typing-indicator chat-typing-overlay';
-          indicator.innerHTML = `${photo ? `<span class="chat-inline-typing-avatar seasonal-worker-avatar"><img src="${this.escapeHtml(photo)}" alt="Foto de ${safeName}"></span>` : `<span class="chat-inline-typing-avatar seasonal-worker-avatar">${this.escapeHtml(String(name).charAt(0).toUpperCase())}</span>`}<span class="chat-inline-typing-copy"><span>Escribiendo</span><span class="chat-typing-dots" aria-label="Escribiendo"><i></i><i></i><i></i></span></span>`;
-          const composer = host.querySelector(this.currentUser?.role === 'admin' && host !== mainHost ? '.messenger-window-form' : 'form[onsubmit*="handleSendMessage"]');
-          if (composer) host.insertBefore(indicator, composer);
-          else host.appendChild(indicator);
-          if (wasNearBottom) scroller.scrollTop = scroller.scrollHeight;
-        });
-      }
-      renderChatTabs() {
-        const tray = document.getElementById('chat-open-tabs');
-        if (!tray || this.currentUser?.role !== 'admin') return;
-        const tabs = Array.isArray(this.openChatTabs) ? this.openChatTabs : [];
-        tray.innerHTML = tabs.map(name => {
-          const worker = this.workers.find(item => (item.fullName || item.username) === name);
-          const avatar = worker?.photo ? `<img src="${this.escapeHtml(worker.photo)}" alt="">` : this.escapeHtml(String(name).charAt(0).toUpperCase());
-          return `<span class="chat-open-tab ${this.activeChatWorker === name ? 'is-active' : ''}"><button type="button" class="flex min-w-0 items-center truncate" onclick="app.selectChatConversation(decodeURIComponent('${encodeURIComponent(name)}'))"><span class="chat-open-tab-avatar seasonal-worker-avatar">${avatar}</span><span class="truncate">${this.escapeHtml(name)}</span></button><button type="button" class="chat-tab-close" title="Cerrar conversaciÃ³n" aria-label="Cerrar ${this.escapeHtml(name)}" onclick="event.stopPropagation();app.closeChatTab(decodeURIComponent('${encodeURIComponent(name)}'))">Ã—</button></span>`;
-        }).join('');
-        tray.classList.toggle('hidden', tabs.length === 0);
-      }
-
-      renderMessengerWindows() {
-        const dock = document.getElementById('chat-desktop-chat-cells');
-        const dockRoot = document.getElementById('chat-desktop-windows');
-        const minimizedDock = document.getElementById('chat-minimized-windows');
-        if (!dock || !dockRoot) return;
-        if (window.innerWidth < 640 || this.currentUser?.role !== 'admin') {
-          dock.innerHTML = '';
-          if (minimizedDock) { minimizedDock.innerHTML = ''; minimizedDock.classList.add('hidden'); }
-          this.renderChatTypingIndicators();
-          return;
-        }
-        const focusedInput = document.activeElement?.matches('.messenger-window-form input') ? document.activeElement : null;
-        const focusedWindow = focusedInput?.closest('[data-messenger-window]')?.dataset.messengerWindow || '';
-        const cursorStart = focusedInput?.selectionStart;
-        const cursorEnd = focusedInput?.selectionEnd;
-        const existingWindows = document.querySelectorAll('#chat-desktop-chat-cells [data-messenger-window], #chat-minimized-windows [data-messenger-window]');
-        existingWindows.forEach(windowEl => {
-          const name = windowEl.dataset.messengerWindow;
-          const input = windowEl.querySelector('.messenger-window-form input');
-          if (input) this.messengerDrafts[name] = input.value;
-          const messages = windowEl.querySelector('.messenger-window-messages');
-          if (messages) {
-            this.chatScrollPositions[name] = messages.scrollTop;
-            this.chatWasNearBottom[name] = messages.scrollHeight - messages.clientHeight - messages.scrollTop < 80;
-          }
-        });
-        const names = Array.isArray(this.openChatTabs) ? this.openChatTabs : [];
-        const visibleCount = names.filter(name => !this.minimizedChatWindows[name]).length;
-        const cellCount = visibleCount + 1;
-        const availableWidth = window.innerWidth - 44 - 11 * Math.max(0, cellCount - 1);
-        const cellWidth = Math.min(300, Math.max(96, Math.floor(availableWidth / Math.max(cellCount, 1))));
-        dockRoot.style.setProperty('--chat-cell-width', cellWidth + 'px');
-        document.getElementById('chat-floating-button-container')?.style.setProperty('--chat-cell-width', cellWidth + 'px');
-        document.getElementById('chat-window-modal')?.style.setProperty('--chat-cell-width', cellWidth + 'px');
-        const renderedWindows = names.map(name => {
-          const worker = this.workers.find(item => (item.fullName || item.username) === name);
-          const avatar = worker?.photo ? '<img src="' + this.escapeHtml(worker.photo) + '" alt="">' : this.escapeHtml(String(name).charAt(0).toUpperCase());
-          const isMinimized = Boolean(this.minimizedChatWindows[name]);
-          const presenceStatus = this.getPresenceStatus(worker);
-          const presenceLabel = this.getPresenceLabel(presenceStatus);
-          const typing = Boolean(this.chatTypingByWorker[name]);
-          const threadSummary = this.chatThreadSummaries[name];
-          const threadData = this.conversations[name] || {};
-          const unreadCount = Math.max(threadSummary?.hasMessages ? Number(threadSummary.unreadCount || 0) : Number(threadData.unreadByAdmin || 0), this.chatDockUnreadByWorker?.has(name) ? 1 : 0);
-          const presenceText = typing ? 'Escribiendo...' : presenceLabel;
-          const presenceClass = typing ? 'is-typing' : 'presence-label is-' + presenceStatus;
-          const cached = this.chatConversationHtmlCache[name] || (name === this.activeChatWorker ? (document.getElementById('chat-messages-container')?.innerHTML || '') : '<div class="text-center py-8 text-xs italic">Abre la conversaciÃ³n para cargar los mensajes.</div>');
-          return '<section class="messenger-chat-window ' + (isMinimized ? 'is-minimized ' : '') + (unreadCount > 0 && this.prefs.chatBadge ? 'has-unread' : '') + '" data-messenger-window="' + this.escapeHtml(name) + '" style="--chat-cell-width:' + cellWidth + 'px">' +
-            '<header class="messenger-window-header" onclick="' + (isMinimized ? 'app.toggleMessengerWindow(decodeURIComponent(\'' + encodeURIComponent(name) + '\'))' : 'app.selectChatConversation(decodeURIComponent(\'' + encodeURIComponent(name) + '\'))') + '"' + (isMinimized ? ' role="button" tabindex="0" title="Restaurar conversaciÃ³n" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();app.toggleMessengerWindow(decodeURIComponent(\'' + encodeURIComponent(name) + '\'))}"' : '') + '>' +
-              '<span class="messenger-window-avatar seasonal-worker-avatar">' + avatar + '</span><span class="messenger-window-identity"><span class="messenger-window-title">' + this.escapeHtml(name) + '</span><span class="messenger-window-activity ' + presenceClass + '">' + this.escapeHtml(presenceText) + '</span></span>' +
-              (unreadCount > 0 && this.prefs.chatBadge ? '<span class="messenger-window-unread-badge">' + (unreadCount > 99 ? '99+' : String(unreadCount)) + '</span>' : '') +
-              '<span class="messenger-window-controls">' +
-                (isMinimized ? '' : '<button class="messenger-window-minimize" type="button" title="Minimizar" aria-label="Minimizar ' + this.escapeHtml(name) + '" onclick="event.stopPropagation();app.toggleMessengerWindow(decodeURIComponent(\'' + encodeURIComponent(name) + '\'))">âˆ’</button>') +
-                '<button class="messenger-window-close" type="button" title="Cerrar" aria-label="Cerrar ' + this.escapeHtml(name) + '" onclick="event.stopPropagation();app.closeChatTab(decodeURIComponent(\'' + encodeURIComponent(name) + '\'))">Ã—</button>' +
-              '</span></header>' +
-            (isMinimized ? '' : '<div class="messenger-window-messages">' + cached + '</div><form class="messenger-window-form" onsubmit="app.handleMessengerWindowSend(event,decodeURIComponent(\'' + encodeURIComponent(name) + '\'))"><input type="text" autocomplete="off" placeholder="Escribe un mensaje..." aria-label="Mensaje para ' + this.escapeHtml(name) + '"><button type="submit" title="Enviar" aria-label="Enviar">â¤</button></form>') +
-          '</section>';
-        });
-        dock.innerHTML = visibleCount
-          ? renderedWindows.map((markup, index) => this.minimizedChatWindows[names[index]]
-            ? '<div class="messenger-window-position-slot" aria-hidden="true" style="width:' + cellWidth + 'px;min-width:' + cellWidth + 'px;max-width:' + cellWidth + 'px;flex:0 0 ' + cellWidth + 'px;height:1px;pointer-events:none"></div>'
-            : markup).join('')
-          : '';
-        if (minimizedDock) {
-          minimizedDock.innerHTML = names.map(name => {
-            const worker = this.workers.find(item => (item.fullName || item.username) === name);
-            const avatar = worker?.photo ? '<img src="' + this.escapeHtml(worker.photo) + '" alt="">' : this.escapeHtml(String(name).charAt(0).toUpperCase());
-            const isMinimized = Boolean(this.minimizedChatWindows[name]);
-            const presenceStatus = this.getPresenceStatus(worker);
-            const presenceLabel = this.getPresenceLabel(presenceStatus);
-            const typing = Boolean(this.chatTypingByWorker[name]);
-            const threadSummary = this.chatThreadSummaries[name];
-            const threadData = this.conversations[name] || {};
-            const unreadCount = Math.max(threadSummary?.hasMessages ? Number(threadSummary.unreadCount || 0) : Number(threadData.unreadByAdmin || 0), this.chatDockUnreadByWorker?.has(name) ? 1 : 0);
-            const presenceText = typing ? 'Escribiendo...' : presenceLabel;
-            const presenceClass = typing ? 'is-typing' : 'presence-label is-' + presenceStatus;
-            return '<section class="messenger-chat-window is-minimized chat-persistent-tab ' + (unreadCount > 0 && this.prefs.chatBadge ? 'has-unread' : '') + '" data-messenger-window="' + this.escapeHtml(name) + '" style="--chat-cell-width:' + cellWidth + 'px">' +
-              '<header class="messenger-window-header" role="button" tabindex="0" title="Abrir o minimizar conversaciÃ³n" onclick="app.toggleMessengerWindow(decodeURIComponent(\'' + encodeURIComponent(name) + '\'))" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();app.toggleMessengerWindow(decodeURIComponent(\'' + encodeURIComponent(name) + '\'))}">' +
-                '<span class="messenger-window-avatar seasonal-worker-avatar">' + avatar + '</span><span class="messenger-window-identity"><span class="messenger-window-title">' + this.escapeHtml(name) + '</span><span class="messenger-window-activity ' + presenceClass + '">' + this.escapeHtml(presenceText) + '</span></span>' +
-                (unreadCount > 0 && this.prefs.chatBadge ? '<span class="messenger-window-unread-badge">' + (unreadCount > 99 ? '99+' : String(unreadCount)) + '</span>' : '') +
-                '<span class="messenger-window-controls">' +
-                  '<button class="messenger-window-close" type="button" title="Cerrar" aria-label="Cerrar ' + this.escapeHtml(name) + '" onclick="event.stopPropagation();app.closeChatTab(decodeURIComponent(\'' + encodeURIComponent(name) + '\'))">Ã—</button>' +
-                '</span></header></section>';
-          }).join('');
-          minimizedDock.classList.toggle('hidden', names.length === 0);
-        }
-        [dock, minimizedDock].filter(Boolean).forEach(container => container.querySelectorAll('[data-messenger-window]').forEach(windowEl => {
-          const name = windowEl.dataset.messengerWindow;
-          const messages = windowEl.querySelector('.messenger-window-messages');
-          if (messages) {
-            if (!Object.prototype.hasOwnProperty.call(this.chatScrollPositions, name) || this.chatWasNearBottom[name]) messages.scrollTop = messages.scrollHeight;
-            else messages.scrollTop = this.chatScrollPositions[name];
-            messages.addEventListener('scroll', () => {
-              this.chatScrollPositions[name] = messages.scrollTop;
-              this.chatWasNearBottom[name] = messages.scrollHeight - messages.clientHeight - messages.scrollTop < 80;
-            }, { passive: true });
-          }
-          const input = windowEl.querySelector('.messenger-window-form input');
-          if (input) {
-            input.value = this.messengerDrafts[name] || '';
-            input.addEventListener('input', event => this.handleMessengerWindowTyping(event, name));
-          }
-        }));
-        if (focusedWindow) {
-          const restoredInput = dock.querySelector('[data-messenger-window="' + CSS.escape(focusedWindow) + '"] .messenger-window-form input');
-          if (restoredInput) {
-            restoredInput.focus({ preventScroll: true });
-            if (Number.isInteger(cursorStart) && Number.isInteger(cursorEnd)) restoredInput.setSelectionRange(cursorStart, cursorEnd);
-          }
-        }
-        this.renderChatTypingIndicators();
-      }
-
-updateMessengerWindowTyping(workerName) {
-        const windowEl = document.querySelector('#chat-desktop-chat-cells [data-messenger-window="' + CSS.escape(workerName) + '"]');
-        if (!windowEl) return;
-        const activity = windowEl.querySelector('.messenger-window-activity');
-        if (!activity) return;
-        const typing = Boolean(this.chatTypingByWorker[workerName]);
-        const worker = this.workers.find(item => (item.fullName || item.username) === workerName);
-        const status = this.getPresenceStatus(worker);
-        activity.textContent = typing ? 'Escribiendo...' : this.getPresenceLabel(status);
-        activity.className = 'messenger-window-activity ' + (typing ? 'is-typing' : 'presence-label is-' + status);
-      }
-
-      toggleMessengerWindow(workerName) {
-        const restoring = Boolean(this.minimizedChatWindows[workerName]);
-        this.minimizedChatWindows[workerName] = !restoring;
-        if (restoring && this.currentUser?.role === 'admin' && window.innerWidth >= 640) {
-          this.chatDockUnreadByWorker?.delete(workerName);
-          const summary = this.chatThreadSummaries[workerName];
-          if (summary) summary.unreadCount = 0;
-          if (this.conversations[workerName]) this.conversations[workerName].unreadByAdmin = 0;
-          document.getElementById('chat-desktop-windows')?.classList.remove('hidden');
-          this.markChatConversationAsRead(workerName);
-          this.renderConversationsSidebar();
-        }
-        this.renderMessengerWindows();
-      }
-
-      handleMessengerWindowTyping(event, workerName) {
-        if (this.activeChatWorker !== workerName) this.selectChatConversation(workerName);
-        this.handleTypingInput();
-      }
-
-      async handleMessengerWindowSend(event, workerName) {
-        event.preventDefault();
-        const input = event.currentTarget?.querySelector('input');
-        const sharedInput = document.getElementById('chat-input-text');
-        if (!input || !sharedInput || !input.value.trim()) return;
-        if (this.activeChatWorker !== workerName) this.selectChatConversation(workerName);
-        sharedInput.value = input.value;
-        input.value = '';
-        this.messengerDrafts[workerName] = '';
-        await this.handleSendMessage({ preventDefault() {} });
-      }
-
-      closeChatTab(workerName) {
-        if (this.currentUser?.role !== 'admin') return;
-        const contactsPanel = document.getElementById('chat-window-modal');
-        const contactsPanelWasOpen = Boolean(contactsPanel && !contactsPanel.classList.contains('hidden'));
-        this.openChatTabs = (this.openChatTabs || []).filter(name => name !== workerName);
-        delete this.minimizedChatWindows[workerName];
-        if (this.activeChatWorker === workerName) {
-          const next = this.openChatTabs[0];
-          if (next && contactsPanelWasOpen) return this.selectChatConversation(next);
-          this.activeChatWorker = next || '';
-          if (next) this.subscribeChatMessages();
-        }
-        // Closing a docked/minimized worker chat must not open the main contacts
-        // panel as a side effect when that panel was previously closed.
-        this.renderChatTabs();
-        this.renderMessengerWindows();
-        if (contactsPanel && !contactsPanelWasOpen) {
-          contactsPanel.classList.add('hidden');
-          document.getElementById('chat-launcher-button')?.setAttribute('aria-expanded', 'false');
-        }
-      }
-      showMobileChatSidebar() {
-        document.getElementById('chat-sidebar').classList.remove('mobile-conversation-open');
-        document.getElementById('chat-conversation-area').classList.add('mobile-list-open');
-      }
-
-      openDirectWorkerChat(workerName) {
-        this.activeChatWorker = workerName;
-        const chatModal = document.getElementById('chat-window-modal');
-        chatModal.classList.remove('hidden');
-        this.selectChatConversation(workerName);
-      }
-
-      toggleChatWindow() {
-        const chatModal = document.getElementById('chat-window-modal');
-        if (!chatModal) return;
-        const opening = chatModal.classList.contains('hidden');
-        chatModal.classList.toggle('hidden', !opening);
-        document.getElementById('chat-launcher-button')?.setAttribute('aria-expanded', String(opening));
-        const isDesktopAdminContacts = this.currentUser?.role === 'admin' && window.innerWidth >= 640;
-        if (opening) {
-          this.scrollToChatBottom();
-          if (isDesktopAdminContacts) {
-            document.getElementById('chat-desktop-windows')?.classList.remove('hidden');
-            this.renderMessengerWindows();
-          } else {
-            this.markMessagesAsRead();
-            document.getElementById('chat-input-text')?.focus({ preventScroll: true });
-          }
-        }
-      }
-
-      toggleChatOptionsMenu() {
-        const menu = document.getElementById('chat-conversation-options-dropdown');
-        if (menu) menu.classList.toggle('hidden');
-      }
-
-      async archiveCurrentConversation() {
-        if (this.currentUser?.role !== 'admin') return;
-        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
-        this.toggleChatOptionsMenu();
-
-        if (window.db && threadId) {
-          await db.collection('chats_internos').doc(threadId).set({ archived: true }, { merge: true });
-          this.showToast("ConversaciÃ³n archivada", "info");
-        }
-      }
-
-      async clearCurrentConversation() {
-        if (this.currentUser?.role !== 'admin') return;
-        this.toggleChatOptionsMenu();
-        if (!confirm("Â¿Deseas vaciar todos los mensajes de esta conversaciÃ³n?")) return;
-
-        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
-        if (window.db && threadId) {
-          const snap = await db.collection('chats_internos').doc(threadId).collection('mensajes').get();
-          snap.forEach(d => d.ref.delete());
-          await db.collection('chats_internos').doc(threadId).update({ lastMessage: 'ConversaciÃ³n vaciada' });
-          this.showToast("ConversaciÃ³n vaciada", "success");
-        }
-      }
-
-      async deleteCurrentConversation() {
-        if (this.currentUser?.role !== 'admin') return;
-        this.toggleChatOptionsMenu();
-        if (!confirm("Â¿Deseas eliminar completamente esta conversaciÃ³n y su historial?")) return;
-
-        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
-        if (window.db && threadId) {
-          const snap = await db.collection('chats_internos').doc(threadId).collection('mensajes').get();
-          snap.forEach(d => d.ref.delete());
-          await db.collection('chats_internos').doc(threadId).delete();
-          this.showToast("ConversaciÃ³n eliminada", "info");
-        }
-      }
-
-      async deleteMessageForEveryone(msgId) {
-        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
-        const message = this.chatMessages.find(m => m.id === msgId);
-        if (this.currentUser.role !== 'admin' && (!message || message.senderRole !== 'worker' || message.senderName !== (this.getCurrentDisplayName()))) return;
-        if (!confirm("Â¿Eliminar este mensaje para todos?")) return;
-        if (window.db && threadId && msgId) {
-          await db.collection('chats_internos').doc(threadId).collection('mensajes').doc(msgId).delete();
+YªçŠx-®éÜj×¢ëiºÚ+Š§j[h‘éÜ¢éí×NúßTèµ©hºÚn¶X§zÍCBˆÛÛœİØY™TİÜ˜YÙHHÃBˆY[TİÜ™NˆßKBˆÙ]][JÙ^K˜[YJHÃBˆHÈØØ[İÜ˜YÙKœÙ]][JÙ^K˜[YJNÈCBˆØ]Ú
+JHÃBˆHÈÙ\ÜÚ[Û”İÜ˜YÙKœÙ]][JÙ^K˜[YJNÈCBˆØ]Ú
+LŠHÈ\Ë›Y[TİÜ™VÚÙ^WHHİš[™Ê˜[YJNÈCBˆCBˆKBˆÙ]][JÙ^JHÃBˆHÃBˆÛÛœİ][HHØØ[İÜ˜YÙK™Ù]][JÙ^JNÃBˆYˆ
+][HOOH[
+H™]\›ˆ][NÃBˆHØ]Ú
+JHßCBˆHÃBˆÛÛœİ][TÙ\ÜÚ[ÛˆHÙ\ÜÚ[Û”İÜ˜YÙK™Ù]][JÙ^JNÃBˆYˆ
+][TÙ\ÜÚ[ÛˆOOH[
+H™]\›ˆ][TÙ\ÜÚ[ÛÃBˆHØ]Ú
+LŠHßCBˆ™]\›ˆ\Ë›Y[TİÜ™VÚÙ^WH[ÃBˆKBˆ™[[İ™R][JÙ^JHÃBˆHÈØØ[İÜ˜YÙKœ™[[İ™R][JÙ^JNÈHØ]Ú
+JHßCBˆHÈÙ\ÜÚ[Û”İÜ˜YÙKœ™[[İ™R][JÙ^JNÈHØ]Ú
+LŠHßCBˆ[]H\Ë›Y[TİÜ™VÚÙ^WNÃBˆCBˆNÃBƒBˆÛÛœİÛİ[™[™Ú[™HHÃBˆİˆ[Bˆ[™[™ÕÛÜšÙ\ÛÛ›™XİYÛİ[™ˆ˜[ÙKBˆ\Ş[˜È[›ØÚÊ
+HÃBˆHÃBˆÛÛœİİH\Ë™Ù]İ
+
+NÃBˆYˆ
+İ	‰ˆİœİ]HOOH	Üİ\Ü[™Y	ÊH]ØZ]İœ™\İ[YJ
+NÃBˆÛÛœÛÛKš[™›Ê	ÖÓÔ‘T—H]Y[ÈXš[]YÈÜˆ[\˜XØÚpìÛ‰ËÈİ]NˆİËœİ]H	İ[˜]˜Z[X›IÈJNÃBˆYˆ
+İËœİ]HOOH	Ü[›š[™ÉÈ	‰ˆ\Ëœ[™[™ÕÛÜšÙ\ÛÛ›™XİYÛİ[™
+HÃBˆ\Ëœ[™[™ÕÛÜšÙ\ÛÛ›™XİYÛİ[™H˜[ÙNÃBˆ\Ëœ^UÛÜšÙ\ÛÛ›™XİYÛİ[™
+
+NÃBˆCBˆHØ]Ú
+\œ›ÜŠHÃBˆÛÛœÛÛKØ\›Š	ÖÓÔ‘T—H›ÈÙHYÈXš[]\ˆ[]Y[Î‰Ë\œ›ÜŠNÃBˆCBˆKBˆÙ]İ
+
+HÃBˆYˆ
+]\Ë˜İ
+HÃBˆÛÛœİ]Y[ĞÛÛ^HÚ[™İË]Y[ĞÛÛ^Ú[™İËÙXšÚ]]Y[ĞÛÛ^ÃBˆYˆ
+]Y[ĞÛÛ^
+H\Ë˜İH™]È]Y[ĞÛÛ^
+
+NÃBˆCBˆYˆ
+\Ë˜İ	‰ˆ\Ë˜İœİ]HOOH	Üİ\Ü[™Y	ÊHÃBˆ\Ë˜İœ™\İ[YJ
+NÃBˆCBˆ™]\›ˆ\Ë˜İÃBˆKBƒBˆ\Ş[˜È^SY\ÜØYÙTÛİ[™
+
+HÃBˆHÃBˆÛÛœİİH\Ë™Ù]İ
+
+NÃBˆYˆ
+Xİ
+H™]\›ÃBˆYˆ
+İœİ]HOOH	Üİ\Ü[™Y	ÊH]ØZ]İœ™\İ[YJ
+NÃBˆÛÛœİ›İÈHİ˜İ\œ™[[YNÃBƒBˆÛÛœİÜØÌHHİ˜Ü™X]SÜØÚ[]ÜŠ
+NÃBˆÛÛœİÜØÌˆHİ˜Ü™X]SÜØÚ[]ÜŠ
+NÃBˆÛÛœİØZ[ˆHİ˜Ü™X]QØZ[Š
+NÃBƒBˆÜØÌK\HH	ÜÚ[™IÎÃBˆÜØÌ‹\HH	ÜÚ[™IÎÃBƒBˆÜØÌK™œ™\]Y[˜ŞKœÙ]˜[YP][YJNËŒÌË›İÊNÃBˆÜØÌK™œ™\]Y[˜ŞK™^Û™[X[˜[\Õ˜[YP][YJ›İÈ
+ÈŒLŠNÃBƒBˆÜØÌ‹™œ™\]Y[˜ŞKœÙ]˜[YP][YJ›İÊNÃBˆÜØÌ‹™œ™\]Y[˜ŞK™^Û™[X[˜[\Õ˜[YP][YJLMÍ‹›İÈ
+ÈŒMJNÃBƒBˆØZ[‹™ØZ[‹œÙ]˜[YP][YJŒK›İÊNÃBˆØZ[‹™ØZ[‹›[™X\”˜[\Õ˜[YP][YJŒK›İÈ
+ÈŒŠNÃBˆØZ[‹™ØZ[‹™^Û™[X[˜[\Õ˜[YP][YJŒK›İÈ
+ÈJNÃBƒBˆÜØÌK˜ÛÛ›™Xİ
+ØZ[ŠNÃBˆÜØÌ‹˜ÛÛ›™Xİ
+ØZ[ŠNÃBˆØZ[‹˜ÛÛ›™Xİ
+İ™\İ[˜][ÛŠNÃBƒBˆÜØÌKœİ\
+›İÊNÃBˆÜØÌ‹œİ\
+›İÊNÃBˆÜØÌKœİÜ
+›İÈ
+ÈJNÃBˆÜØÌ‹œİÜ
+›İÈ
+ÈJNÃBˆHØ]Ú
+JHÃBˆÛÛœÛÛKØ\›Š]Y[ÈÛÛ^›Ü]YXYÎˆ‹JNÃBˆCBˆKBƒBˆ\Ş[˜È^UÛÜšÙ\ÛÛ›™XİYÛİ[™
+
+HÃBˆHÃBˆÛÛœİİH\Ë™Ù]İ
+
+NÃBˆYˆ
+Xİ
+H™]\›ÃBˆYˆ
+İœİ]HOOH	Üİ\Ü[™Y	ÊH]ØZ]İœ™\İ[YJ
+NÃBˆYˆ
+İœİ]HOOH	Ü[›š[™ÉÊHÃBˆ\Ëœ[™[™ÕÛÜšÙ\ÛÛ›™XİYÛİ[™HYNÃBˆÛÛœÛÛKš[™›Ê	ÖÔ‘TÑSÑWHÛÛšYÈHÛÛ™^pìÛˆ[ˆ\Ü\˜HH[\˜XØÚpìÛˆ\˜HXš[]\ˆ]Y[ÉÊNÃBˆ™]\›ÃBˆCBˆÛÛœİ›İÈHİ˜İ\œ™[[YNÃBˆÛÛœÛÛKš[™›Ê	ÖÔ‘TÑSÑWH™\›ÙXÚY[™ÈÛÛšYÈHÛÛ™^pìÛˆH˜X˜Z˜YÜ‰ÊNÃBˆÍÎËNKNËÍËLÌNLWK™›Ü‘XXÚ
+
+œ™\]Y[˜ŞK[™^
+HOˆÃBˆÛÛœİİ\H›İÈ
+È[™^
+ˆŒMÃBˆÛÛœİÜØÚ[]ÜˆHİ˜Ü™X]SÜØÚ[]ÜŠ
+NÃBˆÛÛœİØZ[ˆHİ˜Ü™X]QØZ[Š
+NÃBˆÜØÚ[]Ü‹\HH	ÜÚ[™IÎÃBˆÜØÚ[]Ü‹™œ™\]Y[˜ŞKœÙ]˜[YP][YJœ™\]Y[˜ŞKİ\
+NÃBˆØZ[‹™ØZ[‹œÙ]˜[YP][YJŒKİ\
+NÃBˆØZ[‹™ØZ[‹›[™X\”˜[\Õ˜[YP][YJŒİ\
+ÈŒJNÃBˆØZ[‹™ØZ[‹™^Û™[X[˜[\Õ˜[YP][YJŒKİ\
+ÈŠNÃBˆÜØÚ[]Ü‹˜ÛÛ›™Xİ
+ØZ[ŠNÃBˆØZ[‹˜ÛÛ›™Xİ
+İ™\İ[˜][ÛŠNÃBˆÜØÚ[]Ü‹œİ\
+İ\
+NÃBˆÜØÚ[]Ü‹œİÜ
+İ\
+È
+NÃBˆJNÃBˆHØ]Ú
+\œ›ÜŠHÃBˆÛÛœÛÛKØ\›Š	ÖÔ‘TÑSÑWH›ÈÙHYÈ™\›ÙXÚ\ˆ[ÛÛšYÈHÛÛ™^pìÛ‰Ë\œ›ÜŠNÃBˆCBˆKBˆ\Ş[˜È^SÜ™\ÛÛ\]YÛİ[™
+
+HÃBˆHÃBˆÛÛœİİH\Ë™Ù]İ
+
+NÃBˆYˆ
+Xİ
+HÈÛÛœÛÛKØ\›Š	ÖÓÔ‘T—HÙXˆ]Y[È›È\İ0èH\ÜÛšX›IÊNÈ™]\›ÈCBˆYˆ
+İœİ]HOOH	Üİ\Ü[™Y	ÊH]ØZ]İœ™\İ[YJ
+NÃBˆYˆ
+İœİ]HOOH	Ü[›š[™ÉÊHÈÛÛœÛÛKØ\›Š	ÖÓÔ‘T—H]Y[ĞÛÛ^ÚYİYHİ\Ü[™YÎÈ]š\ÛÈ›È™\›ÙXÚYÉËÈİ]Nˆİœİ]HJNÈ™]\›ÈCBˆÛÛœİ›İÈHİ˜İ\œ™[[YNÃBˆÛÛœÛÛKš[™›Ê	ÖÓÔ‘T—H™\›ÙXÚY[™ÈÛÛšYÈHÜ™[ˆÛÛ\]YIÊNÃBˆÍNKŒKÎËNKL‹WK™›Ü‘XXÚ
+
+œ™\]Y[˜ŞK[™^
+HOˆÃBˆÛÛœİİ\H›İÈ
+È[™^
+ˆŒLÎÃBˆÛÛœİÜØÚ[]ÜˆHİ˜Ü™X]SÜØÚ[]ÜŠ
+NÃBˆÛÛœİØZ[ˆHİ˜Ü™X]QØZ[Š
+NÃBˆÜØÚ[]Ü‹\HH	ÜÚ[™IÎÃBˆÜØÚ[]Ü‹™œ™\]Y[˜ŞKœÙ]˜[YP][YJœ™\]Y[˜ŞKİ\
+NÃBˆØZ[‹™ØZ[‹œÙ]˜[YP][YJŒKİ\
+NÃBˆØZ[‹™ØZ[‹›[™X\”˜[\Õ˜[YP][YJ‹İ\
+ÈŒJNÃBˆØZ[‹™ØZ[‹™^Û™[X[˜[\Õ˜[YP][YJŒKİ\
+ÈŒÎ
+NÃBˆÜØÚ[]Ü‹˜ÛÛ›™Xİ
+ØZ[ŠNÃBˆØZ[‹˜ÛÛ›™Xİ
+İ™\İ[˜][ÛŠNÃBˆÜØÚ[]Ü‹œİ\
+İ\
+NÃBˆÜØÚ[]Ü‹œİÜ
+İ\
+È
+NÃBˆJNÃBˆHØ]Ú
+\œ›ÜŠHÃBˆÛÛœÛÛKØ\›Š	ÖÓÔ‘T—H›ÈÙHYÈ™\›ÙXÚ\ˆ[ÛÛšYÈHÜ™[ˆÛÛ\]YN‰Ë\œ›ÜŠNÃBˆCBˆKBˆ^SÜ™\”Ûİ[™
+
+HÃBˆHÃBˆÛÛœİİH\Ë™Ù]İ
+
+NÃBˆYˆ
+Xİ
+H™]\›ÃBˆÛÛœİ›İÈHİ˜İ\œ™[[YNÃBƒBˆÌŒMK™›Ü‘XXÚ
+
+[^KY
+HOˆÃBˆÛÛœİÜØÈHİ˜Ü™X]SÜØÚ[]ÜŠ
+NÃBˆÛÛœİØZ[ˆHİ˜Ü™X]QØZ[Š
+NÃBˆÜØË\HH	İšX[™ÛIÎÃBƒBˆÛÛœİœ™\HHYOOHÈLŒËŒHˆÎËNNÃBˆÜØË™œ™\]Y[˜ŞKœÙ]˜[YP][YJœ™\K›İÈ
+È[^JNÃBƒBˆØZ[‹™ØZ[‹œÙ]˜[YP][YJŒK›İÈ
+È[^JNÃBˆØZ[‹™ØZ[‹›[™X\”˜[\Õ˜[YP][YJŒË›İÈ
+È[^H
+ÈŒŠNÃBˆØZ[‹™ØZ[‹™^Û™[X[˜[\Õ˜[YP][YJŒK›İÈ
+È[^H
+ÈJNÃBƒBˆÜØË˜ÛÛ›™Xİ
+ØZ[ŠNÃBˆØZ[‹˜ÛÛ›™Xİ
+İ™\İ[˜][ÛŠNÃBƒBˆÜØËœİ\
+›İÈ
+È[^JNÃBˆÜØËœİÜ
+›İÈ
+È[^H
+ÈJNÃBˆJNÃBˆHØ]Ú
+JHÃBˆÛÛœÛÛKØ\›Š]Y[ÈÛÛ^›Ü]YXYÎˆ‹JNÃBˆCBˆKBƒBˆ^QÙ[™\˜[›İYšXØ][Û”Ûİ[™
+
+HÃBˆHÃBˆÛÛœİİH\Ë™Ù]İ
+
+NÃBˆYˆ
+Xİ
+H™]\›ÃBˆÛÛœİ›İÈHİ˜İ\œ™[[YNÃBƒBˆÛÛœİÜØÈHİ˜Ü™X]SÜØÚ[]ÜŠ
+NÃBˆÛÛœİØZ[ˆHİ˜Ü™X]QØZ[Š
+NÃBˆÜØË\HH	ÜÚ[™IÎÃBƒBˆÜØË™œ™\]Y[˜ŞKœÙ]˜[YP][YJNKŒK›İÊNÃBˆÜØË™œ™\]Y[˜ŞK™^Û™[X[˜[\Õ˜[YP][YJNËÍË›İÈ
+ÈŒN
+NÃBƒBˆØZ[‹™ØZ[‹œÙ]˜[YP][YJŒK›İÊNÃBˆØZ[‹™ØZ[‹›[™X\”˜[\Õ˜[YP][YJŒ‹›İÈ
+ÈŒŠNÃBˆØZ[‹™ØZ[‹™^Û™[X[˜[\Õ˜[YP][YJŒK›İÈ
+È
+NÃBƒBˆÜØË˜ÛÛ›™Xİ
+ØZ[ŠNÃBˆØZ[‹˜ÛÛ›™Xİ
+İ™\İ[˜][ÛŠNÃBƒBˆÜØËœİ\
+›İÊNÃBˆÜØËœİÜ
+›İÈ
+ÈJNÃBˆHØ]Ú
+JHÃBˆÛÛœÛÛKØ\›Š]Y[ÈÛÛ^›Ü]YXYÎˆ‹JNÃBˆCBˆKBƒBˆ\Ş[˜È^PØ[[\Ûİ[™
+
+HÃBˆHÃBˆÛÛœİİH\Ë™Ù]İ
+
+NÃBˆYˆ
+Xİ
+H™]\›ÃBˆYˆ
+İœİ]HOOH	Üİ\Ü[™Y	ÊH]ØZ]İœ™\İ[YJ
+NÃBˆÛÛœİ›İÈHİ˜İ\œ™[[YNÃBƒBˆÌŒMKŒ×K™›Ü‘XXÚ
+[^HOˆÃBˆÛÛœİÜØÈHİ˜Ü™X]SÜØÚ[]ÜŠ
+NÃBˆÛÛœİØZ[ˆHİ˜Ü™X]QØZ[Š
+NÃBˆÜØË\HH	ÜÚ[™IÎÃBƒBˆÜØË™œ™\]Y[˜ŞKœÙ]˜[YP][YJÍL›İÈ
+È[^JNÃBˆÜØË™œ™\]Y[˜ŞK›[™X\”˜[\Õ˜[YP][YJLL›İÈ
+È[^H
+ÈŒJNÃBƒBˆØZ[‹™ØZ[‹œÙ]˜[YP][YJŒK›İÈ
+È[^JNÃBˆØZ[‹™ØZ[‹›[™X\”˜[\Õ˜[YP][YJMK›İÈ
+È[^H
+ÈŒŠNÃBˆØZ[‹™ØZ[‹™^Û™[X[˜[\Õ˜[YP][YJŒK›İÈ
+È[^H
+ÈŒMÊNÃBƒBˆÜØË˜ÛÛ›™Xİ
+ØZ[ŠNÃBˆØZ[‹˜ÛÛ›™Xİ
+İ™\İ[˜][ÛŠNÃBƒBˆÜØËœİ\
+›İÈ
+È[^JNÃBˆÜØËœİÜ
+›İÈ
+È[^H
+ÈŒN
+NÃBˆJNÃBˆHØ]Ú
+JHÃBˆÛÛœÛÛKØ\›Š]Y[ÈÛÛ^›Ü]YXYÎˆ‹JNÃBˆCBˆCBˆNÃBƒBˆÛÛœİ[›ØÚÓ›İYšXØ][Û]Y[ÈH
+
+HOˆÃBˆÛÛœİÛÛ^HÛİ[™[™Ú[™K™Ù]İ
+
+NÃBˆYˆ
+ÛÛ^	‰ˆÛÛ^œİ]HOOH	Ü[›š[™ÉÊHÃBˆÚ[™İËœ™[[İ™Q]™[\İ[™\Š	ÜÚ[\™İÛ‰Ë[›ØÚÓ›İYšXØ][Û]Y[ÊNÃBˆÚ[™İËœ™[[İ™Q]™[\İ[™\Š	İİXÚİ\	Ë[›ØÚÓ›İYšXØ][Û]Y[ÊNÃBˆÚ[™İËœ™[[İ™Q]™[\İ[™\Š	ØÛXÚÉË[›ØÚÓ›İYšXØ][Û]Y[ÊNÃBˆCBˆNÃBˆÚ[™İË˜Y]™[\İ[™\Š	ÜÚ[\™İÛ‰Ë[›ØÚÓ›İYšXØ][Û]Y[ËÈ\ÜÚ]™NˆYHJNÃBˆÚ[™İË˜Y]™[\İ[™\Š	İİXÚİ\	Ë[›ØÚÓ›İYšXØ][Û]Y[ËÈ\ÜÚ]™NˆYHJNÃBˆÚ[™İË˜Y]™[\İ[™\Š	ØÛXÚÉË[›ØÚÓ›İYšXØ][Û]Y[ËÈ\ÜÚ]™NˆYHJNÃBˆØİ[Y[˜Y]™[\İ[™\Š	İš\ÚXš[]XÚ[™ÙIË
+
+HOˆÃBˆYˆ
+YØİ[Y[šY[ˆ	‰ˆÛİ[™[™Ú[™K˜İËœİ]HOOH	Üİ\Ü[™Y	ÊHÛİ[™[™Ú[™K˜İœ™\İ[YJ
+K˜Ø]Ú
+\œ›ÜˆOˆÛÛœÛÛKØ\›Š	Ó›ÈÙHYÈ™XXİ]˜\ˆ[ÛÛšYÎ‰Ë\œ›ÜŠJNÃBˆJNÃBƒBˆÛÛœİS’UPSÕTÒÔÈHÃBˆÃBˆYˆ	ÓÔ‘LLIËBˆÛY[ˆ	ĞÛÛ™ÛZ[š[ÈØ[\\İ™H[pìpìÛ‰ËBˆÛ™Nˆ	ÌÌMHHLŒIËBˆY™\ÜÎˆ	ÒÛHÈ°ëXHÚ[˜[šXKÜ\°ëXHš[˜Ú\[	ËBˆÙ\šXÙU\Nˆ	ÓX[[š[ZY[È™]™[]›ÈÙ[™\˜[	ËBˆ\]Z\Y[ˆ	ÔÜ0ìÛˆÛÜœ™Y^›È‘•PĞT“ÈŒ	ËBˆ\ÜÚYÛ™YÎˆ	Ò™X[\][	ËBˆš[Üš]Nˆ	ĞSIËBˆ]Nˆ	ÌŒ‹LLLIËBˆ[œİXİ[ÛœÎˆ	Ô™]š\ÚpìÛˆ\špìÙXØKˆ™\šYšXØ\ˆ[œÚpìÛˆHÜ™[X[\˜HHš[˜[\ÈHØ\œ™\˜K‰ËBˆİ]\Îˆ	ÔS‘QS•IËBˆÚXÚÛ\İˆ×KBˆØœÙ\˜][ÛœÎˆ	ÉËBˆ]šY[˜ÙNˆ×KBˆÛÛ\]Y]ˆ[BˆCBˆNÃBƒBˆÛ\ÜÈÜÛ”›Ğ\ÃBˆÛÛœİXİÜŠ
+HÃBˆ\Ë˜İ\œ™[\Ù\ˆH[ÃBˆ\Ë\Ù\œÈH×NÃBˆ\ËÛÜšÙ\œÈH×NÃBˆ\Ë\ÚÜÈHS’UPSÕTÒÔÎÃBˆ\Ë›Ü™\”Ù\]Y[˜ÙS™^HLNÃBˆ\Ë\ÚĞÛY[[ÙHH	Û™]ÉÎÃBˆ\ËœÚİĞ\˜Ú]™Y\ÚÜÈH˜[ÙNÃBˆ\Ëš[›ÚXÙU\ØY\ÚÒYH[ÃBˆ\Ë››İYšXØ][ÛœÈH×NÃBˆ\ËœÙ[XİY\ÚÈH[ÃBˆ\Ë˜Xİ]™T™\Üİ]\ÈH[ÃBˆ\ËšX\™X][Y\ˆH[ÃBˆ\Ëœ™\Ù[˜ÙT™XÛÜ™ÈHßNÃBˆ\Ëœ™\Ù[˜ÙT™Yœ™\Ú[Y\ˆH[ÃBˆ\Ë˜YZ[’Y[]S˜[Y\ÈHÉÓ\Ø™]	Ë	ÑØXœšY[I×NÃBˆ\Ë˜YZ[’Y[]TİÜÈHßNÃBˆ\Ë˜Xİ]™PYZ[“˜[YHH	ÉÎÃBˆHÈÛÛœİØXÚHH”ÓÓ‹œ\œÙJØY™TİÜ˜YÙK™Ù]][J	ÜÜÛœ›×ØYZ[—ÚY[]WØØXÚWİŒIÊH	ŞßIÊNÈYˆ
+\œ˜^Kš\Ğ\œ˜^JØXÚK›˜[Y\ÊH	‰ˆØXÚK›˜[Y\Ë›[™İOOHŠH\Ë˜YZ[’Y[]S˜[Y\ÈHØXÚK›˜[Y\ÎÈYˆ
+ØXÚKœİÜÈ	‰ˆ\[ÙˆØXÚKœİÜÈOOH	ÛØš™Xİ	ÊH\Ë˜YZ[’Y[]TİÜÈHÈ‹‹˜ØXÚKœİÜÈNÈYˆ
+ØXÚK˜Xİ]™S˜[YJH\Ë˜Xİ]™PYZ[“˜[YHHİš[™ÊØXÚK˜Xİ]™S˜[YJNÈHØ]Ú
+ÊHßCBˆ\Ë˜YZ[’Y[]QY][™Ò[™^H[ÃBƒBˆ\Ë˜YZ[’Y[]TİÑ˜YH[ÃBˆ\Ë˜İ\œ™[™\Ü]šY[˜ÙHH×NÃBˆ\Ëœ[™[™Ñ]šY[˜ÙT™XYÈH×NÃBˆ\Ëœ™[[İ™Y]šY[˜ÙTİÜ˜YÙT]ÈH×NÃBˆ\Ë˜ÚXÚÛ\İ[\]HH\Ëœ™XYİÜ™Y\İ
+	ÜÜÛœ›×ØÚXÚÛ\İİ[\]WİŒIËÉÑ[™Ü˜\ÙHHÜ™[X[\˜IË	Ñ›İØğê[[\ÉË	ĞØ[Xœ˜XÚpìÛˆš[˜[\ÈHØ\œ™\˜IË	Õ™\šYšXØ\ˆ˜]\°ëXHH™\Ü[É×JNÃBˆ\Ë˜Xİ]™PÚXÚÛ\İ˜YH×NÃBˆ\Ë˜ÚXÚÛ\İ˜Y\HH˜[ÙNÃBˆ\ËœÙ\šXÙU\QY][™Ò[™^H[ÃBˆ\ËœÙ\šXÙSY[SÜ[’[™^H[ÃBˆ\Ë›X[˜YÙY][S[ÙHH[ÃBˆ\Ë›X[˜YÙY][R[™^H[ÃBˆ\ËœÙ\šXÙU\\ÈH\Ëœ™XYİÜ™Y\İ
+	ÜÜÛœ›×ÜÙ\šXÙWİ\\×İŒIËÉÓX[[š[ZY[È™]™[]›ÉË	Ò[œİ[XÚpìÛ‰Ë	Ô™\\˜XÚpìÛ‰Ë	Ô›ÙÜ˜[XXÚpìÛ‰×JNÃBƒBˆËÈ\İYÈ[Ú]HÛÛ™\œØXÚ[Û™\ÃBˆ\Ë˜Ú]Y\ÜØYÙ\ÈH×NÃBˆ\Ë˜Xİ]™PÚ]ÛÜšÙ\ˆH	Ò™X[\][	ÎÃBˆ\Ë›Ü[Ú]XœÈH×NÃBˆ\Ë˜Ú]ÛÛ™\œØ][Û’[ØXÚHHßNÃBˆ\Ë˜Ú]ØÜ›ÛÜÚ][ÛœÈHßNÃBˆ\Ë˜Ú]Ø\Ó™X\›İÛHHßNÃBˆ\Ë›Z[š[Z^™YÚ]Ú[™İÜÈHßNÃBˆ\Ë›Y\ÜÙ[™Ù\‘˜YÈHßNÃBˆ\Ë˜Ú]\[™ĞUÛÜšÙ\ˆHßNÃBˆ\Ë˜Ú]ØÚÕ[œ™XYUÛÜšÙ\ˆH™]ÈÙ]
+
+NÃBˆ\Ë˜Ú][œİXœØÜšX™HH[ÃBˆ\Ë˜Ú]™XY[œİXœØÜšX™HH[ÃBˆ\Ë˜Ú]™XYÕ[œİXœØÜšX™HH[ÃBˆ\Ë˜ÛÛ™\œØ][ÛœÈHßNÃBˆ\Ë˜Ú]™XYİ[[X\šY\ÈHßNÃBˆ\Ë˜Ú]Xİ]š]T˜[šÜÈHßNÃBˆ\Ë˜Ú]Xİ]š]TÙ\]Y[˜ÙHHÃBˆ\ËÛÜšÙ\•[œ™XYÛİ[H[ÃBˆ\Ë\[™Õ[Y[İ]H[ÃBˆ\ËœÚİĞ\˜Ú]™YH˜[ÙNÃBƒBˆËÈ\İ[™\œÈÛØ˜[\ÈYXØYÜÈÜˆ0êXÛšXÛÃBˆ\Ë™YXØ]YÛÜšÙ\•[œİXœØÜšX™\ÈHßNÃBƒBˆËÈ\İYÈ[ÔÃBˆ\Ë™ÜÕØ]ÚYH[ÃBˆ\Ë™ÜĞÛÛ›™XİY]H[ÃBˆ\Ëš\ÑÜÔÚ\š[™ÈH˜[ÙNÃBˆ\Ë˜YZ[“X\H[ÃBˆ\Ë˜YZ[“X\X\šÙ\œÈHßNÃBˆ\Ë™ÜÓØØ][ÛœÕ[œİXœØÜšX™HH[ÃBˆ\Ë›ØØ][ÛœÑ]HHßNÃBƒBˆËÈ\İYÈÙX”•È
+[XY\ÈH›ŞŠCBˆ\ËœY\ÛÛ›™Xİ[ÛˆH[ÃBˆ\Ë›ØØ[İ™X[HH[ÃBˆ\Ë˜Ø[[œİXœØÜšX™HH[ÃBˆ\Ë˜Ø[ÚYÛ˜[[™Õ[œİXœØÜšX™\ÈH×NÃBˆ\Ëœ[™[™ÒXÙPØ[™Y]\ÈH×NÃBˆ\Ë˜İ\œ™[Ø[]HH[ÃBˆ\Ë˜Ø[[Y\’[\˜[H[ÃBˆ\Ë˜Ø[š[™İÛ™R[\˜[H[ÃBˆ\Ë˜Ø[ÙXÛÛ™ÈHÃBˆ\Ë˜Ø[XÙPÛİ[\œÈHÈÙ[™\˜]Yˆ™XÙZ]™YˆYYˆNÃBˆ\Ëš\Ó]]YH˜[ÙNÃBˆ\Ë›\İ[˜ÛÛZ[™ĞØ[YH[ÃBˆ\Ë››İYšYYÚ]Y\ÜØYÙRYÈH™]ÈÙ]
+
+NÃBƒBˆËÈ™Y™\™[˜ÚX\ÈH›İYšXØXÚpìÛƒBˆ\Ëœ™YœÈHÃBˆÛİ[™ˆYKBˆÜ\ˆYKBˆÚ]˜YÙNˆYKBˆNÃBƒBˆ\Ëœ›ØÙ\ÜÙY]™[YÈH™]ÈÙ]
+
+NÃBˆ\Ë›\İØœÙ\™Y\ÚÔİ]\Ù\ÈH[ÃBˆ\Ëš\Õ\ÚÜÒ[š]X[ØYHYNÃBˆ\Ëš\Ó›İYœÒ[š]X[ØYHYNÃBƒBˆ\ËœÙX\ÛÛ˜[[YHH\Ëœ™XYÙX\ÛÛ˜[[YJ
+NÃBˆ\ËœÚ\™YÙX\ÛÛ˜[[YHH[ÃBˆÛÛœİŞ[˜Ó[Øš[UšY]ÜÜH
+
+HOˆÃBˆÛÛœİš\İX[ZYÚHÚ[™İËš\İX[šY]ÜÜËšZYÚÚ[™İËš[›™\’ZYÚÃBˆØİ[Y[™Øİ[Y[[[Y[œİ[KœÙ]›Ü\J	ËKX\]š\İX[]šY]ÜÜZZYÚ	Ë	İš\İX[ZYÚ\
+NÃBˆÛÛœİÙ^X›Ø\™Ü[ˆHÚ[™İË›X]ÚYYXJ	ÊX^]ÚYˆ
+IÊK›X]Ú\È	‰ˆÚ[™İËš[›™\’ZYÚHš\İX[ZYÚˆLŒÃBˆØİ[Y[˜›ÙK˜Û\ÜÓ\İÙÙÛJ	Û[Øš[KZÙ^X›Ø\™[Ü[‰ËÙ^X›Ø\™Ü[ŠNÃBˆNÃBˆŞ[˜Ó[Øš[UšY]ÜÜ
+
+NÃBˆÚ[™İËš\İX[šY]ÜÜË˜Y]™[\İ[™\Š	Ü™\Ú^™IËŞ[˜Ó[Øš[UšY]ÜÜÈ\ÜÚ]™NˆYHJNÃBˆÚ[™İËš\İX[šY]ÜÜË˜Y]™[\İ[™\Š	ÜØÜ›Û	ËŞ[˜Ó[Øš[UšY]ÜÜÈ\ÜÚ]™NˆYHJNÃBˆÚ[™İË˜Y]™[\İ[™\Š	Ü™\Ú^™IËŞ[˜Ó[Øš[UšY]ÜÜÈ\ÜÚ]™NˆYHJNÃBˆØİ[Y[˜Y]™[\İ[™\Š	Ù›Øİ\Ú[‰Ë]™[OˆÃBˆYˆ
+]Ú[™İË›X]ÚYYXJ	ÊX^]ÚYˆ
+IÊK›X]Ú\ÈY]™[\™Ù]›X]Ú\ÏËŠ	Ú[œ]^\™XKÙ[Xİ	ÊJH™]\›ÃBˆYˆ
+Y]™[\™Ù]˜ÛÜÙ\İ
+	ÈÛ[Ù[]\ÚËY›Ü›KÛ[Ù[\™\Ü	ÊJH™]\›ÃBˆÚ[™İËœÙ][Y[İ]
+
+
+HOˆ]™[\™Ù]œØÜ›Û[ÕšY]ÊÈ›ØÚÎˆ	Û™X\™\İ	Ë™Z]š[Üˆ	ÜÛ[Ûİ	ÈJKN
+NÃBˆJNÃBˆØİ[Y[˜Y]™[\İ[™\Š	Ú[œ]	Ë]™[OˆÃBˆYˆ
+]™[\™Ù]šYOOH	Ü™\[ØœÙ\˜][ÛœÉÈ]\ËœÙ[XİY\ÚÊH™]\›ÃBˆÛÛœİØ\™HË‹‹™Øİ[Y[œ]Y\TÙ[XİÜ[
+	Ë›Ü™\‹XØ\™Ù]K]\ÚËZYIÊWK™š[™
+][HOˆ][K™]\Ù]\ÚÒYOOHİš[™Ê\ËœÙ[XİY\ÚËšY
+JNÃBˆÛÛœİ™]šY]ÈHØ\™Ëœ]Y\TÙ[XİÜŠ	Ë›Ü™\‹[ØœÙ\˜][ÛœË]^	ÊNÃBˆYˆ
+™]šY]ÊH™]šY]Ë^ÛÛ[H]™[\™Ù]˜[YKš[J
+H	Ô[™Y[HH™YÚ\İ˜\‹‰ÎÃBˆJNÃBƒBˆ\Ëš[š]
+
+NÃBˆCBƒBˆØY™Y™\™[˜Ù\Ê
+HÃBˆÛÛœİØ]™YHØY™TİÜ˜YÙK™Ù]][J	ÜÜÛœ›×Ü™Y™\™[˜Ù\ÉÊNÃBˆYˆ
+Ø]™Y
+HÃBˆHÃBˆ\Ëœ™YœÈHÈ‹‹\Ëœ™YœË‹‹’”ÓÓ‹œ\œÙJØ]™Y
+HNÃBˆHØ]Ú
+JHßCBˆCBˆØİ[Y[™Ù][[Y[RY
+	Ü™Y‹\Ûİ[™	ÊK˜ÚXÚÙYH\Ëœ™YœËœÛİ[™ÃBˆØİ[Y[™Ù][[Y[RY
+	Ü™Y‹\Ü\	ÊK˜ÚXÚÙYH\Ëœ™YœËœÜ\ÃBˆØİ[Y[™Ù][[Y[RY
+	Ü™Y‹XÚ]X˜YÙIÊK˜ÚXÚÙYH\Ëœ™YœË˜Ú]˜YÙNÃBˆCBƒBˆ\]T™YŠÙ^K˜[YJHÃBˆ\Ëœ™YœÖÚÙ^WHH˜[YNÃBˆÛÛœİ™Y™\™[˜ÙRYÈHÈÛİ[™ˆÉÜ™Y‹\Ûİ[™	Ë	ØÚ]\™Y‹\Ûİ[™	×KÜ\ˆÉÜ™Y‹\Ü\	Ë	ØÚ]\™Y‹\Ü\	×KÚ]˜YÙNˆÉÜ™Y‹XÚ]X˜YÙIË	ØÚ]\™Y‹XÚ]˜YÙI×HNÃBˆ
+™Y™\™[˜ÙRYÖÚÙ^WH×JK™›Ü‘XXÚ
+YOˆÈÛÛœİ[œ]HØİ[Y[™Ù][[Y[RY
+Y
+NÈYˆ
+[œ]
+H[œ]˜ÚXÚÙYH›ÛÛX[Š˜[YJNÈJNÃBˆØY™TİÜ˜YÙKœÙ]][J	ÜÜÛœ›×Ü™Y™\™[˜Ù\ÉË”ÓÓ‹œİš[™ÚYJ\Ëœ™YœÊJNÃBˆYˆ
+Ù^HOOH	ØÚ]˜YÙIÊHÃBˆYˆ
+\Ë˜İ\œ™[\Ù\Ëœ›ÛHOOH	ØYZ[‰ÊH\Ëœ™[™\ÛÛ™\œØ][ÛœÔÚYX˜\Š
+NÃBˆ[ÙHÃBˆÛÛœİ™XYYH\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+NÃBˆÛÛœİİ[[X\HH\Ë˜Ú]™XYİ[[X\šY\Öİ™XYYNÃBˆÛÛœİÛİ[Hİ[[X\OËš\ÓY\ÜØYÙ\ÈÈİ[[X\K[œ™XYÛİ[ˆ[X™\Š\ËÛÜšÙ\•[œ™XYÛİ[
+NÃBˆ\Ë\]PÚ]][˜Ú\•[œ™XY
+˜[YHÈÛİ[ˆ
+NÃBˆCBˆCBˆ\ËœÚİÕØ\İ
+	Ô™Y™\™[˜ÚXHİX\™YIË	Ú[™›ÉÊNÃBˆCBƒBˆÚİÔÜ\›İYšXØ][ÛŠÈ]KİX]K]Z[Ë\KXÛÛ‹ÛÛXÚË›Ü˜ÙHH˜[ÙHJHÃBˆYˆ
+Y›Ü˜ÙH	‰ˆ]\Ëœ™YœËœÜ\
+H™]\›ÃBƒBˆÛÛœİİXÚÈHØİ[Y[™Ù][[Y[RY
+	İØ\İ[›İYšXØ][Û‹\İXÚÉÊNÃBˆYˆ
+\İXÚÊH™]\›ÃBƒBˆÛÛœİØ\İYH	ÜÜÉÈ
+È]K››İÊ
+H
+ÈX]œ˜[™ÛJ
+KÔİš[™ÊÍŠKœİXœİš[™Ê‹ŠNÃBˆÛÛœİØ\™HØİ[Y[˜Ü™X]Q[[Y[
+	Ù]‰ÊNÃBˆØ\™šYHØ\İYÃBˆØ\™˜Û\ÜÓ˜[YHHœÚ[\‹Y]™[ËX]]È™Ë\Û]KNLÎMH^]Ú]H›Ü™\ˆ›Ü™\‹\Û]KMÌÎ›İ[™YLÚYİËLLËHÜ\\ÛYKZ[ˆ˜XÚÙ›ÜX›\‹[Y›^][\Ë\İ\Ø\LÈ™[]]™Hİ™\™›İËZY[ˆ˜[œÚ][Ûˆİ\œÛÜ‹\Ú[\ˆİ™\˜›Ü™\‹Xœ˜[™[[YHÃBƒBˆ]˜YÙP™ÈH˜™ËXœ˜[™[[YKÌŒ^Xœ˜[™[[YH›Ü™\ˆ›Ü™\‹Xœ˜[™[[YKÍÃBˆYˆ
+\HOOH	ØÚ]	ÊH˜YÙP™ÈH˜™ËXŞX[‹MLÌŒ^XŞX[‹M›Ü™\ˆ›Ü™\‹XŞX[‹MLÍÃBˆYˆ
+\HOOH	ÛÜ™\‰ÊH˜YÙP™ÈH˜™ËX[X™\‹MLÌŒ^X[X™\‹M›Ü™\ˆ›Ü™\‹X[X™\‹MLÍÃBƒBˆØ\™š[›™\’SHBˆ]ˆÛ\ÜÏHËNHNH›İ[™Y^›^][\ËXÙ[\ˆ\İYKXÙ[\ˆÚš[šËL	Ø˜YÙP™ßH›ÛX›XÚÈ^\ÛHƒBˆ	ÚXÛÛˆ	ü'äèÉßCBˆÙ]ƒBˆ]ˆÛ\ÜÏH™›^LHZ[‹]ËL‹MƒBˆ]ˆÛ\ÜÏH™›^][\ËXÙ[\ˆ\İYKX™]ÙY[ˆØ\LHƒBˆHÛ\ÜÏH^^È›ÛX›XÚÈ\\˜Ø\ÙH˜XÚÚ[™Ë]ÚY\ˆ^\Û]KLL[˜Ø]H‰İ\Ë™\ØØ\R[
+]J_OÚOƒBˆÜ[ˆÛ\ÜÏH^VÎ\H^\Û]KM›Û[[Û›ÈZÜ˜OÜÜ[ƒBˆÙ]ƒBˆ	ÜİX]HÈÛ\ÜÏH^^È›ÛY^˜X›Û^Xœ˜[™[[YH[˜Ø]H]LH‰İ\Ë™\ØØ\R[
+İX]J_OÜ˜ˆ	ÉßCBˆ	Ù]Z[ÈÈÛ\ÜÏH^VÌL\H^\Û]KLÌ[™KXÛ[\Lˆ]LH][XÈˆ‰İ\Ë™\ØØ\R[
+]Z[Ê_HÜ˜ˆ	ÉßCBˆÙ]ƒBˆ]Ûˆ\OH˜]ÛˆˆÛ\ÜÏH˜XœÛÛ]HÜLˆšYÚLˆ^\Û]KMİ™\^]Ú]HLH›İ[™Y[ÈˆÛ˜ÛXÚÏH™]™[œİÜ›ÜYØ][ÛŠ
+NÈ\˜ÛÜÙTÜ\
+	ÉİØ\İYIÊHƒBˆ8§%CBˆØ]ÛƒBˆ]ˆÛ\ÜÏH˜XœÛÛ]H›İÛKLYLLH™ËXœ˜[™[[YH˜[œÚ][Û‹X[\˜][Û‹VÍL\×HËY[ˆYH‰İØ\İYWØ˜\ˆÙ]ƒBˆÃBƒBˆYˆ
+ÛÛXÚÊHÃBˆØ\™›Û˜ÛXÚÈH
+
+HOˆÃBˆÛÛXÚÊ
+NÃBˆ\Ë˜ÛÜÙTÜ\
+Ø\İY
+NÃBˆNÃBˆCBƒBˆİXÚË˜\[™Ú[
+Ø\™
+NÃBƒBˆÙ][Y[İ]
+
+
+HOˆÃBˆÛÛœİ˜\ˆHØİ[Y[™Ù][[Y[RY
+	İØ\İYWØ˜\˜
+NÃBˆYˆ
+˜\ŠH˜\‹œİ[KÚYH	Ì	IÎÃBˆKL
+NÃBƒBˆÙ][Y[İ]
+
+
+HOˆÃBˆ\Ë˜ÛÜÙTÜ\
+Ø\İY
+NÃBˆKL
+NÃBˆCBƒBˆÛÜÙTÜ\
+Ø\İY
+HÃBˆÛÛœİ[[HHØİ[Y[™Ù][[Y[RY
+Ø\İY
+NÃBˆYˆ
+[[JHÃBˆ[[K˜Û\ÜÓ\İœ™[[İ™J	ÜÜ\\ÛYKZ[‰ÊNÃBˆ[[K˜Û\ÜÓ\İ˜Y
+	ÜÜ\\ÛYK[İ]	ÊNÃBˆÙ][Y[İ]
+
+
+HOˆ[[Kœ™[[İ™J
+KÌŒ
+NÃBˆCBˆCBƒBˆÚİÕØ\İ
+Y\ÜØYÙK\HH	Ú[™›ÉÊHÃBˆÛÛœİØ\İHØİ[Y[™Ù][[Y[RY
+	İØ\İ	ÊNÃBˆÛÛœİ^HØİ[Y[™Ù][[Y[RY
+	İØ\İ[Y\ÜØYÙIÊNÃBˆÛÛœİXÛÛˆHØİ[Y[™Ù][[Y[RY
+	İØ\İZXÛÛ‰ÊNÃBˆYˆ
+]Ø\İ]^ZXÛÛŠH™]\›ÃBƒBˆÛÛœİXÛÛœÈHÈİXØÙ\ÜÎˆ	ø§!IË\œ›Üˆ	ø¦¨;î#ÉË[™›Îˆ	ø¡.{î#ÉÈNÃBˆXÛÛ‹^ÛÛ[HXÛÛœÖİ\WHXÛÛœËš[™›ÎÃBˆ^^ÛÛ[Hİš[™ÊY\ÜØYÙHÏÈ	ÉÊNÃBˆØ\İ˜Û\ÜÓ\İœ™[[İ™J	İ˜[œÛ]K^KLŒ	Ë	ÛÜXÚ]KL	ÊNÃBˆØ\İ˜Û\ÜÓ\İ˜Y
+	İ˜[œÛ]K^KL	Ë	ÛÜXÚ]KLL	ÊNÃBˆÛX\•[Y[İ]
+\ËØ\İ[Y\ŠNÃBˆ\ËØ\İ[Y\ˆHÙ][Y[İ]
+
+
+HOˆÃBˆØ\İ˜Û\ÜÓ\İœ™[[İ™J	İ˜[œÛ]K^KL	Ë	ÛÜXÚ]KLL	ÊNÃBˆØ\İ˜Û\ÜÓ\İ˜Y
+	İ˜[œÛ]K^KLŒ	Ë	ÛÜXÚ]KL	ÊNÃBˆK
+NÃBˆCBƒBˆ›Ü›X[^™R[œ]
+˜[
+HÃBˆYˆ
+]˜[	‰ˆ˜[OOH
+H™]\›ˆ	ÉÎÃBˆ™]\›ˆİš[™Ê˜[
+Kš[J
+K››Ü›X[^™J	Ó‘ÉÊKœ™\XÙJÖ×LŒ‹WLŒQ‘Q‘—KÙË	ÉÊNÃBˆCBƒBˆ›Ü›X][YJ]SØšˆH™]È]J
+JHÃBˆ™]\›ˆ]SØš‹ÓØØ[U[YTİš[™Ê	Ù\ËPÓÉËÈİ\ˆ	Ì‹YYÚ]	ËZ[]Nˆ	Ì‹YYÚ]	Ëİ\ŒLˆYHJNÃBˆCBƒBˆ›Ü›X][]U[YJ]SØšˆH™]È]J
+JHÃBˆÛÛœİ[YHH\Ë™›Ü›X][YJ]SØšŠNÃBˆÛÛœİ^HH]SØš‹ÓØØ[Q]Tİš[™Ê	Ù\ËPÓÉËÈ^Nˆ	Ì‹YYÚ]	Ë[Ûˆ	Ì‹YYÚ]	ËYX\ˆ	Û[Y\šXÉÈJNÃBˆ™]\›ˆ	Ù^_H	İ[Y_XÃBˆCBƒBˆÜ[•Ø^™S˜]šYØ][ÛŠY™\ÜÊHÃBˆYˆ
+XY™\ÜÊH™]\›ˆ\ËœÚİÕØ\İ
+	Ó›È^H[˜H\™XØÚpìÛˆ™YÚ\İ˜YIË	Ù\œ›Ü‰ÊNÃBˆÚ[™İË›Ü[ŠÎ‹ËİØ^™K˜ÛÛKİ[ÜOIÙ[˜ÛÙUT’PÛÛ\Û™[
+Y™\ÜÊ_I›˜]šYØ]O^Y\Ø	×Ø›[šÉÊNÃBˆCBƒBˆÜ[‘ÛÛÙÛSX\Ó˜]šYØ][ÛŠY™\ÜÊHÃBˆYˆ
+XY™\ÜÊH™]\›ˆ\ËœÚİÕØ\İ
+	Ó›È^H[˜H\™XØÚpìÛˆ™YÚ\İ˜YIË	Ù\œ›Ü‰ÊNÃBˆÚ[™İË›Ü[ŠÎ‹ËİİİË™ÛÛÙÛK˜ÛÛKÛX\ËÙ\‹ÏØ\OLI™\İ[˜][ÛIÙ[˜ÛÙUT’PÛÛ\Û™[
+Y™\ÜÊ_X	×Ø›[šÉÊNÃBˆCBƒBˆ[š]XÚ[YJ
+HÃBˆËÈ[[XHÛ0è\ÚXÛÈÛÛœÙ\˜HH[\™˜^ˆ[\XHHÚ[ˆ\0ëXİ[\È\™YY\ËƒBˆØİ[Y[™Ù][[Y[RY
+	İXÚ\\XÛ\ËXÛÛZ[™\‰ÊOËœ™[[İ™J
+NÃBˆCBƒBˆ\Ş[˜È[š]
+
+HÃBˆÛÛœİ[›ØÚÓÜ™\]Y[ÈH
+
+HOˆÛİ[™[™Ú[™K[›ØÚÊ
+NÃBˆÚ[™İË˜Y]™[\İ[™\Š	ÜÚ[\™İÛ‰Ë[›ØÚÓÜ™\]Y[ËÈÛ˜ÙNˆYKØ\\™NˆYHJNÃBˆÚ[™İË˜Y]™[\İ[™\Š	İİXÚİ\	Ë[›ØÚÓÜ™\]Y[ËÈÛ˜ÙNˆYK\ÜÚ]™NˆYKØ\\™NˆYHJNÃBˆÚ[™İË˜Y]™[\İ[™\Š	ÚÙ^YİÛ‰Ë[›ØÚÓÜ™\]Y[ËÈÛ˜ÙNˆYKØ\\™NˆYHJNÃBˆ\Ë˜\Q\šÓ[ÙJ
+NÃBˆ\Ë˜\TÙX\ÛÛ˜[[YJ\ËœÙX\ÛÛ˜[[YJNÃBˆ\Ëœ™[™\”ÙX\ÛÛ˜[[YTÙ[XİÜŠ
+NÃBˆ\Ëš[š]XÚ[YJ
+NÃBˆ\Ë›ØY™Y™\™[˜Ù\Ê
+NÃBƒBˆØY™TİÜ˜YÙKœ™[[İ™R][J	ÜÜÛœ›×ØYZ[—İ	ÊNÃBˆØY™TİÜ˜YÙKœ™[[İ™R][J	ÜÜÛœ›×İ\Ù\œ×İ	ÊNÃBƒBˆÛÛœİØ]™Y\ÚÜÈHØY™TİÜ˜YÙK™Ù]][J	ÜÜÛœ›×İ\ÚÜ×İ	ÊNÃBˆYˆ
+Ø]™Y\ÚÜÊHÃBˆHÈ\Ë\ÚÜÈH”ÓÓ‹œ\œÙJØ]™Y\ÚÜÊNÈHØ]Ú
+JHÈ\Ë\ÚÜÈHS’UPSÕTÒÔÎÈCBˆCBˆÛÛœİØ]™YÜ™\”Ù\]Y[˜ÙHH[X™\ŠØY™TİÜ˜YÙK™Ù]][J	ÜÜÛœ›×ÛÜ™\—ÜÙ\]Y[˜ÙWÛ™^	ÊJNÃBˆ\Ë›Ü™\”Ù\]Y[˜ÙS™^H[X™\‹š\ÔØY™R[YÙ\ŠØ]™YÜ™\”Ù\]Y[˜ÙJH	‰ˆØ]™YÜ™\”Ù\]Y[˜ÙHˆÈØ]™YÜ™\”Ù\]Y[˜ÙHˆ\Ë™Ù]Y˜][™^Ü™\“[X™\Š
+NÃBƒBˆÛÛœİ™[Y[X™\™YHØY™TİÜ˜YÙK™Ù]][J	ÜÜÛœ›×Ü™[Y[X™\™Y	ÊNÃBˆYˆ
+™[Y[X™\™Y
+HÃBˆHÃBˆÛÛœİ™[SØšˆH”ÓÓ‹œ\œÙJ™[Y[X™\™Y
+NÃBˆØİ[Y[™Ù][[Y[RY
+	ÛÙÚ[‹]\Ù\›˜[YIÊK˜[YHH™[SØš‹H	ÉÎÃBˆØİ[Y[™Ù][[Y[RY
+	ÛÙÚ[‹\\ÜİÛÜ™	ÊK˜[YHH™[SØš‹œ	ÉÎÃBˆØİ[Y[™Ù][[Y[RY
+	ÛÙÚ[‹\™[Y[X™\‰ÊK˜ÚXÚÙYHYNÃBˆHØ]Ú
+JHßCBˆCBƒBˆYˆ
+Ú[™İË™ŠHÃBˆ‹˜ÛÛXİ[ÛŠ	İ\Ù\œÉÊK›Û”Û˜\Úİ
+
+Û˜\Úİ
+HOˆÃBˆÛÛœİ\İH×NÃBˆÛ˜\Úİ™›Ü‘XXÚ
+ØÈOˆ\İœ\Ú
+ÈYˆØËšY‹‹™ØË™]J
+HJJNÃBˆ\Ë\Ù\œÈH\İÃBˆ\Ë˜\TÚ\™YÙX\ÛÛ˜[[YJ
+NÃBˆ\ËÛÜšÙ\œÈH\İ™š[\ŠHOˆİš[™ÊKœ›ÛJKÓİÙ\Ø\ÙJ
+HOOH	İÛÜšÙ\‰ÊNÃBˆYˆ
+\Ë˜İ\œ™[\Ù\ŠH\Ëœ™[™\YZ[”™\Ù[˜ÙJ
+NÃBƒBˆ\Ëœ™[™\•XÚÜ[ÛœÒ[”Ù[XİÊ
+NÃBˆ\Ëœ™[™\•\Ù\œÕX›J
+NÃBƒBˆYˆ
+\Ë˜İ\œ™[\Ù\ˆ	‰ˆ\Ë˜İ\œ™[\Ù\‹œ›ÛHOOH	ØYZ[‰ÊHÃBˆ\Ëœ™[™\•XÚšXÚX[œÓ[Ûš]ÜŠ
+NÃBˆ\Ëœ™[™\ÛÛ™\œØ][ÛœÔÚYX˜\Š
+NÃBˆ\Ëœ™[™\•\ÚÜÊ
+NÃBˆ\ËœÙ]\][UÛÜšÙ\Ú]\İ[™\œÊ
+NÃBˆ\Ë›\İ[’[˜ÛÛZ[™Õ›ÚXÙPØ[Ê
+NÃBˆH[ÙHYˆ
+\Ë˜İ\œ™[\Ù\ˆ	‰ˆ\Ë˜İ\œ™[\Ù\‹œ›ÛHOOH	İÛÜšÙ\‰ÊHÃBˆÛÛœİ^U\]YH\İ™š[™
+HOˆİš[™ÊK\Ù\›˜[YH	ÉÊKÓİÙ\Ø\ÙJ
+HOOH\Ë˜İ\œ™[\Ù\‹\Ù\›˜[YKÓİÙ\Ø\ÙJ
+JNÃBˆYˆ
+^U\]Y	‰ˆ^U\]YœİÈOOH\Ë˜İ\œ™[\Ù\‹œİÊHÃBˆ\Ë˜İ\œ™[\Ù\‹œİÈH^U\]YœİÎÃBˆØY™TİÜ˜YÙKœÙ]][J	ÜÜÛœ›×ÜÙ\ÜÚ[Û—İ	Ë”ÓÓ‹œİš[™ÚYJ\Ë˜İ\œ™[\Ù\ŠJNÃBˆ\ËœÙ]\\Ú›Ø\™RJ
+NÃBˆCBˆCBˆK\œˆOˆÛÛœÛÛK™\œ›ÜŠ”Û˜\Úİ\Ù\œÈ\œ›Üˆ‹\œŠJNÃBƒBˆ‹˜ÛÛXİ[ÛŠ	ÛÜ™[™\ÉÊK™ØÊ	İÙ\ÉÊK›Û”Û˜\Úİ
+
+ØÊHOˆÃBˆYˆ
+ØË™^\İÈ	‰ˆ\œ˜^Kš\Ğ\œ˜^JØË™]J
+K\ÚÜÊJHÃBˆÛÛœİÜ™\‘Øİ[Y[HØË™]J
+NÃBˆÛÛœİ[˜ÛÛZ[™Õ\ÚÜÈHÜ™\‘Øİ[Y[\ÚÜÎÃBˆÛÛœİ™[[İTÙ\]Y[˜ÙHH[X™\ŠÜ™\‘Øİ[Y[›™^Ü™\“[X™\ŠNÃBˆ\Ë›Ü™\”Ù\]Y[˜ÙS™^H[X™\‹š\ÔØY™R[YÙ\Š™[[İTÙ\]Y[˜ÙJH	‰ˆ™[[İTÙ\]Y[˜ÙHˆÈ™[[İTÙ\]Y[˜ÙHˆ\Ë™Ù]Y˜][™^Ü™\“[X™\Š[˜ÛÛZ[™Õ\ÚÜÊNÃBˆØY™TİÜ˜YÙKœÙ]][J	ÜÜÛœ›×ÛÜ™\—ÜÙ\]Y[˜ÙWÛ™^	Ëİš[™Ê\Ë›Ü™\”Ù\]Y[˜ÙS™^
+JNÃBˆ[˜ÛÛZ[™Õ\ÚÜË™›Ü‘XXÚ
+\ÚÈOˆÃBˆÛÛœİ]šY[˜ÙS\İH\œ˜^Kš\Ğ\œ˜^J\ÚÏË™]šY[˜ÙJHÈ\ÚË™]šY[˜ÙHˆ×NÃBˆÛÛœİ]šY[˜ÙU\›ÈH]šY[˜ÙS\İ›X\
+][HOˆ\[Ùˆ][HOOH	Üİš[™ÉÈÈ][Hˆ][OË\›][OËœÜ˜È[
+NÃBˆÛÛœÛÛKš[™›Ê	ÖÓÔ‘T—H]šY[˜ÚX\ÈpëY\È\ÙHš\™\İÜ™IËÈ\ÚÒYˆ\ÚÏËšYØ[YYˆ]šY[˜ÙS\İ›[™İ\›Îˆ]šY[˜ÙU\›ÈJNÃBˆYˆ
+]šY[˜ÙU\›Ë™š[\Š›ÛÛX[ŠK›[™İ
+HÛÛœÛÛKš[™›Ê	ÖÓÔ‘T—HT“pëYHHš\™\İÜ™IËÈ\ÚÒYˆ\ÚËšYØ[YYˆ]šY[˜ÙU\›Ë™š[\Š›ÛÛX[ŠK›[™İ\›Îˆ]šY[˜ÙU\›Ë™š[\Š›ÛÛX[ŠHJNÃBˆÛÛœİ[›ÚXÙU\›H\ÚÏËš[›ÚXÙOË\›\ÚÏËš[›ÚXÙU\›\ÚÏË™˜Xİ\˜U\›ÃBˆYˆ
+[›ÚXÙU\›
+HÛÛœÛÛKš[™›Ê	ÖÓÔ‘T—H˜Xİ\˜HØ\™ØYIËÈ\ÚÒYˆ\ÚËšY\›ˆ[›ÚXÙU\›ÜšYÙ[ˆ	Ñš\™\İÜ™IÈJNÃBˆJNÃBˆYˆ
+\Ëš\Õ\ÚÜÒ[š]X[ØY
+HÃBˆÛÛœİØXÚY\ÚÜÈH\œ˜^Kš\Ğ\œ˜^J\Ë\ÚÜÊHÈ\Ë\ÚÜÈˆ×NÃBˆ[˜ÛÛZ[™Õ\ÚÜË™›Ü‘XXÚ
+™[[İU\ÚÈOˆÃBˆÛÛœİØXÚY\ÚÈHØXÚY\ÚÜË™š[™
+][HOˆ][OËšYOOH™[[İU\ÚÏËšY
+NÃBˆYˆ
+XØXÚY\ÚÊH™]\›ÃBˆÛÛœİ™[[İQ]šY[˜ÙHHÜ™[[İU\ÚË™]šY[˜ÙK™[[İU\ÚËœ™\ÜË™]šY[˜ÙK™[[İU\ÚËÛÜšÑ]šY[˜ÙK™[[İU\ÚË™]šY[˜Ù\Ë™[[İU\ÚË˜]XÚY[×K™š[™
+][\ÈOˆ\œ˜^Kš\Ğ\œ˜^J][\ÊH	‰ˆ][\Ë›[™İ
+H×NÃBˆÛÛœİØXÚY]šY[˜ÙHHØØXÚY\ÚË™]šY[˜ÙKØXÚY\ÚËœ™\ÜË™]šY[˜ÙKØXÚY\ÚËÛÜšÑ]šY[˜ÙKØXÚY\ÚË™]šY[˜Ù\ËØXÚY\ÚË˜]XÚY[×K™š[™
+][\ÈOˆ\œ˜^Kš\Ğ\œ˜^J][\ÊH	‰ˆ][\Ë›[™İ
+H×NÃBˆYˆ
+\™[[İQ]šY[˜ÙK›[™İ	‰ˆØXÚY]šY[˜ÙK›[™İ
+HÃBˆ™[[İU\ÚË™]šY[˜ÙHHØXÚY]šY[˜ÙNÃBˆÛÛœÛÛKØ\›Š	ÖÑU’QSÒPWHÙH™Xİ\\°ìÈ]šY[˜ÚXHØØ[[™Y[HHÚ[˜Ü›Ûš^˜\‰ËÈ\ÚÒYˆ™[[İU\ÚËšYØ[YYˆØXÚY]šY[˜ÙK›[™İJNÃBˆCBˆJNÃBˆCBƒBˆYˆ
+]\Ëš\Õ\ÚÜÒ[š]X[ØY	‰ˆ\Ë˜İ\œ™[\Ù\Ëœ›ÛHOOH	ØYZ[‰ÊHÃBˆÛÛœİ™]š[İ\Õ\ÚÜĞRYH\Ë›\İØœÙ\™Y\ÚÔİ]\Ù\È™]ÈX\
+
+\Ë\ÚÜÈ×JK›X\
+\ÚÈOˆÔİš[™Ê\ÚÏËšY
+K\ÚÏËœİ]\×JJNÃBˆ[˜ÛÛZ[™Õ\ÚÜË™›Ü‘XXÚ
+\ÚÈOˆÃBˆÛÛœİ\ÚÒYHİš[™Ê\ÚÏËšY	ÉÊNÃBˆÛÛœİ™]š[İ\Õ\ÚÈH™]š[İ\Õ\ÚÜĞRY™Ù]
+\ÚÒY
+NÃBˆYˆ
+]\ÚÒY\ÚÏËœİ]\ÈOOH	Ô‘PSVQIÈ™]š[İ\Õ\ÚÈOOH	Ô‘PSVQIÈ\ÚÏË˜\˜Ú]™Y]
+H™]\›ÃBƒBƒBƒBˆÛÛœÛÛKš[™›Ê	ÖÓÔ‘T—HÜ™[ˆ\ğìÈH‘PSVQIËÈ\ÚÒY™]š[İ\Ôİ]\Îˆ™]š[İ\Õ\ÚÈ	ÜÚ[ˆ\İYÈ[\š[Ü‰ÈJNÃBˆYˆ
+\Ëœ™YœËœÛİ[™
+HÛİ[™[™Ú[™Kœ^SÜ™\ÛÛ\]YÛİ[™
+
+NÃBˆ[ÙHÛÛœÛÛKš[™›Ê	ÖÓÔ‘T—HÛÛšYÈÛZ]YÎˆH™Y™\™[˜ÚXH\İ0èH\ØXİ]˜YIÊNÃBˆJNÃBˆCBˆYˆ
+]\Ëš\Õ\ÚÜÒ[š]X[ØY	‰ˆ[˜ÛÛZ[™Õ\ÚÜË›[™İˆ\Ë\ÚÜË›[™İ
+HÃBˆÛÛœİ]\İ\ÚÈH[˜ÛÛZ[™Õ\ÚÜÖÌNÃBˆYˆ
+]\İ\ÚÈ	‰ˆ]\Ëœ›ØÙ\ÜÙY]™[YËš\Ê]\İ\ÚËšY
+JHÃBˆ\Ëœ›ØÙ\ÜÙY]™[YË˜Y
+]\İ\ÚËšY
+NÃBƒBˆYˆ
+\Ëœ™YœËœÛİ[™
+HÛİ[™[™Ú[™Kœ^SÜ™\”Ûİ[™
+
+NÃBˆ\ËœÚİÔÜ\›İYšXØ][ÛŠÃBˆ]Nˆ	ü'äâÈY]˜HÜ™[ˆH˜X˜Z›ÉËBˆİX]Nˆ	Û]\İ\ÚË˜ÛY[H	˜[È	Û]\İ\ÚËœÙ\šXÙU\_XBˆ]Z[Îˆ\]Z\Îˆ	Û]\İ\ÚË™\]Z\Y[H0êXÛšXÛÎˆ	Û]\İ\ÚË˜\ÜÚYÛ™YßXBˆ\Nˆ	ÛÜ™\‰ËBˆXÛÛˆ	ü'äâÉËBˆÛÛXÚÎˆ
+
+HOˆ\ËšY]ÓÜ™\‘]Z[Ê]\İ\ÚËšY
+CBˆJNÃBˆCBˆCBƒBˆ\Ë›\İØœÙ\™Y\ÚÔİ]\Ù\ÈH™]ÈX\
+[˜ÛÛZ[™Õ\ÚÜË™š[\Š\ÚÈOˆ\ÚÏËšYOH[
+K›X\
+\ÚÈOˆÔİš[™Ê\ÚËšY
+K\ÚËœİ]\×JJNÃBˆ\Ëš\Õ\ÚÜÒ[š]X[ØYH˜[ÙNÃBˆ\Ë\ÚÜÈH[˜ÛÛZ[™Õ\ÚÜÎÃBˆØY™TİÜ˜YÙKœÙ]][J	ÜÜÛœ›×İ\ÚÜ×İ	Ë”ÓÓ‹œİš[™ÚYJ\Ë\ÚÜÊJNÃBˆYˆ
+\Ë˜İ\œ™[\Ù\ŠHÃBˆ\Ë\]Tİ]Ê
+NÃBˆ\Ëœ™[™\•\ÚÜÊ
+NÃBˆYˆ
+\Ë˜İ\œ™[\Ù\‹œ›ÛHOOH	ØYZ[‰ÊHÃBˆ\Ëœ™[™\•XÚšXÚX[œÓ[Ûš]ÜŠ
+NÃBˆ\Ëœ™[™\YZ[]Y]ÙÊ
+NÃBˆCBˆCBˆCBˆKHOˆÛÛœÛÛK™\œ›ÜŠ”Û˜\Úİ0ìÜ™[™\Îˆ‹JJNÃBƒBˆ‹˜ÛÛXİ[ÛŠ	Ü™\Ù[˜ÚXIÊK›Û”Û˜\Úİ
+
+Û˜\Úİ
+HOˆÃBˆÛ˜\Úİ™›Ü‘XXÚ
+ØÈOˆÃBˆÛÛœİ]HHØË™]J
+HßNÃBˆÛÛœİ™\Ù[˜ÙRYHØËšYÓİÙ\Ø\ÙJ
+NÃBˆÛÛœİ^\İ[™Ô™\Ù[˜ÙU\Ù\ˆH\Ë\Ù\œË™š[™
+Oˆİš[™Ê\Ù\›˜[YH	ÉÊKÓİÙ\Ø\ÙJ
+HOOH™\Ù[˜ÙRY
+H
+\œ˜^Kš\Ğ\œ˜^J\ËÛÜšÙ\œÊHÈ\ËÛÜšÙ\œË™š[™
+Oˆİš[™Ê\Ù\›˜[YH	ÉÊKÓİÙ\Ø\ÙJ
+HOOH™\Ù[˜ÙRY
+Hˆ[
+NÃBˆÛÛœİ™]š[İ\Ô™XÛÜ™H\Ëœ™\Ù[˜ÙT™XÛÜ™ÖÜ™\Ù[˜ÙRYNÃBˆÛÛœİ™]š[İ\Ôİ]\ÈH™]š[İ\Ô™XÛÜ™È\Ë™Ù]™\Ù[˜ÙTİ]\Ê^\İ[™Ô™\Ù[˜ÙU\Ù\ˆÈ\Ù\›˜[YNˆ™\Ù[˜ÙRYJHˆ	Ù\ØÛÛ›™XİY	ÎÃBˆ\Ëœ™\Ù[˜ÙT™XÛÜ™ÖÜ™\Ù[˜ÙRYHH]NÃBˆYˆ
+İš[™Ê]Kœ›ÛH	ÉÊKÓİÙ\Ø\ÙJ
+HOOH	ØYZ[‰ÊH\Ë˜\PYZ[’Y[]T™\Ù[˜ÙJ]JNÃBˆYˆ
+\Ë˜İ\œ™[\Ù\Ëœ›ÛHOOH	ØYZ[‰È	‰ˆ™\Ù[˜ÙRYOOHİš[™Ê\Ë˜İ\œ™[\Ù\‹\Ù\›˜[YH	ÉÊKÓİÙ\Ø\ÙJ
+JHÃBˆYˆ
+\œ˜^Kš\Ğ\œ˜^J]K˜YZ[’Y[]S˜[Y\ÊH	‰ˆ]K˜YZ[’Y[]S˜[Y\Ë›[™İOOHŠH\Ë˜YZ[’Y[]S˜[Y\ÈH]K˜YZ[’Y[]S˜[Y\Ë›X\
+˜[YHOˆİš[™Ê˜[YH	ÉÊKš[J
+JK™š[\Š›ÛÛX[ŠK›[™İOOHˆÈ]K˜YZ[’Y[]S˜[Y\Ë›X\
+˜[YHOˆİš[™Ê˜[YH	ÉÊKš[J
+JHˆ\Ë˜YZ[’Y[]S˜[Y\ÎÃBˆYˆ
+]K˜Xİ]™PYZ[“˜[YJH\Ë˜Xİ]™PYZ[“˜[YHHİš[™Ê]K˜Xİ]™PYZ[“˜[YJNÃBˆYˆ
+]K˜YZ[’Y[]TİÜÈ	‰ˆ\[Ùˆ]K˜YZ[’Y[]TİÜÈOOH	ÛØš™Xİ	ÊH\Ë˜YZ[’Y[]TİÜÈHÈ‹‹™]K˜YZ[’Y[]TİÜÈNÃBˆCBˆÛÛœİHH\Ë\Ù\œË™š[™
+Oˆİš[™Ê\Ù\›˜[YH	ÉÊKÓİÙ\Ø\ÙJ
+HOOH™\Ù[˜ÙRY
+NÃBˆYˆ
+JHÃBˆYˆ
+]K›\İX\™X]OOH[™Yš[™Y
+HK›\İX\™X]H]K›\İX\™X]ÃBˆYˆ
+]KœİÊHKœİÈH]KœİÎÃBˆYˆ
+]K›\İÙÚ[ŠHK›\İÙÚ[ˆH]K›\İÙÚ[ÃBˆCBˆÛÛœİ™\Ù[˜ÙU\Ù\ˆHH^\İ[™Ô™\Ù[˜ÙU\Ù\ˆÈ\Ù\›˜[YNˆ™\Ù[˜ÙRY‹‹™]HNÃBˆÛÛœİ\ÕÛÜšÙ\”™\Ù[˜ÙHHÉİÛÜšÙ\‰Ë	İ˜X˜Z˜YÜ‰×Kš[˜ÛY\Êİš[™Ê]Kœ›ÛH™\Ù[˜ÙU\Ù\‹œ›ÛH	ÉÊKÓİÙ\Ø\ÙJ
+Kš[J
+JNÃBˆÛÛœİ™XØ[YP]˜Z[X›HH\Ë™Ù]™\Ù[˜ÙTİ]\Ê™\Ù[˜ÙU\Ù\ŠHOOH	Ø]˜Z[X›IÎÃBˆYˆ
+\Ëœ™\Ù[˜ÙTÛ˜\Úİ[š]X[^™Y	‰ˆ\Ë˜İ\œ™[\Ù\Ëœ›ÛHOOH	ØYZ[‰È	‰ˆ\ÕÛÜšÙ\”™\Ù[˜ÙH	‰ˆ™]š[İ\Ôİ]\ÈOOH	Ø]˜Z[X›IÈ	‰ˆ™XØ[YP]˜Z[X›H	‰ˆ\Ëœ™YœÏËœÛİ[™OOH˜[ÙJHÃBˆÛÛœÛÛKš[™›Ê	ÖÔ‘TÑSÑWH˜[œÚXÚpìÛˆH˜X˜Z˜YÜˆH\ÜÛšX›IËÈ\Ù\›˜[YNˆ™\Ù[˜ÙRYJNÃBˆÛİ[™[™Ú[™Kœ^UÛÜšÙ\ÛÛ›™XİYÛİ[™
+
+NÃBˆCBˆJNÃBˆ\Ëœ™\Ù[˜ÙTÛ˜\Úİ[š]X[^™YHYNÃBˆ\Ë˜\TÚ\™YÙX\ÛÛ˜[[YJ
+NÃBˆYˆ
+\Ë˜İ\œ™[\Ù\ŠHÃBˆ\Ëœ™[™\•\ÚÜÊ
+NÃBˆ\Ëœ™[™\YZ[”™\Ù[˜ÙJ
+NÃBˆCBˆYˆ
+\Ë˜İ\œ™[\Ù\ˆ	‰ˆ\Ë˜İ\œ™[\Ù\‹œ›ÛHOOH	ØYZ[‰ÊHÃBˆ\Ëœ™[™\•XÚšXÚX[œÓ[Ûš]ÜŠ
+NÃBˆ\Ëœ™[™\ÛÛ™\œØ][ÛœÔÚYX˜\Š
+NÃBˆCBˆJNÃBƒBƒBˆCBƒBˆØİ[Y[˜Y]™[\İ[™\Š	ÜÚ[\™İÛ‰Ë]™[OˆÃBˆÛÛœİY[HHØİ[Y[™Ù][[Y[RY
+	ØYZ[‹\™\Ù[˜ÙK[Y[IÊNÃBˆÛÛœİÙÙÛHHØİ[Y[™Ù][[Y[RY
+	ØYZ[‹\™\Ù[˜ÙK]ÙÙÛIÊNÃBˆYˆ
+[Y[HY[K˜Û\ÜÓ\İ˜ÛÛZ[œÊ	ÚY[‰ÊHY[K˜ÛÛZ[œÊ]™[\™Ù]
+HÙÙÛOË˜ÛÛZ[œÊ]™[\™Ù]
+JH™]\›ÃBˆY[K˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆÙÙÛOËœÙ]]šX]J	Ø\šXKY^[™Y	Ë	Ù˜[ÙIÊNÃBˆKYJNÃBƒBƒBˆØİ[Y[˜Y]™[\İ[™\Š	ØÛXÚÉË]™[OˆÃBˆÛÛœİY[HHØİ[Y[™Ù][[Y[RY
+	ØYZ[‹\™\Ù[˜ÙK[Y[IÊNÃBˆÛÛœİÙÙÛHHØİ[Y[™Ù][[Y[RY
+	ØYZ[‹\™\Ù[˜ÙK]ÙÙÛIÊNÃBˆYˆ
+[Y[HY[K˜Û\ÜÓ\İ˜ÛÛZ[œÊ	ÚY[‰ÊHY[K˜ÛÛZ[œÊ]™[\™Ù]
+HÙÙÛOË˜ÛÛZ[œÊ]™[\™Ù]
+JH™]\›ÃBˆY[K˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆÙÙÛOËœÙ]]šX]J	Ø\šXKY^[™Y	Ë	Ù˜[ÙIÊNÃBˆJNÃBˆØİ[Y[˜Y]™[\İ[™\Š	ÚÙ^YİÛ‰Ë]™[OˆÃBˆYˆ
+]™[šÙ^HOOH	Ñ\ØØ\IÊH™]\›ÃBˆÛÛœİY[HHØİ[Y[™Ù][[Y[RY
+	ØYZ[‹\™\Ù[˜ÙK[Y[IÊNÃBˆÛÛœİÙÙÛHHØİ[Y[™Ù][[Y[RY
+	ØYZ[‹\™\Ù[˜ÙK]ÙÙÛIÊNÃBˆYˆ
+[Y[HY[K˜Û\ÜÓ\İ˜ÛÛZ[œÊ	ÚY[‰ÊJH™]\›ÃBˆY[K˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆÙÙÛOËœÙ]]šX]J	Ø\šXKY^[™Y	Ë	Ù˜[ÙIÊNÃBˆJNÃBƒBˆËÈÜÈÚ]ÈÙHZ[š[Z^˜[ˆÈÚY\œ˜[ˆÛÛÈ\ÙHİ\ÈÛÛ›Û\È[™]šYX[\ËƒBƒBƒBƒBˆØİ[Y[˜Y]™[\İ[™\Š	İš\ÚXš[]XÚ[™ÙIË
+
+HOˆÃBˆYˆ
+YØİ[Y[šY[ˆ	‰ˆ\Ë˜İ\œ™[\Ù\ŠHÃBˆ\ËœÙ[™X\™X]
+
+NÃBˆCBˆJNÃBƒBˆÛÛœİØ]™YÙ\ÜÚ[ÛˆHØY™TİÜ˜YÙK™Ù]][J	ÜÜÛœ›×ÜÙ\ÜÚ[Û—İ	ÊNÃBˆYˆ
+Ø]™YÙ\ÜÚ[ÛŠHÃBˆHÃBˆÛÛœİ\Ù\ˆH”ÓÓ‹œ\œÙJØ]™YÙ\ÜÚ[ÛŠNÃBˆ]ØZ]\Ë›ÙÚ[”İXØÙ\ÜÊ\Ù\‹˜[ÙJNÃBˆHØ]Ú
+JHÃBˆ\ËœÚİÓÙÚ[•šY]Ê
+NÃBˆCBˆH[ÙHÃBˆ\ËœÚİÓÙÚ[•šY]Ê
+NÃBˆCBƒBˆYˆ
+Ú[™İË›XÚYJHXÚYK˜Ü™X]RXÛÛœÊ
+NÃBˆCBƒBˆÙ]Ü™\“[X™\‘œ›ÛRY
+Y
+HÃBˆÛÛœİX]ÚHİš[™ÊY	ÉÊK›X]Ú
+×“Ô‘J
+ÊIÚJNÃBˆ™]\›ˆX]ÚÈ[X™\ŠX]ÚÌWJHˆ[ÃBˆCBƒBˆÙ]Y˜][™^Ü™\“[X™\Š\ÚÜÈH\Ë\ÚÜÊHÃBˆÛÛœİ[X™\œÈH
+\œ˜^Kš\Ğ\œ˜^J\ÚÜÊHÈ\ÚÜÈˆ×JK›X\
+\ÚÈOˆ\Ë™Ù]Ü™\“[X™\‘œ›ÛRY
+\ÚÏËšY
+JK™š[\Š[X™\‹š\ÔØY™R[YÙ\ŠNÃBˆ™]\›ˆX]›X^
+LK‹‹›[X™\œË›X\
+[X™\ˆOˆ[X™\ˆ
+ÈJJNÃBˆCBƒBˆÙ]™^]˜Z[X›SÜ™\“[X™\Šİ\H\Ë›Ü™\”Ù\]Y[˜ÙS™^\ÚÜÈH\Ë\ÚÜË^ÛYYYH[
+HÃBˆÛÛœİ\ÙYH™]ÈÙ]
+
+\œ˜^Kš\Ğ\œ˜^J\ÚÜÊHÈ\ÚÜÈˆ×JK™š[\Š\ÚÈOˆ\ÚÏËšYOOH^ÛYYY
+K›X\
+\ÚÈOˆ\Ë™Ù]Ü™\“[X™\‘œ›ÛRY
+\ÚÏËšY
+JK™š[\Š[X™\‹š\ÔØY™R[YÙ\ŠJNÃBˆ]Ø[™Y]HH[X™\Šİ\
+NÃBˆYˆ
+S[X™\‹š\ÔØY™R[YÙ\ŠØ[™Y]JHØ[™Y]HJHØ[™Y]HH\Ë™Ù]Y˜][™^Ü™\“[X™\Š\ÚÜÊNÃBˆÚ[H
+\ÙYš\ÊØ[™Y]JJHØ[™Y]H
+ÏHNÃBˆ™]\›ˆØ[™Y]NÃBˆCBƒBˆ™[™\“Ü™\”Ù\]Y[˜ÙTÙ][™Ê
+HÃBˆÛÛœİ[œ]HØİ[Y[™Ù][[Y[RY
+	ÜÙ][™ÜË[Ü™\‹\Ù\]Y[˜ÙKZ[œ]	ÊNÃBˆYˆ
+[œ]
+H[œ]˜[YHH\Ë™Ù]™^]˜Z[X›SÜ™\“[X™\Š
+NÃBˆCBƒBˆ\Ş[˜ÈØ]™SÜ™\”Ù\]Y[˜ÙJ
+HÃBˆYˆ
+\Ë˜İ\œ™[\Ù\Ëœ›ÛHOOH	ØYZ[‰ÊH™]\›ÃBˆÛÛœİ[œ]HØİ[Y[™Ù][[Y[RY
+	ÜÙ][™ÜË[Ü™\‹\Ù\]Y[˜ÙKZ[œ]	ÊNÃBˆÛÛœİ™\]Y\İYH[X™\Š[œ]Ë˜[YJNÃBˆYˆ
+S[X™\‹š\ÔØY™R[YÙ\Š™\]Y\İY
+H™\]Y\İYJH™]\›ˆ\ËœÚİÕØ\İ
+	Ñ\ØÜšX™H[ˆ°î›Y\›ÈHÜ™[ˆ°è[YË‰Ë	Ù\œ›Ü‰ÊNÃBˆYˆ
+\Ë\ÚÜËœÛÛYJ\ÚÈOˆ\Ë™Ù]Ü™\“[X™\‘œ›ÛRY
+\ÚÏËšY
+HOOH™\]Y\İY
+JHÃBˆ™]\›ˆ\ËœÚİÕØ\İ
+[°î›Y\›ÈÔ‘IÜ™\]Y\İYHXH\İ0èH[ˆ\ÛËˆ[YÙH[ˆÛÛœÙXİ]]›ÈXœ™K˜	Ù\œ›Ü‰ÊNÃBˆCBˆÛÛœİ™]š[İ\ÈH\Ë›Ü™\”Ù\]Y[˜ÙS™^ÃBˆ\Ë›Ü™\”Ù\]Y[˜ÙS™^H™\]Y\İYÃBˆÛÛœİ™\İ[H]ØZ]\ËœØ]™U\ÚÜÊYJNÃBˆYˆ
+\™\İ[›ÚÊHÈ\Ë›Ü™\”Ù\]Y[˜ÙS™^H™]š[İ\ÎÈØY™TİÜ˜YÙKœÙ]][J	ÜÜÛœ›×ÛÜ™\—ÜÙ\]Y[˜ÙWÛ™^	Ëİš[™Ê™]š[İ\ÊJNÈCBˆ\Ëœ™[™\“Ü™\”Ù\]Y[˜ÙTÙ][™Ê
+NÃBˆYˆ
+™\İ[›ÚÊH\ËœÚİÕØ\İ
+H°ìŞ[XHÜ™[ˆÛÛY[˜\°èH[ˆÔ‘IÜ™\]Y\İYK˜	ÜİXØÙ\ÜÉÊNÃBˆCBƒBˆ\Ş[˜È™\Ù]Ü™\”Ù\]Y[˜ÙJ
+HÃBˆYˆ
+\Ë˜İ\œ™[\Ù\Ëœ›ÛHOOH	ØYZ[‰ÊH™]\›ÃBˆÛÛœİ™]š[İ\ÈH\Ë›Ü™\”Ù\]Y[˜ÙS™^ÃBˆ\Ë›Ü™\”Ù\]Y[˜ÙS™^H\Ë™Ù]™^]˜Z[X›SÜ™\“[X™\ŠLJNÃBˆÛÛœİ™\İ[H]ØZ]\ËœØ]™U\ÚÜÊYJNÃBˆYˆ
+\™\İ[›ÚÊHÈ\Ë›Ü™\”Ù\]Y[˜ÙS™^H™]š[İ\ÎÈØY™TİÜ˜YÙKœÙ]][J	ÜÜÛœ›×ÛÜ™\—ÜÙ\]Y[˜ÙWÛ™^	Ëİš[™Ê™]š[İ\ÊJNÈCBˆ\Ëœ™[™\“Ü™\”Ù\]Y[˜ÙTÙ][™Ê
+NÃBˆYˆ
+™\İ[›ÚÊH\ËœÚİÕØ\İ
+ÛÛœÙXİ]]›È™Z[šXÚXYËˆH°ìŞ[XHÜ™[ˆÙ\°èHÔ‘Iİ\Ë›Ü™\”Ù\]Y[˜ÙS™^K˜	ÜİXØÙ\ÜÉÊNÃBˆCBƒBˆØ]™U\ÚÜÊ™\Ü\œ›ÜˆH˜[ÙJHÃBˆØY™TİÜ˜YÙKœÙ]][J	ÜÜÛœ›×İ\ÚÜ×İ	Ë”ÓÓ‹œİš[™ÚYJ\Ë\ÚÜÊJNÃBˆØY™TİÜ˜YÙKœÙ]][J	ÜÜÛœ›×ÛÜ™\—ÜÙ\]Y[˜ÙWÛ™^	Ëİš[™Ê\Ë›Ü™\”Ù\]Y[˜ÙS™^
+JNÃBˆYˆ
+]Ú[™İË™ŠH™]\›ˆ›ÛZ\ÙKœ™\ÛÛ™JÈÚÎˆYKØØ[Û›NˆYHJNÃBˆHÃBˆ™]\›ˆ‹˜ÛÛXİ[ÛŠ	ÛÜ™[™\ÉÊK™ØÊ	İÙ\ÉÊKœÙ]
+È\ÚÜÎˆ\Ë\ÚÜË™^Ü™\“[X™\ˆ\Ë›Ü™\”Ù\]Y[˜ÙS™^KÈY\™ÙNˆYHJCBˆ[Š
+
+HOˆ
+ÈÚÎˆYHJJCBˆ˜Ø]Ú
+\œ›ÜˆOˆÃBˆÛÛœÛÛK™\œ›ÜŠ	ÖÓÔ‘S—H˜[0ìÈH\ØÜš]\˜HH0ìÜ™[™\Î‰Ë\œ›ÜŠNÃBˆYˆ
+™\Ü\œ›ÜŠH\ËœÚİÕØ\İ
+›ÈÙHİX\™0ìÈ[ˆHX™Nˆ	Ù\œ›Ü‹›Y\ÜØYÙH\œ›ÜŸX	Ù\œ›Ü‰ÊNÃBˆ™]\›ˆÈÚÎˆ˜[ÙK\œ›ÜˆNÃBˆJNÃBˆHØ]Ú
+\œ›ÜŠHÃBˆÛÛœÛÛK™\œ›ÜŠ	ÖÓÔ‘S—H›ÈÙHYÈ[šXÚX\ˆH\ØÜš]\˜HH0ìÜ™[™\Î‰Ë\œ›ÜŠNÃBˆYˆ
+™\Ü\œ›ÜŠH\ËœÚİÕØ\İ
+›ÈÙHYÈİX\™\ˆ	Ù\œ›Ü‹›Y\ÜØYÙH\œ›ÜŸX	Ù\œ›Ü‰ÊNÃBˆ™]\›ˆ›ÛZ\ÙKœ™\ÛÛ™JÈÚÎˆ˜[ÙK\œ›ÜˆJNÃBˆCBˆCBˆ\Ş[˜ÈYXİ]š]S›İYšXØ][ÛŠXÚ˜[YK\ÚÒYXİ[Û•\K]Z[Ë\HH	ÛÜ™\‰ÊHÃBˆÛÛœİ›İY‘]HHÃBˆXÚ˜[YNˆXÚ˜[YKBˆ\ÚÒYˆ\ÚÒY	ÉËBˆXİ[Û•\NˆXİ[Û•\KBˆ]Z[Îˆ]Z[È	ÉËBˆ\Nˆ\KBˆ[YNˆ\Ë™›Ü›X][YJ™]È]J
+JKBˆ[Y\İ[\ˆ]K››İÊ
+KBˆ™XYˆ˜[ÙCBˆNÃBƒBˆYˆ
+Ú[™İË™ŠHÃBˆ‹˜ÛÛXİ[ÛŠ	Û›İYšXØXÚ[Û™\ÉÊK˜Y
+›İY‘]JK˜Ø]Ú
+HOˆÛÛœÛÛK™\œ›ÜŠ‘\œ›Üˆ›İYšXØXÚpìÛˆ‹JJNÃBˆH[ÙHÃBˆ\ËœÚİÔÜ\›İYšXØ][ÛŠÈ]Nˆ	ĞXİX[^˜XÚpìÛˆ
+	È
+ÈXİ[Û•\H
+È	ÊIËİX]NˆXÚ˜[YK]Z[Îˆ]Z[È	ÉË\Nˆ\H	ÙÙ[™\˜[	ËXÛÛˆ	ü'äèÉÈJNÃBˆCBˆCBƒBˆÚİÓÙÚ[•šY]Ê
+HÃBˆØİ[Y[™Øİ[Y[[[Y[˜Û\ÜÓ\İœ™[[İ™J	Ø]]\Ù\ÜÚ[Û‹\[™[™ÉÊNÃBˆØİ[Y[˜›ÙK˜Û\ÜÓ\İ˜Y
+	ÜÙX\ÛÛ˜[[ÙÚ[‹]š\ÚX›IÊNÃBˆØİ[Y[™Ù][[Y[RY
+	İšY]Ë[ÙÚ[‰ÊK˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆÚ[™İËœ™\İ[YSÙÚ[œ˜[™šY[ÏËŠ
+NÃBˆØİ[Y[™Ù][[Y[RY
+	İšY]ËY\Ú›Ø\™	ÊK˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆ\Ë\]TÙX\ÛÛ˜[Y™™XİÊ\ËœÙX\ÛÛ˜[[YJNÃBˆØİ[Y[™Ù][[Y[RY
+	ØÚ]Y›Ø][™ËX]Û‹XÛÛZ[™\‰ÊK˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆØİ[Y[™Ù][[Y[RY
+	ØÚ]]Ú[™İË[[Ù[	ÊK˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆØİ[Y[™Ù][[Y[RY
+	ØÚ]Y\ÚİÜ]Ú[™İÜÉÊOË˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆYˆ
+\ËšX\™X][Y\ŠHÛX\’[\˜[
+\ËšX\™X][Y\ŠNÃBˆYˆ
+\Ë˜Ú][œİXœØÜšX™JHÈ\Ë˜Ú][œİXœØÜšX™J
+NÈ\Ë˜Ú][œİXœØÜšX™HH[ÈCBˆYˆ
+\Ë˜Ú]™XY[œİXœØÜšX™JHÈ\Ë˜Ú]™XY[œİXœØÜšX™J
+NÈ\Ë˜Ú]™XY[œİXœØÜšX™HH[ÈCBˆYˆ
+\Ë˜Ú]™XYÕ[œİXœØÜšX™JHÈ\Ë˜Ú]™XYÕ[œİXœØÜšX™J
+NÈ\Ë˜Ú]™XYÕ[œİXœØÜšX™HH[ÈCBˆYˆ
+\Ë˜Ø[[œİXœØÜšX™JHÈ\Ë˜Ø[[œİXœØÜšX™J
+NÈ\Ë˜Ø[[œİXœØÜšX™HH[ÈCBˆYˆ
+\Ë™ÜÓØØ][ÛœÕ[œİXœØÜšX™JHÈ\Ë™ÜÓØØ][ÛœÕ[œİXœØÜšX™J
+NÈ\Ë™ÜÓØØ][ÛœÕ[œİXœØÜšX™HH[ÈCBˆ\Ë˜ÛX\‘YXØ]YÛÜšÙ\Ú]\İ[™\œÊ
+NÃBˆ\ËœİÜÜÔÚ\š[™ÊYJNÃBˆ\Ë™[™›ÚXÙPØ[
+
+NÃBˆCBƒBˆ\Ş[˜È[™SÙÚ[ŠJHÃBˆKœ™]™[Y˜][
+
+NÃBˆÛÛœİ˜]Õ\Ù\ˆHØİ[Y[™Ù][[Y[RY
+	ÛÙÚ[‹]\Ù\›˜[YIÊK˜[YNÃBˆÛÛœİ˜]Ô\ÜÈHØİ[Y[™Ù][[Y[RY
+	ÛÙÚ[‹\\ÜİÛÜ™	ÊK˜[YNÃBˆÛÛœİ™[Y[X™\ÚXÚÙYHØİ[Y[™Ù][[Y[RY
+	ÛÙÚ[‹\™[Y[X™\‰ÊK˜ÚXÚÙYÃBˆÛÛœİ\œ›Ü[\HØİ[Y[™Ù][[Y[RY
+	ÛÙÚ[‹Y\œ›Ü‹X[\	ÊNÃBˆÛÛœİ\œ›Ü•^HØİ[Y[™Ù][[Y[RY
+	ÛÙÚ[‹Y\œ›Ü‹]^	ÊNÃBˆÛÛœİ”İX›Z]HØİ[Y[™Ù][[Y[RY
+	Ø‹\İX›Z][ÙÚ[‰ÊNÃBˆÛÛœİ•^HØİ[Y[™Ù][[Y[RY
+	Ø‹\İX›Z]]^	ÊNÃBƒBˆÛÛœİ\Ù\•˜[Hİš[™Ê˜]Õ\Ù\ˆ	ÉÊKš[J
+KÓİÙ\Ø\ÙJ
+NÃBˆÛÛœİ\ÜÕ˜[Hİš[™Ê˜]Ô\ÜÈ	ÉÊKš[J
+NÃBƒBˆYˆ
+]\Ù\•˜[\\ÜÕ˜[
+HÃBˆ\œ›Ü•^^ÛÛ[H”Üˆ˜]›Üˆ[™Ü™\ØH\İX\š[ÈHÛÛ˜\ÙpìXKˆÃBˆ\œ›Ü[\˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆ™]\›ÃBˆCBƒBˆYˆ
+”İX›Z]
+HÃBˆ”İX›Z]™\ØX›YHYNÃBˆYˆ
+•^
+H•^^ÛÛ[H•™\šYšXØ[™È[ˆš\™\İÜ™K‹‹ˆÃBˆCBƒBˆYˆ
+™[Y[X™\ÚXÚÙY
+HÃBˆØY™TİÜ˜YÙKœÙ]][J	ÜÜÛœ›×Ü™[Y[X™\™Y	Ë”ÓÓ‹œİš[™ÚYJÈNˆ\Ù\•˜[ˆ\ÜÕ˜[JJNÃBˆH[ÙHÃBˆØY™TİÜ˜YÙKœ™[[İ™R][J	ÜÜÛœ›×Ü™[Y[X™\™Y	ÊNÃBˆCBƒBˆ]]][XØ]Y\Ù\ˆH[ÃBƒBˆYˆ
+Ú[™İË™ŠHÃBˆHÃBˆÛÛœİÛ˜\ÚİH]ØZ]‹˜ÛÛXİ[ÛŠ	İ\Ù\œÉÊK™Ù]
+
+NÃBˆÛ˜\Úİ™›Ü‘XXÚ
+ØÈOˆÃBˆÛÛœİQ]HHØË™]J
+HßNÃBˆÛÛœİ•\Ù\ˆHİš[™ÊQ]K\Ù\›˜[YHOOH[™Yš[™YÈQ]K\Ù\›˜[YHˆ	ÉÊKš[J
+KÓİÙ\Ø\ÙJ
+NÃBˆÛÛœİ”\ÜÈHİš[™ÊQ]Kœ\ÜİÛÜ™OOH[™Yš[™YÈQ]Kœ\ÜİÛÜ™ˆ	ÉÊKš[J
+NÃBƒBˆYˆ
+•\Ù\ˆOOH\Ù\•˜[	‰ˆ”\ÜÈOOH\ÜÕ˜[
+HÃBˆÛÛœİ\ĞXİ]™HH
+Q]K˜Xİ]™HOOH˜[ÙJNÃBˆ]][XØ]Y\Ù\ˆHÃBˆYˆØËšYBˆ\Ù\›˜[YNˆQ]K\Ù\›˜[YH\Ù\•˜[Bˆ[˜[YNˆQ]K™[˜[YHQ]K\Ù\›˜[YH\Ù\•˜[Bˆ›ÛNˆİš[™ÊQ]Kœ›ÛH	İÛÜšÙ\‰ÊKÓİÙ\Ø\ÙJ
+Kš[J
+KBˆÛ™NˆQ]KœÛ™H	ÉËBˆİÎˆQ]KœİÈ	ÉËBˆXİ]™Nˆ\ĞXİ]™CBˆNÃBˆCBˆJNÃBˆHØ]Ú
+\œŠHÃBˆÛÛœÛÛK™\œ›ÜŠ‘\œ›Üˆ[ÛÛœİ[\ˆš\™\İÜ™Nˆ‹\œŠNÃBˆ\œ›Ü•^^ÛÛ[H‘\œ›ÜˆHÛÛ™^pìÛˆÛÛˆš\™\İÜ™Nˆˆ
+È
+\œ‹›Y\ÜØYÙH‘˜[ÈH™YŠNÃBˆ\œ›Ü[\˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆYˆ
+”İX›Z]
+HÈ”İX›Z]™\ØX›YH˜[ÙNÈYˆ
+•^
+H•^^ÛÛ[H’[šXÚX\ˆÙ\ÚpìÛˆÈCBˆ™]\›ÃBˆCBˆCBƒBˆYˆ
+”İX›Z]
+HÃBˆ”İX›Z]™\ØX›YH˜[ÙNÃBˆYˆ
+•^
+H•^^ÛÛ[H’[šXÚX\ˆÙ\ÚpìÛˆÃBˆCBƒBˆYˆ
+]][XØ]Y\Ù\ŠHÃBˆYˆ
+]][XØ]Y\Ù\‹˜Xİ]™HOOH˜[ÙJHÃBˆ\œ›Ü•^^ÛÛ[H	Ñ\İHİY[H\İ0èH\ØXİ]˜YKˆÛÛœİ[H[YZ[š\İ˜YÜ‹‰ÎÃBˆ\œ›Ü[\˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆ™]\›ÃBˆCBƒBˆ\œ›Ü[\˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆÛÛœİ›İÈH™]È]J
+NÃBˆÛÛœİ›Ü›X]Y[YHH\Ë™›Ü›X][YJ›İÊNÃBƒBˆYˆ
+Ú[™İË™ŠHÃBˆ‹˜ÛÛXİ[ÛŠ	Ü™\Ù[˜ÚXIÊK™ØÊ]][XØ]Y\Ù\‹\Ù\›˜[YKÓİÙ\Ø\ÙJ
+JKœÙ]
+ÃBˆ\Ù\›˜[YNˆ]][XØ]Y\Ù\‹\Ù\›˜[YKBˆ[˜[YNˆ]][XØ]Y\Ù\‹™[˜[YKBˆ\İX\™X]ˆ]K››İÊ
+KBˆİÎˆ]][XØ]Y\Ù\‹œİÈ	ÉËBˆ\İÙÚ[ˆ	Ù›Ü›X]Y[Y_H
+[ˆ0ë[™XJXBˆ‹‹Šİš[™Ê]][XØ]Y\Ù\‹œ›ÛH	ÉÊKÓİÙ\Ø\ÙJ
+HOOH	ØYZ[‰ÈÈÈ]˜Z[Xš[]Tİ]\Îˆ	Ø]˜Z[X›IÈHˆßJCBˆKÈY\™ÙNˆYHJK˜Ø]Ú
+HOˆÛÛœÛÛK™\œ›ÜŠJJNÃBˆCBƒBˆ]ØZ]\Ë›ÙÚ[”İXØÙ\ÜÊ]][XØ]Y\Ù\‹YJNÃBˆ™]\›ÃBˆCBƒBˆ\œ›Ü•^^ÛÛ[H	Õ\İX\š[ÈÈÛÛ˜\ÙpìXH[˜ÛÜœ™XİÜÈ[ˆš\™\İÜ™K‰ÎÃBˆ\œ›Ü[\˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆYˆ
+Ú[™İË›XÚYJHXÚYK˜Ü™X]RXÛÛœÊ
+NÃBˆCBƒBˆ\Ş[˜ÈÙÚ[”İXØÙ\ÜÊ\Ù\‹›İYHHYJHÃBˆ\Ë˜İ\œ™[\Ù\ˆH\Ù\ÃBˆYˆ
+Ú[™İË™ŠHÈHÈYˆ
+İš[™Ê\Ù\‹œ›ÛH	ÉÊKÓİÙ\Ø\ÙJ
+HOOH	ØYZ[‰ÊHÈÛÛœİÛ˜\H]ØZ]‹˜ÛÛXİ[ÛŠ	Ü™\Ù[˜ÚXIÊK™ØÊİš[™Ê\Ù\‹\Ù\›˜[YH	ÉÊKÓİÙ\Ø\ÙJ
+JK™Ù]
+
+NÈYˆ
+Û˜\™^\İÊH\Ë˜\PYZ[’Y[]T™\Ù[˜ÙJÛ˜\™]J
+HßJNÈH[ÙHÈÛÛœİÛ˜\H]ØZ]‹˜ÛÛXİ[ÛŠ	Ü™\Ù[˜ÚXIÊK™Ù]
+
+NÈÛÛœİYZ[”™XÛÜ™HÛ˜\™ØÜË›X\
+ØÈOˆØË™]J
+HßJK™š[™
+™XÛÜ™Oˆİš[™Ê™XÛÜ™œ›ÛH	ÉÊKÓİÙ\Ø\ÙJ
+HOOH	ØYZ[‰ÊNÈYˆ
+YZ[”™XÛÜ™
+H\Ë˜\PYZ[’Y[]T™\Ù[˜ÙJYZ[”™XÛÜ™
+NÈHHØ]Ú
+\œ›ÜŠHÈÛÛœÛÛKØ\›Š	ÖÒQS•QQH\Ø[™ÈY[YYØØ[\İHÚ[˜Ü›Ûš^˜\‰Ë\œ›ÜË›Y\ÜØYÙH\œ›ÜŠNÈHCBˆYˆ
+İš[™Ê\Ù\‹œ›ÛH	ÉÊKÓİÙ\Ø\ÙJ
+HOOH	ØYZ[‰È	‰ˆ]\Ë˜Xİ]™PYZ[“˜[YJH\Ë˜Xİ]™PYZ[“˜[YHHİš[™Ê\Ù\‹˜Xİ]™PYZ[“˜[YH	ÉÊNÃBˆ\Ù\‹˜Xİ]™PYZ[“˜[YHH\Ë˜Xİ]™PYZ[“˜[YH\Ù\‹˜Xİ]™PYZ[“˜[YH	ÉÎÃBƒBˆËÈÙHÙ\ÚpìÛˆ°è[YH[YZ[š\İ˜YÜˆY[™HH[Üİ˜\œÙH\ÜÛšX›KBˆËÈ[˜Û\ÛÈ[™\İ]\˜\ˆHÙ\ÚpìÛˆİX\™YH\Üpê\ÈH[˜H™XØ\™ØKƒBˆYˆ
+İš[™Ê\Ù\‹œ›ÛH	ÉÊKÓİÙ\Ø\ÙJ
+HOOH	ØYZ[‰ÊHÃBˆÛÛœİYZ[•\Ù\›˜[YHHİš[™Ê\Ù\‹\Ù\›˜[YH	ÉÊKÓİÙ\Ø\ÙJ
+NÃBˆÛÛœİX\™X]H]K››İÊ
+NÃBˆÛÛœİXİ]™T™\Ù[˜ÙHHÃBˆ\Ù\›˜[YNˆ\Ù\‹\Ù\›˜[YKBˆ[˜[YNˆ\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+KBˆ›ÛNˆ	ØYZ[‰ËBˆİÎˆ\Ë™Ù]İ\œ™[\Ü^TİÊ
+H\Ù\‹œİÈ	ÉËBˆ\İX\™X]ˆX\™X]Bˆ\İÙÚ[ˆ	İ\Ë™›Ü›X][YJ™]È]J
+J_H
+[ˆ0ë[™XJXBˆ]˜Z[Xš[]Tİ]\Îˆ	Ø]˜Z[X›IÃBˆNÃBˆ\Ëœ™\Ù[˜ÙT™XÛÜ™ÖØYZ[•\Ù\›˜[YWHHÈ‹‹Š\Ëœ™\Ù[˜ÙT™XÛÜ™ÖØYZ[•\Ù\›˜[YWHßJK‹‹˜Xİ]™T™\Ù[˜ÙHNÃBˆYˆ
+Ú[™İË™ŠHÃBˆHÃBˆ]ØZ]Ú[™İË™‹˜ÛÛXİ[ÛŠ	Ü™\Ù[˜ÚXIÊK™ØÊYZ[•\Ù\›˜[YJKœÙ]
+Xİ]™T™\Ù[˜ÙKÈY\™ÙNˆYHJNÃBˆHØ]Ú
+\œ›ÜŠHÃBˆÛÛœÛÛKØ\›Š	ÖÔ‘TÑSÑWH›ÈÙHYÈ™\İX›XÙ\ˆ[\İYÈ[[šXÚX\ˆÙ\ÚpìÛ‰Ë\œ›ÜË›Y\ÜØYÙH\œ›ÜŠNÃBˆCBˆCBˆCBˆ\Ë˜\TÚ\™YÙX\ÛÛ˜[[YJ
+NÃBˆØY™TİÜ˜YÙKœÙ]][J	ÜÜÛœ›×ÜÙ\ÜÚ[Û—İ	Ë”ÓÓ‹œİš[™ÚYJ\Ù\ŠJNÃBƒBˆÚ[™İËœİÜÙÚ[œ˜[™šY[ÏËŠ
+NÃBˆØİ[Y[™Ù][[Y[RY
+	İšY]Ë[ÙÚ[‰ÊK˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆØİ[Y[˜›ÙK˜Û\ÜÓ\İœ™[[İ™J	ÜÙX\ÛÛ˜[[ÙÚ[‹]š\ÚX›IÊNÃBˆØİ[Y[™Ù][[Y[RY
+	İšY]ËY\Ú›Ø\™	ÊK˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆ\Ë\]TÙX\ÛÛ˜[Y™™XİÊ\ËœÙX\ÛÛ˜[[YJNÃBˆØİ[Y[™Øİ[Y[[[Y[˜Û\ÜÓ\İœ™[[İ™J	Ø]]\Ù\ÜÚ[Û‹\[™[™ÉÊNÃBˆ\Ë˜\Q\šÓ[ÙJ
+NÃBˆØİ[Y[™Ù][[Y[RY
+	ØÚ]Y›Ø][™ËX]Û‹XÛÛZ[™\‰ÊK˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆØİ[Y[™Ù][[Y[RY
+	ØÚ]Y\ÚİÜ]Ú[™İÜÉÊOË˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBƒBˆ\ËœÙ[™X\™X]
+
+NÃBˆYˆ
+\ËšX\™X][Y\ŠHÛX\’[\˜[
+\ËšX\™X][Y\ŠNÃBˆ\ËšX\™X][Y\ˆHÙ][\˜[
+
+
+HOˆ\ËœÙ[™X\™X]
+
+KŒ
+NÃBˆYˆ
+\Ëœ™\Ù[˜ÙT™Yœ™\Ú[Y\ŠHÛX\’[\˜[
+\Ëœ™\Ù[˜ÙT™Yœ™\Ú[Y\ŠNÃBˆ\Ëœ™\Ù[˜ÙT™Yœ™\Ú[Y\ˆHÙ][\˜[
+
+
+HOˆ\Ëœ™[™\YZ[”™\Ù[˜ÙJ
+KL
+NÃBƒBˆ\ËœÙ]\\Ú›Ø\™RJ
+NÃBˆ\Ëœ™[™\•XÚÜ[ÛœÒ[”Ù[XİÊ
+NÃBˆ\Ë\]Tİ]Ê
+NÃBˆ\Ëœ™[™\•\ÚÜÊ
+NÃBƒBˆYˆ
+\Ë˜İ\œ™[\Ù\‹œ›ÛHOOH	ØYZ[‰ÊHÃBˆ\Ëœ™[™\•XÚšXÚX[œÓ[Ûš]ÜŠ
+NÃBˆ\Ëœ™[™\YZ[]Y]ÙÊ
+NÃBˆCBƒBˆ\Ëš[š]Ú][Ù[J
+NÃBˆ\Ë›\İ[’[˜ÛÛZ[™Õ›ÚXÙPØ[Ê
+NÃBƒBˆCBƒBˆÙÛİ]
+
+HÃBˆÛÛœİ›İÈH™]È]J
+NÃBˆÛÛœİ›Ü›X]YÙÛİ]H	İ\Ë™›Ü›X][YJ›İÊ_H
+\ØÛÛ™XİYÊXÃBƒBˆYˆ
+\Ë˜İ\œ™[\Ù\ˆ	‰ˆÚ[™İË™ŠHÃBˆ‹˜ÛÛXİ[ÛŠ	Ü™\Ù[˜ÚXIÊK™ØÊ\Ë˜İ\œ™[\Ù\‹\Ù\›˜[YKÓİÙ\Ø\ÙJ
+JKœÙ]
+ÃBˆ\İX\™X]ˆBˆ\İÙÚ[ˆ›Ü›X]YÙÛİ]Bˆ‹‹Š\Ë˜İ\œ™[\Ù\‹œ›ÛHOOH	ØYZ[‰ÈÈÈ]˜Z[Xš[]Tİ]\Îˆ	Ù\ØÛÛ›™XİY	ÈHˆßJCBˆKÈY\™ÙNˆYHJK˜Ø]Ú
+HOˆÛÛœÛÛK™\œ›ÜŠJJNÃBˆCBƒBˆ\Ë˜İ\œ™[\Ù\ˆH[ÃBˆ\Ë˜\Q\šÓ[ÙJ
+NÃBˆØY™TİÜ˜YÙKœ™[[İ™R][J	ÜÜÛœ›×ÜÙ\ÜÚ[Û—İ	ÊNÃBˆYˆ
+\ËšX\™X][Y\ŠHÛX\’[\˜[
+\ËšX\™X][Y\ŠNÃBˆYˆ
+\Ëœ™\Ù[˜ÙT™Yœ™\Ú[Y\ŠHÛX\’[\˜[
+\Ëœ™\Ù[˜ÙT™Yœ™\Ú[Y\ŠNÃBˆ\ËœÚİÓÙÚ[•šY]Ê
+NÃBˆCBƒBˆÙ[™X\™X]
+
+HÃBˆYˆ
+]\Ë˜İ\œ™[\Ù\ŠH™]\›ÃBˆÛÛœİ›İÈH]K››İÊ
+NÃBˆYˆ
+Ú[™İË™ŠHÃBˆ‹˜ÛÛXİ[ÛŠ	Ü™\Ù[˜ÚXIÊK™ØÊ\Ë˜İ\œ™[\Ù\‹\Ù\›˜[YKÓİÙ\Ø\ÙJ
+JKœÙ]
+ÃBˆ\Ù\›˜[YNˆ\Ë˜İ\œ™[\Ù\‹\Ù\›˜[YKBˆ[˜[YNˆ\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+KBˆ\İX\™X]ˆ›İËBˆİÎˆ\Ë˜İ\œ™[\Ù\‹œİÈ	ÉËBˆ›ÛNˆ\Ë˜İ\œ™[\Ù\‹œ›ÛCBˆKÈY\™ÙNˆYHJK˜Ø]Ú
+HOˆÛÛœÛÛK™\œ›ÜŠJJNÃBˆCBˆYˆ
+\Ë˜İ\œ™[\Ù\‹œ›ÛHOOH	ØYZ[‰ÊH\Ëœ™[™\•XÚšXÚX[œÓ[Ûš]ÜŠ
+NÃBˆCBƒBˆÙÙÛT\ÜİÛÜ™š\ÚXš[]JšY[Y
+HÃBˆÛÛœİ[œ]HØİ[Y[™Ù][[Y[RY
+šY[Y
+NÃBˆ[œ]\HH[œ]\HOOH	Ü\ÜİÛÜ™	ÈÈ	İ^	Èˆ	Ü\ÜİÛÜ™	ÎÃBˆCBƒBˆÙ]\\Ú›Ø\™RJ
+HÃBˆÛÛœİ\ĞYZ[ˆH\Ë˜İ\œ™[\Ù\‹œ›ÛHOOH	ØYZ[‰ÎÃBƒBˆØİ[Y[™Ù][[Y[RY
+	ÚXY\‹]\Ù\‹[˜[YIÊK^ÛÛ[H\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+NÃBˆØİ[Y[™Ù][[Y[RY
+	ÚXY\‹\›ÛKX˜YÙIÊK^ÛÛ[H\ĞYZ[ˆÈ	ĞYZ[‰Èˆ	Õ0êXÛšXÛÉÎÃBˆÛÛœİXY\”›ÛTİX]HHØİ[Y[™Ù][[Y[RY
+	ÚXY\‹\›ÛK\İX]IÊNÃBˆYˆ
+XY\”›ÛTİX]JHÈXY\”›ÛTİX]K^ÛÛ[H\ĞYZ[ˆÈ	ĞYZ[š\İ˜YÜ‰Èˆ	Õ˜X˜Z˜YÜ‰ÎÈXY\”›ÛTİX]K˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÈCBˆØİ[Y[™Ù][[Y[RY
+	ØYZ[‹\™\Ù[˜ÙKXÛÛ›Û	ÊOË˜Û\ÜÓ\İÙÙÛJ	ÚY[‰ËZ\ĞYZ[ŠNÃBƒBˆÛÛœİXY\”İÈHØİ[Y[™Ù][[Y[RY
+	ÚXY\‹]\Ù\‹\İÉÊNÃBˆÛÛœİXY\’[š]HØİ[Y[™Ù][[Y[RY
+	ÚXY\‹X]˜]\‹Z[š]X[	ÊNÃBˆÛÛœİXY\‘\Ü^TİÈH\Ë™Ù]İ\œ™[\Ü^TİÊ
+NÃBˆYˆ
+XY\‘\Ü^TİÊHÃBˆXY\”İËœÜ˜ÈHXY\‘\Ü^TİÎÃBˆXY\”İË˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆXY\’[š]˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆH[ÙHÃBˆXY\”İË˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆXY\’[š]˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆXY\’[š]^ÛÛ[H
+\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+H	ĞIÊK˜Ú\]
+
+NÃBˆCBƒBˆÛÛœİ[Ûš]Ü”ÙXİ[ÛˆHØİ[Y[™Ù][[Y[RY
+	ÜÙXİ[Û‹]XÚšXÚX[œË[[Ûš]Ü‰ÊNÃBˆÛÛœİš[\•XÚHØİ[Y[™Ù][[Y[RY
+	Ùš[\‹]XÚ	ÊNÃBˆÛÛœİš[\•XÚÛÛ›ÛHØİ[Y[™Ù][[Y[RY
+	Ùš[\‹]XÚXÛÛ›Û	ÊNÃBˆÛÛœİ]Y]ÙÔÙXİ[ÛˆHØİ[Y[™Ù][[Y[RY
+	ÜÙXİ[Û‹XYZ[‹X]Y][ÙÉÊNÃBˆ\Ëš[œİ[Ü™\‘š[\‘\ÛZ\ÜÒ[™\œÊ
+NÃBƒBˆÛÛœİ”™\Ù][™[™ÈHØİ[Y[™Ù][[Y[RY
+	Ø‹\™\Ù]\[™[™ÉÊNÃBˆÛÛœİ”™\Ù]Û™HHØİ[Y[™Ù][[Y[RY
+	Ø‹\™\Ù]YÛ™IÊNÃBˆÛÛœİ”™\Ù]˜Z[YHØİ[Y[™Ù][[Y[RY
+	Ø‹\™\Ù]Y˜Z[Y	ÊNÃBˆÛÛœİ\ÜÚYÛ“Ü™\‘š[\ˆHØİ[Y[™Ù][[Y[RY
+	Ø‹X\ÜÚYÛ‹[Ü™\‹Yš[\‰ÊNÃBˆÛÛœİÜ™\œÕÛÛ˜\ˆHØİ[Y[™Ù][[Y[RY
+	ÛÜ™\œË]ÛÛ˜\‰ÊNÃBƒBˆYˆ
+\ĞYZ[ŠHÃBˆÜ™\œÕÛÛ˜\Ë˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆ\ÜÚYÛ“Ü™\‘š[\Ë˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆ[Ûš]Ü”ÙXİ[Û‹˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆš[\•XÚ˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆš[\•XÚÛÛ›ÛË˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆš[\•XÚ™\ØX›YH˜[ÙNÃBˆ]Y]ÙÔÙXİ[Û‹˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBƒBˆYˆ
+”™\Ù][™[™ÊH”™\Ù][™[™Ë˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆYˆ
+”™\Ù]Û™JH”™\Ù]Û™K˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆYˆ
+”™\Ù]˜Z[Y
+H”™\Ù]˜Z[Y˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆH[ÙHÃBˆÜ™\œÕÛÛ˜\Ë˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆ\ÜÚYÛ“Ü™\‘š[\Ë˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆ[Ûš]Ü”ÙXİ[Û‹˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆš[\•XÚ˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆš[\•XÚÛÛ›ÛË˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆš[\•XÚ™\ØX›YHYNÃBˆ]Y]ÙÔÙXİ[Û‹˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBƒBˆYˆ
+”™\Ù][™[™ÊH”™\Ù][™[™Ë˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆYˆ
+”™\Ù]Û™JH”™\Ù]Û™K˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆYˆ
+”™\Ù]˜Z[Y
+H”™\Ù]˜Z[Y˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆCBƒBˆ\Ëœ™[™\“Ü™\‘š[\“Y[\Ê
+NÃBˆÛÛœİ˜[›™\ˆHØİ[Y[™Ù][[Y[RY
+	Ù\Ú›Ø\™X˜[›™\‰ÊNÃBˆYˆ
+\ĞYZ[ŠHÃBˆ˜[›™\‹˜Û\ÜÓ˜[YHH	ÛX‹MÛN›X‹MHLËHÛNœM›İ[™YL›^›^XÛÛÛN™›^\›İÈ][\Ë\İ\ÛNš][\ËXÙ[\ˆ\İYKX™]ÙY[ˆ›Ü™\ˆÚYİË\ÛH™ËYÜ˜YY[]Ë\ˆœ›ÛK\Û]KNMLšXKXœ˜[™Y\šÈË\Û]KNL^]Ú]H›Ü™\‹Xœ˜[™[[YKÍ	ÎÃBˆ˜[›™\‹š[›™\’SHBˆ]ƒBˆÈÛ\ÜÏH™›ÛY^˜X›Û^^ÈÛN^\ÛH^]Ú]H”[™[Ù[˜[HÜ\˜XÚ[Û™\ÏÚÏƒBˆÛ\ÜÏH^VÌL\HÛN^^È^\Û]KLÌ]LH\ÚYÛ˜H0ìÜ™[™\Ëİ\\š\ØH0êXÛšXÛÜÈ[ˆX\HÔÈHÛÛ][°ëXØ]HÜˆÚ]H›Ş‹ÜƒBˆÙ]ƒBˆ]ˆÛ\ÜÏH›]LˆÛN›]L›^][\ËXÙ[\ˆ\İYKXÙ[\ˆÛNš\İYKY[™Ø\LˆÙ[‹XÙ[\ˆÛNœÙ[‹X]]ÈƒBˆ]Ûˆ\OH˜]Ûˆˆ\šXK[X™[H•™\ˆX\HÔÈˆ]OH•™\ˆX\HÔÈˆÛ˜ÛXÚÏH˜\›Ü[YZ[‘ÜÓ[Ù[
+
+HˆÛ\ÜÏH™Ü›İ\Úš[šËLİ\œÛÜ‹\Ú[\ˆ›İ[™YL›Ü™\‹L™Ë]˜[œÜ\™[LÚYİË[›Û™H˜[œÚ][Û‹]˜[œÙ›Ü›Hİ™\œØØ[KLLHXİ]™NœØØ[KNMH›Øİ\Ë]š\ÚX›N›İ][™K[›Û™H›Øİ\Ë]š\ÚX›Nœš[™ËLˆ›Øİ\Ë]š\ÚX›Nœš[™ËXŞX[‹MƒBˆ[YÈÜ˜ÏH˜\ÜÙ]ËÛYYXKØ›İÛ‹]™\‹[X\KYÜËœ™Èˆ[H•™\ˆX\HÔÈˆÛ\ÜÏH˜›ØÚÈLŒËLŒØš™XİXÛÛZ[ˆÛNšLÛNËLYšLYËLƒBˆØ]ÛƒBˆÙ]ƒBˆÃBˆH[ÙHÃBˆ˜[›™\‹˜Û\ÜÓ˜[YHH	ÛX‹MÛN›X‹MHLËHÛNœM›İ[™YL›^›^XÛÛÛN™›^\›İÈ][\Ë\İ\ÛNš][\ËXÙ[\ˆ\İYKX™]ÙY[ˆ›Ü™\ˆÚYİË\ÛH™ËYÜ˜YY[]Ë\ˆœ›ÛK\Û]KNLšXKXœ˜[™Y\šÈË\Û]KNML^]Ú]H›Ü™\‹Xœ˜[™[[YKÍ	ÎÃBˆ˜[›™\‹š[›™\’SHBˆ]ƒBˆÈÛ\ÜÏH™›ÛY^˜X›Û^^ÈÛN^\ÛH^]Ú]HšY[™[šYË	İ\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+_OÚÏƒBˆÛ\ÜÏH^VÌL\HÛN^^È^\Û]KLÌ]LH”™]š\ØH\Èš\Ú]\È\ÚYÛ˜Y\ËÛÛ\\HÜÚXÚpìÛˆÈ[XH[YZ[š\İ˜YÜ‹ÜƒBˆ]ˆYHÛÜšÙ\‹XYZ[‹\™\Ù[˜ÙKY\Ú›Ø\™ˆÛ\ÜÏH›]LˆÙ]ƒBˆÙ]ƒBˆ]ˆÛ\ÜÏH›]LˆÛN›]L›^][\ËXÙ[\ˆØ\LˆƒBˆ]ÛˆÛ˜ÛXÚÏH˜\œİ\›ÚXÙPØ[
+
+HˆÛ\ÜÏH^^È›ÛX›ÛLÈKLKH›İ[™Y^™ËY[Y\˜[MŒİ™\˜™ËY[Y\˜[ML^]Ú]H›^][\ËXÙ[\ˆØ\LHÚYİÈ˜[œÚ][ÛˆXİ]™NœØØ[KNMHƒBˆH]K[XÚYOHœÛ™HˆÛ\ÜÏHËLËHLËHÚOˆ[X\ˆYZ[ƒBˆØ]ÛƒBˆ]ÛˆYH˜‹]ÛÜšÙ\‹]ÙÙÛKYÜÈˆÛ˜ÛXÚÏH˜\ÙÙÛUÛÜšÙ\‘ÜÊ
+HˆÛ\ÜÏH^^È›ÛX›ÛLÈKLKH›İ[™Y^›Ü™\ˆ›^][\ËXÙ[\ˆØ\LKHÚYİÈ˜[œÚ][ÛˆXİ]™NœØØ[KNMH™Ë\Û]KN^\Û]KLŒ›Ü™\‹\Û]KMÌİ™\˜›Ü™\‹XŞX[‹MƒBˆÜ[ˆÛ\ÜÏHËLˆLˆ›İ[™YY[™Ë\Û]KMˆYHÛÜšÙ\‹YÜËYİÜÜ[ƒBˆÜ[ˆYHÛÜšÙ\‹YÜË[X™[¼'äãHXİ]˜\ˆÔÏÜÜ[ƒBˆØ]ÛƒBˆÙ]ƒBˆÃBˆCBƒBˆ\Ëœ™[™\YZ[”™\Ù[˜ÙJ
+NÃBˆYˆ
+Ú[™İË›XÚYJHXÚYK˜Ü™X]RXÛÛœÊ
+NÃBˆCBƒBˆÙ]İ\œ™[\Ü^TİÊ\Ù\ˆH\Ë˜İ\œ™[\Ù\ŠHÃBˆYˆ
+]\Ù\ŠH™]\›ˆ	ÉÎÃBˆYˆ
+İš[™Ê\Ù\‹œ›ÛH	ÉÊKÓİÙ\Ø\ÙJ
+HOOH	ØYZ[‰ÊH™]\›ˆ\Ë˜YZ[’Y[]TİÜÖİ\Ë˜Xİ]™PYZ[“˜[YWH\Ù\‹œİÈ	ÉÎÃBˆ™]\›ˆ\Ù\‹œİÈ	ÉÎÃBˆCBƒBˆ\PYZ[’Y[]T™\Ù[˜ÙJ™XÛÜ™HßJHÃBˆYˆ
+\œ˜^Kš\Ğ\œ˜^J™XÛÜ™˜YZ[’Y[]S˜[Y\ÊH	‰ˆ™XÛÜ™˜YZ[’Y[]S˜[Y\Ë›[™İOOHŠHÈÛÛœİ˜[Y\ÈH™XÛÜ™˜YZ[’Y[]S˜[Y\Ë›X\
+˜[YHOˆİš[™Ê˜[YH	ÉÊKš[J
+JNÈYˆ
+˜[Y\Ë™]™\J›ÛÛX[ŠJH\Ë˜YZ[’Y[]S˜[Y\ÈH˜[Y\ÎÈCBˆYˆ
+™XÛÜ™˜YZ[’Y[]TİÜÈ	‰ˆ\[Ùˆ™XÛÜ™˜YZ[’Y[]TİÜÈOOH	ÛØš™Xİ	ÊH\Ë˜YZ[’Y[]TİÜÈHÈ‹‹œ™XÛÜ™˜YZ[’Y[]TİÜÈNÃBˆYˆ
+™XÛÜ™˜Xİ]™PYZ[“˜[YJH\Ë˜Xİ]™PYZ[“˜[YHHİš[™Ê™XÛÜ™˜Xİ]™PYZ[“˜[YJNÃBˆYˆ
+\Ë˜İ\œ™[\Ù\Ëœ›ÛHOOH	ØYZ[‰È	‰ˆ™XÛÜ™˜Xİ]™PYZ[“˜[YJHÈ\Ë˜İ\œ™[\Ù\‹˜Xİ]™PYZ[“˜[YHH\Ë˜Xİ]™PYZ[“˜[YNÈØY™TİÜ˜YÙKœÙ]][J	ÜÜÛœ›×ÜÙ\ÜÚ[Û—İ	Ë”ÓÓ‹œİš[™ÚYJ\Ë˜İ\œ™[\Ù\ŠJNÈCBˆYˆ
+\Ë˜Xİ]™PYZ[“˜[YJHØY™TİÜ˜YÙKœÙ]][J	ÜÜÛœ›×ØYZ[—ÚY[]WØØXÚWİŒIË”ÓÓ‹œİš[™ÚYJÈ˜[Y\Îˆ\Ë˜YZ[’Y[]S˜[Y\ËİÜÎˆ\Ë˜YZ[’Y[]TİÜËXİ]™S˜[YNˆ\Ë˜Xİ]™PYZ[“˜[YHJJNÃBˆCBƒBˆÙ]Ú]Y\ÜØYÙTÙ[™\ŠY\ÜØYÙJHÃBˆÛÛœİÙ[™\“˜[YHHİš[™ÊY\ÜØYÙOËœÙ[™\“˜[YH	ÉÊKš[J
+NÃBˆÛÛœİÙ[™\”›ÛHHİš[™ÊY\ÜØYÙOËœÙ[™\”›ÛH	ÉÊKÓİÙ\Ø\ÙJ
+NÃBˆYˆ
+Ù[™\”›ÛHOOH	ØYZ[‰ÊHÃBˆÛÛœİYZ[’[™›ÈH\Ë™Ù]YZ[”™\Ù[˜ÙR[™›Ê
+NÃBˆÛÛœİ˜[YHHÙ[™\“˜[YHYZ[’[™›Ë›˜[YH	ĞYZ[š\İ˜YÜ‰ÎÃBˆÛÛœİİÈH\Ë˜YZ[’Y[]TİÜÖÛ˜[YWH
+˜[YHOOH\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+HÈ\Ë™Ù]İ\œ™[\Ü^TİÊ
+Hˆ	ÉÊHYZ[’[™›ËœİÈ	ÉÎÃBˆ™]\›ˆÈ˜[YKİÈNÃBˆCBˆÛÛœİÛÜšÙ\ˆH\ËÛÜšÙ\œË™š[™
+][HOˆÚ][K™[˜[YK][K\Ù\›˜[YWKœÛÛYJ˜[YHOˆİš[™Ê˜[YH	ÉÊKÓØØ[SİÙ\Ø\ÙJ
+HOOHÙ[™\“˜[YKÓØØ[SİÙ\Ø\ÙJ
+JJNÃBˆ™]\›ˆÈ˜[YNˆÙ[™\“˜[YHÛÜšÙ\Ë™[˜[YHÛÜšÙ\Ë\Ù\›˜[YH	Õ0êXÛšXÛÉËİÎˆÛÜšÙ\ËœİÈ	ÉÈNÃBˆCBˆÙ]İ\œ™[\Ü^S˜[YJ\Ù\ˆH\Ë˜İ\œ™[\Ù\ŠHÃBˆYˆ
+]\Ù\ŠH™]\›ˆ	ÉÎÃBˆYˆ
+İš[™Ê\Ù\‹œ›ÛH	ÉÊKÓİÙ\Ø\ÙJ
+HOOH	ØYZ[‰ÊH™]\›ˆ\Ë˜Xİ]™PYZ[“˜[YH\Ù\‹˜Xİ]™PYZ[“˜[YH\Ù\‹™[˜[YH\Ù\‹\Ù\›˜[YH	ĞYZ[š\İ˜YÜ‰ÎÃBˆ™]\›ˆ\Ù\‹™[˜[YH\Ù\‹\Ù\›˜[YH	ÉÎÃBˆCBƒBˆ™[™\YZ[’Y[]Y\Ê
+HÃBˆÛÛœİ\İHØİ[Y[™Ù][[Y[RY
+	ØYZ[‹ZY[]Y\Ë[\İ	ÊNÃBˆYˆ
+[\İ\Ë˜İ\œ™[\Ù\Ëœ›ÛHOOH	ØYZ[‰ÊH™]\›ÃBˆÛÛœİXİ]™HH\Ë˜Xİ]™PYZ[“˜[YNÃBˆ\İš[›™\’SH\Ë˜YZ[’Y[]S˜[Y\Ë›X\
+
+˜[YK[™^
+HOˆÃBˆÛÛœİİÈH\Ë˜YZ[’Y[]TİÜÖÛ˜[YWH	ÉÎÃBˆÛÛœİ]˜]\ˆHİÃBˆÈ[YÈÜ˜ÏH‰İ\Ë™\ØØ\R[
+İÊ_Hˆ[H‘›İÈH	İ\Ë™\ØØ\R[
+˜[YJ_HˆÛ\ÜÏHšY[ËY[Øš™XİXÛİ™\ˆ˜Bˆˆ\Ë™\ØØ\R[
+˜[YK˜Ú\]
+
+KÕ\\Ø\ÙJ
+JNÃBˆ™]\›ˆBˆ]ˆÛ\ÜÏH™›^][\ËXÙ[\ˆØ\Lˆ›İ[™Y[È›Ü™\ˆ	ØXİ]™HOOH˜[YHÈ	Ø›Ü™\‹Xœ˜[™[[YH™Ë[[YKML	Èˆ	Ø›Ü™\‹\Û]KLŒ™Ë]Ú]IßHL‹HKLˆƒBˆ]Ûˆ\OH˜]ÛˆˆÛ˜ÛXÚÏH˜\œÙ[XİYZ[’Y[]J	Ú[™^JHˆÛ\ÜÏH™›^Z[‹]ËL›^LH][\ËXÙ[\ˆØ\Lˆ^[YƒBˆÜ[ˆÛ\ÜÏHœÙX\ÛÛ˜[]ÛÜšÙ\‹X]˜]\ˆ™[]]™H›^NHËNHÚš[šËL][\ËXÙ[\ˆ\İYKXÙ[\ˆİ™\™›İËZY[ˆ›İ[™YY[›Ü™\ˆ›Ü™\‹\Û]KLŒ™Ë\Û]KLL^^È›ÛX›XÚÈ^\Û]KMŒ‰Ø]˜]\ŸOÜÜ[ƒBˆÜ[ˆÛ\ÜÏHšMËMÚš[šËL›İ[™YY[›Ü™\ˆ	ØXİ]™HOOH˜[YHÈ	Ø›Ü™\‹Xœ˜[™[[YH™ËXœ˜[™[[YHš[™ËLˆš[™Ë[[YKLŒ	Èˆ	Ø›Ü™\‹\Û]KLÌ™Ë]Ú]IßHÜÜ[ƒBˆÜ[ˆÛ\ÜÏH[˜Ø]H^^È›ÛX›Û^\Û]KN‰İ\Ë™\ØØ\R[
+˜[YJ_OÜÜ[ƒBˆ	ØXİ]™HOOH˜[YHÈ	ÏÜ[ˆÛ\ÜÏH›[X]]È^VÎ\H›ÛX›Û\\˜Ø\ÙH^Y[Y\˜[MÌ‘[ˆ\ÛÏÜÜ[‰Èˆ	ÉßCBˆØ]ÛƒBˆ]Ûˆ\OH˜]ÛˆˆÛ˜ÛXÚÏH˜\˜™YÚ[YZ[’Y[]QY]
+	Ú[™^JHˆÛ\ÜÏHœ›İ[™Y[YLKH^\Û]KMİ™\˜™Ë\Û]KLLİ™\^Xœ˜[™Y\šÈˆ]OH‘Y]\ˆ	İ\Ë™\ØØ\R[
+˜[YJ_Hˆ\šXK[X™[H‘Y]\ˆ	İ\Ë™\ØØ\R[
+˜[YJ_HH]K[XÚYOHœ[˜Ú[ˆÛ\ÜÏHšLËHËLËHÚOØ]ÛƒBˆÙ]ƒBˆÃBˆJKš›Ú[Š	ÉÊNÃBˆYˆ
+Ú[™İË›XÚYJHXÚYK˜Ü™X]RXÛÛœÊ
+NÃBˆCBˆ\Ş[˜ÈØ]™PYZ[’Y[]TÙ][™ÜÊ˜[Y\ËXİ]™S˜[YKİÜÈH\Ë˜YZ[’Y[]TİÜÊHÃBˆYˆ
+]Ú[™İË™ˆ\Ë˜İ\œ™[\Ù\Ëœ›ÛHOOH	ØYZ[‰ÊH›İÈ™]È\œ›ÜŠ	Ó›È^HÙ\ÚpìÛˆHYZ[š\İ˜YÜˆÛÛ™XİYIÊNÃBˆÛÛœİ\Ù\›˜[YHHİš[™Ê\Ë˜İ\œ™[\Ù\‹\Ù\›˜[YH	ÉÊKÓİÙ\Ø\ÙJ
+NÃBˆ]ØZ]‹˜ÛÛXİ[ÛŠ	Ü™\Ù[˜ÚXIÊK™ØÊ\Ù\›˜[YJKœÙ]
+ÃBˆ\Ù\›˜[YNˆ\Ë˜İ\œ™[\Ù\‹\Ù\›˜[YKBˆ[˜[YNˆXİ]™S˜[YH\Ë˜İ\œ™[\Ù\‹™[˜[YH\Ë˜İ\œ™[\Ù\‹\Ù\›˜[YKBˆ›ÛNˆ	ØYZ[‰ËBˆİÎˆ\Ë˜İ\œ™[\Ù\‹œİÈ	ÉËBˆYZ[’Y[]S˜[Y\Îˆ˜[Y\ËBˆYZ[’Y[]TİÜÎˆİÜËBˆXİ]™PYZ[“˜[YNˆXİ]™S˜[YH	ÉÃBˆKÈY\™ÙNˆYHJNÃBˆ\Ë˜YZ[’Y[]S˜[Y\ÈH˜[Y\ÎÃBˆ\Ë˜YZ[’Y[]TİÜÈHÈ‹‹œİÜÈNÃBˆ\Ë˜Xİ]™PYZ[“˜[YHHXİ]™S˜[YH	ÉÎÃBˆ\Ë˜İ\œ™[\Ù\‹˜Xİ]™PYZ[“˜[YHH\Ë˜Xİ]™PYZ[“˜[YNÃBˆØY™TİÜ˜YÙKœÙ]][J	ÜÜÛœ›×ÜÙ\ÜÚ[Û—İ	Ë”ÓÓ‹œİš[™ÚYJ\Ë˜İ\œ™[\Ù\ŠJNÃBˆØY™TİÜ˜YÙKœÙ]][J	ÜÜÛœ›×ØYZ[—ÚY[]WØØXÚWİŒIË”ÓÓ‹œİš[™ÚYJÈ˜[Y\ËİÜÎˆ\Ë˜YZ[’Y[]TİÜËXİ]™S˜[YNˆ\Ë˜Xİ]™PYZ[“˜[YHJJNÃBˆ\Ëœ™\Ù[˜ÙT™XÛÜ™Öİ\Ù\›˜[YWHHÈ‹‹Š\Ëœ™\Ù[˜ÙT™XÛÜ™Öİ\Ù\›˜[YWHßJKYZ[’Y[]S˜[Y\Îˆ˜[Y\ËYZ[’Y[]TİÜÎˆÈ‹‹œİÜÈKXİ]™PYZ[“˜[YNˆXİ]™S˜[YH	ÉË[˜[YNˆXİ]™S˜[YH\Ë˜İ\œ™[\Ù\‹™[˜[YH\Ë˜İ\œ™[\Ù\‹\Ù\›˜[YKİÎˆ\Ë˜İ\œ™[\Ù\‹œİÈ	ÉÈNÃBˆ\ËœÙ]\\Ú›Ø\™RJ
+NÃBˆ\Ëœ™[™\YZ[’Y[]Y\Ê
+NÃBˆ\Ëœ™[™\YZ[”™\Ù[˜ÙJ
+NÃBˆ\Ëœ™[™\“^TÙ][™ÜÔİÔ™]šY]Ê
+NÃBˆYˆ
+\Ë˜Xİ]™PÚ]ÛÜšÙ\ŠH\Ëœ™[™\ÛÛ™\œØ][ÛœÔÚYX˜\Š
+NÃBˆCBƒBˆ\Ş[˜ÈÙ[XİYZ[’Y[]J[™^
+HÃBˆYˆ
+\Ë˜İ\œ™[\Ù\Ëœ›ÛHOOH	ØYZ[‰È]\Ë˜YZ[’Y[]S˜[Y\ÖÚ[™^JH™]\›ÃBˆHÃBˆ]ØZ]\ËœØ]™PYZ[’Y[]TÙ][™ÜÊË‹‹\Ë˜YZ[’Y[]S˜[Y\×K\Ë˜YZ[’Y[]S˜[Y\ÖÚ[™^K\Ë˜YZ[’Y[]TİÜÊNÃBˆ\ËœÚİÕØ\İ
+ZÜ˜H\\™XÙ\ÈÛÛ[È	İ\Ë˜YZ[’Y[]S˜[Y\ÖÚ[™^_X	ÜİXØÙ\ÜÉÊNÃBˆHØ]Ú
+\œ›ÜŠHÃBˆÛÛœÛÛK™\œ›ÜŠ	ÖÒQS•QQH›ÈÙHYÈÙ[XØÚ[Û˜\ˆ[›ÛXœ™N‰Ë\œ›ÜŠNÃBˆ\ËœÚİÕØ\İ
+	Ó›ÈÙHYÈİX\™\ˆ[›ÛXœ™H[YÚYÉË	Ù\œ›Ü‰ÊNÃBˆCBˆCBƒBˆ™YÚ[YZ[’Y[]QY]
+[™^
+HÃBˆYˆ
+\Ë˜İ\œ™[\Ù\Ëœ›ÛHOOH	ØYZ[‰È]\Ë˜YZ[’Y[]S˜[Y\ÖÚ[™^JH™]\›ÃBˆ\Ë˜YZ[’Y[]QY][™Ò[™^H[™^ÃBˆ\Ë˜YZ[’Y[]TİÑ˜YH[ÃBˆÛÛœİY]ÜˆHØİ[Y[™Ù][[Y[RY
+	ØYZ[‹ZY[]KYY]Ü‰ÊNÃBˆÛÛœİ[œ]HØİ[Y[™Ù][[Y[RY
+	ØYZ[‹ZY[]K[˜[YKZ[œ]	ÊNÃBˆÛÛœİİÒ[œ]HØİ[Y[™Ù][[Y[RY
+	ØYZ[‹ZY[]K\İËYš[IÊNÃBˆYˆ
+İÒ[œ]
+HİÒ[œ]˜[YHH	ÉÎÃBˆYˆ
+YY]ÜˆZ[œ]
+H™]\›ÃBˆ[œ]˜[YHH\Ë˜YZ[’Y[]S˜[Y\ÖÚ[™^NÃBˆ\Ë\]PYZ[’Y[]TİÔ™]šY]Ê\Ë˜YZ[’Y[]TİÜÖİ\Ë˜YZ[’Y[]S˜[Y\ÖÚ[™^WH	ÉÊNÃBˆY]Ü‹˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆ[œ]™›Øİ\Ê
+NÃBˆ[œ]œÙ[Xİ
+
+NÃBˆCBƒBˆØ[˜Ù[YZ[’Y[]QY]
+
+HÃBˆ\Ë˜YZ[’Y[]QY][™Ò[™^H[ÃBƒBˆ\Ë˜YZ[’Y[]TİÑ˜YH[ÃBˆØİ[Y[™Ù][[Y[RY
+	ØYZ[‹ZY[]KYY]Ü‰ÊOË˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆCBƒBˆ\Ş[˜ÈØ]™PYZ[’Y[]QY]
+
+HÃBˆÛÛœİ[™^H\Ë˜YZ[’Y[]QY][™Ò[™^ÃBˆÛÛœİ[œ]HØİ[Y[™Ù][[Y[RY
+	ØYZ[‹ZY[]K[˜[YKZ[œ]	ÊNÃBˆÛÛœİİÒ[œ]HØİ[Y[™Ù][[Y[RY
+	ØYZ[‹ZY[]K\İËYš[IÊNÃBˆYˆ
+İÒ[œ]
+HİÒ[œ]˜[YHH	ÉÎÃBˆÛÛœİ™]Ó˜[YHHİš[™Ê[œ]Ë˜[YH	ÉÊKš[J
+NÃBˆYˆ
+[™^OOH[]\Ë˜YZ[’Y[]S˜[Y\ÖÚ[™^JH™]\›ÃBˆYˆ
+[™]Ó˜[YJH™]\›ˆ\ËœÚİÕØ\İ
+	Ñ\ØÜšX™H[ˆ›ÛXœ™H°è[YÉË	Ù\œ›Ü‰ÊNÃBˆYˆ
+\Ë˜YZ[’Y[]S˜[Y\ËœÛÛYJ
+˜[YKİ\’[™^
+HOˆİ\’[™^OOH[™^	‰ˆ˜[YKÓØØ[SİÙ\Ø\ÙJ
+HOOH™]Ó˜[YKÓØØ[SİÙ\Ø\ÙJ
+JJH™]\›ˆ\ËœÚİÕØ\İ
+	ÓÜÈÜÈ›ÛXœ™\ÈX™[ˆÙ\ˆY™\™[\ÉË	Ù\œ›Ü‰ÊNÃBˆÛÛœİÛ˜[YHH\Ë˜YZ[’Y[]S˜[Y\ÖÚ[™^NÃBˆÛÛœİ˜[Y\ÈHË‹‹\Ë˜YZ[’Y[]S˜[Y\×NÃBˆ˜[Y\ÖÚ[™^HH™]Ó˜[YNÃBˆÛÛœİXİ]™S˜[YHH\Ë˜Xİ]™PYZ[“˜[YHOOHÛ˜[YHÈ™]Ó˜[YHˆ\Ë˜Xİ]™PYZ[“˜[YNÃBˆÛÛœİİÜÈHÈ‹‹\Ë˜YZ[’Y[]TİÜÈNÃBˆÛÛœİÛİÈHİÜÖÛÛ˜[YWH	ÉÎÃBˆ[]HİÜÖÛÛ˜[YWNÃBˆİÜÖÛ™]Ó˜[YWHH\Ë˜YZ[’Y[]TİÑ˜YOOH[ÈÛİÈˆ\Ë˜YZ[’Y[]TİÑ˜YÃBˆHÃBˆ]ØZ]\ËœØ]™PYZ[’Y[]TÙ][™ÜÊ˜[Y\ËXİ]™S˜[YKİÜÊNÃBˆ\Ë˜Ø[˜Ù[YZ[’Y[]QY]
+
+NÃBˆ\ËœÚİÕØ\İ
+	Ó›ÛXœ™HXİX[^˜YÉË	ÜİXØÙ\ÜÉÊNÃBˆHØ]Ú
+\œ›ÜŠHÃBˆÛÛœÛÛK™\œ›ÜŠ	ÖÒQS•QQH›ÈÙHYÈY]\ˆ[›ÛXœ™N‰Ë\œ›ÜŠNÃBˆ\ËœÚİÕØ\İ
+	Ó›ÈÙHYÈİX\™\ˆ[›ÛXœ™IË	Ù\œ›Ü‰ÊNÃBˆCBˆCBˆ\]PYZ[’Y[]TİÔ™]šY]ÊİÑ]JHÃBˆÛÛœİ™]šY]ÈHØİ[Y[™Ù][[Y[RY
+	ØYZ[‹ZY[]K\İË\™]šY]ÉÊNÃBˆYˆ
+\™]šY]ÊH™]\›ÃBˆYˆ
+İÑ]JH™]šY]Ëš[›™\’SH[YÈÜ˜ÏH‰İ\Ë™\ØØ\R[
+İÑ]J_Hˆ[H•š\İH™]šXHHH›İÈˆÛ\ÜÏHšY[ËY[Øš™XİXÛİ™\ˆ˜ÃBˆ[ÙHÃBˆÛÛœİ˜[YHH\Ë˜YZ[’Y[]S˜[Y\Öİ\Ë˜YZ[’Y[]QY][™Ò[™^H	ÏÉÎÃBˆ™]šY]Ë^ÛÛ[H˜[YK˜Ú\]
+
+KÕ\\Ø\ÙJ
+NÃBˆCBˆCBƒBˆ\Ş[˜È[™PYZ[’Y[]TİÊ]™[
+HÃBˆÛÛœİš[HH]™[\™Ù]™š[\ÏË–ÌNÃBˆYˆ
+Yš[H\Ë˜YZ[’Y[]QY][™Ò[™^OOH[
+H™]\›ÃBˆYˆ
+Yš[K\Kœİ\ÕÚ]
+	Ú[XYÙKÉÊJHÈ\ËœÚİÕØ\İ
+	ÔÙ[XØÚ[Û˜H[ˆ\˜Ú]›ÈH[XYÙ[‰Ë	Ù\œ›Ü‰ÊNÈ]™[\™Ù]˜[YHH	ÉÎÈ™]\›ÈCBˆYˆ
+š[KœÚ^™HˆL
+ˆL
+ˆL
+HÈ\ËœÚİÕØ\İ
+	ÓH[XYÙ[ˆX™H\Ø\ˆY[›ÜÈHLP‰Ë	Ù\œ›Ü‰ÊNÈ]™[\™Ù]˜[YHH	ÉÎÈ™]\›ÈCBˆHÃBˆÛÛœİÛİ\˜ÙHH]ØZ]™]È›ÛZ\ÙJ
+™\ÛÛ™K™Z™Xİ
+HOˆÃBˆÛÛœİ™XY\ˆH™]Èš[T™XY\Š
+NÃBˆ™XY\‹›Û›ØYH
+
+HOˆ™\ÛÛ™J™XY\‹œ™\İ[
+NÃBˆ™XY\‹›Û™\œ›ÜˆH
+
+HOˆ™Z™Xİ
+™]È\œ›ÜŠ	Ó›ÈÙHYÈY\ˆH[XYÙ[‰ÊJNÃBˆ™XY\‹œ™XY\Ñ]UT“
+š[JNÃBˆJNÃBˆÛÛœİ[XYÙHH]ØZ]™]È›ÛZ\ÙJ
+™\ÛÛ™K™Z™Xİ
+HOˆÃBˆÛÛœİ[[Y[H™]È[XYÙJ
+NÃBˆ[[Y[›Û›ØYH
+
+HOˆ™\ÛÛ™J[[Y[
+NÃBˆ[[Y[›Û™\œ›ÜˆH
+
+HOˆ™Z™Xİ
+™]È\œ›ÜŠ	ÓH[XYÙ[ˆ›È\È°è[YIÊJNÃBˆ[[Y[œÜ˜ÈHÛİ\˜ÙNÃBˆJNÃBˆÛÛœİX^ÚYHHÃBˆÛÛœİØØ[HHX]›Z[ŠKX^ÚYHÈX]›X^
+[XYÙK›˜]\˜[ÚY[XYÙK›˜]\˜[ZYÚ
+JNÃBˆÛÛœİØ[˜\ÈHØİ[Y[˜Ü™X]Q[[Y[
+	ØØ[˜\ÉÊNÃBˆØ[˜\ËÚYHX]›X^
+KX]œ›İ[™
+[XYÙK›˜]\˜[ÚY
+ˆØØ[JJNÃBˆØ[˜\ËšZYÚHX]›X^
+KX]œ›İ[™
+[XYÙK›˜]\˜[ZYÚ
+ˆØØ[JJNÃBˆØ[˜\Ë™Ù]ÛÛ^
+	Ì™	ÊK™˜]Ò[XYÙJ[XYÙKØ[˜\ËÚYØ[˜\ËšZYÚ
+NÃBˆ\Ë˜YZ[’Y[]TİÑ˜YHØ[˜\ËÑ]UT“
+	Ú[XYÙKÚœYÉËÎ
+NÃBˆ\Ë\]PYZ[’Y[]TİÔ™]šY]Ê\Ë˜YZ[’Y[]TİÑ˜Y
+NÃBˆ\ËœÚİÕØ\İ
+	Ñ›İÈ\İKˆ[ØHİX\™\ˆØ[Xš[ÜÈ\˜HÛÛ\\\›K‰Ë	ÜİXØÙ\ÜÉÊNÃBˆHØ]Ú
+\œ›ÜŠHÃBˆÛÛœÛÛK™\œ›ÜŠ	ÖÒQS•QQH›ÈÙHYÈ™\\˜\ˆH›İÎ‰Ë\œ›ÜŠNÃBˆ\ËœÚİÕØ\İ
+	Ó›ÈÙHYÈ›ØÙ\Ø\ˆH[XYÙ[‰Ë	Ù\œ›Ü‰ÊNÃBˆCBˆCBƒBˆ™[[İ™PYZ[’Y[]TİÊ
+HÃBˆYˆ
+\Ë˜YZ[’Y[]QY][™Ò[™^OOH[
+H™]\›ÃBˆ\Ë˜YZ[’Y[]TİÑ˜YH	ÉÎÃBˆ\Ë\]PYZ[’Y[]TİÔ™]šY]Ê	ÉÊNÃBˆÛÛœİ[œ]HØİ[Y[™Ù][[Y[RY
+	ØYZ[‹ZY[]K\İËYš[IÊNÃBˆYˆ
+[œ]
+H[œ]˜[YHH	ÉÎÃBˆCBˆÙ]™\Ù[˜ÙTİ]\Ê\Ù\ŠHÃBˆYˆ
+]\Ù\ŠH™]\›ˆ	Ù\ØÛÛ›™XİY	ÎÃBˆÛÛœİ\Ù\›˜[YHHİš[™Ê\Ù\‹\Ù\›˜[YH	ÉÊKÓİÙ\Ø\ÙJ
+NÃBˆÛÛœİ™XÛÜ™H\Ëœ™\Ù[˜ÙT™XÛÜ™Öİ\Ù\›˜[YWHßNÃBˆÛÛœİX\™X]H[X™\Š™XÛÜ™›\İX\™X]ÏÈ\Ù\‹›\İX\™X]ÏÈ
+NÃBˆÛÛœİØ]™Yİ]\ÈH™XÛÜ™˜]˜Z[Xš[]Tİ]\ÎÃBˆYˆ
+Ø]™Yİ]\ÈOOH	ØXœÙ[	ÊH™]\›ˆ	ØXœÙ[	ÎÃBˆYˆ
+Ø]™Yİ]\ÈOOH	Ù\ØÛÛ›™XİY	ÊH™]\›ˆ	Ù\ØÛÛ›™XİY	ÎÃBˆÛÛœİ\ĞXİ]™PYZ[”Ù\ÜÚ[ÛˆHİš[™Ê\Ë˜İ\œ™[\Ù\Ëœ›ÛH	ÉÊKÓİÙ\Ø\ÙJ
+HOOH	ØYZ[‰È	‰ˆ\Ù\›˜[YHOOHİš[™Ê\Ë˜İ\œ™[\Ù\Ë\Ù\›˜[YH	ÉÊKÓİÙ\Ø\ÙJ
+NÃBˆYˆ
+Ø]™Yİ]\ÈOOH	Ø]˜Z[X›IÈ	‰ˆ\ĞXİ]™PYZ[”Ù\ÜÚ[ÛŠH™]\›ˆ	Ø]˜Z[X›IÎÃBˆ™]\›ˆX\™X]ˆ	‰ˆ]K››İÊ
+HHX\™X]ŒÈ	Ø]˜Z[X›IÈˆ	Ù\ØÛÛ›™XİY	ÎÃBˆCBƒBˆÙ]™\Ù[˜ÙSX™[
+İ]\ÊHÃBˆ™]\›ˆ
+È]˜Z[X›Nˆ	Ñ\ÜÛšX›IËXœÙ[ˆ	Ğ]\Ù[IË\ØÛÛ›™XİYˆ	Ñ\ØÛÛ™XİYÉÈJVÜİ]\×H	Ñ\ØÛÛ™XİYÉÎÃBˆCBƒBˆÙ]YZ[”™\Ù[˜ÙR[™›Ê
+HÃBˆÛÛœİYZ[ˆH\Ë\Ù\œË™š[™
+\Ù\ˆOˆİš[™Ê\Ù\‹œ›ÛH	ÉÊKÓİÙ\Ø\ÙJ
+HOOH	ØYZ[‰ÊNÃBˆÛÛœİ™\Ù[˜ÙPYZ[‘[HHØš™Xİ™[šY\Ê\Ëœ™\Ù[˜ÙT™XÛÜ™ÊK™š[™
+
+Ë™XÛÜ™JHOˆİš[™Ê™XÛÜ™Ëœ›ÛH	ÉÊKÓİÙ\Ø\ÙJ
+HOOH	ØYZ[‰ÊNÃBˆÛÛœİ\ĞYZ[”Ù\ÜÚ[ÛˆHİš[™Ê\Ë˜İ\œ™[\Ù\Ëœ›ÛH	ÉÊKÓİÙ\Ø\ÙJ
+HOOH	ØYZ[‰ÎÃBˆÛÛœİYZ[•\Ù\ˆH\ĞYZ[”Ù\ÜÚ[ÛˆÈ\Ë˜İ\œ™[\Ù\ˆˆ
+YZ[ˆ[
+NÃBˆÛÛœİ\Ù\›˜[YHHİš[™ÊYZ[•\Ù\Ë\Ù\›˜[YH™\Ù[˜ÙPYZ[‘[OË–ÌH	ÉÊKÓİÙ\Ø\ÙJ
+NÃBˆÛÛœİ™XÛÜ™H\Ù\›˜[YHÈ
+\Ëœ™\Ù[˜ÙT™XÛÜ™Öİ\Ù\›˜[YWHßJHˆßNÃBˆÛÛœİ™\Ù[˜ÙU\Ù\ˆHYZ[•\Ù\ˆ
+\Ù\›˜[YHÈÈ\Ù\›˜[YK‹‹œ™XÛÜ™Hˆ[
+NÃBˆÛÛœİİ]\ÈH\Ë™Ù]™\Ù[˜ÙTİ]\Ê™\Ù[˜ÙU\Ù\ŠNÃBˆ™]\›ˆÃBˆ˜[YNˆ™XÛÜ™˜Xİ]™PYZ[“˜[YHYZ[•\Ù\Ë˜Xİ]™PYZ[“˜[YH\Ë˜Xİ]™PYZ[“˜[YHYZ[•\Ù\Ë™[˜[YH™XÛÜ™™[˜[YH	ĞYZ[š\İ˜YÜ‰ËBˆİÎˆ™XÛÜ™˜YZ[’Y[]TİÜÏË–Ü™XÛÜ™˜Xİ]™PYZ[“˜[YH\Ë˜Xİ]™PYZ[“˜[YWH\Ë˜YZ[’Y[]TİÜÖÜ™XÛÜ™˜Xİ]™PYZ[“˜[YH\Ë˜Xİ]™PYZ[“˜[YWH™XÛÜ™œİÈYZ[•\Ù\ËœİÈ	ÉËBˆY[]T™XYNˆHJ™XÛÜ™˜Xİ]™PYZ[“˜[YHYZ[•\Ù\Ë˜Xİ]™PYZ[“˜[YH\Ë˜Xİ]™PYZ[“˜[YJKBˆİ]\ËBˆ\ÒX\™X]œ™\Úˆİ]\ÈOOH	Ù\ØÛÛ›™XİY	ÃBˆNÃBˆCBƒBˆ™[™\YZ[”™\Ù[˜ÙJ
+HÃBˆÛÛœİ[™›ÈH\Ë™Ù]YZ[”™\Ù[˜ÙR[™›Ê
+NÃBˆÛÛœİX™[H\Ë™Ù]™\Ù[˜ÙSX™[
+[™›Ëœİ]\ÊNÃBˆÛÛœİİ]PÛ\ÜÈH™\Ù[˜ÙK[X™[\ËIÚ[™›Ëœİ]\ßXÃBˆÛÛœİİ]\ÓX™[HØİ[Y[™Ù][[Y[RY
+	ØYZ[‹\™\Ù[˜ÙK[X™[	ÊNÃBˆÛÛœİ›Ùš[R[™XØ]ÜˆHØİ[Y[™Ù][[Y[RY
+	ÚXY\‹\™\Ù[˜ÙK\›Ùš[IÊNÃBˆÛÛœİ›Ùš[Tİ]\ÈH\Ë˜İ\œ™[\Ù\Ëœ›ÛHOOH	ØYZ[‰ÈÈ[™›Ëœİ]\Èˆ\Ë™Ù]™\Ù[˜ÙTİ]\Ê\Ë˜İ\œ™[\Ù\ŠNÃBˆ›Ùš[R[™XØ]ÜË˜Û\ÜÓ\İÙÙÛJ	Ü™\Ù[˜ÙKXØ\™XÛÛ›™XİY	Ë›Ùš[Tİ]\ÈOOH	Ø]˜Z[X›IÊNÃBˆ›Ùš[R[™XØ]ÜË˜Û\ÜÓ\İÙÙÛJ	Ü™\Ù[˜ÙKXØ\™XXœÙ[	Ë›Ùš[Tİ]\ÈOOH	ØXœÙ[	ÊNÃBˆÛÛœİ[Øš[T›Ùš[Tİ]\ÈHØİ[Y[™Ù][[Y[RY
+	ÚXY\‹]\Ù\‹\İ]\ÉÊNÃBˆYˆ
+[Øš[T›Ùš[Tİ]\ÊHÃBˆÛÛœİ\ĞYZ[ˆH\Ë˜İ\œ™[\Ù\Ëœ›ÛHOOH	ØYZ[‰ÎÃBˆ[Øš[T›Ùš[Tİ]\Ë^ÛÛ[H\Ë™Ù]™\Ù[˜ÙSX™[
+›Ùš[Tİ]\ÊNÃBˆ[Øš[T›Ùš[Tİ]\Ë˜Û\ÜÓ˜[YHH^VÎH›Û\Ù[ZX›Û	Ü›Ùš[Tİ]\ÈOOH	Ø]˜Z[X›IÈÈ	İ^Y[Y\˜[LÌ	Èˆ›Ùš[Tİ]\ÈOOH	ØXœÙ[	ÈÈ	İ^X[X™\‹LÌ	Èˆ	İ^\Û]KLÌ	ßIÚ\ĞYZ[ˆÈ	ÈY[‰Èˆ	ÉßXÃBˆCBˆYˆ
+İ]\ÓX™[
+HÈİ]\ÓX™[^ÛÛ[HX™[Èİ]\ÓX™[˜Û\ÜÓ˜[YHH	Üİ]PÛ\ÜßH^VÎ\XÈCBˆYˆ
+\Ë˜İ\œ™[\Ù\Ëœ›ÛHOOH	ØYZ[‰ÊHÃBˆÛÛœİXY\“˜[YHHØİ[Y[™Ù][[Y[RY
+	ÚXY\‹]\Ù\‹[˜[YIÊNÃBˆÛÛœİXY\’[š]X[HØİ[Y[™Ù][[Y[RY
+	ÚXY\‹X]˜]\‹Z[š]X[	ÊNÃBˆÛÛœİXY\”İÈHØİ[Y[™Ù][[Y[RY
+	ÚXY\‹]\Ù\‹\İÉÊNÃBˆÛÛœİ\Ü^TİÈH\Ë™Ù]İ\œ™[\Ü^TİÊ
+NÃBˆYˆ
+XY\“˜[YJHXY\“˜[YK^ÛÛ[H\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+NÃBˆÛÛœİXY\”›ÛHHØİ[Y[™Ù][[Y[RY
+	ÚXY\‹\›ÛK\İX]IÊNÃBˆYˆ
+XY\”›ÛJHÈXY\”›ÛK^ÛÛ[H	ĞYZ[š\İ˜YÜ‰ÎÈXY\”›ÛK˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÈCBˆYˆ
+XY\’[š]X[
+HXY\’[š]X[^ÛÛ[H
+\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+H	ĞIÊK˜Ú\]
+
+NÃBˆYˆ
+XY\”İÈ	‰ˆ\Ü^TİÊHÈXY\”İËœÜ˜ÈH\Ü^TİÎÈXY\”İË˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÈXY\’[š]X[Ë˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÈCBˆ[ÙHYˆ
+XY\”İÊHÈXY\”İË˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÈXY\’[š]X[Ë˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÈCBˆYˆ
+YØİ[Y[™Ù][[Y[RY
+	ÜÙ][™ÜËXYZ[‹ZY[]Y\Ë\ÙXİ[Û‰ÊOË˜Û\ÜÓ\İ˜ÛÛZ[œÊ	ÚY[‰ÊJH\Ëœ™[™\YZ[’Y[]Y\Ê
+NÃBˆCBƒBˆÛÛœİ\Ú›Ø\™HØİ[Y[™Ù][[Y[RY
+	İÛÜšÙ\‹XYZ[‹\™\Ù[˜ÙKY\Ú›Ø\™	ÊNÃBˆYˆ
+\Ú›Ø\™
+HÃBˆ\Ú›Ø\™œİ[K™\Ü^HH[™›ËšY[]T™XYHÈ	ÉÈˆ	Û›Û™IÎÃBˆ\Ú›Ø\™š[›™\’SH]ˆYHÛÜšÙ\‹XYZ[‹\™\Ù[˜ÙKXØ\™ˆÛ\ÜÏHš[›[™KY›^][\ËXÙ[\ˆØ\Lˆ›İ[™Y^›Ü™\ˆ›Ü™\‹]Ú]KÌMH™Ë]Ú]KÌLL‹HKLKH	Ú[™›Ëœİ]\ÈOOH	Ø]˜Z[X›IÈÈ	Ü™\Ù[˜ÙKXØ\™XÛÛ›™XİY	Èˆ[™›Ëœİ]\ÈOOH	ØXœÙ[	ÈÈ	Ü™\Ù[˜ÙKXØ\™XXœÙ[	Èˆ	ÉßH]ˆÛ\ÜÏHœÙX\ÛÛ˜[]ÛÜšÙ\‹X]˜]\ˆ™[]]™HËNN›İ[™YY[›Ü™\ˆ›Ü™\‹]Ú]KÍ™Ë\Û]KMÌİ™\™›İËZY[ˆ›^][\ËXÙ[\ˆ\İYKXÙ[\ˆ^^È›ÛX›Û‰Ú[™›ËœİÈÈ[YÈÜ˜ÏH‰İ\Ë™\ØØ\R[
+[™›ËœİÊ_Hˆ[H‘›İÈ[YZ[š\İ˜YÜˆˆÛ\ÜÏHËY[Y[Øš™XİXÛİ™\ˆ˜ˆ\Ë™\ØØ\R[
+[™›Ë›˜[YK˜Ú\]
+
+J_OÙ]]ˆÛ\ÜÏH›XY[™Ë]YÚÛ\ÜÏH^VÌLH›ÛX›Û^]Ú]H‰İ\Ë™\ØØ\R[
+[™›Ë›˜[YJ_OÜÛ\ÜÏH^VÎH\\˜Ø\ÙH˜XÚÚ[™Ë]ÚYH^\Û]KLÌYZ[š\İ˜YÜÜÜ[ˆÛ\ÜÏH‰Üİ]PÛ\ÜßH‰ÛX™[OÜÜ[Ù]Ù]˜ÃBˆCBƒBˆYˆ
+\Ë˜İ\œ™[\Ù\Ëœ›ÛHOOH	İÛÜšÙ\‰ÊHÃBˆÛÛœİÚ]]HHØİ[Y[™Ù][[Y[RY
+	ØÚ]ZXY\‹]]IÊNÃBˆYˆ
+Ú]]JHÚ]]K^ÛÛ[HÚ]ˆ	Ú[™›Ë›˜[Y_XÃBˆCBˆÛÛœİÚ]Ø\™HØİ[Y[™Ù][[Y[RY
+	ØÚ]XYZ[‹\™\Ù[˜ÙIÊNÃBˆYˆ
+Ú]Ø\™
+HÃBˆÛÛœİÚİ[ÚİÈH\Ë˜İ\œ™[\Ù\Ëœ›ÛHOOH	İÛÜšÙ\‰ÎÃBˆÚ]Ø\™˜Û\ÜÓ\İÙÙÛJ	ÚY[‰Ë\Úİ[ÚİÈZ[™›ËšY[]T™XYJNÃBˆÚ]Ø\™˜Û\ÜÓ\İÙÙÛJ	Ù›^	ËÚİ[ÚİÈ	‰ˆ[™›ËšY[]T™XYJNÃBˆÛÛœİ]˜]\ˆHØİ[Y[™Ù][[Y[RY
+	ØÚ]XYZ[‹\™\Ù[˜ÙKX]˜]\‰ÊNÃBˆYˆ
+]˜]\ŠH]˜]\‹š[›™\’SH[™›ËœİÈÈ[YÈÜ˜ÏH‰İ\Ë™\ØØ\R[
+[™›ËœİÊ_Hˆ[H‘›İÈ[YZ[š\İ˜YÜˆˆÛ\ÜÏHËY[Y[Øš™XİXÛİ™\ˆ˜ˆ\Ë™\ØØ\R[
+[™›Ë›˜[YK˜Ú\]
+
+JNÃBˆÛÛœİÚ]˜[YHHØİ[Y[™Ù][[Y[RY
+	ØÚ]XYZ[‹\™\Ù[˜ÙK[˜[YIÊNÃBˆYˆ
+Ú]˜[YJHÚ]˜[YK^ÛÛ[H[™›Ë›˜[YNÃBˆÛÛœİÚ]›ÛHHØİ[Y[™Ù][[Y[RY
+	ØÚ]XYZ[‹\™\Ù[˜ÙK\›ÛIÊNÃBˆYˆ
+Ú]›ÛJHÚ]›ÛK^ÛÛ[H	ĞYZ[š\İ˜YÜ‰ÎÃBˆÛÛœİÚ]X™[HØİ[Y[™Ù][[Y[RY
+	ØÚ]XYZ[‹\™\Ù[˜ÙK[X™[	ÊNÃBˆYˆ
+Ú]X™[
+HÈÚ]X™[^ÛÛ[HX™[ÈÚ]X™[˜Û\ÜÓ˜[YHH	Üİ]PÛ\ÜßH^VÎ\XÈCBˆCBˆ\Ëœ™[™\Xİ]™PÚ]XY\Š
+NÃBˆCBƒBˆÙÙÛPYZ[”™\Ù[˜ÙSY[J
+HÃBˆYˆ
+İš[™Ê\Ë˜İ\œ™[\Ù\Ëœ›ÛH	ÉÊKÓİÙ\Ø\ÙJ
+HOOH	ØYZ[‰ÊH™]\›ÃBˆÛÛœİY[HHØİ[Y[™Ù][[Y[RY
+	ØYZ[‹\™\Ù[˜ÙK[Y[IÊNÃBˆÛÛœİÙÙÛHHØİ[Y[™Ù][[Y[RY
+	ØYZ[‹\™\Ù[˜ÙK]ÙÙÛIÊNÃBˆYˆ
+[Y[H]ÙÙÛJH™]\›ÃBˆÛÛœİÜ[š[™ÈHY[K˜Û\ÜÓ\İ˜ÛÛZ[œÊ	ÚY[‰ÊNÃBˆY[K˜Û\ÜÓ\İÙÙÛJ	ÚY[‰Ë[Ü[š[™ÊNÃBˆYˆ
+Ü[š[™ÊHÃBˆÛÛœİ™XİHÙÙÛK™Ù]›İ[™[™ĞÛY[™Xİ
+
+NÃBˆY[Kœİ[KœÙ]›Ü\J	ÜÜÚ][Û‰Ë	Ùš^Y	Ë	Ú[\Ü[	ÊNÃBˆY[Kœİ[KœÙ]›Ü\J	ÛY	ËX]›X^
+X]›Z[Š™Xİ›YÚ[™İËš[›™\•ÚYHN
+JH
+È	Ü	Ë	Ú[\Ü[	ÊNÃBˆY[Kœİ[KœÙ]›Ü\J	İÜ	ËX]›Z[Š™Xİ˜›İÛH
+ÈÚ[™İËš[›™\’ZYÚHML
+H
+È	Ü	Ë	Ú[\Ü[	ÊNÃBˆY[Kœİ[KœÙ]›Ü\J	ÜšYÚ	Ë	Ø]]ÉË	Ú[\Ü[	ÊNÃBˆY[Kœİ[KœÙ]›Ü\J	Ş‹Z[™^	Ë	ÌŒMÍÍÉË	Ú[\Ü[	ÊNÃBˆH[ÙHÃBˆY[Kœİ[Kœ™[[İ™T›Ü\J	ÜÜÚ][Û‰ÊNÃBˆY[Kœİ[Kœ™[[İ™T›Ü\J	ÛY	ÊNÃBˆY[Kœİ[Kœ™[[İ™T›Ü\J	İÜ	ÊNÃBˆY[Kœİ[Kœ™[[İ™T›Ü\J	ÜšYÚ	ÊNÃBˆY[Kœİ[Kœ™[[İ™T›Ü\J	Ş‹Z[™^	ÊNÃBˆCBˆÙÙÛKœÙ]]šX]J	Ø\šXKY^[™Y	Ëİš[™ÊÜ[š[™ÊJNÃBˆCBƒBˆ\Ş[˜ÈÙ]YZ[]˜Z[Xš[]Jİ]\ÊHÃBˆÛÛœİ[İÙYHÉØ]˜Z[X›IË	ØXœÙ[	Ë	Ù\ØÛÛ›™XİY	×NÃBˆYˆ
+İš[™Ê\Ë˜İ\œ™[\Ù\Ëœ›ÛH	ÉÊKÓİÙ\Ø\ÙJ
+HOOH	ØYZ[‰ÈX[İÙYš[˜ÛY\Êİ]\ÊJH™]\›ÃBˆÛÛœİY[HHØİ[Y[™Ù][[Y[RY
+	ØYZ[‹\™\Ù[˜ÙK[Y[IÊNÃBˆY[OË˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆYˆ
+Y[JHÉÜÜÚ][Û‰Ë	ÛY	Ë	İÜ	Ë	ÜšYÚ	Ë	Ş‹Z[™^	×K™›Ü‘XXÚ
+›Ü\HOˆY[Kœİ[Kœ™[[İ™T›Ü\J›Ü\JJNÃBˆØİ[Y[™Ù][[Y[RY
+	ØYZ[‹\™\Ù[˜ÙK]ÙÙÛIÊOËœÙ]]šX]J	Ø\šXKY^[™Y	Ë	Ù˜[ÙIÊNÃBˆYˆ
+]Ú[™İË™ŠH™]\›ˆ\ËœÚİÕØ\İ
+	Ó›È^HÛÛ™^pìÛˆ\˜HİX\™\ˆH\İYÉË	Ù\œ›Ü‰ÊNÃBˆÛÛœİ\Ù\›˜[YHHİš[™Ê\Ë˜İ\œ™[\Ù\‹\Ù\›˜[YH	ÉÊKÓİÙ\Ø\ÙJ
+NÃBˆÛÛœİ™]š[İ\Ô™XÛÜ™HÈ‹‹Š\Ëœ™\Ù[˜ÙT™XÛÜ™Öİ\Ù\›˜[YWHßJHNÃBˆÛÛœİ\İX\™X]H]K››İÊ
+NÃBˆ\Ëœ™\Ù[˜ÙT™XÛÜ™Öİ\Ù\›˜[YWHHÈ‹‹œ™]š[İ\Ô™XÛÜ™\Ù\›˜[YNˆ\Ë˜İ\œ™[\Ù\‹\Ù\›˜[YK[˜[YNˆ\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+K›ÛNˆ	ØYZ[‰ËİÎˆ\Ë˜İ\œ™[\Ù\‹œİÈ	ÉË\İX\™X]]˜Z[Xš[]Tİ]\Îˆİ]\ÈNÃBˆ\Ëœ™[™\YZ[”™\Ù[˜ÙJ
+NÃBˆHÃBˆ]ØZ]‹˜ÛÛXİ[ÛŠ	Ü™\Ù[˜ÚXIÊK™ØÊ\Ù\›˜[YJKœÙ]
+ÃBˆ\Ù\›˜[YNˆ\Ë˜İ\œ™[\Ù\‹\Ù\›˜[YKBˆ[˜[YNˆ\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+KBˆ›ÛNˆ	ØYZ[‰ËBˆİÎˆ\Ë˜İ\œ™[\Ù\‹œİÈ	ÉËBˆ\İX\™X]Bˆ]˜Z[Xš[]Tİ]\Îˆİ]\ÃBˆKÈY\™ÙNˆYHJNÃBˆÛÛœÛÛKš[™›Ê	ÖÔ‘TÑSÑWH\İYÈ[YZ[š\İ˜YÜˆİX\™YÉËÈ\Ù\›˜[YKİ]\ÈJNÃBˆ\ËœÚİÕØ\İ
+	Ñ\İYÈXİX[^˜YÎˆ	È
+È\Ë™Ù]™\Ù[˜ÙSX™[
+İ]\ÊK	ÜİXØÙ\ÜÉÊNÃBˆHØ]Ú
+\œ›ÜŠHÃBˆ\Ëœ™\Ù[˜ÙT™XÛÜ™Öİ\Ù\›˜[YWHH™]š[İ\Ô™XÛÜ™ÃBˆ\Ëœ™[™\YZ[”™\Ù[˜ÙJ
+NÃBˆÛÛœÛÛK™\œ›ÜŠ	ÖÔ‘TÑSÑWH›ÈÙHYÈXİX[^˜\ˆ[\İYÈ[YZ[š\İ˜YÜ‰Ë\œ›ÜŠNÃBˆ\ËœÚİÕØ\İ
+	Ó›ÈÙHYÈİX\™\ˆ[\İYËˆ™]š\ØHHÛÛ™^pìÛˆH\›Z\ÛÜÈHš\™\İÜ™K‰Ë	Ù\œ›Ü‰ÊNÃBˆCBˆCBƒBˆ›ÛÛUÛÜšÙ\”İÊİÕ\›˜[YJHÃBˆÛÛœİ[Ù[HØİ[Y[™Ù][[Y[RY
+	Û[Ù[\İË^›ÛÛIÊNÃBˆÛÛœİ[YÈHØİ[Y[™Ù][[Y[RY
+	Ş›ÛÛK[[Ù[Z[YÉÊNÃBˆÛÛœİ[š]X[HØİ[Y[™Ù][[Y[RY
+	Ş›ÛÛK[[Ù[Z[š]X[	ÊNÃBˆÛÛœİ˜[YQ[[HHØİ[Y[™Ù][[Y[RY
+	Ş›ÛÛK[[Ù[[˜[YIÊNÃBƒBˆ˜[YQ[[K^ÛÛ[H˜[YH	Õ˜X˜Z˜YÜ‰ÎÃBƒBˆYˆ
+İÕ\›
+HÃBˆ[YËœÜ˜ÈHİÕ\›ÃBˆ[YË˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆ[š]X[˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆH[ÙHÃBˆ[YË˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆ[š]X[˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆ[š]X[^ÛÛ[H
+˜[YH	ĞIÊK˜Ú\]
+
+NÃBˆCBƒBˆ[Ù[˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆCBƒBˆÛÜÙTİÖ›ÛÛJ
+HÃBˆØİ[Y[™Ù][[Y[RY
+	Û[Ù[\İË^›ÛÛIÊK˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆCBƒBˆÙÙÛUÛÜšÙ\‘ÜÊ
+HÃBˆYˆ
+\Ëš\ÑÜÔÚ\š[™ÊHÃBˆ\ËœİÜÜÔÚ\š[™Ê
+NÃBˆH[ÙHÃBˆ\Ëœİ\ÜÔÚ\š[™Ê
+NÃBˆCBˆCBƒBˆİ\ÜÔÚ\š[™Ê
+HÃBˆYˆ
+[˜]šYØ]Ü‹™Ù[ÛØØ][ÛŠHÃBˆ\ËœÚİÕØ\İ
+•H˜]™YØYÜˆ›ÈÛÜÜHÙ[ÛØØ[^˜XÚpìÛˆ‹™\œ›ÜˆŠNÃBˆ™]\›ÃBˆCBƒBˆÛÛœİ^S˜[YHH\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+NÃBˆ\Ë™ÜĞÛÛ›™XİY]H]K››İÊ
+NÃBˆÛÛœİ“X™[HØİ[Y[™Ù][[Y[RY
+	İÛÜšÙ\‹YÜË[X™[	ÊNÃBˆÛÛœİ‘İHØİ[Y[™Ù][[Y[RY
+	İÛÜšÙ\‹YÜËYİ	ÊNÃBƒBˆ\Ë™ÜÕØ]ÚYH˜]šYØ]Ü‹™Ù[ÛØØ][Û‹Ø]ÚÜÚ][ÛŠBˆÜÈOˆÃBˆÛÛœİÛÛÜ™ÈHÃBˆ]]YNˆÜË˜ÛÛÜ™Ë›]]YKBˆÛ™Ú]YNˆÜË˜ÛÛÜ™Ë›Û™Ú]YKBˆÛÜšÙ\“˜[YNˆ^S˜[YKBˆXİ]™NˆYKBˆ\]Y]ˆ\Ë™›Ü›X][YJ™]È]J
+JKBˆ[Y\İ[\ˆ]K››İÊ
+KBˆÛÛ›™XİY]ˆ\Ë™ÜĞÛÛ›™XİY]]K››İÊ
+CBˆNÃBƒBˆYˆ
+Ú[™İË™ŠHÃBˆ‹˜ÛÛXİ[ÛŠ	ÙÜ×ÛØØ][ÛœÉÊK™ØÊ^S˜[YJKœÙ]
+ÛÛÜ™ËÈY\™ÙNˆYHJK˜Ø]Ú
+
+
+HOˆßJNÃBˆCBƒBˆ\Ëš\ÑÜÔÚ\š[™ÈHYNÃBˆYˆ
+“X™[
+H“X™[^ÛÛ[H¼'äãH\ØXİ]˜\ˆÔÈÃBˆYˆ
+‘İ
+H‘İ˜Û\ÜÓ˜[YHHËLˆLˆ›İ[™YY[™ËY[Y\˜[M[š[X]K\[ÙHÃBˆKBˆ\œˆOˆÃBˆÛÛœÛÛKØ\›Š‘\œ›ÜˆÔÎˆ‹\œŠNÃBˆ\ËœÚİÕØ\İ
+”\›Z\ÛÈHÔÈ[™YØYÈ‹™\œ›ÜˆŠNÃBˆ\ËœİÜÜÔÚ\š[™Ê
+NÃBˆKBˆÈ[˜X›RYÚXØİ\˜XŞNˆYK[Y[İ]ˆMLX^[][PYÙNˆLCBˆ
+NÃBƒBˆ\ËœÚİÕØ\İ
+‘ÔÈXİ]˜YÎˆÛÛ\\Y[™ÈÜÚXÚpìÛˆ‹œİXØÙ\ÜÈŠNÃBˆCBƒBˆİÜÜÔÚ\š[™ÊÚ[[H˜[ÙJHÃBˆYˆ
+\Ë™ÜÕØ]ÚYOOH[
+HÃBˆ˜]šYØ]Ü‹™Ù[ÛØØ][Û‹˜ÛX\•Ø]Ú
+\Ë™ÜÕØ]ÚY
+NÃBˆ\Ë™ÜÕØ]ÚYH[ÃBˆCBˆ\Ëš\ÑÜÔÚ\š[™ÈH˜[ÙNÃBˆ\Ë™ÜĞÛÛ›™XİY]H[ÃBƒBˆÛÛœİ^S˜[YHH\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+NÃBˆYˆ
+Ú[™İË™ˆ	‰ˆ^S˜[YJHÃBˆ‹˜ÛÛXİ[ÛŠ	ÙÜ×ÛØØ][ÛœÉÊK™ØÊ^S˜[YJKœÙ]
+ÃBˆXİ]™Nˆ˜[ÙKBˆ[Y\İ[\ˆ]K››İÊ
+KBˆ\]Y]ˆ\Ë™›Ü›X][YJ™]È]J
+JCBˆKÈY\™ÙNˆYHJK˜Ø]Ú
+
+
+HOˆßJNÃBˆCBƒBˆÛÛœİ“X™[HØİ[Y[™Ù][[Y[RY
+	İÛÜšÙ\‹YÜË[X™[	ÊNÃBˆÛÛœİ‘İHØİ[Y[™Ù][[Y[RY
+	İÛÜšÙ\‹YÜËYİ	ÊNÃBˆYˆ
+“X™[
+H“X™[^ÛÛ[H¼'äãHXİ]˜\ˆÔÈÃBˆYˆ
+‘İ
+H‘İ˜Û\ÜÓ˜[YHHËLˆLˆ›İ[™YY[™Ë\Û]KMÃBƒBˆYˆ
+\Ú[[
+H\ËœÚİÕØ\İ
+‘ÔÈ\ØXİ]˜YÈ‹š[™›ÈŠNÃBˆCBƒBˆÜ[YZ[‘ÜÓ[Ù[
+
+HÃBˆØİ[Y[™Ù][[Y[RY
+	Û[Ù[XYZ[‹YÜÉÊK˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆYˆ
+]\Ë˜YZ[“X\
+HÃBˆÙ][Y[İ]
+
+
+HOˆ\Ëš[š]YZ[“X\
+
+KML
+NÃBˆH[ÙHÃBˆÙ][Y[İ]
+
+
+HOˆ\Ë˜YZ[“X\š[˜[Y]TÚ^™J
+KŒ
+NÃBˆCBˆ\ËœİXœØÜšX™QÜÓØØ][ÛœÊ
+NÃBˆCBƒBˆÛÜÙPYZ[‘ÜÓ[Ù[
+
+HÃBˆØİ[Y[™Ù][[Y[RY
+	Û[Ù[XYZ[‹YÜÉÊK˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆCBƒBˆ[š]YZ[“X\
+
+HÃBˆÛÛœİX\ÛÛZ[™\ˆHØİ[Y[™Ù][[Y[RY
+	ÙÜË[X\XÛÛZ[™\‰ÊNÃBˆYˆ
+[X\ÛÛZ[™\ˆ\Ë˜YZ[“X\
+H™]\›ÃBƒBˆ\Ë˜YZ[“X\H›X\
+	ÙÜË[X\XÛÛZ[™\‰ÊKœÙ]šY]ÊÍŒMËMÍŒM×KLŠNÃBƒBˆ[S^Y\Š	ÚÎ‹Ëİ[K›Ü[œİ™Y]X\›Ü™ËŞŞŸKŞŞKŞŞ_Kœ™ÉËÃBˆX^›ÛÛNˆNKBˆ™Y™\œ™\”ÛXŞNˆ	ÜİšXİ[ÜšYÚ[‹]Ú[‹XÜ›ÜÜË[ÜšYÚ[‰ËBˆ]šX][Ûˆ	É˜ÛÜNÈH™YHšÎ‹ËİİİË›Ü[œİ™Y]X\›Ü™ËØÛÜ\šYÚˆ\™Ù]H—Ø›[šÈˆ™[H››ÛÜ[™\ˆ›Ü™Y™\œ™\ˆ“Ü[”İ™Y]X\ÛÛšX]ÜœÏØO‰ÃBˆJK˜YÊ\Ë˜YZ[“X\
+NÃBˆCBƒBˆİXœØÜšX™QÜÓØØ][ÛœÊ
+HÃBˆYˆ
+]Ú[™İË™ˆ\Ë™ÜÓØØ][ÛœÕ[œİXœØÜšX™JH™]\›ÃBƒBˆ\Ë™ÜÓØØ][ÛœÕ[œİXœØÜšX™HH‹˜ÛÛXİ[ÛŠ	ÙÜ×ÛØØ][ÛœÉÊK›Û”Û˜\Úİ
+Û˜\OˆÃBˆÛÛœİØÜÈHßNÃBˆ]Xİ]™PÛİ[HÃBƒBˆÛ˜\™›Ü‘XXÚ
+ØÈOˆÃBˆÛÛœİ]HHØË™]J
+NÃBˆØÜÖÙØËšYHH]NÃBˆÛÛœİ\İÚYÛ˜[H[X™\Š]K[Y\İ[\
+NÃBˆYˆ
+]K˜Xİ]™H	‰ˆ\İÚYÛ˜[	‰ˆ]K››İÊ
+HH\İÚYÛ˜[N
+HXİ]™PÛİ[
+ÊÎÃBˆJNÃBƒBˆ\Ë›ØØ][ÛœÑ]HHØÜÎÃBˆØİ[Y[™Ù][[Y[RY
+	ÙÜËXXİ]™KXÛİ[	ÊK^ÛÛ[H	ØXİ]™PÛİ[HXİ]›ÜØÃBˆ\Ëœ™[™\‘ÜÕÛÜšÙ\œÓ\İ
+
+NÃBˆ\Ë\]QÜÓX\šÙ\œÓÛ“X\
+
+NÃBˆKHOˆÛÛœÛÛK™\œ›ÜŠ”Û˜\ÚİÔÎˆ‹JJNÃBˆCBƒBˆ™[™\‘ÜÕÛÜšÙ\œÓ\İ
+
+HÃBˆÛÛœİ\İ[[HHØİ[Y[™Ù][[Y[RY
+	ÙÜË]ÛÜšÙ\œË[\İ	ÊNÃBˆYˆ
+[\İ[[JH™]\›ÃBƒBˆÛÛœİÛÜšÙ\œÈH\ËÛÜšÙ\œÎÃBˆYˆ
+ÛÜšÙ\œË›[™İOOH
+HÃBˆ\İ[[Kš[›™\’SHÛ\ÜÏH^XÙ[\ˆKM^\Û]KM][XÈ“›È^H˜X˜Z˜YÜ™\È™YÚ\İ˜YÜËÜ˜ÃBˆ™]\›ÃBˆCBƒBˆÛÛœİ›İÈH]K››İÊ
+NÃBˆÛÛœİÜ™\™YÛÜšÙ\œÈHÛÜšÙ\œË›X\
+
+ÛÜšÙ\‹[™^
+HOˆÃBˆÛÛœİ˜[YHHÛÜšÙ\‹™[˜[YHÛÜšÙ\‹\Ù\›˜[YNÃBˆÛÛœİØØ][ÛˆH\Ë›ØØ][ÛœÑ]VÛ˜[YWNÃBˆÛÛœİ[Y\İ[\H[X™\ŠØØ][ÛË[Y\İ[\
+NÃBˆÛÛœİ\ÑÜĞXİ]™HH›ÛÛX[ŠØØ][ÛË˜Xİ]™H	‰ˆ[Y\İ[\	‰ˆ›İÈH[Y\İ[\N
+NÃBˆ™]\›ˆÈÛÜšÙ\‹[™^˜[YKØØ][Û‹\ÑÜĞXİ]™HNÃBˆJKœÛÜ
+
+KŠHOˆÃBˆYˆ
+Kš\ÑÜĞXİ]™HOOH‹š\ÑÜĞXİ]™JH™]\›ˆ[X™\Š‹š\ÑÜĞXİ]™JHH[X™\ŠKš\ÑÜĞXİ]™JNÃBˆYˆ
+Kš\ÑÜĞXİ]™JHÃBˆÛÛœİPÛÛ›™XİY]H[X™\ŠK›ØØ][Û‹˜ÛÛ›™XİY]K›ØØ][Û‹[Y\İ[\
+NÃBˆÛÛœİÛÛ›™XİY]H[X™\Š‹›ØØ][Û‹˜ÛÛ›™XİY]‹›ØØ][Û‹[Y\İ[\
+NÃBˆYˆ
+PÛÛ›™XİY]OOHÛÛ›™XİY]
+H™]\›ˆÛÛ›™XİY]HPÛÛ›™XİY]ÃBˆCBˆ™]\›ˆKš[™^H‹š[™^ÃBˆJNÃBƒBˆ\İ[[Kš[›™\’SHÜ™\™YÛÜšÙ\œË›X\
+
+ÈÛÜšÙ\ˆË˜[YNˆÓ˜[YKØØ][ÛˆØË\ÑÜĞXİ]™HJHOˆÃBˆÛÛœİØY™S˜[YHH\Ë™\ØØ\R[
+Ó˜[YJNÃBˆÛÛœİİÈHËœİÈÈ\Ë™\ØØ\R[
+ËœİÊHˆ	ÉÎÃBˆÛÛœİ]˜]\ˆHİÃBˆÈ[YÈÜ˜ÏH‰ÜİßHˆ[H‘›İÈH	ÜØY™S˜[Y_HˆØY[™ÏH›^H˜BˆˆÜ[‰İ\Ë™\ØØ\R[
+İš[™ÊÓ˜[YJK˜Ú\]
+
+KÕ\\Ø\ÙJ
+J_OÜÜ[˜ÃBˆÛÛœİ\İ\]HH\Ë™\ØØ\R[
+ØÏË\]Y]	ÔÚ[ˆÙpìX[	ÊNÃBƒBˆ™]\›ˆBˆ\XÛHÛ\ÜÏH™ÜË]ÛÜšÙ\‹XØ\™	Ú\ÑÜĞXİ]™HÈ	Ú\ËXXİ]™IÈˆ	ÉßHƒBˆ]ˆÛ\ÜÏH™ÜË]ÛÜšÙ\‹XØ\™[XZ[ˆƒBˆÜ[ˆÛ\ÜÏH™ÜË]ÛÜšÙ\‹X]˜]\ˆÙX\ÛÛ˜[]ÛÜšÙ\‹X]˜]\ˆˆ\šXKZY[HYHÜ[ˆÛ\ÜÏH™ÜË]ÛÜšÙ\‹\İËXÜ›Ü‰Ø]˜]\ŸOÜÜ[ÜÜ[ƒBˆÜ[ˆÛ\ÜÏH™ÜË]ÛÜšÙ\‹XØ\™ZY[]HƒBˆÜ[ˆÛ\ÜÏH™ÜË]ÛÜšÙ\‹XØ\™[˜[YHÜ[ˆÛ\ÜÏH™ÜË]ÛÜšÙ\‹\İ]KYİ	Ú\ÑÜĞXİ]™HÈ	Ú\ËXXİ]™IÈˆ	ÉßHÜÜ[‰ÜØY™S˜[Y_OÜÜ[ƒBˆÜ[ˆÛ\ÜÏH™ÜË]ÛÜšÙ\‹XØ\™\İ]\È	Ú\ÑÜĞXİ]™HÈ	Ú\ËXXİ]™IÈˆ	ÉßH‰Ú\ÑÜĞXİ]™HÈ	Õ˜[œÛZ]Y[™ÈÔÉÈˆ	ÑÔÈ[˜Xİ]›ÉßOÜÜ[ƒBˆÜÜ[ƒBˆÜ[ˆÛ\ÜÏH™ÜË]ÛÜšÙ\‹XØ\™][YH‰Û\İ\]_OÜÜ[ƒBˆÙ]ƒBˆ	Ú\ÑÜĞXİ]™HÈBˆ]ˆÛ\ÜÏH™ÜË]ÛÜšÙ\‹XØ\™XXİ[ÛœÈƒBˆ]Ûˆ\OH˜]ÛˆˆÛ˜ÛXÚÏH˜\™›Øİ\ÕÛÜšÙ\“Û“X\
+	ÉÙ[˜ÛÙUT’PÛÛ\Û™[
+Ó˜[YJ_IÊHˆÛ\ÜÏH™ÜË]ÛÜšÙ\‹XXİ[Ûˆ¼'äãH™\ˆ[ˆX\OØ]ÛƒBˆ]Ûˆ\OH˜]ÛˆˆÛ˜ÛXÚÏH˜\›Ü[‘^\›˜[›İ]J	ÛØË›]]Y_K	ÛØË›Û™Ú]Y_JHˆÛ\ÜÏH™ÜË]ÛÜšÙ\‹XXİ[Ûˆ\Ë\›İ]H¼'éëH˜^˜\ˆ]OØ]ÛƒBˆÙ]ƒBˆˆ	ÉßCBˆØ\XÛOƒBˆÃBˆJKš›Ú[Š	ÉÊNÃBˆCBƒBˆ\]QÜÓX\šÙ\œÓÛ“X\
+
+HÃBˆYˆ
+]\Ë˜YZ[“X\
+H™]\›ÃBƒBˆØš™XİšÙ^\Ê\Ë›ØØ][ÛœÑ]JK™›Ü‘XXÚ
+Ó˜[YHOˆÃBˆÛÛœİØÈH\Ë›ØØ][ÛœÑ]VİÓ˜[YWNÃBˆYˆ
+ØË˜Xİ]™H	‰ˆØË›]]YH	‰ˆØË›Û™Ú]YJHÃBˆÛÛœİÜ\[HBˆ]ˆÛ\ÜÏHœLH^^ÈƒBˆˆÛ\ÜÏH^\Û]KNL›ØÚÈ‰İÓ˜[Y_OØƒBˆÜ[ˆÛ\ÜÏH^\Û]KML^VÌLH›ØÚÈXİX[^˜YÎˆ	ÛØË\]Y]OÜÜ[ƒBˆ]ˆÛ\ÜÏH™›^Ø\LH]LˆƒBˆH™YHšÎ‹ËİØ^™K˜ÛÛKİ[ÛIÛØË›]]Y_K	ÛØË›Û™Ú]Y_I›˜]šYØ]O^Y\Èˆ\™Ù]H—Ø›[šÈˆÛ\ÜÏHœLˆKLH™ËXŞX[‹MŒ^]Ú]H›İ[™Y^VÌLH›ÛX›Û[›[™KY›^][\ËXÙ[\ˆØ\LH[YÈÜ˜ÏH˜\ÜÙ]ËÛYYXKÛYYXKLKœ™Èˆ[Hˆˆ\šXKZY[HYHˆÛ\ÜÏHËMMØš™XİXÛÛZ[ˆ•Ø^™OØOƒBˆH™YHšÎ‹ËİİİË™ÛÛÙÛK˜ÛÛKÛX\ËÙ\‹ÏØ\OLI™\İ[˜][ÛIÛØË›]]Y_K	ÛØË›Û™Ú]Y_Hˆ\™Ù]H—Ø›[šÈˆÛ\ÜÏHœLˆKLH™ËY[Y\˜[MŒ^]Ú]H›İ[™Y^VÌLH›ÛX›Û[›[™KY›^][\ËXÙ[\ˆØ\LH[YÈÜ˜ÏH˜\ÜÙ]ËÛYYXKÛYYXKL‹œ™Èˆ[Hˆˆ\šXKZY[HYHˆÛ\ÜÏHËMMØš™XİXÛÛZ[ˆ“X\ÏØOƒBˆÙ]ƒBˆÙ]ƒBˆÃBƒBˆYˆ
+\Ë˜YZ[“X\X\šÙ\œÖİÓ˜[YWJHÃBˆ\Ë˜YZ[“X\X\šÙ\œÖİÓ˜[YWKœÙ]]™ÊÛØË›]]YKØË›Û™Ú]YWJK˜š[™Ü\
+Ü\[
+NÃBˆH[ÙHÃBˆÛÛœİX\šÙ\ˆH›X\šÙ\ŠÛØË›]]YKØË›Û™Ú]YWJK˜YÊ\Ë˜YZ[“X\
+K˜š[™Ü\
+Ü\[
+NÃBˆ\Ë˜YZ[“X\X\šÙ\œÖİÓ˜[YWHHX\šÙ\ÃBˆCBˆH[ÙHYˆ
+\Ë˜YZ[“X\X\šÙ\œÖİÓ˜[YWJHÃBˆ\Ë˜YZ[“X\œ™[[İ™S^Y\Š\Ë˜YZ[“X\X\šÙ\œÖİÓ˜[YWJNÃBˆ[]H\Ë˜YZ[“X\X\šÙ\œÖİÓ˜[YWNÃBˆCBˆJNÃBˆCBƒBˆ›Øİ\ÕÛÜšÙ\“Û“X\
+Ó˜[YJHÃBˆÛÛœİX\šÙ\ˆH\Ë˜YZ[“X\X\šÙ\œÖİÓ˜[YWNÃBˆYˆ
+X\šÙ\ˆ	‰ˆ\Ë˜YZ[“X\
+HÃBˆ\Ë˜YZ[“X\œÙ]šY]ÊX\šÙ\‹™Ù]]™Ê
+KMJNÃBˆX\šÙ\‹›Ü[”Ü\
+
+NÃBˆCBˆCBƒBˆÜ[‘^\›˜[›İ]J]™ÊHÃBˆÚ[™İË›Ü[ŠÎ‹ËİİİË™ÛÛÙÛK˜ÛÛKÛX\ËÙ\‹ÏØ\OLI™\İ[˜][ÛIÛ]K	Û™ßX	×Ø›[šÉÊNÃBˆCBƒBˆ\Ş[˜Èİ\›ÚXÙPØ[
+
+HÃBˆÛÛœİ\™Ù]ÛÜšÙ\ˆH\Ë˜İ\œ™[\Ù\‹œ›ÛHOOH	ØYZ[‰ÈÈ\Ë˜Xİ]™PÚ]ÛÜšÙ\ˆˆ
+\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+JNÃBˆÛÛœİØ[Ù\ÜÚ[Û’YHÚ[™İË˜Ü\ÏËœ˜[™ÛUURQËŠ
+HØ[IÑ]K››İÊ
+_KIÓX]œ˜[™ÛJ
+KÔİš[™ÊÍŠKœÛXÙJ‹L
+_XÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSH[šXÚX[™È[XYIËÈÙ\ÜÚ[Û’YˆØ[Ù\ÜÚ[Û’Y›ÛNˆ\Ë˜İ\œ™[\Ù\‹œ›ÛKØ[\ˆ\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+KØİ[Y[Yˆ\™Ù]ÛÜšÙ\ˆJNÃBˆ]Ø[İYÙHH	ÙÙ]\Ù\“YYXIÎÃBƒBˆHÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHÙ]\Ù\“YYXH[šXÚXYÉËÈÙ\ÜÚ[Û’YˆØ[Ù\ÜÚ[Û’Y›ÛNˆ\Ë˜İ\œ™[\Ù\‹œ›ÛHJNÃBˆÛÛœİİ™X[HH]ØZ]˜]šYØ]Ü‹›YYXQ]šXÙ\Ë™Ù]\Ù\“YYXJÈ]Y[ÎˆÈXÚĞØ[˜Ù[][ÛˆYK›Ú\ÙTİ\™\ÜÚ[ÛˆYK]]ÑØZ[ÛÛ›ÛˆYHKšY[Îˆ˜[ÙHJNÃBˆØ[İYÙHH	ØÛÛ™šYİ\˜\ˆİ™X[HØØ[	ÎÃBˆ\Ë›ØØ[İ™X[HHİ™X[NÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHZXÜ°ìÙ›Û›ÈØ[šYÉÊNÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHİ™X[HØØ[Ø[šYÉËÈXİ]™Nˆİ™X[K˜Xİ]™HJNÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHØ[YY]Y[È˜XÚÜÎ‰Ëİ™X[K™Ù]]Y[Õ˜XÚÜÊ
+K›[™İ
+NÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSH][H]Y[È˜XÚÜÉËİ™X[K™Ù]]Y[Õ˜XÚÜÊ
+K›X\
+˜XÚÈOˆ
+ÈX™[ˆ˜XÚË›X™[[˜X›Yˆ˜XÚË™[˜X›Y]]Yˆ˜XÚË›]]Y™XYTİ]Nˆ˜XÚËœ™XYTİ]HJJJNÃBˆ\Ëœ[™[™ÒXÙPØ[™Y]\ÈH×NÃBˆ\Ë˜Ø[XÙPÛİ[\œÈHÈÙ[™\˜]Yˆ™XÙZ]™YˆYYˆNÃBˆ\Ë˜Ø[ÚYÛ˜[[™Õ[œİXœØÜšX™\ÈH×NÃBƒBˆ\Ë›Ü[•›ÚXÙPØ[[Ù[
+ÃBˆ˜[YNˆ\Ë˜İ\œ™[\Ù\‹œ›ÛHOOH	ØYZ[‰ÈÈ\™Ù]ÛÜšÙ\ˆˆ\Ë™Ù]YZ[”™\Ù[˜ÙR[™›Ê
+K›˜[YKBˆİ]\Îˆ	Ó[X[™Ë‹‹‰ËBˆ\Ò[˜ÛÛZ[™Îˆ˜[ÙCBˆJNÃBƒBƒBˆØ[İYÙHH	ØÜ™X\ˆ•ÔY\ÛÛ›™Xİ[Û‰ÎÃBˆ\ËœY\ÛÛ›™Xİ[ÛˆH™]È•ÔY\ÛÛ›™Xİ[ÛŠÃBˆXÙTÙ\™\œÎˆŞÈ\›Îˆ	Üİ[œİ[‹›™ÛÛÙÛK˜ÛÛNŒNLÌ‰ÈWCBˆJNÃBƒBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHØ[YYH\İ\ÈØØ[\Î‰Ë\Ë›ØØ[İ™X[K™Ù]]Y[Õ˜XÚÜÊ
+K›[™İ
+NÃBˆ\Ë›ØØ[İ™X[K™Ù]˜XÚÜÊ
+K™›Ü‘XXÚ
+˜XÚÈOˆÃBˆ\ËœY\ÛÛ›™Xİ[Û‹˜Y˜XÚÊ˜XÚË\Ë›ØØ[İ™X[JNÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSH˜XÚÈYÜ™YØYÉËÈÚ[™ˆ˜XÚËšÚ[™[˜X›Yˆ˜XÚË™[˜X›Y]]Yˆ˜XÚË›]]Y™XYTİ]Nˆ˜XÚËœ™XYTİ]HJNÃBˆJNÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHØ[YYH˜XÚÜÈYÜ™YØYÜÎ‰Ë\ËœY\ÛÛ›™Xİ[Û‹™Ù]Ù[™\œÊ
+K™š[\ŠÙ[™\ˆOˆÙ[™\‹˜XÚÏËšÚ[™OOH	Ø]Y[ÉÊK›[™İ
+NÃBˆ\Ë˜ÛÛ™šYİ\™T™[[İP]Y[Ê
+NÃBƒBˆÛÛœİØ[ØÈH‹˜ÛÛXİ[ÛŠ	İÙXœ×ØØ[ÉÊK™ØÊ\™Ù]ÛÜšÙ\ŠNÃBˆ\Ë˜İ\œ™[Ø[]HHÈYˆ\™Ù]ÛÜšÙ\‹™XYYˆ\™Ù]ÛÜšÙ\‹Ù\ÜÚ[Û’YˆØ[Ù\ÜÚ[Û’YØ[Ù\ÜÚ[Û’YØ[\ˆ\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+KØ[\”›ÛNˆ\Ë˜İ\œ™[\Ù\‹œ›ÛK™XÚ\Y[ˆ\Ë˜İ\œ™[\Ù\‹œ›ÛHOOH	ØYZ[‰ÈÈ\™Ù]ÛÜšÙ\ˆˆ\Ë™Ù]YZ[”™\Ù[˜ÙR[™›Ê
+K›˜[YKØ\Ğ[œİÙ\™Yˆ˜[ÙKÛÛ›™XİY]ˆ[NÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHÙ\ÚpìÛˆH[XYIËÈÙ\ÜÚ[Û’YˆØ[Ù\ÜÚ[Û’Y›ÛNˆ\Ë˜İ\œ™[\Ù\‹œ›ÛKÚYNˆ	ØØ[\‰ÈJNÃBˆÛÛœİØ[\Ø[™Y]\ÈHØ[ØË˜ÛÛXİ[ÛŠ	ØØ[\Ø[™Y]\ÉÊNÃBƒBˆ\ËœY\ÛÛ›™Xİ[Û‹›ÛšXÙXØ[™Y]HH]™[OˆÃBˆYˆ
+]™[˜Ø[™Y]JHÃBˆÛÛœİØ[™Y]Q]HH]™[˜Ø[™Y]KÒ”ÓÓŠ
+NÃBˆYˆ
+Ø[Ù\ÜÚ[Û’Y
+HØ[™Y]Q]K˜Ø[Ù\ÜÚ[Û’YHØ[Ù\ÜÚ[Û’YÃBˆ\Ë˜Ø[XÙPÛİ[\œË™Ù[™\˜]Y
+ÊÎÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHPÑHÙ[™\˜YÉËÈØ[Ù\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]OË˜Ø[Ù\ÜÚ[Û’Y\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’Y[İ\œ™[Ù\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’Y[Ûİ[ˆ\Ë˜Ø[XÙPÛİ[\œË™Ù[™\˜]Y›ÛNˆ\Ë˜İ\œ™[\Ù\‹œ›ÛK\Nˆ]™[˜Ø[™Y]K\K›İØÛÛˆ]™[˜Ø[™Y]Kœ›İØÛÛ\Ù\›˜[YQœ˜YÛY[ˆ]™[˜Ø[™Y]K\Ù\›˜[YQœ˜YÛY[[ÙZYˆ]™[˜Ø[™Y]KœÙZYJNÃBˆØ[\Ø[™Y]\Ë˜Y
+Ø[™Y]Q]JK[Š
+
+HOˆÛÛœÛÛKš[™›Ê	ÖĞĞSHPÑH[šXYÈ[Ø[˜[HÙpìX[^˜XÚpìÛ‰ËÈÛİ[ˆ\Ë˜Ø[XÙPÛİ[\œË™Ù[™\˜]YÚYNˆ	ØØ[\‰ÈJJK˜Ø]Ú
+\œ›ÜˆOˆÛÛœÛÛK™\œ›ÜŠ	ÖĞĞSH\œ›Üˆ[šX[™ÈPÑH[[X[N‰Ë\œ›ÜŠJNÃBˆH[ÙHÈÛÛœÛÛKš[™›Ê	ÖĞĞSHPÑHØ]\š[™ÈÛÛ\]YÉËÈ›ÛNˆ\Ë˜İ\œ™[\Ù\‹œ›ÛKÙ[™\˜]YÛİ[ˆ\Ë˜Ø[XÙPÛİ[\œË™Ù[™\˜]YJNÈCBˆNÃBƒBˆØ[İYÙHH	ØÜ™X]SÙ™™\‰ÎÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHÜ™X]SÙ™™\ˆ[šXÚXYÉÊNÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSH]Y[È˜XÚÜÈØØ[\È[\ÈHÜ™X]SÙ™™\‰Ë\Ë›ØØ[İ™X[K™Ù]]Y[Õ˜XÚÜÊ
+K›[™İ
+NÃBˆÛÛœİÙ™™\ˆH]ØZ]\ËœY\ÛÛ›™Xİ[Û‹˜Ü™X]SÙ™™\Š
+NÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHÙ™\HÜ™XYIËÈ\NˆÙ™™\‹\K\ÔÙˆH[Ù™™\‹œÙ]Y[Ó[™\Îˆ
+Ù™™\‹œÙ	ÉÊKœÜ]
+××‹ÊK™š[\Š[™HOˆ×›OX]Y[ß˜OJÙ[™™XİŸÙ[™Û›_™Xİ›Û›_[˜Xİ]™JIË\İ
+[™JJHJNÃBˆØ[İYÙHH	ÜÙ]ØØ[\ØÜš\[ÛˆÙ™\IÎÃBˆ]ØZ]\ËœY\ÛÛ›™Xİ[Û‹œÙ]ØØ[\ØÜš\[ÛŠÙ™™\ŠNÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHÙ]ØØ[\ØÜš\[ÛˆÒÉËÈÚYNˆ	ØØ[\‰Ë\Nˆ\ËœY\ÛÛ›™Xİ[Û‹›ØØ[\ØÜš\[ÛË\HJNÃBƒBˆØ[İYÙHH	ÙİX\™\ˆÙ™\IÎÃBˆ]ØZ]Ø[ØËœÙ]
+ÃBˆØ[\ˆ\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+KBˆØ[\”›ÛNˆ\Ë˜İ\œ™[\Ù\‹œ›ÛKBˆ™XÚ\Y[ˆ\Ë˜İ\œ™[\Ù\‹œ›ÛHOOH	ØYZ[‰ÈÈ\™Ù]ÛÜšÙ\ˆˆ\Ë™Ù]YZ[”™\Ù[˜ÙR[™›Ê
+K›˜[YKBˆİ]\Îˆ	ØØ[[™ÉËBˆØ[Ù\ÜÚ[Û’YBˆÙ™™\ˆÈ\NˆÙ™™\‹\KÙˆÙ™™\‹œÙKBˆ[Y\İ[\ˆ]K››İÊ
+CBˆJNÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHÙ™\H[šXYIÊNÃBˆ\Ë˜Ø[ÚYÛ˜[[™Õ[œİXœØÜšX™\Ëœ\Ú
+Ø[ØË›Û”Û˜\Úİ
+\Ş[˜ÈØÈOˆÃBˆYˆ
+ØË™^\İÊHÃBˆÛÛœİ]HHØË™]J
+NÃBˆYˆ
+]K˜Ø[Ù\ÜÚ[Û’Y	‰ˆ\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’Y	‰ˆ]K˜Ø[Ù\ÜÚ[Û’YOOH\Ë˜İ\œ™[Ø[]KœÙ\ÜÚ[Û’Y
+H™]\›ÃBˆYˆ
+]Kœİ]\ÈOOH	Ø[œİÙ\™Y	È	‰ˆ]K˜[œİÙ\ˆ	‰ˆ]\ËœY\ÛÛ›™Xİ[Û‹˜İ\œ™[™[[İQ\ØÜš\[ÛŠHÃBˆYˆ
+\Ë˜İ\œ™[Ø[]JH\Ë˜İ\œ™[Ø[]KØ\Ğ[œİÙ\™YHYNÃBˆÛÛœİ[œİÙ\‘\ØÈH™]È•ÔÙ\ÜÚ[Û‘\ØÜš\[ÛŠ]K˜[œİÙ\ŠNÃBˆHÃBˆ]ØZ]\ËœY\ÛÛ›™Xİ[Û‹œÙ]™[[İQ\ØÜš\[ÛŠ[œİÙ\‘\ØÊNÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHÙ]™[[İQ\ØÜš\[ÛˆÒÉËÈÚYNˆ	ØØ[\‰Ë\Nˆ\ËœY\ÛÛ›™Xİ[Û‹œ™[[İQ\ØÜš\[ÛË\K]Y[Õ˜[œØÙZ]™\œÎˆ\ËœY\ÛÛ›™Xİ[Û‹™Ù]˜[œØÙZ]™\œÊ
+K™š[\Š][HOˆ][Kœ™XÙZ]™\Ë˜XÚÏËšÚ[™OOH	Ø]Y[ÉÊK›X\
+][HOˆ
+ÈZYˆ][K›ZY\™Xİ[Ûˆ][K™\™Xİ[Û‹İ\œ™[\™Xİ[Ûˆ][K˜İ\œ™[\™Xİ[Û‹˜XÚÔİ]Nˆ][Kœ™XÙZ]™\‹˜XÚËœ™XYTİ]K˜XÚÓ]]Yˆ][Kœ™XÙZ]™\‹˜XÚË›]]YJJHJNÃBˆHØ]Ú
+\œ›ÜŠHÃBˆÛÛœÛÛK™\œ›ÜŠ	ÖĞĞSHÙ]™[[İQ\ØÜš\[Ûˆ\œ›Ü‰ËÈ˜[YNˆ\œ›ÜË›˜[YKY\ÜØYÙNˆ\œ›ÜË›Y\ÜØYÙHK\œ›ÜŠNÃBˆ›İÈ\œ›ÜÃBˆCBˆÛÛœÛÛK›ÙÊ	ÖĞĞSH™\ÜY\İH™XÚXšYIÊNÃBˆ]ØZ]\Ë™›\Ú[™[™ÒXÙPØ[™Y]\Ê
+NÃBˆÛÛœİX™[HØİ[Y[™Ù][[Y[RY
+	ØØ[\İ]\Ë[X™[	ÊNÃBˆYˆ
+X™[
+HX™[^ÛÛ[H	ĞÛÛ™Xİ[™È]Y[Ë‹‹‰ÎÃBˆH[ÙHYˆ
+]Kœİ]\ÈOOH	Ü™Z™XİY	È]Kœİ]\ÈOOH	Ù[™Y	ÊHÃBˆ\Ë™[™›ÚXÙPØ[
+˜[ÙJNÃBˆCBˆCBˆK\œ›ÜˆOˆÛÛœÛÛK™\œ›ÜŠ	ÖĞĞSH\œ›ÜˆHÙpìX[^˜XÚpìÛ‰Ë\œ›ÜŠJJNÃBƒBˆ\Ë˜Ø[ÚYÛ˜[[™Õ[œİXœØÜšX™\Ëœ\Ú
+Ø[ØË˜ÛÛXİ[ÛŠ	ØØ[YPØ[™Y]\ÉÊKÚ\™J	ØØ[Ù\ÜÚ[Û’Y	Ë	ÏOIËØ[Ù\ÜÚ[Û’Y
+K›Û”Û˜\Úİ
+Û˜\OˆÃBˆÛ˜\™ØĞÚ[™Ù\Ê
+K™›Ü‘XXÚ
+Ú[™ÙHOˆÃBˆYˆ
+Ú[™ÙK\HOOH	ØYY	ÊHÃBˆÛÛœİØ[™Y]HHÚ[™ÙK™ØË™]J
+NÃBˆ\Ë˜Ø[XÙPÛİ[\œËœ™XÙZ]™Y
+ÊÎÃBˆÛÛœİØ[™Y]UYœ˜YÈHØ[™Y]K\Ù\›˜[YQœ˜YÛY[Ø[™Y]K˜Ø[™Y]OË›X]Ú
+ÊÎ—ŸÊ]Yœ˜Y×ÊÊ×—×JÊKÊOË–ÌWH[ÃBˆÛÛœİÙ\ÜÚ[Û“X]Ú\ÈHHXØ[™Y]K˜Ø[Ù\ÜÚ[Û’Y	‰ˆØ[™Y]K˜Ø[Ù\ÜÚ[Û’YOOH\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’YÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHPÑH™XÚXšYÉËÈØ[Ù\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]OË˜Ø[Ù\ÜÚ[Û’Y\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’Y[Ø[™Y]TÙ\ÜÚ[Û’YˆØ[™Y]K˜Ø[Ù\ÜÚ[Û’Y[İ\œ™[Ù\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’Y[Ûİ[ˆ\Ë˜Ø[XÙPÛİ[\œËœ™XÙZ]™Y\NˆØ[™Y]K˜Ø[™Y]HÈ™]È•ÒXÙPØ[™Y]JØ[™Y]JK\Hˆ[›İØÛÛˆØ[™Y]K˜Ø[™Y]HÈ™]È•ÒXÙPØ[™Y]JØ[™Y]JKœ›İØÛÛˆ[\Ù\›˜[YQœ˜YÛY[ˆØ[™Y]UYœ˜YËÙ\ÜÚ[Û“X]Ú\ÈJNÃBˆ\Ë˜Y™[[İRXÙPØ[™Y]JØ[™Y]JNÃBˆCBˆJNÃBˆK\œ›ÜˆOˆÛÛœÛÛK™\œ›ÜŠ	ÖĞĞSH\œ›Üˆ™XÚXšY[™ÈØ[™Y]ÜÈPÑN‰Ë\œ›ÜŠJJNÃBƒBˆHØ]Ú
+\œŠHÃBˆÛÛœÛÛK™\œ›ÜŠ	ÖĞĞSH˜[È[ˆ]\IËØ[İYÙKÈ˜[YNˆ\œË›˜[YKY\ÜØYÙNˆ\œË›Y\ÜØYÙHK\œŠNÃBˆÛÛœÛÛK™\œ›ÜŠ	ÖĞĞSHÙ]\Ù\“YYXHÈ[šXÚ[ÈH[XYH˜[0ìÉËÈ˜[YNˆ\œË›˜[YKY\ÜØYÙNˆ\œË›Y\ÜØYÙHK\œŠNÃBˆÛÛœÛÛK™\œ›ÜŠ‘\œ›Üˆ[[šXÚX\ˆ[XYHÙX”•Îˆ‹\œŠNÃBˆ\ËœÚİÕØ\İ
+›ÈÙHYÈ[šXÚX\ˆH[XYNˆ	Ù\œ‹›Y\ÜØYÙH\œŸX™\œ›ÜˆŠNÃBˆ\Ë™[™›ÚXÙPØ[
+˜[ÙJNÃBˆCBˆCBƒBˆ\İ[’[˜ÛÛZ[™Õ›ÚXÙPØ[Ê
+HÃBˆYˆ
+]Ú[™İË™ŠH™]\›ÃBˆYˆ
+\Ë˜Ø[[œİXœØÜšX™JHÈ\Ë˜Ø[[œİXœØÜšX™J
+NÈ\Ë˜Ø[[œİXœØÜšX™HH[ÈCBˆÛÛœİ^S˜[YHH\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+NÃBˆÛÛœİ\ĞYZ[ˆH\Ë˜İ\œ™[\Ù\‹œ›ÛHOOH	ØYZ[‰ÎÃBˆÛÛœİØ[ÈH‹˜ÛÛXİ[ÛŠ	İÙXœ×ØØ[ÉÊNÃBˆÛÛœİÛØ[H
+Y]JHOˆÃBˆYˆ
+\Ë˜İ\œ™[Ø[]OËšYOOHY	‰ˆ
+]Kœİ]\ÈOOH	Ù[™Y	È]Kœİ]\ÈOOH	Ü™Z™XİY	ÊJHÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHš[˜[^˜XÚpìÛˆ™XÚXšYHÜˆ[İ›È^™[[ÉËÈİ]\Îˆ]Kœİ]\ËØ[Ù\ÜÚ[Û’Yˆ]K˜Ø[Ù\ÜÚ[Û’YJNÃBˆ\Ë›\İ[˜ÛÛZ[™ĞØ[YH[ÃBˆ\Ë™[™›ÚXÙPØ[
+˜[ÙJNÃBˆ™]\›ÃBˆCBˆYˆ
+\Ë›\İ[˜ÛÛZ[™ĞØ[YOOHY	‰ˆ
+]Kœİ]\ÈOOH	Ù[™Y	È]Kœİ]\ÈOOH	Ü™Z™XİY	ÊJHÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHš[˜[^˜XÚpìÛˆ™XÚXšYHÜˆ[İ›È^™[[ÉËÈİ]\Îˆ]Kœİ]\ËØ[Ù\ÜÚ[Û’Yˆ]K˜Ø[Ù\ÜÚ[Û’YJNÃBˆ\Ë›\İ[˜ÛÛZ[™ĞØ[YH[ÃBˆ\Ë™[™›ÚXÙPØ[
+˜[ÙJNÃBˆ™]\›ÃBˆCBˆÛÛœİ[Y\İ[\H[X™\Š]K[Y\İ[\
+NÃBˆÛÛœİYÙS\ÈH[Y\İ[\È]K››İÊ
+HH[Y\İ[\ˆÃBˆÛÛœİ™XÙ[[›İYÚH][Y\İ[\
+[X™\‹š\Ñš[š]JYÙS\ÊH	‰ˆX]˜XœÊYÙS\ÊHHL
+ˆŒ
+ˆL
+NÃBˆÛÛœİØ[\”›ÛHHİš[™Ê]K˜Ø[\”›ÛH	ÉÊKš[J
+KÓİÙ\Ø\ÙJ
+NÃBˆÛÛœİ›Ü›X[^™YYHİš[™ÊY	ÉÊKš[J
+KÓİÙ\Ø\ÙJ
+NÃBˆÛÛœİ›Ü›X[^™Y^S˜[YHHİš[™Ê^S˜[YH	ÉÊKš[J
+KÓİÙ\Ø\ÙJ
+NÃBˆÛÛœİÛÜšÙ\Ø[\ˆHØ[\”›ÛHOOH	İÛÜšÙ\‰È
+Ø[\”›ÛHOOH	ØYZ[‰È	‰ˆ\ËÛÜšÙ\œËœÛÛYJÛÜšÙ\ˆOƒBˆİÛÜšÙ\‹™[˜[YKÛÜšÙ\‹\Ù\›˜[YWKœÛÛYJ˜[YHOˆİš[™Ê˜[YH	ÉÊKš[J
+KÓİÙ\Ø\ÙJ
+HOOH›Ü›X[^™YY
+CBˆ
+JNÃBˆÛÛœİ\Ñ›Ü“YHH\ĞYZ[ƒBˆÈÛÜšÙ\Ø[\ƒBˆˆ›Ü›X[^™YYOOH›Ü›X[^™Y^S˜[YH	‰ˆØ[\”›ÛHOOH	ØYZ[‰ÎÃBˆYˆ
+]Kœİ]\ÈOOH	ØØ[[™ÉÈZ\Ñ›Ü“YH\™XÙ[[›İYÚ\Ë›\İ[˜ÛÛZ[™ĞØ[YOOHY
+H™]\›ÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSH[XYH[˜[H]XİYIËÈYØ[\ˆ]K˜Ø[\‹Ø[\”›ÛK™XÚ\Y[ˆ]Kœ™XÚ\Y[JNÃBˆÛÛœİØ[Ù\ÜÚ[Û’YH]K˜Ø[Ù\ÜÚ[Û’Y]KœÙ\ÜÚ[Û’Y[ÃBˆ\Ë˜İ\œ™[Ø[]HHÈY‹‹™]KØ[Ù\ÜÚ[Û’YÙ\ÜÚ[Û’YˆØ[Ù\ÜÚ[Û’YNÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHÙ\ÚpìÛˆ[˜[H›Ü›X[^˜YIËÈØ[Ù\ÜÚ[Û’Yİ\œ™[Ù\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]KœÙ\ÜÚ[Û’Y\ÔÙ\ÜÚ[Û’YˆHXØ[Ù\ÜÚ[Û’YJNÃBˆYˆ
+XØ[Ù\ÜÚ[Û’Y
+HÛÛœÛÛK™\œ›ÜŠ	ÖĞĞSHH[XYH[˜[H›ÈY[™HØ[Ù\ÜÚ[Û’YÈ›ÈÙHYYH™\šYšXØ\ˆH›Ü›XHÙYİ\˜HH\[™[˜ÚXHHİ\ÈPÑHØ[™Y]\Ë‰ÊNÃBˆ\Ë›\İ[˜ÛÛZ[™ĞØ[YHYÃBˆ\ËšYÙÙ\’[˜ÛÛZ[™ĞØ[[\
+\ĞYZ[ˆÈ
+]K˜Ø[\ˆ	Õ˜X˜Z˜YÜ‰ÊHˆ\Ë™Ù]YZ[”™\Ù[˜ÙR[™›Ê
+K›˜[YJNÃBˆNÃBˆYˆ
+\ĞYZ[ŠHÃBˆËÈ\ØİXÚHØİ[Y[ÜÈÛÛ›ØÚYÜÈH0êXÛšXÛÜËÚ[ˆ™\]Y\š\ˆ\›Z\ÛÈH\İ\ˆÙHHÛÛXØÚpìÛ‹ƒBˆÛÛœİÛÜšÙ\‘Øİ[Y[YÈHË‹‹›™]ÈÙ]
+\ËÛÜšÙ\œË™›]X\
+ÛÜšÙ\ˆOˆİÛÜšÙ\‹™[˜[YKÛÜšÙ\‹\Ù\›˜[YWJCBˆ›X\
+˜[YHOˆİš[™Ê˜[YH	ÉÊKš[J
+JK™š[\Š›ÛÛX[ŠJWNÃBˆÛÛœİ[œİXœØÜšX™\œÈHÛÜšÙ\‘Øİ[Y[YË›X\
+ÛÜšÙ\’YOƒBˆØ[Ë™ØÊÛÜšÙ\’Y
+K›Û”Û˜\Úİ
+ØÈOˆÃBˆYˆ
+ØË™^\İÊHÛØ[
+ØËšYØË™]J
+JNÃBˆK\œ›ÜˆOˆÛÛœÛÛK™\œ›ÜŠĞĞSH\œ›Üˆ\ØİXÚ[™È[XYHH	İÛÜšÙ\’YN˜\œ›ÜŠJCBˆ
+NÃBˆHÃBˆ[œİXœØÜšX™\œËœ\Ú
+Ø[Ë›Û”Û˜\Úİ
+Û˜\ÚİOˆÃBˆÛ˜\Úİ™ØĞÚ[™Ù\Ê
+K™›Ü‘XXÚ
+Ú[™ÙHOˆÃBˆYˆ
+Ú[™ÙK\HOOH	ØYY	ÈÚ[™ÙK\HOOH	Û[ÙYšYY	ÊHÛØ[
+Ú[™ÙK™ØËšYÚ[™ÙK™ØË™]J
+JNÃBˆJNÃBˆK\œ›ÜˆOˆÛÛœÛÛKØ\›Š	ÖĞĞSHH\ØİXÚHÛØ˜[›È\İ0èH\›Z]YNÈÙHX[Y[™[ˆ\È\ØİXÚ\ÈÜˆ0êXÛšXÛÎ‰Ë\œ›ÜŠJJNÃBˆHØ]Ú
+\œ›ÜŠHÃBˆÛÛœÛÛKØ\›Š	ÖĞĞSH›ÈÙHYÈ[šXÚX\ˆH\ØİXÚHÛØ˜[H[XY\Î‰Ë\œ›ÜŠNÃBˆCBˆ\Ë˜Ø[[œİXœØÜšX™HH
+
+HOˆ[œİXœØÜšX™\œË™›Ü‘XXÚ
+[œİXœØÜšX™HOˆÈHÈ[œİXœØÜšX™J
+NÈHØ]Ú
+ÊHßHJNÃBˆH[ÙHÃBˆ\Ë˜Ø[[œİXœØÜšX™HHØ[Ë™ØÊ^S˜[YJK›Û”Û˜\Úİ
+ØÈOˆÃBˆYˆ
+ØË™^\İÊHÛØ[
+ØËšYØË™]J
+JNÃBˆK\œ›ÜˆOˆÛÛœÛÛK™\œ›ÜŠ	ÖĞĞSH\œ›Üˆ\ØİXÚ[™È[XYH[˜[N‰Ë\œ›ÜŠJNÃBˆCBˆCBƒBˆšYÙÙ\’[˜ÛÛZ[™ĞØ[[\
+Ø[\“˜[YJHÃBˆ\Ë›Ü[•›ÚXÙPØ[[Ù[
+ÃBˆ˜[YNˆØ[\“˜[YKBˆİ]\Îˆ	Ó[XYH[˜[K‹‹‰ËBˆ\Ò[˜ÛÛZ[™ÎˆYCBˆJNÃBˆ\ËœİÜ[˜ÛÛZ[™ĞØ[š[™İÛ™J
+NÃBˆÛİ[™[™Ú[™Kœ^PØ[[\Ûİ[™
+
+NÃBˆ\Ë˜Ø[š[™İÛ™R[\˜[HÙ][\˜[
+
+
+HOˆÛİ[™[™Ú[™Kœ^PØ[[\Ûİ[™
+
+KN
+NÃBˆCBƒBˆİÜ[˜ÛÛZ[™ĞØ[š[™İÛ™J
+HÃBˆÛX\’[\˜[
+\Ë˜Ø[š[™İÛ™R[\˜[
+NÃBˆ\Ë˜Ø[š[™İÛ™R[\˜[H[ÃBˆCBƒBˆ\Ş[˜ÈXØÙ\[˜ÛÛZ[™ĞØ[
+
+HÃBˆYˆ
+]\Ë˜İ\œ™[Ø[]JH™]\›ÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHÙ\ÚpìÛˆH[XYIËÈÙ\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]KœÙ\ÜÚ[Û’Y›ÛNˆ\Ë˜İ\œ™[\Ù\‹œ›ÛKÚYNˆ	ØØ[YIÈJNÃBˆ\ËœİÜ[˜ÛÛZ[™ĞØ[š[™İÛ™J
+NÃBˆÛÛœİXØÙ\]ÛˆHØİ[Y[™Ù][[Y[RY
+	Ø‹XXØÙ\XØ[	ÊNÃBˆYˆ
+XØÙ\]ÛŠHXØÙ\]Û‹™\ØX›YHYNÃBˆÛÛœİØ[İ]\ÓX™[HØİ[Y[™Ù][[Y[RY
+	ØØ[\İ]\Ë[X™[	ÊNÃBˆYˆ
+Ø[İ]\ÓX™[
+HØ[İ]\ÓX™[^ÛÛ[H	ĞÛÛ™Xİ[™È]Y[Ë‹‹‰ÎÃBˆ]Ø[İYÙHH	ÙÙ]\Ù\“YYXIÎÃBƒBˆHÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHÙ]\Ù\“YYXH[šXÚXYÉËÈÙ\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]KœÙ\ÜÚ[Û’Y›ÛNˆ\Ë˜İ\œ™[\Ù\‹œ›ÛK\™Xİ[Ûˆ	Ú[˜ÛÛZ[™ÉÈJNÃBˆÛÛœİİ™X[HH]ØZ]˜]šYØ]Ü‹›YYXQ]šXÙ\Ë™Ù]\Ù\“YYXJÈ]Y[ÎˆÈXÚĞØ[˜Ù[][ÛˆYK›Ú\ÙTİ\™\ÜÚ[ÛˆYK]]ÑØZ[ÛÛ›ÛˆYHKšY[Îˆ˜[ÙHJNÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHZXÜ°ìÙ›Û›ÈØ[šYÉÊNÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHİ™X[HØØ[Ø[šYÉËÈXİ]™Nˆİ™X[K˜Xİ]™HJNÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHØ[YY]Y[È˜XÚÜÎ‰Ëİ™X[K™Ù]]Y[Õ˜XÚÜÊ
+K›[™İ
+NÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSH][H]Y[È˜XÚÜÉËİ™X[K™Ù]]Y[Õ˜XÚÜÊ
+K›X\
+˜XÚÈOˆ
+ÈX™[ˆ˜XÚË›X™[[˜X›Yˆ˜XÚË™[˜X›Y]]Yˆ˜XÚË›]]Y™XYTİ]Nˆ˜XÚËœ™XYTİ]HJJJNÃBˆYˆ
+]\Ë˜İ\œ™[Ø[]JHÈİ™X[K™Ù]˜XÚÜÊ
+K™›Ü‘XXÚ
+˜XÚÈOˆ˜XÚËœİÜ
+
+JNÈÛÛœÛÛKš[™›Ê	ÖĞĞSHİ™X[HX™\˜YÎˆH[XYH\›Z[°ìÈ[\ÈHÛÛ\]\ˆÙ]\Ù\“YYXIÊNÈ™]\›ÈCBˆØ[İYÙHH	ØÛÛ™šYİ\˜\ˆİ™X[HØØ[	ÎÃBˆ\Ë›ØØ[İ™X[HHİ™X[NÃBˆ\Ëœ[™[™ÒXÙPØ[™Y]\ÈH×NÃBˆ\Ë˜Ø[XÙPÛİ[\œÈHÈÙ[™\˜]Yˆ™XÙZ]™YˆYYˆNÃBˆ\Ë˜Ø[ÚYÛ˜[[™Õ[œİXœØÜšX™\ÈH×NÃBƒBˆØ[İYÙHH	ØÜ™X\ˆ•ÔY\ÛÛ›™Xİ[Û‰ÎÃBˆ\ËœY\ÛÛ›™Xİ[ÛˆH™]È•ÔY\ÛÛ›™Xİ[ÛŠÃBˆXÙTÙ\™\œÎˆŞÈ\›Îˆ	Üİ[œİ[‹›™ÛÛÙÛK˜ÛÛNŒNLÌ‰ÈWCBˆJNÃBƒBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHØ[YYH\İ\ÈØØ[\Î‰Ë\Ë›ØØ[İ™X[K™Ù]]Y[Õ˜XÚÜÊ
+K›[™İ
+NÃBˆ\Ë›ØØ[İ™X[K™Ù]˜XÚÜÊ
+K™›Ü‘XXÚ
+˜XÚÈOˆÃBˆ\ËœY\ÛÛ›™Xİ[Û‹˜Y˜XÚÊ˜XÚË\Ë›ØØ[İ™X[JNÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSH˜XÚÈYÜ™YØYÉËÈÚ[™ˆ˜XÚËšÚ[™[˜X›Yˆ˜XÚË™[˜X›Y]]Yˆ˜XÚË›]]Y™XYTİ]Nˆ˜XÚËœ™XYTİ]HJNÃBˆJNÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHØ[YYH˜XÚÜÈYÜ™YØYÜÎ‰Ë\ËœY\ÛÛ›™Xİ[Û‹™Ù]Ù[™\œÊ
+K™š[\ŠÙ[™\ˆOˆÙ[™\‹˜XÚÏËšÚ[™OOH	Ø]Y[ÉÊK›[™İ
+NÃBˆ\Ë˜ÛÛ™šYİ\™T™[[İP]Y[Ê
+NÃBƒBˆÛÛœİØ[ØÈH‹˜ÛÛXİ[ÛŠ	İÙXœ×ØØ[ÉÊK™ØÊ\Ë˜İ\œ™[Ø[]KšY
+NÃBˆ\Ë˜Ø[ÚYÛ˜[[™Õ[œİXœØÜšX™\Ëœ\Ú
+Ø[ØË›Û”Û˜\Úİ
+ØÈOˆÃBˆYˆ
+YØË™^\İÊH™]\›ÃBˆÛÛœİØ[HØË™]J
+NÃBˆYˆ
+Ø[˜Ø[Ù\ÜÚ[Û’Y	‰ˆ\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’Y	‰ˆØ[˜Ø[Ù\ÜÚ[Û’YOOH\Ë˜İ\œ™[Ø[]KœÙ\ÜÚ[Û’Y
+H™]\›ÃBˆYˆ
+Ø[œİ]\ÈOOH	Ù[™Y	ÈØ[œİ]\ÈOOH	Ü™Z™XİY	ÊHÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHš[˜[^˜XÚpìÛˆ™XÚXšYHÜˆ[İ›È^™[[ÉËÈİ]\ÎˆØ[œİ]\ËØ[Ù\ÜÚ[Û’YˆØ[˜Ø[Ù\ÜÚ[Û’YJNÃBˆ\Ë™[™›ÚXÙPØ[
+˜[ÙJNÃBˆCBˆK\œ›ÜˆOˆÛÛœÛÛK™\œ›ÜŠ	ÖĞĞSH\œ›ÜˆÚYİZY[™È[\İYÈHH[XYN‰Ë\œ›ÜŠJJNÃBˆÛÛœİØ[YPØ[™Y]\ÈHØ[ØË˜ÛÛXİ[ÛŠ	ØØ[YPØ[™Y]\ÉÊNÃBƒBˆ\ËœY\ÛÛ›™Xİ[Û‹›ÛšXÙXØ[™Y]HH]™[OˆÃBˆYˆ
+]™[˜Ø[™Y]JHÃBˆÛÛœİØ[™Y]Q]HH]™[˜Ø[™Y]KÒ”ÓÓŠ
+NÃBˆYˆ
+\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’Y
+HØ[™Y]Q]K˜Ø[Ù\ÜÚ[Û’YH\Ë˜İ\œ™[Ø[]KœÙ\ÜÚ[Û’YÃBˆ\Ë˜Ø[XÙPÛİ[\œË™Ù[™\˜]Y
+ÊÎÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHPÑHÙ[™\˜YÉËÈØ[Ù\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]OË˜Ø[Ù\ÜÚ[Û’Y\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’Y[İ\œ™[Ù\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’Y[Ûİ[ˆ\Ë˜Ø[XÙPÛİ[\œË™Ù[™\˜]Y›ÛNˆ\Ë˜İ\œ™[\Ù\‹œ›ÛK\Nˆ]™[˜Ø[™Y]K\K›İØÛÛˆ]™[˜Ø[™Y]Kœ›İØÛÛ\Ù\›˜[YQœ˜YÛY[ˆ]™[˜Ø[™Y]K\Ù\›˜[YQœ˜YÛY[[ÙZYˆ]™[˜Ø[™Y]KœÙZYJNÃBˆØ[YPØ[™Y]\Ë˜Y
+Ø[™Y]Q]JK[Š
+
+HOˆÛÛœÛÛKš[™›Ê	ÖĞĞSHPÑH[šXYÈ[Ø[˜[HÙpìX[^˜XÚpìÛ‰ËÈÛİ[ˆ\Ë˜Ø[XÙPÛİ[\œË™Ù[™\˜]YÚYNˆ	ØØ[YIÈJJK˜Ø]Ú
+\œ›ÜˆOˆÛÛœÛÛK™\œ›ÜŠ	ÖĞĞSH\œ›Üˆ[šX[™ÈPÑH[™XÙ\Ü‰Ë\œ›ÜŠJNÃBˆH[ÙHÈÛÛœÛÛKš[™›Ê	ÖĞĞSHPÑHØ]\š[™ÈÛÛ\]YÉËÈ›ÛNˆ\Ë˜İ\œ™[\Ù\‹œ›ÛKÙ[™\˜]YÛİ[ˆ\Ë˜Ø[XÙPÛİ[\œË™Ù[™\˜]YJNÈCBˆNÃBƒBˆØ[İYÙHH	ÜÙ]™[[İQ\ØÜš\[ÛˆÙ™\IÎÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHÙ™\H™[[İH™XÚXšYNÈ\XØ[™ÉÊNÃBˆ]ØZ]\ËœY\ÛÛ›™Xİ[Û‹œÙ]™[[İQ\ØÜš\[ÛŠ™]È•ÔÙ\ÜÚ[Û‘\ØÜš\[ÛŠ\Ë˜İ\œ™[Ø[]K›Ù™™\ŠJNÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHÙ]™[[İQ\ØÜš\[ÛˆÒÉËÈÚYNˆ	ØØ[YIË\Nˆ\ËœY\ÛÛ›™Xİ[Û‹œ™[[İQ\ØÜš\[ÛË\K]Y[Õ˜[œØÙZ]™\œÎˆ\ËœY\ÛÛ›™Xİ[Û‹™Ù]˜[œØÙZ]™\œÊ
+K™š[\Š][HOˆ][Kœ™XÙZ]™\Ë˜XÚÏËšÚ[™OOH	Ø]Y[ÉÊK›X\
+][HOˆ
+ÈZYˆ][K›ZY\™Xİ[Ûˆ][K™\™Xİ[Û‹İ\œ™[\™Xİ[Ûˆ][K˜İ\œ™[\™Xİ[Û‹˜XÚÔİ]Nˆ][Kœ™XÙZ]™\‹˜XÚËœ™XYTİ]K˜XÚÓ]]Yˆ][Kœ™XÙZ]™\‹˜XÚË›]]YJJHJNÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHÙ™\H™[[İH\XØYIÊNÃBˆØ[İYÙHH	ØÜ™X]P[œİÙ\‰ÎÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHÜ™X]P[œİÙ\ˆ[šXÚXYÉÊNÃBˆÛÛœİ[œİÙ\ˆH]ØZ]\ËœY\ÛÛ›™Xİ[Û‹˜Ü™X]P[œİÙ\Š
+NÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSH™\ÜY\İHÜ™XYIËÈ\Nˆ[œİÙ\‹\K\ÔÙˆHX[œİÙ\‹œÙ]Y[Ó[™\Îˆ
+[œİÙ\‹œÙ	ÉÊKœÜ]
+××‹ÊK™š[\Š[™HOˆ×›OX]Y[ß˜OJÙ[™™XİŸÙ[™Û›_™Xİ›Û›_[˜Xİ]™JIË\İ
+[™JJHJNÃBˆØ[İYÙHH	ÜÙ]ØØ[\ØÜš\[Ûˆ™\ÜY\İIÎÃBˆ]ØZ]\ËœY\ÛÛ›™Xİ[Û‹œÙ]ØØ[\ØÜš\[ÛŠ[œİÙ\ŠNÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHÙ]ØØ[\ØÜš\[ÛˆÒÉËÈÚYNˆ	ØØ[YIË\Nˆ\ËœY\ÛÛ›™Xİ[Û‹›ØØ[\ØÜš\[ÛË\HJNÃBƒBˆØ[İYÙHH	ÙİX\™\ˆ™\ÜY\İIÎÃBˆ]ØZ]Ø[ØË\]JÃBˆİ]\Îˆ	Ø[œİÙ\™Y	ËBˆ[œİÙ\ˆÈ\Nˆ[œİÙ\‹\KÙˆ[œİÙ\‹œÙCBˆJNÃBˆYˆ
+\Ë˜İ\œ™[Ø[]JH\Ë˜İ\œ™[Ø[]KØ\Ğ[œİÙ\™YHYNÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSH™\ÜY\İH[šXYIÊNÃBˆØİ[Y[™Ù][[Y[RY
+	Ø‹XXØÙ\XØ[	ÊOË˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆ]ØZ]\Ë™›\Ú[™[™ÒXÙPØ[™Y]\Ê
+NÃBˆÛÛœİØ[İ]\ÈHØİ[Y[™Ù][[Y[RY
+	ØØ[\İ]\Ë[X™[	ÊNÃBˆYˆ
+Ø[İ]\ÊHØ[İ]\Ë^ÛÛ[H	ĞÛÛ™Xİ[™È]Y[Ë‹‹‰ÎÃBƒBˆ\Ë˜Ø[ÚYÛ˜[[™Õ[œİXœØÜšX™\Ëœ\Ú
+Ø[ØË˜ÛÛXİ[ÛŠ	ØØ[\Ø[™Y]\ÉÊKÚ\™J	ØØ[Ù\ÜÚ[Û’Y	Ë	ÏOIË\Ë˜İ\œ™[Ø[]KœÙ\ÜÚ[Û’Y
+K›Û”Û˜\Úİ
+Û˜\OˆÃBˆÛ˜\™ØĞÚ[™Ù\Ê
+K™›Ü‘XXÚ
+Ú[™ÙHOˆÃBˆYˆ
+Ú[™ÙK\HOOH	ØYY	ÊHÃBˆÛÛœİØ[™Y]HHÚ[™ÙK™ØË™]J
+NÃBˆ\Ë˜Ø[XÙPÛİ[\œËœ™XÙZ]™Y
+ÊÎÃBˆÛÛœİØ[™Y]UYœ˜YÈHØ[™Y]K\Ù\›˜[YQœ˜YÛY[Ø[™Y]K˜Ø[™Y]OË›X]Ú
+ÊÎ—ŸÊ]Yœ˜Y×ÊÊ×—×JÊKÊOË–ÌWH[ÃBˆÛÛœİÙ\ÜÚ[Û“X]Ú\ÈHHXØ[™Y]K˜Ø[Ù\ÜÚ[Û’Y	‰ˆØ[™Y]K˜Ø[Ù\ÜÚ[Û’YOOH\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’YÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHPÑH™XÚXšYÉËÈØ[Ù\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]OË˜Ø[Ù\ÜÚ[Û’Y\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’Y[Ø[™Y]TÙ\ÜÚ[Û’YˆØ[™Y]K˜Ø[Ù\ÜÚ[Û’Y[İ\œ™[Ù\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’Y[Ûİ[ˆ\Ë˜Ø[XÙPÛİ[\œËœ™XÙZ]™Y\NˆØ[™Y]K˜Ø[™Y]HÈ™]È•ÒXÙPØ[™Y]JØ[™Y]JK\Hˆ[›İØÛÛˆØ[™Y]K˜Ø[™Y]HÈ™]È•ÒXÙPØ[™Y]JØ[™Y]JKœ›İØÛÛˆ[\Ù\›˜[YQœ˜YÛY[ˆØ[™Y]UYœ˜YËÙ\ÜÚ[Û“X]Ú\ÈJNÃBˆ\Ë˜Y™[[İRXÙPØ[™Y]JØ[™Y]JNÃBˆCBˆJNÃBˆK\œ›ÜˆOˆÛÛœÛÛK™\œ›ÜŠ	ÖĞĞSH\œ›Üˆ™XÚXšY[™ÈØ[™Y]ÜÈPÑN‰Ë\œ›ÜŠJJNÃBƒBƒBˆHØ]Ú
+\œŠHÃBˆÛÛœÛÛK™\œ›ÜŠ	ÖĞĞSH˜[È[ˆ]\IËØ[İYÙKÈ˜[YNˆ\œË›˜[YKY\ÜØYÙNˆ\œË›Y\ÜØYÙHK\œŠNÃBˆÛÛœÛÛK™\œ›ÜŠ	ÖĞĞSHÙ]\Ù\“YYXHÈXÙ\XÚpìÛˆ˜[0ìÉËÈ˜[YNˆ\œË›˜[YKY\ÜØYÙNˆ\œË›Y\ÜØYÙHK\œŠNÃBˆÛÛœÛÛK™\œ›ÜŠ‘\œ›Üˆ[XÙ\\ˆ[XYNˆ‹\œŠNÃBˆ\Ë™[™›ÚXÙPØ[
+
+NÃBˆCBˆCBƒBˆÛÛ™šYİ\™T™[[İP]Y[Ê
+HÃBˆÛÛœİ]Y[ÈHØİ[Y[™Ù][[Y[RY
+	Ü™[[İKX]Y[Ë\İ™X[IÊNÈYˆ
+X]Y[ÊHÈÛÛœÛÛK™\œ›ÜŠ	ÖĞĞSH[[Y[ÈH]Y[È™[[İÈ›È[˜ÛÛ˜YÉÊNÈ™]\›ÈCBˆÛÛœİY\ÛÛ›™Xİ[ÛˆH\ËœY\ÛÛ›™Xİ[ÛÃBˆ]Y[Ë˜]]Ü^HHYNÈ]Y[Ëœ^\Ò[›[™HHYNÈ]Y[Ë›Û[YHHNÃBˆÛÛœİ]Y[Ôİ[HHÙ]ÛÛ\]Yİ[J]Y[ÊNÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSH[[Y[È]Y[È™\šYšXØYÉËÈ\Ü^Nˆ]Y[Ôİ[K™\Ü^Kš\ÚXš[]Nˆ]Y[Ôİ[Kš\ÚXš[]K]]Yˆ]Y[Ë›]]Y^\Ò[›[™Nˆ]Y[Ëœ^\Ò[›[™HJNÃBˆ\ËœY\ÛÛ›™Xİ[Û‹›Û˜XÚÈH\Ş[˜È]™[OˆÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHÛ˜XÚÈZ™Xİ]YÉËÈÙ\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’YÚ[™ˆ]™[˜XÚÏËšÚ[™™XYTİ]Nˆ]™[˜XÚÏËœ™XYTİ]Kİ™X[PÛİ[ˆ]™[œİ™X[\ÏË›[™İJNÃBˆYˆ
+]™[œİ™X[\È	‰ˆ]™[œİ™X[\ÖÌJH]Y[ËœÜ˜ÓØš™XİH]™[œİ™X[\ÖÌNÃBˆ[ÙHYˆ
+]™[˜XÚÊHÈÛÛœİİ™X[HH™]ÈYYXTİ™X[J
+NÈİ™X[K˜Y˜XÚÊ]™[˜XÚÊNÈ]Y[ËœÜ˜ÓØš™XİHİ™X[NÈCBˆÛÛœİ™[[İU˜XÚÜÈH]Y[ËœÜ˜ÓØš™XİË™Ù]]Y[Õ˜XÚÜÏËŠ
+H×NÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSH]Y[È™[[İÈÛÛ™XİYÉÊNÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHİ™X[H™[[İÈ™XÚXšYÉËÈXİ]™Nˆ]Y[ËœÜ˜ÓØš™XİË˜Xİ]™Kİ™X[PÛİ[ˆ]™[œİ™X[\ÏË›[™İJNÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHØ[YY˜XÚÜÈ™[[İÜÎ‰Ë
+]™[œİ™X[\ÏË–ÌH]Y[ËœÜ˜ÓØš™Xİ
+OË™Ù]˜XÚÜÏËŠ
+K›[™İÈ]Y[Õ˜XÚÜÎˆ™[[İU˜XÚÜË›[™İ˜XÚÜÎˆ™[[İU˜XÚÜË›X\
+˜XÚÈOˆ
+ÈÚ[™ˆ˜XÚËšÚ[™[˜X›Yˆ˜XÚË™[˜X›Y]]Yˆ˜XÚË›]]Y™XYTİ]Nˆ˜XÚËœ™XYTİ]HJJHJNÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHÜ˜ÓØš™Xİ\ÚYÛ˜YÉËHX]Y[ËœÜ˜ÓØš™Xİ
+NÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSH]]Y‰Ë]Y[Ë›]]Y
+NÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSH^\Ò[›[™N‰Ë]Y[Ëœ^\Ò[›[™JNÃBˆÛÛœİ™[[İP]Y[Ôİ[HHÙ]ÛÛ\]Yİ[J]Y[ÊNÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSH\İ[ÈØ[İ[YÈ[]Y[ÉËÈ\Ü^Nˆ™[[İP]Y[Ôİ[K™\Ü^Kš\ÚXš[]Nˆ™[[İP]Y[Ôİ[Kš\ÚXš[]HJNÃBˆHÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSH]Y[Ëœ^HZ™Xİ]YÉÊNÃBˆ]ØZ]]Y[Ëœ^J
+NÃBˆØİ[Y[™Ù][[Y[RY
+	Ø‹Y[˜X›K\™[[İKX]Y[ÉÊOË˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSH]Y[È™\›ÙXÚpê[™ÜÙIÊNÃBˆHØ]Ú
+JHÃBˆØİ[Y[™Ù][[Y[RY
+	Ø‹Y[˜X›K\™[[İKX]Y[ÉÊOË˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆÛÛœÛÛK™\œ›ÜŠ	ÖĞĞSH\œ›Üˆ™\›ÙXÚY[™È]Y[ÉËJNÃBˆÛÛœÛÛKØ\›Š	ÖĞĞSH]]Ü^H›Ü]YXYÎÈØØHXİ]˜\ˆ]Y[È\˜HXš[]\ˆHØ[YK‰ËJNÃBˆCBˆNÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHÛ˜XÚÈ™YÚ\İ˜YÈ[\ÈH™XÚXš\ˆ\ØÜš\ÚpìÛˆ™[[İIËÈ™YÚ\İ\™Yˆ\[Ùˆ\ËœY\ÛÛ›™Xİ[Û‹›Û˜XÚÈOOH	Ù[˜İ[Û‰ËÚYÛ˜[[™Ôİ]Nˆ\ËœY\ÛÛ›™Xİ[Û‹œÚYÛ˜[[™Ôİ]HJNÃBˆ\ËœY\ÛÛ›™Xİ[Û‹›ÛšXÙXÛÛ›™Xİ[Ûœİ]XÚ[™ÙHH
+
+HOˆÃBˆÛÛœİİ]HHY\ÛÛ›™Xİ[ÛËšXÙPÛÛ›™Xİ[Û”İ]NÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHXÙPÛÛ›™Xİ[Û”İ]IËİ]KÈÙ\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’YÛÛ›™Xİ[Û”İ]NˆY\ÛÛ›™Xİ[Û‹˜ÛÛ›™Xİ[Û”İ]KÚYÛ˜[[™Ôİ]NˆY\ÛÛ›™Xİ[Û‹œÚYÛ˜[[™Ôİ]HJNÃBˆ\Ë›ÙÒXÙQXYÛ›ÜİXÜÊY\ÛÛ›™Xİ[Û‹	ÚXÙPÛÛ›™Xİ[Û”İ]IÊNÃBˆYˆ
+İ]HOOH	ØÛÛ›™XİY	Èİ]HOOH	ØÛÛ\]Y	ÊHÛÛœÛÛKš[™›Ê	ÖĞĞSHPÑH[Ø[°ìÈ\İYÉËİ]JNÃBˆYˆ
+İ]HOOH	ØÛÛ›™XİY	Èİ]HOOH	ØÛÛ\]Y	ÊH\Ë›ÛØ[ÛÛ›™XİY
+
+NÃBˆ[ÙHYˆ
+İ]HOOH	Ù˜Z[Y	ÊHÃBˆÛÛœİX™[HØİ[Y[™Ù][[Y[RY
+	ØØ[\İ]\Ë[X™[	ÊNÃBˆYˆ
+X™[
+HX™[^ÛÛ[H	ÔÚ[ˆ]HH]Y[ÉÎÃBˆÛÛœÛÛK™\œ›ÜŠ	ÖĞĞSHPÑH[Ø[°ìÈ\İYÈ˜Z[YÈ™]š\Ø\ˆØ[™Y]ÜÈÙ[™\˜YÜË™XÚXšYÜÈHYÜ™YØYÜÈ[ˆ[X›ÜÈ^™[[ÜË‰ÊNÃBˆCBˆNÃBˆY\ÛÛ›™Xİ[Û‹›Û˜ÛÛ›™Xİ[Ûœİ]XÚ[™ÙHH
+
+HOˆÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHÛÛ›™Xİ[Û”İ]IËY\ÛÛ›™Xİ[Û‹˜ÛÛ›™Xİ[Û”İ]KÈÙ\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’YÚYÛ˜[[™Ôİ]NˆY\ÛÛ›™Xİ[Û‹œÚYÛ˜[[™Ôİ]KXÙPÛÛ›™Xİ[Û”İ]NˆY\ÛÛ›™Xİ[Û‹šXÙPÛÛ›™Xİ[Û”İ]HJNÃBˆ\Ë›ÙÒXÙQXYÛ›ÜİXÜÊY\ÛÛ›™Xİ[Û‹	ØÛÛ›™Xİ[Û”İ]IÊNÃBˆNÃBˆY\ÛÛ›™Xİ[Û‹›ÛœÚYÛ˜[[™Üİ]XÚ[™ÙHH
+
+HOˆÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSHÚYÛ˜[[™Ôİ]IËY\ÛÛ›™Xİ[Û‹œÚYÛ˜[[™Ôİ]KÈÙ\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’YJNÃBˆ\Ë›ÙÒXÙQXYÛ›ÜİXÜÊY\ÛÛ›™Xİ[Û‹	ÜÚYÛ˜[[™Ôİ]IÊNÃBˆNÃBˆY\ÛÛ›™Xİ[Û‹›ÛšXÙYØ]\š[™Üİ]XÚ[™ÙHH
+
+HOˆÛÛœÛÛK›ÙÊ	ÖĞĞSH\İYÈPÑHØ]\š[™ÉËY\ÛÛ›™Xİ[Û‹šXÙQØ]\š[™Ôİ]KÈÙ\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’YJNÃBˆ\ËœY\ÛÛ›™Xİ[Û‹›ÛšXÙXØ[™Y]Y\œ›ÜˆH]™[OˆÛÛœÛÛKØ\›Š	ÖĞĞSH\œ›ÜˆPÑN‰Ë]™[™\œ›ÜÛÙK]™[™\œ›Ü•^
+NÃBˆÛX\’[\˜[
+Y\ÛÛ›™Xİ[Û‹—ØØ[İ]Ò[\˜[
+NÃBˆ\Ë›ÙÒXÙQXYÛ›ÜİXÜÊY\ÛÛ›™Xİ[Û‹	ÙXYÛ°ìÜİXÛÈ[šXÚX[	ÊNÃBˆY\ÛÛ›™Xİ[Û‹—ØØ[İ]Ò[\˜[HÙ][\˜[
+
+
+HOˆÃBˆYˆ
+Y\ÛÛ›™Xİ[Û‹˜ÛÛ›™Xİ[Û”İ]HOOH	ØÛÛ›™XİY	ÈY\ÛÛ›™Xİ[Û‹˜ÛÛ›™Xİ[Û”İ]HOOH	Ù˜Z[Y	ÈY\ÛÛ›™Xİ[Û‹˜ÛÛ›™Xİ[Û”İ]HOOH	ØÛÜÙY	ÊHÃBˆÛX\’[\˜[
+Y\ÛÛ›™Xİ[Û‹—ØØ[İ]Ò[\˜[
+NÃBˆY\ÛÛ›™Xİ[Û‹—ØØ[İ]Ò[\˜[H[ÃBˆYˆ
+Y\ÛÛ›™Xİ[Û‹˜ÛÛ›™Xİ[Û”İ]HOOH	ØÛÛ›™XİY	ÊH\Ë›ÙÒXÙQXYÛ›ÜİXÜÊY\ÛÛ›™Xİ[Û‹	Ù\İYÈ\›Z[˜[	ÊNÃBˆ™]\›ÃBˆCBˆ\Ë›ÙÒXÙQXYÛ›ÜİXÜÊY\ÛÛ›™Xİ[Û‹	ÜÙYİZ[ZY[ÉÊNÃBˆKL
+NÃBˆCBƒBˆ\Ş[˜ÈÙÒXÙQXYÛ›ÜİXÜÊY\ÛÛ›™Xİ[Û‹šYÙÙ\ŠHÃBˆYˆ
+\Y\ÛÛ›™Xİ[Ûˆ\[ÙˆY\ÛÛ›™Xİ[Û‹™Ù]İ]ÈOOH	Ù[˜İ[Û‰ÊH™]\›ÃBˆHÃBˆÛÛœİ™\ÜH]ØZ]Y\ÛÛ›™Xİ[Û‹™Ù]İ]Ê
+NÃBˆÛÛœİİ]ÈH\œ˜^K™œ›ÛJ™\Ü˜[Y\Ê
+JNÃBˆÛÛœİ˜[œÜÜÈHİ]Ë™š[\Š][HOˆ][K\HOOH	İ˜[œÜÜ	È	‰ˆ][KœÙ[XİYØ[™Y]TZ\’Y
+NÃBˆÛÛœİØ[™Y]TZ\œÈHİ]Ë™š[\Š][HOˆ][K\HOOH	ØØ[™Y]K\Z\‰ÊNÃBˆÛÛœİØ[™Y]PRYH™]ÈX\
+İ]Ë™š[\Š][HOˆ][K\HOOH	ÛØØ[XØ[™Y]IÈ][K\HOOH	Ü™[[İKXØ[™Y]IÊK›X\
+][HOˆÚ][KšY][WJJNÃBˆ]Ù[XİYZ\ˆH[ÃBˆ›Üˆ
+ÛÛœİ˜[œÜÜÙˆ˜[œÜÜÊHÃBˆÛÛœİZ\ˆH™\Ü™Ù]
+˜[œÜÜœÙ[XİYØ[™Y]TZ\’Y
+NÃBˆYˆ
+Z\ŠHÈÙ[XİYZ\ˆHZ\Èœ™XZÎÈCBˆCBˆYˆ
+\Ù[XİYZ\ŠHÙ[XİYZ\ˆHØ[™Y]TZ\œË™š[™
+Z\ˆOˆZ\‹œÙ[XİYOOHYJH[ÃBˆÛÛœİ\ØÜšX™TZ\ˆHZ\ˆOˆÃBˆÛÛœİØØ[HØ[™Y]PRY™Ù]
+Z\‹›ØØ[Ø[™Y]RY
+NÃBˆÛÛœİ™[[İHHØ[™Y]PRY™Ù]
+Z\‹œ™[[İPØ[™Y]RY
+NÃBˆ™]\›ˆÃBˆYˆZ\‹šYİ]NˆZ\‹œİ]K›ÛZ[˜]YˆZ\‹››ÛZ[˜]YÙ[XİYˆZ\‹œÙ[XİYOOHYKBˆØØ[ˆØØ[ÈÈ\NˆØØ[˜Ø[™Y]U\K›İØÛÛˆØØ[œ›İØÛÛ™[^T›İØÛÛˆØØ[œ™[^T›İØÛÛ[Hˆ[Bˆ™[[İNˆ™[[İHÈÈ\Nˆ™[[İK˜Ø[™Y]U\K›İØÛÛˆ™[[İKœ›İØÛÛ™[^T›İØÛÛˆ™[[İKœ™[^T›İØÛÛ[Hˆ[Bˆİ\œ™[›İ[™š\[YNˆZ\‹˜İ\œ™[›İ[™š\[YHÏÈ[Bˆ]\ÔÙ[ˆZ\‹˜]\ÔÙ[ÏÈ]\Ô™XÙZ]™YˆZ\‹˜]\Ô™XÙZ]™YÏÈBˆNÃBˆNÃBˆÛÛœİİ]HHÈšYÙÙ\‹Ù\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’Y[ÛÛ›™Xİ[Û”İ]NˆY\ÛÛ›™Xİ[Û‹˜ÛÛ›™Xİ[Û”İ]KXÙPÛÛ›™Xİ[Û”İ]NˆY\ÛÛ›™Xİ[Û‹šXÙPÛÛ›™Xİ[Û”İ]KÚYÛ˜[[™Ôİ]NˆY\ÛÛ›™Xİ[Û‹œÚYÛ˜[[™Ôİ]KÙ[™\˜]Yˆ\Ë˜Ø[XÙPÛİ[\œÏË™Ù[™\˜]YÏÈ[™XÙZ]™Yˆ\Ë˜Ø[XÙPÛİ[\œÏËœ™XÙZ]™YÏÈ[YYˆ\Ë˜Ø[XÙPÛİ[\œÏË˜YYÏÈ[NÃBˆYˆ
+Ù[XİYZ\ŠHÛÛœÛÛKš[™›Ê	ÖĞĞSHÙ[XİYØ[™Y]TZ\ˆ	È
+È”ÓÓ‹œİš[™ÚYJÈ‹‹œİ]KZ\ˆ\ØÜšX™TZ\ŠÙ[XİYZ\ŠHJJNÃBˆ[ÙHÛÛœÛÛKš[™›Ê	ÖĞĞSH›ÈÙ[XİYØ[™Y]TZ\ˆ	È
+È”ÓÓ‹œİš[™ÚYJÈ‹‹œİ]KØ[™Y]TZ\Ûİ[ˆØ[™Y]TZ\œË›[™İZ\œÎˆØ[™Y]TZ\œË›X\
+\ØÜšX™TZ\ŠHJJNÃBˆHØ]Ú
+\œ›ÜŠHÃBˆÛÛœÛÛK™\œ›ÜŠ	ÖĞĞSHÙ]İ]È˜Z[Y	ËÈšYÙÙ\‹Ù\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’Y[˜[YNˆ\œ›ÜË›˜[YKY\ÜØYÙNˆ\œ›ÜË›Y\ÜØYÙHK\œ›ÜŠNÃBˆCBˆCBƒBˆ\Ş[˜È™\İ[YT™[[İP]Y[Ê
+HÃBˆÛÛœİ]Y[ÈHØİ[Y[™Ù][[Y[RY
+	Ü™[[İKX]Y[Ë\İ™X[IÊNÃBˆYˆ
+X]Y[ÏËœÜ˜ÓØš™Xİ
+H™]\›ÃBˆHÃBˆ]ØZ]]Y[Ëœ^J
+NÃBˆØİ[Y[™Ù][[Y[RY
+	Ø‹Y[˜X›K\™[[İKX]Y[ÉÊOË˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆÛÛœÛÛK›ÙÊ	ÖĞĞSH]Y[È™\›ÙXÚpê[™ÜÙIÊNÃBˆHØ]Ú
+\œ›ÜŠHÈÛÛœÛÛKØ\›Š	ÖĞĞSH›ÈÙHYÈ[šXÚX\ˆ[]Y[È™[[İÎ‰Ë\œ›ÜŠNÈCBˆCBƒBˆ\Ş[˜ÈY™[[İRXÙPØ[™Y]JØ[™Y]Q]JHÃBˆÛÛœİİ\œ™[Ù\ÜÚ[Û’YH\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’Y[ÃBˆÛÛœİØ[Ù\ÜÚ[Û’YH\Ë˜İ\œ™[Ø[]OË˜Ø[Ù\ÜÚ[Û’Yİ\œ™[Ù\ÜÚ[Û’YÃBˆÛÛœİØ[™Y]TÙ\ÜÚ[Û’YHØ[™Y]Q]OË˜Ø[Ù\ÜÚ[Û’Y[ÃBˆÛÛœİÛÜœ™[][ÛˆHÈØ[Ù\ÜÚ[Û’YØ[™Y]TÙ\ÜÚ[Û’Yİ\œ™[Ù\ÜÚ[Û’YNÃBˆYˆ
+]\ËœY\ÛÛ›™Xİ[ÛˆXØ[™Y]Q]JHÈÛÛœÛÛKØ\›Š	ÖĞĞSHPÑH™XÚXšYÈ\›È›ÈYÜ™YØYÎˆ˜[HY\ÛÛ›™Xİ[ÛˆÈØ[™Y]ÉËÛÜœ™[][ÛŠNÈ™]\›ÈCBˆYˆ
+Xİ\œ™[Ù\ÜÚ[Û’YXØ[™Y]TÙ\ÜÚ[Û’YØ[™Y]TÙ\ÜÚ[Û’YOOHİ\œ™[Ù\ÜÚ[Û’Y
+HÃBˆÛÛœÛÛKØ\›Š	ÖĞĞSHPÑH\ØØ\YÎˆØ[™Y]ÈÚ[ˆÙ\ÜÚ[Û’Y™\šYšXØX›HÈHİ˜H[XYIËÈ‹‹˜ÛÜœ™[][Û‹™X\ÛÛˆXİ\œ™[Ù\ÜÚ[Û’YÈ	Û›È^HÙ\ÚpìÛˆXİ]˜HY[YšXØYIÈˆXØ[™Y]TÙ\ÜÚ[Û’YÈ	ØØ[™Y]TÙ\ÜÚ[Û’Y]\Ù[IÈˆ	ÜÙ\ÚpìÛˆ\İ[IÈJNÃBˆ™]\›ÃBˆCBˆYˆ
+]\ËœY\ÛÛ›™Xİ[Û‹œ™[[İQ\ØÜš\[ÛŠHÃBˆ\Ëœ[™[™ÒXÙPØ[™Y]\Ëœ\Ú
+Ø[™Y]Q]JNÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHPÑH[ˆÛÛH\İH\XØ\ˆ\ØÜš\ÚpìÛˆ™[[İIËÈ‹‹˜ÛÜœ™[][Û‹]Y]YYˆ\Ëœ[™[™ÒXÙPØ[™Y]\Ë›[™İ™[[İQ\ØÜš\[Ûˆ˜[ÙKXÙPÛÛ›™Xİ[Û”İ]Nˆ\ËœY\ÛÛ›™Xİ[Û‹šXÙPÛÛ›™Xİ[Û”İ]HJNÃBˆ™]\›ÃBˆCBˆÛÛœİÈØ[Ù\ÜÚ[Û’YˆØØ[™Y]TÙ\ÜÚ[Û’Y‹‹šXÙPØ[™Y]HHHØ[™Y]Q]NÃBˆHÃBˆ]ØZ]\ËœY\ÛÛ›™Xİ[Û‹˜YXÙPØ[™Y]J™]È•ÒXÙPØ[™Y]JXÙPØ[™Y]JJNÃBˆ\Ë˜Ø[XÙPÛİ[\œË˜YY
+ÊÎÃBˆÛÛœİ\œÙYØ[™Y]HHXÙPØ[™Y]K˜Ø[™Y]HÈ™]È•ÒXÙPØ[™Y]JXÙPØ[™Y]JHˆ[ÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHPÑHYÜ™YØYÉËÈØ[Ù\ÜÚ[Û’YØ[™Y]TÙ\ÜÚ[Û’Yİ\œ™[Ù\ÜÚ[Û’YÛİ[ˆ\Ë˜Ø[XÙPÛİ[\œË˜YY\Nˆ\œÙYØ[™Y]OË\H[›İØÛÛˆ\œÙYØ[™Y]OËœ›İØÛÛ[\Ù\›˜[YQœ˜YÛY[ˆXÙPØ[™Y]K\Ù\›˜[YQœ˜YÛY[XÙPØ[™Y]K˜Ø[™Y]OË›X]Ú
+ÊÎ—ŸÊ]Yœ˜Y×ÊÊ×—×JÊKÊOË–ÌWH[ÙZYˆXÙPØ[™Y]KœÙZYJNÃBˆHØ]Ú
+\œ›ÜŠHÈÛÛœÛÛKØ\›Š	ÖĞĞSH\œ›Üˆ[YÜ™YØ\ˆPÑIËÈ˜[YNˆ\œ›ÜË›˜[YKY\ÜØYÙNˆ\œ›ÜË›Y\ÜØYÙKÙZYˆXÙPØ[™Y]KœÙZYK\œ›ÜŠNÈCBˆCBƒBˆ\Ş[˜È›\Ú[™[™ÒXÙPØ[™Y]\Ê
+HÃBˆÛÛœİ]Y]YYH\Ëœ[™[™ÒXÙPØ[™Y]\ËœÜXÙJ
+NÃBˆÛÛœİ™Y›Ü™HH\Ë˜Ø[XÙPÛİ[\œÏË˜YYÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSH˜XÚX[™ÈÛÛHPÑIËÈØ[Ù\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]OË˜Ø[Ù\ÜÚ[Û’Y\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’Y[İ\œ™[Ù\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’Y[]Y]YYˆ]Y]YY›[™İ™[[İQ\ØÜš\[ÛˆH]\ËœY\ÛÛ›™Xİ[ÛËœ™[[İQ\ØÜš\[ÛˆJNÃBˆ›Üˆ
+ÛÛœİØ[™Y]HÙˆ]Y]YY
+H]ØZ]\Ë˜Y™[[İRXÙPØ[™Y]JØ[™Y]JNÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHÛÛHPÑH›ØÙ\ØYIËÈ]Y]YYˆ]Y]YY›[™İYYˆ
+\Ë˜Ø[XÙPÛİ[\œÏË˜YY
+HH™Y›Ü™K™[XZ[š[™Îˆ\Ëœ[™[™ÒXÙPØ[™Y]\Ë›[™İXÙPÛÛ›™Xİ[Û”İ]Nˆ\ËœY\ÛÛ›™Xİ[ÛËšXÙPÛÛ›™Xİ[Û”İ]HJNÃBˆCBƒBˆÜ[•›ÚXÙPØ[[Ù[
+È˜[YKİ]\Ë\Ò[˜ÛÛZ[™ÈJHÃBˆØİ[Y[™Ù][[Y[RY
+	ØØ[]\Ù\‹[˜[YIÊK^ÛÛ[H˜[YNÃBˆØİ[Y[™Ù][[Y[RY
+	ØØ[\İ]\Ë[X™[	ÊK^ÛÛ[Hİ]\ÎÃBˆØİ[Y[™Ù][[Y[RY
+	Û[Ù[]›ÚXÙKXØ[	ÊK˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBƒBˆÛÛœİXØÙ\HØİ[Y[™Ù][[Y[RY
+	Ø‹XXØÙ\XØ[	ÊNÃBˆYˆ
+\Ò[˜ÛÛZ[™ÊHÃBˆXØÙ\™\ØX›YH˜[ÙNÃBˆXØÙ\˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆH[ÙHÃBˆXØÙ\˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆCBˆCBƒBˆÛØ[ÛÛ›™XİY
+
+HÃBˆYˆ
+\Ë˜Ø[[Y\’[\˜[
+H™]\›ÃBˆYˆ
+\Ë˜İ\œ™[Ø[]JH\Ë˜İ\œ™[Ø[]K˜ÛÛ›™XİY]H]K››İÊ
+NÃBˆØİ[Y[™Ù][[Y[RY
+	ØØ[\İ]\Ë[X™[	ÊK^ÛÛ[H	ĞÛÛ™XİYÉÎÃBˆØİ[Y[™Ù][[Y[RY
+	Ø‹XXØÙ\XØ[	ÊK˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆÛÛœİ[Y\‘[[HHØİ[Y[™Ù][[Y[RY
+	ØØ[Y\˜][Û‹][Y\‰ÊNÃBˆ[Y\‘[[K˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBƒBˆ\Ë˜Ø[ÙXÛÛ™ÈHÃBˆÛX\’[\˜[
+\Ë˜Ø[[Y\’[\˜[
+NÃBˆ\Ë˜Ø[[Y\’[\˜[HÙ][\˜[
+
+
+HOˆÃBˆ\Ë˜Ø[ÙXÛÛ™ÊÊÎÃBˆÛÛœİZ[œÈHİš[™ÊX]™›ÛÜŠ\Ë˜Ø[ÙXÛÛ™ÈÈŒ
+JKœYİ\
+‹	Ì	ÊNÃBˆÛÛœİÙXÜÈHİš[™Ê\Ë˜Ø[ÙXÛÛ™È	HŒ
+KœYİ\
+‹	Ì	ÊNÃBˆ[Y\‘[[K^ÛÛ[H	ÛZ[œßN‰ÜÙXÜßXÃBˆKL
+NÃBˆCBƒBˆÙÙÛS]]PØ[
+
+HÃBˆYˆ
+]\Ë›ØØ[İ™X[JH™]\›ÃBˆ\Ëš\Ó]]YH]\Ëš\Ó]]YÃBˆ\Ë›ØØ[İ™X[K™Ù]]Y[Õ˜XÚÜÊ
+K™›Ü‘XXÚ
+Oˆ™[˜X›YH]\Ëš\Ó]]Y
+NÃBƒBˆÛÛœİXÛÛˆHØİ[Y[™Ù][[Y[RY
+	Ø‹[]]KZXÛÛ‰ÊNÃBˆÛÛœİˆHØİ[Y[™Ù][[Y[RY
+	Ø‹[]]KXØ[	ÊNÃBˆYˆ
+\Ëš\Ó]]Y
+HÃBˆ‹˜Û\ÜÓ˜[YHHœLËH™Ë\›ÜÙKN^]Ú]H›İ[™YY[˜[œÚ][ÛˆÃBˆXÛÛ‹œÙ]]šX]J	Ù]K[XÚYIË	ÛZXË[Ù™‰ÊNÃBˆH[ÙHÃBˆ‹˜Û\ÜÓ˜[YHHœLËH™Ë\Û]KN^\Û]KLŒ›İ[™YY[˜[œÚ][ÛˆÃBˆXÛÛ‹œÙ]]šX]J	Ù]K[XÚYIË	ÛZXÉÊNÃBˆCBˆYˆ
+Ú[™İË›XÚYJHXÚYK˜Ü™X]RXÛÛœÊ
+NÃBˆCBƒBˆ\Ş[˜ÈØ]™PØ[\İÜJØ[]K\˜][Û”ÙXÛÛ™ÊHÃBˆYˆ
+]Ú[™İË™ˆXØ[]OËšY
+H™]\›ÃBˆÛÛœİ™XYYHØ[]K™XYYØ[]KšYÃBˆÛÛœİØ[\“˜[YHHØ[]K˜Ø[\ˆØ[]K˜Ø[\“˜[YH	Õ\İX\š[ÉÎÃBˆÛÛœİØ[\”›ÛHHØ[]K˜Ø[\”›ÛH	İÛÜšÙ\‰ÎÃBˆÛÛœİØ[]HH™]È]J
+KÓØØ[Q]Tİš[™Ê	Ù\ËPÓÉËÈ^Nˆ	Ì‹YYÚ]	Ë[Ûˆ	Ì‹YYÚ]	ËYX\ˆ	Û[Y\šXÉÈJNÃBˆÛÛœİØ[[YHH\Ë™›Ü›X][YJ™]È]J
+JNÃBˆÛÛœİØ[İ]ÛÛYHHØ[]K˜ÛÛ›™XİY]È	ØÛÛ\]Y	ÈˆØ[]KØ\Ğ[œİÙ\™YÈ	Ù˜Z[Y	Èˆ	ÛZ\ÜÙY	ÎÃBˆÛÛœİİ[[X\HHØ[İ]ÛÛYHOOH	ØÛÛ\]Y	ÈÈ<'äçˆ[XYH8 (ˆ	Ù\˜][Û”ÙXÛÛ™ß\ØˆØ[İ]ÛÛYHOOH	ÛZ\ÜÙY	ÈÈ	ü'äçˆ[XYH\™YIÈˆ	ü'äçˆ[XYHÚ[ˆÛÛ™^pìÛ‰ÎÃBˆÛÛœİ™XÛÜ™HÃBˆ\Nˆ	ØØ[	ËBˆ^ˆİ[[X\KBˆØ[YˆØ[]KœÙ\ÜÚ[Û’YØ[IØØ[]KšYKIÑ]K››İÊ
+_XBˆØ[\“˜[YKØ[\”›ÛKØ[İ]ÛÛYK\˜][Û”ÙXÛÛ™ÎˆX]›X^
+[X™\Š\˜][Û”ÙXÛÛ™È
+JKBˆØ[]KÙ[™\“˜[YNˆØ[\“˜[YKÙ[™\”›ÛNˆØ[\”›ÛK™XÚ\Y[ˆØ[]Kœ™XÚ\Y[	ÉËBˆ[YNˆØ[[YK[Y\İ[\ˆ]K››İÊ
+Kİ]\Îˆ	Ü™XY	ÃBˆNÃBˆHÃBˆ]ØZ]‹˜ÛÛXİ[ÛŠ	ØÚ]×Ú[\››ÜÉÊK™ØÊ™XYY
+K˜ÛÛXİ[ÛŠ	ÛY[œØZ™\ÉÊK™ØÊØ[ÉÜ™XÛÜ™˜Ø[YX
+KœÙ]
+™XÛÜ™ÈY\™ÙNˆYHJNÃBˆ]ØZ]‹˜ÛÛXİ[ÛŠ	ØÚ]×Ú[\››ÜÉÊK™ØÊ™XYY
+KœÙ]
+È\İY\ÜØYÙNˆİ[[X\K\İ[YNˆØ[[YK\İ[Y\İ[\ˆ™XÛÜ™[Y\İ[\ÛÜšÙ\“˜[YNˆ™XYYKÈY\™ÙNˆYHJNÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSH™YÚ\İ›ÈİX\™YÈ[ˆÛÛ™\œØXÚpìÛ‰ËÈ™XYYØ[Yˆ™XÛÜ™˜Ø[YØ[İ]ÛÛYHJNÃBˆHØ]Ú
+\œ›ÜŠHÈÛÛœÛÛK™\œ›ÜŠ	ÖĞĞSH›ÈÙHYÈİX\™\ˆ[\İÜšX[H[XYN‰Ë\œ›ÜŠNÈCBˆCBƒBˆ[™›ÚXÙPØ[
+›İYTÙ\™\ˆHYJHÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHš[˜[^˜[™È[XYIËÈ›İYTÙ\™\‹Ø[Yˆ\Ë˜İ\œ™[Ø[]OËšYÙ\ÜÚ[Û’Yˆ\Ë˜İ\œ™[Ø[]OËœÙ\ÜÚ[Û’YJNÃBˆÛÛœÛÛKš[™›Ê	ÖĞĞSHÛÛ[ÈPÑH[š[˜[^˜\‰ËÈ‹‹Š\Ë˜Ø[XÙPÛİ[\œÈßJHJNÃBˆÛÛœİ[™YØ[]HH\Ë˜İ\œ™[Ø[]HÈÈ‹‹\Ë˜İ\œ™[Ø[]HHˆ[ÃBˆÛÛœİ[™Y\˜][Û”ÙXÛÛ™ÈH[™YØ[]OË˜ÛÛ›™XİY]ÈX]›X^
+\Ë˜Ø[ÙXÛÛ™ËX]œ›İ[™
+
+]K››İÊ
+HH[™YØ[]K˜ÛÛ›™XİY]
+HÈL
+JHˆÃBˆYˆ
+›İYTÙ\™\ˆ	‰ˆ[™YØ[]OËšY
+H\ËœØ]™PØ[\İÜJ[™YØ[]K[™Y\˜][Û”ÙXÛÛ™ÊNÃBˆ\ËœİÜ[˜ÛÛZ[™ĞØ[š[™İÛ™J
+NÃBˆÛX\’[\˜[
+\Ë˜Ø[[Y\’[\˜[
+NÃBˆ\Ë˜Ø[[Y\’[\˜[H[ÃBˆ\Ë˜Ø[ÙXÛÛ™ÈHÃBƒBˆYˆ
+\Ë›ØØ[İ™X[JHÃBˆ\Ë›ØØ[İ™X[K™Ù]˜XÚÜÊ
+K™›Ü‘XXÚ
+OˆœİÜ
+
+JNÃBˆ\Ë›ØØ[İ™X[HH[ÃBˆCBƒBˆYˆ
+\ËœY\ÛÛ›™Xİ[ÛŠHÃBˆÛX\’[\˜[
+\ËœY\ÛÛ›™Xİ[Û‹—ØØ[İ]Ò[\˜[
+NÃBˆ\ËœY\ÛÛ›™Xİ[Û‹—ØØ[İ]Ò[\˜[H[ÃBˆ\ËœY\ÛÛ›™Xİ[Û‹˜ÛÜÙJ
+NÃBˆ\ËœY\ÛÛ›™Xİ[ÛˆH[ÃBˆCBˆ\Ë˜Ø[ÚYÛ˜[[™Õ[œİXœØÜšX™\Ë™›Ü‘XXÚ
+[œİXœØÜšX™HOˆÈHÈ[œİXœØÜšX™J
+NÈHØ]Ú
+ÊHßHJNÃBˆ\Ë˜Ø[ÚYÛ˜[[™Õ[œİXœØÜšX™\ÈH×NÃBˆ\Ëœ[™[™ÒXÙPØ[™Y]\ÈH×NÃBƒBˆYˆ
+›İYTÙ\™\ˆ	‰ˆÚ[™İË™ˆ	‰ˆ\Ë˜İ\œ™[Ø[]OËšY
+HÃBˆÛÛœİ[™YØ[YH\Ë˜İ\œ™[Ø[]KšYÃBˆ‹˜ÛÛXİ[ÛŠ	İÙXœ×ØØ[ÉÊK™ØÊ[™YØ[Y
+K\]JÃBˆİ]\Îˆ	Ù[™Y	ÃBˆJK[Š
+
+HOˆÛÛœÛÛKš[™›Ê	ÖĞĞSHš[˜[^˜XÚpìÛˆ[šXYH[İ›È^™[[ÉËÈØ[Yˆ[™YØ[YJJCBˆ˜Ø]Ú
+\œ›ÜˆOˆÛÛœÛÛK™\œ›ÜŠ	ÖĞĞSH›ÈÙHYÈ]š\Ø\ˆ]YHH[XYH\›Z[°ìÎ‰Ë\œ›ÜŠJNÃBˆCBƒBˆØİ[Y[™Ù][[Y[RY
+	Û[Ù[]›ÚXÙKXØ[	ÊK˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆØİ[Y[™Ù][[Y[RY
+	ØØ[Y\˜][Û‹][Y\‰ÊK˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆÛÛœİ™[[İP]Y[ÈHØİ[Y[™Ù][[Y[RY
+	Ü™[[İKX]Y[Ë\İ™X[IÊNÃBˆYˆ
+™[[İP]Y[ÊHÈ™[[İP]Y[Ëœ]\ÙJ
+NÈ™[[İP]Y[ËœÜ˜ÓØš™XİH[ÈCBˆØİ[Y[™Ù][[Y[RY
+	Ø‹Y[˜X›K\™[[İKX]Y[ÉÊOË˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆYˆ
+\Ë›\İ[˜ÛÛZ[™ĞØ[YOOH[™YØ[]OËšY
+H\Ë›\İ[˜ÛÛZ[™ĞØ[YH[ÃBˆ\Ë˜İ\œ™[Ø[]HH[ÃBˆCBƒBˆ[š]Ú][Ù[J
+HÃBˆÛÛœİ\ĞYZ[ˆH\Ë˜İ\œ™[\Ù\‹œ›ÛHOOH	ØYZ[‰ÎÃBˆÛÛœİÚYX˜\ˆHØİ[Y[™Ù][[Y[RY
+	ØÚ]\ÚYX˜\‰ÊNÃBˆÛÛœİ˜XÚĞ˜\ˆHØİ[Y[™Ù][[Y[RY
+	ØÚ][[Øš[KX˜XÚËX˜\‰ÊNÃBˆØİ[Y[™Ù][[Y[RY
+	ØÚ]]Ú[™İË[[Ù[	ÊOË˜Û\ÜÓ\İÙÙÛJ	İÛÜšÙ\‹XÚ][[ÙIËZ\ĞYZ[ŠNÃBƒBˆÛÛœİÜ[ÛœÈHØİ[Y[™Ù][[Y[RY
+	ØÚ]XÛÛ™\œØ][Û‹[Ü[ÛœËY›ÜİÛ‰ÊNÃBˆYˆ
+Ü[ÛœÏËœ\™[[[Y[
+HÜ[ÛœËœ\™[[[Y[˜Û\ÜÓ\İÙÙÛJ	ÚY[‰ËZ\ĞYZ[ŠNÃBˆÛÛœİ\˜Ú]™Y]ÛˆHØİ[Y[™Ù][[Y[RY
+	Ø‹]ÙÙÛKX\˜Ú]™Y	ÊNÃBˆYˆ
+\˜Ú]™Y]ÛŠH\˜Ú]™Y]Û‹˜Û\ÜÓ\İÙÙÛJ	ÚY[‰ËZ\ĞYZ[ŠNÃBˆYˆ
+\ĞYZ[ŠHÃBˆÚYX˜\‹˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆYˆ
+˜XÚĞ˜\ŠH˜XÚĞ˜\‹˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆÛÛœİš\œİÛÜšÙ\ˆH\ËÛÜšÙ\œÖÌOË™[˜[YH\ËÛÜšÙ\œÖÌOË\Ù\›˜[YH	Ò™X[\][	ÎÃBˆ\Ë˜Xİ]™PÚ]ÛÜšÙ\ˆHš\œİÛÜšÙ\ÃBˆ\Ë›Ü[Ú]XœÈH×NÃBˆ\ËœİXœØÜšX™P[Ú]™XYÊ
+NÃBˆ\Ëœ™[™\Ú]XœÊ
+NÃBˆ\Ëœ™[™\Xİ]™PÚ]XY\Š
+NÃBˆH[ÙHÃBˆÚYX˜\‹˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆYˆ
+˜XÚĞ˜\ŠH˜XÚĞ˜\‹˜Û\ÜÓ\İ˜Y
+	ÚY[‰ÊNÃBˆ\Ë˜Xİ]™PÚ]ÛÜšÙ\ˆH\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+NÃBˆ\Ëœ™[™\Xİ]™PÚ]XY\Š
+NÃBˆCBƒBˆ\ËœİXœØÜšX™PÚ]Y\ÜØYÙ\Ê
+NÃBˆ\ËœÙ]\][UÛÜšÙ\Ú]\İ[™\œÊ
+NÃBˆCBƒBˆÙ]\][UÛÜšÙ\Ú]\İ[™\œÊ
+HÃBˆYˆ
+]Ú[™İË™ˆ]\Ë˜İ\œ™[\Ù\ŠH™]\›ÃBˆÛÛœİ\ĞYZ[ˆH\Ë˜İ\œ™[\Ù\‹œ›ÛHOOH	ØYZ[‰ÎÃBˆÛÛœİ˜[Y\ÈH\ĞYZ[ˆÈ\ËÛÜšÙ\œË›X\
+ÈOˆË™[˜[YHË\Ù\›˜[YJHˆİ\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+WNÃBˆ˜[Y\Ë™›Ü‘XXÚ
+Ó˜[YHOˆÃBˆYˆ
+\Ë™YXØ]YÛÜšÙ\•[œİXœØÜšX™\ÖİÓ˜[YWJH™]\›ÃBˆÛÛœİ]Y\HH‹˜ÛÛXİ[ÛŠ	ØÚ]×Ú[\››ÜÉÊK™ØÊÓ˜[YJK˜ÛÛXİ[ÛŠ	ÛY[œØZ™\ÉÊK›Ü™\J	İ[Y\İ[\	Ë	Ø\ØÉÊNÃBˆ]Ø[˜Ù[YH˜[ÙK[œİXœØÜšX™HH[[œİXœØÜšX™U™XYØÈH[˜\Ù[[™RYÈH™]ÈÙ]
+
+Kš\œİÛ˜\ÚİHYNÃBˆ\Ë™YXØ]YÛÜšÙ\•[œİXœØÜšX™\ÖİÓ˜[YWHH
+
+HOˆÈØ[˜Ù[YHYNÈYˆ
+[œİXœØÜšX™JH[œİXœØÜšX™J
+NÈYˆ
+[œİXœØÜšX™U™XYØÊH[œİXœØÜšX™U™XYØÊ
+NÈNÃBˆ[œİXœØÜšX™U™XYØÈH‹˜ÛÛXİ[ÛŠ	ØÚ]×Ú[\››ÜÉÊK™ØÊÓ˜[YJK›Û”Û˜\Úİ
+™XYØÈOˆÃBˆÛÛœİ™XY]HH™XYØË™^\İÈÈ™XYØË™]J
+HˆßNÃBˆÛÛœİİ\”›ÛHH\ĞYZ[ˆÈ	İÛÜšÙ\‰Èˆ	ØYZ[‰ÎÃBˆÛÛœİ\Óİ\•\[™ÈH›ÛÛX[Š™XY]K\[™È	‰ˆ™XY]K\[™ÖÛİ\”›ÛWJNÃBˆYˆ
+\Ë˜Ú]\[™ĞUÛÜšÙ\–İÓ˜[YWHOOH\Óİ\•\[™ÊH™]\›ÃBˆ\Ë˜Ú]\[™ĞUÛÜšÙ\–İÓ˜[YWHH\Óİ\•\[™ÎÃBˆYˆ
+\ĞYZ[ŠH\Ëœ™[™\ÛÛ™\œØ][ÛœÔÚYX˜\Š
+NÃBˆ\Ë\]SY\ÜÙ[™Ù\•Ú[™İÕ\[™ÊÓ˜[YJNÃBˆ\Ëœ™[™\Ú]\[™Ò[™XØ]ÜœÊ
+NÃBˆK\œ›ÜˆOˆÛÛœÛÛK™\œ›ÜŠ	ÖĞÒUH\œ›Üˆ\ØİXÚ[™È\ØÜš]\˜HH	È
+ÈÓ˜[YH
+È	Î‰Ë\œ›ÜŠJNÃBˆÛÛœİ]XÚH
+
+HOˆÃBˆYˆ
+Ø[˜Ù[Y
+H™]\›ÃBˆ[œİXœØÜšX™HH]Y\K›Û”Û˜\Úİ
+Û˜\OˆÃBˆ\Ëœ™Yœ™\ÚÚ]™XYİ[[X\JÓ˜[YKÛ˜\\ĞYZ[ŠNÃBˆÛ˜\™ØĞÚ[™Ù\Ê
+K™›Ü‘XXÚ
+Ú[™ÙHOˆÃBˆYˆ
+Ú[™ÙK\HOOH	ØYY	ÊH™]\›ÃBˆÛÛœİ\ÙÒYHÚ[™ÙK™ØËšYÃBˆYˆ
+˜\Ù[[™RYËš\Ê\ÙÒY
+JH™]\›ÃBˆÛÛœİ]HHÚ[™ÙK™ØË™]J
+NÃBˆYˆ
+]K\HOOH	ØØ[	ÊH™]\›ÃBˆÛÛœİœ›ÛSİ\ˆH\ĞYZ[ˆÈ]KœÙ[™\”›ÛHOOH	İÛÜšÙ\‰Èˆ]KœÙ[™\”›ÛHOOH	ØYZ[‰ÎÃBˆYˆ
+Yœ›ÛSİ\ŠH™]\›ÃBˆ\Ë››İYR[˜ÛÛZ[™ĞÚ]Y\ÜØYÙJÓ˜[YK\ÙÒY]JNÃBˆJNÃBˆYˆ
+š\œİÛ˜\Úİ
+HÈš\œİÛ˜\ÚİH˜[ÙNÈ˜\Ù[[™RYË˜ÛX\Š
+NÈCBˆK\œ›ÜˆOˆÛÛœÛÛK™\œ›ÜŠ	ÖĞÒUH\œ›Üˆ\ØİXÚ[™ÈY[œØZ™\ÈH	È
+ÈÓ˜[YH
+È	Î‰Ë\œ›ÜŠJNÃBˆNÃBˆ]Y\K™Ù]
+
+K[ŠÛ˜\ÚİOˆÃBˆYˆ
+Ø[˜Ù[Y
+H™]\›ÃBˆÛ˜\Úİ™›Ü‘XXÚ
+ØÈOˆ˜\Ù[[™RYË˜Y
+ØËšY
+JNÃBˆ]XÚ
+
+NÃBˆJK˜Ø]Ú
+\œ›ÜˆOˆÃBˆÛÛœÛÛKØ\›Š	ÖĞÒUH›ÈÙHYÈØ\™Ø\ˆH0ë[™XH˜\ÙHHY[œØZ™\ÎÈÙHÛZ]\°èHÛÛÈHš[Y\˜HXİ\˜N‰Ë\œ›ÜŠNÃBˆYˆ
+Ø[˜Ù[Y
+H™]\›ÃBˆ]YÛ›Ü™Qš\œİÛ˜\ÚİHYNÃBˆ[œİXœØÜšX™HH]Y\K›Û”Û˜\Úİ
+Û˜\OˆÃBˆ\Ëœ™Yœ™\ÚÚ]™XYİ[[X\JÓ˜[YKÛ˜\\ĞYZ[ŠNÃBˆYˆ
+YÛ›Ü™Qš\œİÛ˜\Úİ
+HÃBˆÛ˜\™ØĞÚ[™Ù\Ê
+K™›Ü‘XXÚ
+Ú[™ÙHOˆÈYˆ
+Ú[™ÙK\HOOH	ØYY	ÊH˜\Ù[[™RYË˜Y
+Ú[™ÙK™ØËšY
+NÈJNÃBˆYÛ›Ü™Qš\œİÛ˜\ÚİH˜[ÙNÃBˆ˜\Ù[[™RYË˜ÛX\Š
+NÃBˆ™]\›ÃBˆCBˆÛ˜\™ØĞÚ[™Ù\Ê
+K™›Ü‘XXÚ
+Ú[™ÙHOˆÃBˆYˆ
+Ú[™ÙK\HOOH	ØYY	È˜\Ù[[™RYËš\ÊÚ[™ÙK™ØËšY
+JH™]\›ÃBˆÛÛœİ]HHÚ[™ÙK™ØË™]J
+NÃBˆYˆ
+]K\HOOH	ØØ[	ÊH™]\›ÃBˆÛÛœİœ›ÛSİ\ˆH\ĞYZ[ˆÈ]KœÙ[™\”›ÛHOOH	İÛÜšÙ\‰Èˆ]KœÙ[™\”›ÛHOOH	ØYZ[‰ÎÃBˆYˆ
+Yœ›ÛSİ\ŠH™]\›ÃBˆ\Ë››İYR[˜ÛÛZ[™ĞÚ]Y\ÜØYÙJÓ˜[YKÚ[™ÙK™ØËšY]JNÃBˆJNÃBˆK\İ[‘\œ›ÜˆOˆÛÛœÛÛK™\œ›ÜŠ	ÖĞÒUH\œ›Üˆ\ØİXÚ[™ÈY[œØZ™\ÈH	È
+ÈÓ˜[YH
+È	Î‰Ë\İ[‘\œ›ÜŠJNÃBˆJNÃBˆJNÃBˆCBƒBˆ™Yœ™\ÚÚ]™XYİ[[X\JÓ˜[YKÛ˜\Úİ\ĞYZ[ŠHÃBˆÛÛœİØÜÈHÛ˜\ÚİË™ØÜÈ×NÃBˆÛÛœİ^T›ÛHH\Ë˜İ\œ™[\Ù\Ëœ›ÛNÃBˆ]]\İH[ÃBˆ][œ™XYÛİ[HÃBˆØÜË™›Ü‘XXÚ
+ØÈOˆÃBˆÛÛœİ]HHØË™]J
+NÃBˆÛÛœİ[Y\İ[\H[X™\Š]K[Y\İ[\
+NÃBˆYˆ
+[]\İ[Y\İ[\H]\İ[Y\İ[\
+H]\İHÈ]K[Y\İ[\NÃBˆÛÛœİ\Ò[˜ÛÛZ[™ÈH\ĞYZ[ˆÈ]KœÙ[™\”›ÛHOOH	İÛÜšÙ\‰Èˆ]KœÙ[™\”›ÛHOOH	ØYZ[‰ÎÃBˆYˆ
+\Ò[˜ÛÛZ[™È	‰ˆ]Kœİ]\ÈOOH	Ü™XY	È	‰ˆY]VØY[‘›Ü—ÉÛ^T›Û_XJH[œ™XYÛİ[
+ÊÎÃBˆJNÃBˆÛÛœİİ[[X\HHÃBˆ\ÓY\ÜØYÙ\ÎˆØÜË›[™İˆBˆ\İY\ÜØYÙNˆ]\İË™]K^	ÉËBˆ\İ[YNˆ]\İË™]K[YH	ÉËBˆ\İ[Y\İ[\ˆ]\İË[Y\İ[\Bˆ[œ™XYÛİ[BˆNÃBˆ\Ë˜Ú]™XYİ[[X\šY\ÖİÓ˜[YWHHİ[[X\NÃBˆYˆ
+]\İ	‰ˆ\Ë˜Ú]Xİ]š]T˜[šÜÖİÓ˜[YWHOOH[™Yš[™Y
+HÃBˆ\Ë˜Ú]Xİ]š]T˜[šÜÖİÓ˜[YWHH
+Êİ\Ë˜Ú]Xİ]š]TÙ\]Y[˜ÙNÃBˆCBˆYˆ
+\ĞYZ[ŠH\Ëœ™[™\ÛÛ™\œØ][ÛœÔÚYX˜\Š
+NÃBˆ[ÙHYˆ
+Ó˜[YHOOH\Ë™Ù]İ\œ™[\Ü^S˜[YJ
+JHÃBˆÛÛœİÛİ[Hİ[[X\Kš\ÓY\ÜØYÙ\ÈÈİ[[X\K[œ™XYÛİ[ˆ[X™\Š\ËÛÜšÙ\•[œ™XYÛİ[
+NÃBˆ\Ë\]PÚ]][˜Ú\•[œ™XY
+Ûİ[
+NÃBˆCBˆCBƒBˆ[œİ\™R[˜ÛÛZ[™ÕÛÜšÙ\•Ú[™İÊÓ˜[YJHÃBˆYˆ
+\Ë˜İ\œ™[\Ù\Ëœ›ÛHOOH	ØYZ[‰ÈÚ[™İËš[›™\•ÚY
+H™]\›ÃBˆYˆ
+P\œ˜^Kš\Ğ\œ˜^J\Ë›Ü[Ú]XœÊJH\Ë›Ü[Ú]XœÈH×NÃBˆÛÛœİ[™XYSÜ[ˆH\Ë›Ü[Ú]XœËš[˜ÛY\ÊÓ˜[YJNÃBˆYˆ
+X[™XYSÜ[ŠHÃBˆ\Ë›Ü[Ú]XœËœ\Ú
+Ó˜[YJNÃBˆ\Ë›Z[š[Z^™YÚ]Ú[™İÜÖİÓ˜[YWHHYNÃBˆCBˆYˆ
+X[™XYSÜ[ˆ\Ë›Z[š[Z^™YÚ]Ú[™İÜÖİÓ˜[YWJH\Ë˜Ú]ØÚÕ[œ™XYUÛÜšÙ\‹˜Y
+Ó˜[YJNÃBˆ\Ëœ™[™\“Y\ÜÙ[™Ù\•Ú[™İÜÊ
+NÃBˆCBƒBˆ›İYR[˜ÛÛZ[™ĞÚ]Y\ÜØYÙJÓ˜[YK\ÙÒY]JHÃBˆÛÛœİ[š\]YRYH	İÓ˜[Y_N‰Û\ÙÒYXÃBˆYˆ
+\Ë››İYšYYÚ]Y\ÜØYÙRYËš\Ê[š\]YRY
+JH™]\›ÃBˆ\Ë››İYšYYÚ]Y\ÜØYÙRYË˜Y
+[š\]YRY
+NÃBˆYˆ
+\Ë››İYšYYÚ]Y\ÜØYÙRYËœÚ^™HˆL
+HÃBˆÛÛœİÛ\İYH\Ë››İYšYYÚ]Y\ÜØYÙRYË˜[Y\Ê
+K›™^
+
+K˜[YNÃBˆ\Ë››İYšYYÚ]Y\ÜØYÙRYË™[]JÛ\İY
+NÃBˆCBˆ\Ë˜Ú]Xİ]š]T˜[šÜÖİÓ˜[YWHH
+Êİ\Ë˜Ú]Xİ]š]TÙ\]Y[˜ÙNÃBˆ\Ë™[œİ\™R[˜ÛÛZ[™ÕÛÜšÙ\•Ú[™İÊÓ˜[YJNÃBˆYˆ
+\Ëœ™YœËœÛİ[™
+HÛİ[™[™Ú[™Kœ^SY\ÜØYÙTÛİ[™
+
+NÃBˆ\ËœÚİÔÜ\›İYšXØ][ÛŠÃBˆ]Nˆ	Ù]KœÙ[™\“˜[YHÓ˜[Y_HH[špìÈ[ˆY[œØZ™XBˆ]Z[Îˆ]K^	ÉË\Nˆ	ØÚ]	ËXÛÛˆ	ü'ä«	ËBˆÛÛXÚÎˆ
+
+HOˆ\Ë›Ü[‘\™XİÛÜšÙ\Ú]
+Ó˜[YJCBˆJNÃBˆYˆ
+\Ë˜İ\œ™[\Ù\Ëœ›ÛHOOH	ØYZ[‰ÊH\Ëœ™[™\ÛÛ™\œØ][ÛœÔÚYX˜\Š
+NÃBˆCBƒBˆÛX\‘YXØ]YÛÜšÙ\Ú]\İ[™\œÊ
+HÃBˆØš™XİšÙ^\Ê\Ë™YXØ]YÛÜšÙ\•[œİXœØÜšX™\ÊK™›Ü‘XXÚ
+ÈOˆÃBˆ\Ë™YXØ]YÛÜšÙ\•[œİXœØÜšX™\ÖÚ×J
+NÃBˆJNÃBˆ\Ë™YXØ]YÛÜšÙ\•[œİXœØÜšX™\ÈHßNÃBˆCBƒBˆİXœØÜšX™P[Ú]™XYÊ
+HÃBˆYˆ
+]Ú[™İË™ˆ\Ë˜Ú]™XYÕ[œİXœØÜšX™JH™]\›ÃBƒBˆ\Ë˜Ú]™XYÕ[œİXœØÜšX™HH‹˜ÛÛXİ[ÛŠ	ØÚ]×Ú[\››ÜÉÊCBˆ›Ü™\J	Û\İ[Y\İ[\	Ë	Ù\ØÉÊCBˆ›Û”Û˜\Úİ
+Û˜\OˆÃBˆÛÛœİÛÛœÈHßNÃBˆÛ˜\™›Ü‘XXÚ
+ØÈOˆÃBˆÛÛœİ]HHØË™]J
+NÃBˆÛÛœİ™]š[İ\ÈH\Ë˜ÛÛ™\œØ][ÛœÖÙØËšYNÃBˆYˆ
+™]š[İ\È	‰ˆ
+™]š[İ\Ë›\İ[Y\İ[\OOH]K›\İ[Y\İ[\™]š[İ\Ë›\İY\ÜØYÙHOOH]K›\İY\ÜØYÙJJHÃBˆ\Ë˜Ú]Xİ]š]T˜[šÜÖÙØËšYHH
+Êİ\Ë˜Ú]Xİ]š]TÙ\]Y[˜ÙNÃBˆCBˆÛÛœÖÙØËšYHH]NÃBˆJNÃBˆ\Ë˜ÛÛ™\œØ][ÛœÈHÛÛœÎÃBˆ\Ëœ™[™\ÛÛ™\œØ][ÛœÔÚYX˜\Š
+NÃBˆJNÃBˆCBƒBˆ›Ü›X]Ú]\İXİ]š]J[Y\İ[\Û›[™JHÃBˆYˆ
+Û›[™JH™]\›ˆ	ĞZÜ˜IÎÃBˆÛÛœİ[\ÙYH]K››İÊ
+HH[X™\Š[Y\İ[\
+NÃBˆYˆ
+][Y\İ[\[\ÙY
+H™]\›ˆ	ÔÚ[ˆ™YÚ\İ›ÉÎÃBˆÛÛœİZ[]\ÈHX]™›ÛÜŠ[\ÙYÈŒ
+NÃBˆYˆ
+Z[]\ÈJH™]\›ˆ	ÒXÙH[ˆ[ÛY[ÉÎÃBˆYˆ
+Z[]\ÈŒ
+H™]\›ˆXÙH	ÛZ[]\ßHZ[˜ÃBˆÛÛœİİ\œÈHX]™›ÛÜŠZ[]\ÈÈŒ
+NÃBˆYˆ
+İ\œÈ
+H™]\›ˆXÙH	Úİ\œßHÃBˆÛÛœİ^\ÈHX]™›ÛÜŠİ\œÈÈ
+NÃBˆ™]\›ˆXÙH	Ù^\ßH0ëXIÙ^\ÈOOHHÈ	ÉÈˆ	ÜÉßXÃBˆCBƒBˆš[\Ú]ÛÛXİÊ]Y\JHÃBˆÛÛœİ›Ü›X[^™YHİš[™Ê]Y\H	ÉÊKš[J
+KÓØØ[SİÙ\Ø\ÙJ
+NÃBˆØİ[Y[œ]Y\TÙ[XİÜ[
+	ÈØÚ]XÛÛ™\œØ][ÛœË[\İ˜Ú]XÛÛXİ\›İÉÊK™›Ü‘XXÚ
+›İÈOˆÃBˆ›İËœİ[K™\Ü^HH›Ü›X[^™Y	‰ˆ\›İË™]\Ù]˜Ú]ÛÛXİËš[˜ÛY\Ê›Ü›X[^™Y
+HÈ	Û›Û™IÈˆ	Ù›^	ÎÃBˆJNÃBˆCBƒBˆ\]PÚ]][˜Ú\•[œ™XY
+Ûİ[
+HÃBˆÛÛœİš\ÚX›PÛİ[H\Ëœ™YœË˜Ú]˜YÙHÈX]›X^
+[X™\ŠÛİ[
+H
+HˆÃBˆÛÛœİ˜YÙHHØİ[Y[™Ù][[Y[RY
+	ØÚ]][œ™XYX˜YÙIÊNÃBˆÛÛœİ][˜Ú\ˆHØİ[Y[™Ù][[Y[RY
+	ØÚ]Y›Ø][™ËX]Û‹XÛÛZ[™\‰ÊNÃBˆYˆ
+˜YÙJHÃBˆ˜YÙK^ÛÛ[Hš\ÚX›PÛİ[ˆNHÈ	ÎNJÉÈˆİš[™Êš\ÚX›PÛİ[
+NÃBˆ˜YÙK˜Û\ÜÓ\İÙÙÛJ	ÚY[‰Ë]š\ÚX›PÛİ[
+NÃBˆCBˆ][˜Ú\Ë˜Û\ÜÓ\İÙÙÛJ	Ú\Ë][œ™XY	Ë›ÛÛX[Šš\ÚX›PÛİ[
+JNÃBˆCBƒBˆ™[™\ÛÛ™\œØ][ÛœÔÚYX˜\Š
+HÃBˆÛÛœİ\İ[[HHØİ[Y[™Ù][[Y[RY
+	ØÚ]XÛÛ™\œØ][ÛœË[\İ	ÊNÃBˆYˆ
+[\İ[[JH™]\›ÃBƒBˆÛÛœİÓ“S‘WÕ‘TÒÓÓTÈHŒ
+ˆLÃBˆÛÛœİ›İÈH]K››İÊ
+NÃBˆÛÛœİÛÜYÛÜšÙ\œÈHË‹‹\ËÛÜšÙ\œ×KœÛÜ
+
+KŠHOˆÃBˆÛÛœİ˜[YPHHK™[˜[YHK\Ù\›˜[YNÃBˆÛÛœİ˜[YPˆH‹™[˜[YH‹\Ù\›˜[YNÃBˆÛÛœİ˜[šĞHH\Ë˜Ú]Xİ]š]T˜[šÜÖÛ˜[YPWHÃBˆÛÛœİ˜[šĞˆH\Ë˜Ú]Xİ]š]T˜[šÜÖÛ˜[YP—HÃBˆYˆ
+˜[šĞHOOH˜[šĞŠH™]\›ˆ˜[šĞˆH˜[šĞNÃBˆÛÛœİ[YPHHX]›X^
+[X™\Š\Ë˜ÛÛ™\œØ][ÛœÖÛ˜[YPWOË›\İ[Y\İ[\
+K[X™\Š\Ë˜Ú]™XYİ[[X\šY\ÖÛ˜[YPWOË›\İ[Y\İ[\
+JNÃBˆÛÛœİ[YPˆHX]›X^
+[X™\Š\Ë˜ÛÛ™\œØ][ÛœÖÛ˜[YP—OË›\İ[Y\İ[\
+K[X™\Š\Ë˜Ú]™XYİ[[X\šY\ÖÛ˜[YP—OË›\İ[Y\İ[\
+JNÃBˆ™]\›ˆ[YPˆH[YPNÃBˆJNÃBƒBˆÛÛœİ[œ™XYİ[HÛÜYÛÜšÙ\œËœ™YXÙJ
+İ[KÛÜšÙ\ŠHOˆÃBˆÛÛœİ˜[YHHÛÜšÙ\‹™[˜[YHÛÜšÙ\‹\Ù\›˜[YNÃBˆÛÛœİİ[[X\HH\Ë˜Ú]™XYİ[[X\šY\ÖÛ˜[YWNÃBˆÛÛœİÛİ[Hİ[[X\OËš\ÓY\ÜØYÙ\ÈÈİ[[X\K[œ™XYÛİ[ˆ[X™\Š\Ë˜ÛÛ™\œØ][ÛœÖÛ˜[YWOË[œ™XYPYZ[ˆ
+NÃBˆ™]\›ˆİ[H
+ÈÛİ[ÃBˆK
+NÃBˆ\Ë\]PÚ]][˜Ú\•[œ™XY
+[œ™XYİ[
+NÃBƒBˆÛÛœİš[\™YHÛÜYÛÜšÙ\œË™š[\ŠÛÜšÙ\ˆOˆÃBˆÛÛœİ˜[YHHÛÜšÙ\‹™[˜[YHÛÜšÙ\‹\Ù\›˜[YNÃBˆÛÛœİ™XYH\Ë˜ÛÛ™\œØ][ÛœÖÛ˜[YWNÃBˆYˆ
+\ËœÚİĞ\˜Ú]™Y
+H™]\›ˆ™XY	‰ˆ™XY˜\˜Ú]™YÃBˆ™]\›ˆJ™XY	‰ˆ™XY˜\˜Ú]™Y
+NÃBˆJNÃBƒBˆYˆ
+š[\™Y›[™İOOH
+HÃBˆ\İ[[Kš[›™\’SHÛ\ÜÏHœM^XÙ[\ˆ^\Û]KM][XÈ^VÌL\H“›È^HÛÛ™\œØXÚ[Û™\È	İ\ËœÚİĞ\˜Ú]™YÈ	Ø\˜Ú]˜Y\ÉÈˆ	ÉßKÜ˜ÃBˆ™]\›ÃBˆCBƒBˆ\İ[[Kš[›™\’SHš[\™Y›X\
+ÛÜšÙ\ˆOˆÃBˆÛÛœİÛÜšÙ\“˜[YHHÛÜšÙ\‹™[˜[YHÛÜšÙ\‹\Ù\›˜[YNÃBˆÛÛœİØY™S˜[YHH\Ë™\ØØ\R[
+ÛÜšÙ\“˜[YJNÃBˆÛÛœİ™XYH\Ë˜ÛÛ™\œØ][ÛœÖİÛÜšÙ\“˜[YWHßNÃBˆÛÛœİİ[[X\HH\Ë˜Ú]™XYİ[[X\šY\ÖİÛÜšÙ\“˜[YWNÃBˆÛÛœİ™\Ù[˜ÙTİ]\ÈH\Ë™Ù]™\Ù[˜ÙTİ]\ÊÛÜšÙ\ŠNÃBˆÛÛœİ\ÓÛ›[™HH™\Ù[˜ÙTİ]\ÈOOH	Ø]˜Z[X›IÎÃBˆÛÛœİ™\Ù[˜ÙSX™[H\Ë™Ù]™\Ù[˜ÙSX™[
+™\Ù[˜ÙTİ]\ÊNÃBˆÛÛœİ[œ™XYH\Ëœ™YœË˜Ú]˜YÙHÈ
+İ[[X\OËš\ÓY\ÜØYÙ\ÈÈİ[[X\K[œ™XYÛİ[ˆ[X™\Š™XY[œ™XYPYZ[ˆ
+JHˆÃBˆÛÛœİ™]šY]ÈHİ[[X\OËš\ÓY\ÜØYÙ\ÈÈİ[[X\K›\İY\ÜØYÙHˆ
+™XY›\İY\ÜØYÙH	ÔÚ[ˆY[œØZ™\ÉÊNÃBˆÛÛœİ™]šY]Õ[YHHİ[[X\OËš\ÓY\ÜØYÙ\ÈÈİ[[X\K›\İ[YHˆ
+™XY›\İ[YH	ÉÊNÃBˆÛÛœİXİ]š]HH\Ë™›Ü›X]Ú]\İXİ]š]JÛÜšÙ\‹›\İX\™X]\ÓÛ›[™JNÃBˆÛÛœİ\Õ\[™ÈH›ÛÛX[Š\Ë˜Ú]\[™ĞUÛÜšÙ\–İÛÜšÙ\“˜[YWJNÃBˆ™]\›ˆBˆ]Ûˆ\OH˜]Ûˆˆ]KXÚ]XÛÛXİH‰ÜØY™S˜[YKÓØØ[SİÙ\Ø\ÙJ
+_HˆÛ˜ÛXÚÏH˜\œÙ[XİÚ]ÛÛ™\œØ][ÛŠXÛÙUT’PÛÛ\Û™[
+	ÉÙ[˜ÛÙUT’PÛÛ\Û™[
+ÛÜšÙ\“˜[YJ_IÊJHˆÛ\ÜÏH˜Ú]XÛÛXİ\›İÈ	Ú\ÓÛ›[™HÈ	Ú\Ë[Û›[™IÈˆ	ÉßH	İ[œ™XYˆÈ	Ú\Ë][œ™XY	Èˆ	ÉßHƒBˆÜ[ˆÛ\ÜÏH˜Ú]XÛÛXİX]˜]\ˆÙX\ÛÛ˜[]ÛÜšÙ\‹X]˜]\ˆ‰İÛÜšÙ\‹œİÈÈ[YÈÜ˜ÏH‰İ\Ë™\ØØ\R[
+ÛÜšÙ\‹œİÊ_Hˆ[H‘›İÈH	ÜØY™S˜[Y_H˜ˆ\Ë™\ØØ\R[
+İš[™ÊÛÜšÙ\“˜[YJK˜Ú\]
+
+KÕ\\Ø\ÙJ
+J_IÚ\ÓÛ›[™HÈ	ÏÜ[ˆÛ\ÜÏH˜Ú][Û›[™K\š[™ÈÜÜ[‰Èˆ	ÉßOÜÜ[ƒBˆÜ[ˆÛ\ÜÏH˜Ú]XÛÛXİXÛÜHƒBˆÜ[ˆÛ\ÜÏH˜Ú]XÛÛXİ]Ü[™HÜ[ˆÛ\ÜÏH˜Ú]XÛÛXİ[˜[YK\İ]\ÈÜ[ˆÛ\ÜÏH˜Ú]XÛÛXİ[˜[YH‰ÜØY™S˜[Y_OÜÜ[Ü[ˆÛ\ÜÏHœ™\Ù[˜ÙK[X™[\ËIÜ™\Ù[˜ÙTİ]\ßH‰Ü™\Ù[˜ÙSX™[OÜÜ[ÜÜ[Ü[ˆÛ\ÜÏH˜Ú]XÛÛXİ][YH‰İ\Ë™\ØØ\R[
+™]šY]Õ[YJ_OÜÜ[ÜÜ[ƒBˆÜ[ˆÛ\ÜÏH˜Ú]XÛÛXİ\™]šY]È‰İ\Ë™\ØØ\R[
+™]šY]È	ÔÚ[ˆY[œØZ™\ÉÊ_OÜÜ[ƒBˆ	Ú\Õ\[™ÈÈ	ÏÜ[ˆÛ\ÜÏH˜Ú]XÛÛXİ]\[™È‘\ØÜšXšY[™ÏÜ[ˆÛ\ÜÏH˜Ú]]\[™ËYİÈˆ\šXK[X™[H‘\ØÜšXšY[™ÈOÚOOÚOOÚOÜÜ[ÜÜ[‰Èˆ	ÉßCBˆÜ[ˆÛ\ÜÏH˜Ú]XÛÛXİXXİ]š]H°æ›[XHXİ]šYYˆ	ØXİ]š]_OÜÜ[ƒBˆÜÜ[ƒBˆ	İ[œ™XYˆÈÜ[ˆÛ\ÜÏH˜Ú]][œ™XY\[‰İ[œ™XYˆNHÈ	ÎNJÉÈˆ[œ™XYH	İ[œ™XYOOHHÈ	ÛY[œØZ™HY]›ÉÈˆ	ÛY[œØZ™\ÈY]›ÜÉßOÜÜ[˜ˆ	ÉßCBˆØ]ÛƒBˆÃBˆJKš›Ú[Š	ÉÊNÃBˆÛÛœİÙX\˜ÚHØİ[Y[™Ù][[Y[RY
+	ØÚ]XÛÛXİ\ÙX\˜Ú	ÊNÃBˆYˆ
+ÙX\˜ÚË˜[YJH\Ë™š[\Ú]ÛÛXİÊÙX\˜Ú˜[YJNÃBˆ\Ëœ™[™\“Y\ÜÙ[™Ù\•Ú[™İÜÊ
+NÃBˆCBˆÙÙÛTÚİĞ\˜Ú]™YÚ]Ê
+HÃBˆ\ËœÚİĞ\˜Ú]™YH]\ËœÚİĞ\˜Ú]™YÃBˆÛÛœİˆHØİ[Y[™Ù][[Y[RY
+	Ø‹]ÙÙÛKX\˜Ú]™Y	ÊNÃBˆYˆ
+ŠH‹^ÛÛ[H\ËœÚİĞ\˜Ú]™YÈ	Õ™\ˆXİ]˜\ÉÈˆ	Õ™\ˆ\˜Ú]˜Y\ÉÎÃBˆ\Ëœ™[™\ÛÛ™\œØ][ÛœÔÚYX˜\Š
+NÃBˆCBƒBˆÙ[XİÚ]ÛÛ™\œØ][ÛŠÓ˜[YJHÃBˆÛÛœİ™]š[İ\ÕÛÜšÙ\ˆH\Ë˜Xİ]™PÚ]ÛÜšÙ\ÃBˆÛÛœİ™]š[İ\ÓY\ÜØYÙ\ÈHØİ[Y[™Ù][[Y[RY
+	ØÚ][Y\ÜØYÙ\ËXÛÛZ[™\‰ÊNÃBˆYˆ
+™]š[İ\ÕÛÜšÙ\ˆ	‰ˆ™]š[İ\ÓY\ÜØYÙ\ÊH\Ë˜Ú]ÛÛ™\œØ][Û’[ØXÚVÜ™]š[İ\ÕÛÜšÙ\—HH™]š[İ\ÓY\ÜØYÙ\Ëš[›™\’SÃBˆ\Ë˜Xİ]™PÚ]ÛÜšÙ\ˆHÓ˜[YNÃBˆ\Ë˜Ú]ØÚÕ[œ™XYUÛÜšÙ\Ë™[]JÓ˜[YJNÃBˆYˆ
+\Ë˜İ\œ™[\Ù\Ëœ›ÛHOOH	ØYZ[‰ÊHÃBˆÛÛœİİ[[X\HH\Ë˜Ú]™XYİ[[X\šY\ÖİÓ˜[YWNÃBˆYˆ
+İ[[X\JHİ[[X\K[œ™XYÛİ[HÃBˆYˆ
+\Ë˜ÛÛ™\œØ][ÛœÖİÓ˜[YWJH\Ë˜ÛÛ™\œØ][ÛœÖİÓ˜[YWK[œ™XYPYZ[ˆHÃBˆ\Ë›X\šĞÚ]ÛÛ™\œØ][Û\Ô™XY
+Ó˜[YJNÃBˆ\Ëœ™[™\ÛÛ™\œØ][ÛœÔÚYX˜\Š
+NÃBˆCBˆYˆ
+\Ë˜İ\œ™[\Ù\Ëœ›ÛHOOH	ØYZ[‰ÊHÃBˆYˆ
+P\œ˜^Kš\Ğ\œ˜^J\Ë›Ü[Ú]XœÊJH\Ë›Ü[Ú]XœÈH×NÃBˆÛÛœİ\Ó™]ÕXˆH]\Ë›Ü[Ú]XœËš[˜ÛY\ÊÓ˜[YJNÃBˆYˆ
+\Ó™]ÕXŠH\Ë›Ü[Ú]XœËœ\Ú
+Ó˜[YJNÃBˆ\Ë›Z[š[Z^™YÚ]Ú[™İÜÖİÓ˜[YWHH˜[ÙNÃBˆYˆ
+Ú[™İËš[›™\•ÚYH
+HÃBˆØİ[Y[™Ù][[Y[RY
+	ØÚ]]Ú[™İË[[Ù[	ÊOË˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆØİ[Y[™Ù][[Y[RY
+	ØÚ]Y\ÚİÜ]Ú[™İÜÉÊOË˜Û\ÜÓ\İœ™[[İ™J	ÚY[‰ÊNÃBˆCBˆCBˆØİ[Y[™Ù][[Y[RY
+	ØÚ]ZXY\‹]]IÊK^ÛÛ[H	ÔÙ\šTÜÛ™\ÉÎÃBˆØİ[Y[™Ù][[Y[RY
+	ØÚ][[Øš[KXXİ]™K[˜[YIÊK^ÛÛ[HÓ˜[YNÃBƒBˆYˆ
+Ú[™İËš[›™\•ÚY
+HÃBˆØİ[Y[™Ù][[Y[RY
+	ØÚ]\ÚYX˜\‰ÊK˜Û\ÜÓ\İ˜Y
+	Û[Øš[KXÛÛ™\œØ][Û‹[Ü[‰ÊNÃBˆØİ[Y[™Ù][[Y[RY
+	ØÚ]XÛÛ™\œØ][Û‹X\™XIÊK˜Û\ÜÓ\İœ™[[İ™J	Û[Øš[K[\İ[Ü[‰ÊNÃBˆCBƒBˆ\ËœİXœØÜšX™PÚ]Y\ÜØYÙ\Ê
+NÃBˆ\Ëœ™[™\ÛÛ™\œØ][ÛœÔÚYX˜\Š
+NÃBˆ\Ëœ™[™\Ú]XœÊ
+NÃBˆ\Ëœ™[™\Xİ]™PÚ]XY\Š
+NÃBˆ\Ëœ™[™\“Y\ÜÙ[™Ù\•Ú[™İÜÊ
+NÃBˆCBƒBˆ™[™\Xİ]™PÚ]XY\Š
+HÃBˆÛÛœİXY\ˆHØİ[Y[™Ù][[Y[RY
+	ØÚ]XXİ]™KXÛÛXİZXY\‰ÊNÃBˆYˆ
+ZXY\ˆ]\Ë˜İ\œ™[\Ù\ŠH™]\›ÃBˆ]˜[YHH	ÉÎÃBˆ]İÈH	ÉÎÃBˆ]İ]\ÈH	Ù\ØÛÛ›™XİY	ÎÃBˆYˆ
+\Ë˜İ\œ™[\Ù\‹œ›ÛHOOH	ØYZ[‰ÊHÃBˆ˜[YHH\Ë˜Xİ]™PÚ]ÛÜšÙ\ˆ	ÉÎÃBˆÛÛœİÛÜšÙ\ˆH\ËÛÜšÙ\œË™š[™
+][HOˆ
+][K™[˜[YH][K\Ù\›˜[YJHOOH˜[YJNÃBˆYˆ
+]ÛÜšÙ\ŠHÈXY\‹š[›™\’SH	ÉÎÈ™]\›ÈCBˆİÈHÛÜšÙ\‹œİÈ	ÉÎÃBˆİ]\ÈH\Ë™Ù]™\Ù[˜ÙTİ]\ÊÛÜšÙ\ŠNÃBˆH[ÙHÃBˆÛÛœİYZ[ˆH\Ë™Ù]YZ[”™\Ù[˜ÙR[™›Ê
+NÃBˆ˜[YHHYZ[‹›˜[YNÃBˆİÈHYZ[‹œİÎÃBˆİ]\ÈHYZ[‹œİ]\ÎÃBˆCBˆÛÛœİØY™S˜[YHH\Ë™\ØØ\R[
+˜[YJNÃBˆÛÛœİ]˜]\ˆHİÈÈ[YÈÜ˜ÏH‰İ\Ë™\ØØ\R[
+İÊ_Hˆ[H‘›İÈH	ÜØY™S˜[Y_H˜ˆÜ[‰İ\Ë™\ØØ\R[
+İš[™Ê˜[YJK˜Ú\]
+
+KÕ\\Ø\ÙJ
+J_OÜÜ[˜ÃBˆÛÛœİ]HHØİ[Y[™Ù][[Y[RY
+	ØÚ]ZXY\‹]]IÊNÃBˆYˆ
+]JH]K^ÛÛ[H	ÔÙ\šTÜÛ™\ÉÎÃBˆXY\‹š[›™\’SHÜ[ˆÛ\ÜÏH˜Ú]XXİ]™KX]˜]\ˆÙX\ÛÛ˜[]ÛÜšÙ\‹X]˜]\ˆ‰Ø]˜]\ŸOÜÜ[]ˆÛ\ÜÏH˜Ú]XXİ]™KXÛÛXİXÛÜHÜ[ˆÛ\ÜÏH˜Ú]XXİ]™KXÛÛXİ[˜[YH[˜Ø]H‰ÜØY™S˜[Y_OÜÜ[Ü[ˆÛ\ÜÏHœ™\Ù[˜ÙK[X™[\ËIÜİ]\ßH‰İ\Ë™Ù]™\Ù[˜ÙSX™[
+İ]\Ê_OÜÜ[Ù]˜ÃBˆÛÛœİ[Øš[P]˜]\ˆHØİ[Y[™Ù][[Y[RY
+	ØÚ][[Øš[KXÛÛXİX]˜]\‰ÊNÃBˆYˆ
+[Øš{ë}m¢G§²ÚîÆ­yÚes').doc(msgId).delete();
           this.showToast("Mensaje eliminado para todos", "info");
         }
       }
@@ -5388,4 +4325,6 @@ updateMessengerWindowTyping(workerName) {
     let app;
     window.addEventListener('DOMContentLoaded', () => {
       app = new PortonProApp();
+      // Expose the singleton to auxiliary modules that initialize through window.app.
+      window.app = app;
     });
