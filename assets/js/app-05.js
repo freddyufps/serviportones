@@ -2886,11 +2886,20 @@ updateMessengerWindowTyping(workerName) {
 
       toggleChatWindow() {
         const chatModal = document.getElementById('chat-window-modal');
-        chatModal.classList.toggle('hidden');
-        if (!chatModal.classList.contains('hidden')) {
+        if (!chatModal) return;
+        const opening = chatModal.classList.contains('hidden');
+        chatModal.classList.toggle('hidden', !opening);
+        document.getElementById('chat-launcher-button')?.setAttribute('aria-expanded', String(opening));
+        const isDesktopAdminContacts = this.currentUser?.role === 'admin' && window.innerWidth >= 640;
+        if (opening) {
           this.scrollToChatBottom();
-          const isDesktopAdminContacts = this.currentUser?.role === 'admin' && window.innerWidth >= 640;
-          if (!isDesktopAdminContacts) this.markMessagesAsRead();
+          if (isDesktopAdminContacts) {
+            document.getElementById('chat-desktop-windows')?.classList.remove('hidden');
+            this.renderMessengerWindows();
+          } else {
+            this.markMessagesAsRead();
+            document.getElementById('chat-input-text')?.focus({ preventScroll: true });
+          }
         }
       }
 
