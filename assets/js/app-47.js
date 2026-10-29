@@ -71,8 +71,16 @@ body.theme-dark #clients-directory,body.theme-halloween #clients-directory{backg
     const mo=new MutationObserver(()=>{app.ensureClientsNav();app.addClientAutocomplete()});mo.observe(document.body,{childList:true,subtree:true});
     return true;
   };
+  const ensureClientsAction = () => {
+    const nav=document.getElementById('orders-view-navigation');
+    if(!nav||nav.querySelector('[data-order-view="clients"]'))return;
+    const b=document.createElement('button');b.type='button';b.dataset.orderView='clients';b.setAttribute('aria-label','Abrir directorio de clientes');b.innerHTML='<i data-lucide="users-round"></i><span>Clientes</span>';b.addEventListener('click',()=>{if(window.app?.openClientsDirectory)window.app.openClientsDirectory();else window.app?.showToast?.('El directorio de clientes todavía está cargando.','info')});nav.appendChild(b);if(window.lucide)window.lucide.createIcons();
+  };
+  const clientsNavObserver=new MutationObserver(ensureClientsAction);clientsNavObserver.observe(document.body,{childList:true,subtree:true});
+  const clientsNavTimer=setInterval(ensureClientsAction,400);setTimeout(()=>clearInterval(clientsNavTimer),120000);
   document.addEventListener('DOMContentLoaded',()=>{const t=setInterval(()=>{if(install())clearInterval(t)},80);setTimeout(()=>clearInterval(t),20000)});
 })();
+
 
 
 
