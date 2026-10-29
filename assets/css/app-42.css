@@ -1,0 +1,75 @@
+/* Clean, single-edge minimized chat chips on desktop. */
+@media (min-width: 900px) and (pointer: fine) {
+  #chat-minimized-windows:not(.hidden) {
+    padding: 0 !important;
+    gap: 8px !important;
+    overflow: visible !important;
+  }
+  #chat-minimized-windows > .messenger-chat-window {
+    box-sizing: border-box !important;
+    border: 1px solid #cbd7e4 !important;
+    outline: 0 !important;
+    border-radius: 14px !important;
+    background: #fff !important;
+    box-shadow: 0 3px 10px rgba(20, 39, 59, .12) !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+    overflow: hidden !important;
+  }
+  #chat-minimized-windows > .messenger-chat-window .messenger-window-header,
+  #chat-minimized-windows > .messenger-chat-window.is-minimized .messenger-window-header {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: 60px !important;
+    min-height: 60px !important;
+    margin: 0 !important;
+    padding: 6px 8px !important;
+    border: 0 !important;
+    outline: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+  }
+  #chat-minimized-windows > .messenger-chat-window.has-unread {
+    border-color: #e25757 !important;
+    box-shadow: 0 3px 10px rgba(20, 39, 59, .12) !important;
+  }
+  #chat-minimized-windows > .messenger-chat-window.has-unread .messenger-window-header {
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+}
+
+/* When iOS opens its keyboard, size the chat to the visual viewport so the composer stays above it. */
+@media (max-width: 639px) {
+  #chat-window-modal:not(.hidden) {
+    position: fixed !important;
+    top: var(--app-visual-viewport-offset-top, 0px) !important;
+    right: 0 !important;
+    bottom: auto !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: var(--app-visual-viewport-height, 100dvh) !important;
+    max-height: var(--app-visual-viewport-height, 100dvh) !important;
+    min-height: 0 !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
+  }
+  body.mobile-keyboard-open #chat-window-modal:not(.hidden) {
+    top: var(--app-visual-viewport-offset-top, 0px) !important;
+    height: var(--app-visual-viewport-height, 100dvh) !important;
+    max-height: var(--app-visual-viewport-height, 100dvh) !important;
+  }
+  #chat-window-modal:not(.hidden) > .flex-1.flex.overflow-hidden,
+  #chat-window-modal #chat-conversation-area {
+    min-height: 0 !important;
+  }
+  #chat-window-modal form[onsubmit*="handleSendMessage"] {
+    position: relative !important;
+    flex: 0 0 auto !important;
+    margin: 0 !important;
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
+    z-index: 2 !important;
+  }
+}

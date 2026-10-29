@@ -2878,15 +2878,24 @@ updateMessengerWindowTyping(workerName) {
 
       closeChatTab(workerName) {
         if (this.currentUser?.role !== 'admin') return;
+        const contactsPanel = document.getElementById('chat-window-modal');
+        const contactsPanelWasOpen = Boolean(contactsPanel && !contactsPanel.classList.contains('hidden'));
         this.openChatTabs = (this.openChatTabs || []).filter(name => name !== workerName);
         delete this.minimizedChatWindows[workerName];
         if (this.activeChatWorker === workerName) {
           const next = this.openChatTabs[0];
-          if (next) return this.selectChatConversation(next);
-          this.activeChatWorker = '';
+          if (next && contactsPanelWasOpen) return this.selectChatConversation(next);
+          this.activeChatWorker = next || '';
+          if (next) this.subscribeChatMessages();
         }
+        // Closing a docked/minimized worker chat must not open the main contacts
+        // panel as a side effect when that panel was previously closed.
         this.renderChatTabs();
         this.renderMessengerWindows();
+        if (contactsPanel && !contactsPanelWasOpen) {
+          contactsPanel.classList.add('hidden');
+          document.getElementById('chat-launcher-button')?.setAttribute('aria-expanded', 'false');
+        }
       }
       showMobileChatSidebar() {
         document.getElementById('chat-sidebar').classList.remove('mobile-conversation-open');
