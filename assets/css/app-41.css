@@ -115,4 +115,55 @@ body.theme-halloween #chat-window-modal .chat-contact-time{color:#263b52!importa
  #chat-window-modal #chat-contact-search-wrap{margin:8px 10px 10px!important}
 }
 
+/* Dock chats beside the persistent launcher; equalize minimized tab height. */
+.chat-launcher-cell{position:fixed!important;right:14px!important;bottom:14px!important;width:62px!important;height:62px!important;min-width:62px!important;max-width:62px!important;z-index:10020!important}
+.chat-launcher-cell>#chat-launcher-button{width:62px!important;min-width:62px!important;height:62px!important;min-height:62px!important}
+#chat-desktop-windows{position:fixed!important;left:12px!important;right:calc(62px + 26px)!important;bottom:14px!important;width:auto!important;max-width:none!important;z-index:10010!important;display:flex!important;justify-content:flex-end!important;gap:8px!important;overflow-x:auto!important;overflow-y:visible!important;padding:0 0 2px!important;scrollbar-width:none}
+#chat-desktop-windows::-webkit-scrollbar{display:none!important}
+#chat-desktop-chat-cells{display:flex!important;align-items:flex-end!important;justify-content:flex-end!important;gap:8px!important;width:max-content!important;max-width:100%!important}
+.messenger-chat-window{height:min(500px,calc(100dvh - 110px))!important}
+.messenger-chat-window.is-minimized{height:62px!important;min-height:62px!important;padding:0!important;border:1px solid #d9e2eb!important;border-radius:15px!important;background:#fff!important;box-shadow:0 6px 18px rgba(16,34,52,.14)!important}
+.messenger-chat-window.is-minimized .messenger-window-header{height:60px!important;min-height:60px!important;padding:6px 8px!important;gap:7px!important;border:1px solid #d9e2eb!important;border-radius:14px!important;background:#fff!important;color:#17263b!important;box-shadow:none!important}
+.messenger-chat-window.is-minimized .messenger-window-title,.messenger-chat-window.is-minimized .messenger-window-activity{color:#33475d!important}
+.messenger-chat-window.is-minimized .messenger-window-avatar{width:40px!important;height:40px!important;flex-basis:40px!important}
+.messenger-chat-window.is-minimized .messenger-window-controls button{width:24px!important;height:24px!important}
+.messenger-chat-window.is-minimized.has-unread .messenger-window-header{border:1px solid #e25757!important;background:#fff!important;color:#17263b!important;box-shadow:0 0 0 2px rgba(220,65,65,.14),0 0 12px rgba(220,65,65,.24)!important}
+.messenger-chat-window.is-minimized.has-unread .messenger-window-title,.messenger-chat-window.is-minimized.has-unread .messenger-window-activity{color:#33475d!important}
+body:has(#chat-window-modal:not(.hidden)) #chat-floating-button-container{opacity:1!important;visibility:visible!important;pointer-events:auto!important}
+body:has(#chat-window-modal:not(.hidden)) #chat-desktop-windows{right:min(772px,calc(100vw - 78px))!important}
+@media(max-width:639px){
+ .chat-launcher-cell{right:12px!important;bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;width:56px!important;height:56px!important;min-width:56px!important;max-width:56px!important}
+ .chat-launcher-cell>#chat-launcher-button{width:56px!important;min-width:56px!important;height:56px!important;min-height:56px!important}
+ #chat-desktop-windows,#chat-desktop-chat-cells{display:none!important}
+ #chat-window-modal form[onsubmit*="handleSendMessage"]{margin-bottom:calc(64px + env(safe-area-inset-bottom,0px))!important}
+}
+
+/* Refinement: persistent edge launcher, compact minimized tabs and responsive spacing. */
+.chat-launcher-cell{position:fixed!important;right:0!important;bottom:14px!important;width:62px!important;height:62px!important;min-width:62px!important;max-width:62px!important;z-index:10020!important;background:transparent!important}
+.chat-launcher-cell.hidden{display:none!important}
+.chat-launcher-cell>#chat-launcher-button{position:relative!important;box-sizing:border-box!important;width:62px!important;min-width:62px!important;height:62px!important;min-height:62px!important;padding:0!important;border-radius:18px!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:visible!important}
+.chat-launcher-cell>#chat-launcher-button>span:not(#chat-unread-badge){display:none!important}
+.chat-launcher-cell>#chat-launcher-button>i{width:25px!important;height:25px!important;margin:0!important}
+.chat-launcher-cell.has-unread>#chat-launcher-button{background:#fff!important;color:#17263b!important;border:1px solid #df5151!important;box-shadow:0 0 0 3px rgba(220,65,65,.13),0 7px 20px rgba(16,34,52,.2)!important;animation:none!important}
+.chat-launcher-cell.has-unread>#chat-launcher-button .text-brand-lime{color:#70a936!important}
+#chat-desktop-windows{position:fixed!important;left:12px!important;right:78px!important;bottom:14px!important;width:auto!important;max-width:none!important;z-index:10010!important;display:flex!important;justify-content:flex-end!important;gap:8px!important;overflow-x:auto!important;overflow-y:visible!important;padding:0 0 2px!important;scrollbar-width:none}
+#chat-desktop-windows.hidden{display:none!important}
+#chat-desktop-windows::-webkit-scrollbar{display:none!important}
+#chat-desktop-chat-cells{display:flex!important;align-items:flex-end!important;justify-content:flex-end!important;gap:8px!important;width:max-content!important;max-width:100%!important;pointer-events:auto!important}
+.messenger-chat-window.is-minimized{height:62px!important;min-height:62px!important;padding:0!important;border:1px solid #d9e2eb!important;border-radius:15px!important;background:#fff!important;box-shadow:0 6px 18px rgba(16,34,52,.14)!important}
+.messenger-chat-window.is-minimized .messenger-window-header{height:60px!important;min-height:60px!important;padding:6px 8px!important;gap:7px!important;border:1px solid #d9e2eb!important;border-radius:14px!important;background:#fff!important;color:#17263b!important;box-shadow:none!important}
+.messenger-chat-window.is-minimized .messenger-window-title,.messenger-chat-window.is-minimized .messenger-window-activity{color:#33475d!important}
+.messenger-chat-window.is-minimized .messenger-window-avatar{width:40px!important;height:40px!important;flex-basis:40px!important}
+.messenger-chat-window.is-minimized .messenger-window-controls button{width:24px!important;height:24px!important}
+.messenger-chat-window.is-minimized.has-unread .messenger-window-header{border:1px solid #e25757!important;background:#fff!important;color:#17263b!important;box-shadow:0 0 0 2px rgba(220,65,65,.14),0 0 12px rgba(220,65,65,.24)!important}
+.messenger-chat-window.is-minimized.has-unread .messenger-window-title,.messenger-chat-window.is-minimized.has-unread .messenger-window-activity{color:#33475d!important}
+body:has(#chat-window-modal:not(.hidden)) #chat-floating-button-container{opacity:1!important;visibility:visible!important;pointer-events:auto!important}
+body:has(#chat-window-modal:not(.hidden)) #chat-desktop-windows{right:calc(var(--chat-cell-width,300px) + 34px)!important}
+@media(max-width:639px){
+ .chat-launcher-cell{right:0!important;bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;width:56px!important;height:56px!important;min-width:56px!important;max-width:56px!important}
+ .chat-launcher-cell>#chat-launcher-button{width:56px!important;min-width:56px!important;height:56px!important;min-height:56px!important;border-radius:17px!important}
+ .chat-launcher-cell>#chat-launcher-button>i{width:23px!important;height:23px!important}
+ #chat-desktop-windows,#chat-desktop-chat-cells{display:none!important}
+ #chat-window-modal form[onsubmit*="handleSendMessage"]{margin-bottom:calc(64px + env(safe-area-inset-bottom,0px))!important}
+}
 
