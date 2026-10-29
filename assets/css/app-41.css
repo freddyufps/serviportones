@@ -280,3 +280,20 @@ body:has(#chat-window-modal:not(.hidden)) #chat-desktop-windows{right:calc(var(-
  body:not(:has(#chat-window-modal:not(.hidden))) #chat-desktop-windows:not(.hidden){left:auto!important;right:88px!important;width:max-content!important;max-width:calc(100vw - 100px)!important;justify-content:flex-end!important}
  body:not(:has(#chat-window-modal:not(.hidden))) #chat-minimized-windows:not(.hidden){left:auto!important;right:88px!important;width:max-content!important;max-width:calc(100vw - 100px)!important;justify-content:flex-end!important}
 }
+
+/* Conversación con mensajes pendientes: mismo azul del encabezado del chat. */
+#chat-minimized-windows>.chat-persistent-tab.has-unread,
+#chat-minimized-windows>.messenger-chat-window.chat-persistent-tab.has-unread{
+  background:linear-gradient(110deg,#14263e,#214e6d)!important;
+  border-color:#214e6d!important;
+  box-shadow:0 7px 20px rgba(20,38,62,.28)!important
+}
+#chat-minimized-windows>.chat-persistent-tab.has-unread .messenger-window-header{
+  background:linear-gradient(110deg,#14263e,#214e6d)!important;
+  color:#fff!important;
+  border-color:rgba(255,255,255,.28)!important
+}
+#chat-minimized-windows>.chat-persistent-tab.has-unread .messenger-window-title,
+#chat-minimized-windows>.chat-persistent-tab.has-unread .messenger-window-activity{
+  color:#f4f8ff!important
+}
