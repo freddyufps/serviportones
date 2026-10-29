@@ -706,13 +706,9 @@
 
         }
 
-        document.addEventListener('pointerdown', event => {
-          const menu = document.getElementById('admin-presence-menu');
-          const toggle = document.getElementById('admin-presence-toggle');
-          if (!menu || menu.classList.contains('hidden') || menu.contains(event.target) || toggle?.contains(event.target)) return;
-          menu.classList.add('hidden');
-          toggle?.setAttribute('aria-expanded', 'false');
-        }, true);
+        // Los chats permanecen abiertos hasta usar su propio control de minimizar o cerrar.
+
+
         document.addEventListener('click', event => {
           const menu = document.getElementById('admin-presence-menu');
           const toggle = document.getElementById('admin-presence-toggle');
@@ -2631,6 +2627,10 @@
           const isNewTab = !this.openChatTabs.includes(wName);
           if (isNewTab) this.openChatTabs.push(wName);
           this.minimizedChatWindows[wName] = false;
+          if (window.innerWidth >= 640) {
+            document.getElementById('chat-window-modal')?.classList.remove('hidden');
+            document.getElementById('chat-desktop-windows')?.classList.remove('hidden');
+          }
         }
         document.getElementById('chat-header-title').textContent = 'ServiPortones';
         document.getElementById('chat-mobile-active-name').textContent = wName;
@@ -2826,7 +2826,11 @@ updateMessengerWindowTyping(workerName) {
       }
 
       toggleMessengerWindow(workerName) {
-        this.minimizedChatWindows[workerName] = !this.minimizedChatWindows[workerName];
+        const restoring = Boolean(this.minimizedChatWindows[workerName]);
+        this.minimizedChatWindows[workerName] = !restoring;
+        if (restoring && this.currentUser?.role === 'admin' && window.innerWidth >= 640) {
+          document.getElementById('chat-desktop-windows')?.classList.remove('hidden');
+        }
         this.renderMessengerWindows();
       }
 
