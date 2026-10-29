@@ -2772,8 +2772,28 @@
         });
         dock.innerHTML = renderedWindows.filter((_, index) => !this.minimizedChatWindows[names[index]]).join('');
         if (minimizedDock) {
-          minimizedDock.innerHTML = renderedWindows.filter((_, index) => this.minimizedChatWindows[names[index]]).join('');
-          minimizedDock.classList.toggle('hidden', minimizedDock.childElementCount === 0);
+          minimizedDock.innerHTML = names.map(name => {
+            const worker = this.workers.find(item => (item.fullName || item.username) === name);
+            const avatar = worker?.photo ? '<img src="' + this.escapeHtml(worker.photo) + '" alt="">' : this.escapeHtml(String(name).charAt(0).toUpperCase());
+            const isMinimized = Boolean(this.minimizedChatWindows[name]);
+            const presenceStatus = this.getPresenceStatus(worker);
+            const presenceLabel = this.getPresenceLabel(presenceStatus);
+            const typing = Boolean(this.chatTypingByWorker[name]);
+            const threadSummary = this.chatThreadSummaries[name];
+            const threadData = this.conversations[name] || {};
+            const unreadCount = Math.max(threadSummary?.hasMessages ? Number(threadSummary.unreadCount || 0) : Number(threadData.unreadByAdmin || 0), this.chatDockUnreadByWorker?.has(name) ? 1 : 0);
+            const presenceText = typing ? 'Escribiendo...' : presenceLabel;
+            const presenceClass = typing ? 'is-typing' : 'presence-label is-' + presenceStatus;
+            return '<section class="messenger-chat-window is-minimized chat-persistent-tab ' + (unreadCount > 0 && this.prefs.chatBadge ? 'has-unread' : '') + '" data-messenger-window="' + this.escapeHtml(name) + '" style="--chat-cell-width:' + cellWidth + 'px">' +
+              '<header class="messenger-window-header" onclick="app.selectChatConversation(decodeURIComponent(\'' + encodeURIComponent(name) + '\'))">' +
+                '<span class="messenger-window-avatar seasonal-worker-avatar">' + avatar + '</span><span class="messenger-window-identity"><span class="messenger-window-title">' + this.escapeHtml(name) + '</span><span class="messenger-window-activity ' + presenceClass + '">' + this.escapeHtml(presenceText) + '</span></span>' +
+                (unreadCount > 0 && this.prefs.chatBadge ? '<span class="messenger-window-unread-badge">' + (unreadCount > 99 ? '99+' : String(unreadCount)) + '</span>' : '') +
+                '<span class="messenger-window-controls">' +
+                  '<button class="messenger-window-minimize" type="button" title="' + (isMinimized ? 'Restaurar' : 'Minimizar') + '" aria-label="' + (isMinimized ? 'Restaurar' : 'Minimizar') + ' ' + this.escapeHtml(name) + '" onclick="event.stopPropagation();app.toggleMessengerWindow(decodeURIComponent(\'' + encodeURIComponent(name) + '\'))">' + (isMinimized ? '+' : '−') + '</button>' +
+                  '<button class="messenger-window-close" type="button" title="Cerrar" aria-label="Cerrar ' + this.escapeHtml(name) + '" onclick="event.stopPropagation();app.closeChatTab(decodeURIComponent(\'' + encodeURIComponent(name) + '\'))">×</button>' +
+                '</span></header></section>';
+          }).join('');
+          minimizedDock.classList.toggle('hidden', names.length === 0);
         }
         [dock, minimizedDock].filter(Boolean).forEach(container => container.querySelectorAll('[data-messenger-window]').forEach(windowEl => {
           const name = windowEl.dataset.messengerWindow;
