@@ -2612,6 +2612,13 @@
         this.activeChatWorker = wName;
         this.chatDockUnreadByWorker?.delete(wName);
         if (this.currentUser?.role === 'admin') {
+          const summary = this.chatThreadSummaries[wName];
+          if (summary) summary.unreadCount = 0;
+          if (this.conversations[wName]) this.conversations[wName].unreadByAdmin = 0;
+          this.markChatConversationAsRead(wName);
+          this.renderConversationsSidebar();
+        }
+        if (this.currentUser?.role === 'admin') {
           if (!Array.isArray(this.openChatTabs)) this.openChatTabs = [];
           const isNewTab = !this.openChatTabs.includes(wName);
           if (isNewTab) this.openChatTabs.push(wName);
@@ -3179,17 +3186,23 @@ updateMessengerWindowTyping(workerName) {
           const threadRef = db.collection('chats_internos').doc(workerName);
           const snapshot = await threadRef.collection('mensajes')
             .orderBy('timestamp', 'desc')
-            .limit(80)
             .get();
-          const batch = db.batch();
-          snapshot.forEach(doc => {
+          const pending = snapshot.docs.filter(doc => {
             const message = doc.data();
-            if (message.senderRole !== this.currentUser.role && message.status !== 'read') {
-              batch.update(doc.ref, { status: 'read' });
-            }
+            return message.senderRole !== this.currentUser.role && message.status !== 'read';
           });
-          batch.set(threadRef, { unreadByAdmin: 0 }, { merge: true });
-          await batch.commit();
+          for (let start = 0; start < pending.length; start += 450) {
+            const batch = db.batch();
+            pending.slice(start, start + 450).forEach(doc => batch.update(doc.ref, { status: 'read' }));
+            await batch.commit();
+          }
+          await threadRef.set({ unreadByAdmin: 0 }, { merge: true });
+          const summary = this.chatThreadSummaries[workerName];
+          if (summary) summary.unreadCount = 0;
+          if (this.conversations[workerName]) this.conversations[workerName].unreadByAdmin = 0;
+          this.chatDockUnreadByWorker?.delete(workerName);
+          this.renderMessengerWindows();
+          this.renderConversationsSidebar();
         } catch (error) {
           console.warn('[CHAT] No se pudo marcar la conversación como leída:', error);
         }
