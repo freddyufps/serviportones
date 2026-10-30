@@ -12,3 +12,4 @@
 #orders-view-navigation:has([data-order-view="invoices"].is-current) #btn-archived-quotes {
   display: none !important;
 }
+
