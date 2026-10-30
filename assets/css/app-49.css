@@ -1,0 +1,49 @@
+/* Mobile chat stack: launcher stays above the on-screen keyboard; conversation sits directly above it. */
+@media (max-width: 639px) {
+  #chat-floating-button-container {
+    position: fixed !important;
+    right: 12px !important;
+    bottom: calc(var(--app-mobile-keyboard-height, 0px) + env(safe-area-inset-bottom, 0px) + 12px) !important;
+    z-index: 2147483001 !important;
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transition: bottom 120ms ease-out !important;
+  }
+
+  body:has(#chat-window-modal:not(.hidden)) #chat-floating-button-container {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  #chat-window-modal:not(.hidden) {
+    position: fixed !important;
+    top: auto !important;
+    right: 12px !important;
+    bottom: calc(var(--app-mobile-keyboard-height, 0px) + env(safe-area-inset-bottom, 0px) + 82px) !important;
+    left: auto !important;
+    width: min(420px, calc(100vw - 24px)) !important;
+    height: min(620px, max(180px, calc(var(--app-visual-viewport-height, 100dvh) - 100px))) !important;
+    max-height: max(180px, calc(var(--app-visual-viewport-height, 100dvh) - 100px)) !important;
+    min-height: 0 !important;
+    border-radius: 20px !important;
+    overflow: hidden !important;
+    z-index: 2147483002 !important;
+    transition: bottom 120ms ease-out, height 120ms ease-out !important;
+  }
+
+  #chat-window-modal:not(.hidden) > .flex-1.flex.overflow-hidden,
+  #chat-window-modal #chat-conversation-area {
+    min-height: 0 !important;
+  }
+
+  #chat-window-modal form[onsubmit*="handleSendMessage"] {
+    flex: 0 0 auto !important;
+    margin: 0 !important;
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
