@@ -5401,3 +5401,4 @@ updateMessengerWindowTyping(workerName) {
       // Expose the singleton to auxiliary modules that initialize through window.app.
       window.app = app;
     });
+

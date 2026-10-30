@@ -100,3 +100,4 @@
     if(!event.target.closest?.('.chat-reaction-picker'))window.app?.closeReactionPicker?.();
   },false);
 })();
+
