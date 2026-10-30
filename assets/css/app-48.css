@@ -1,0 +1,9 @@
+/* El adjunto de archivos permanece desactivado en las ventanas de chat. */
+#chat-window-modal .chat-composer-tools .chat-tool-wrap:has([data-chat-action="attach"]),
+#chat-desktop-chat-cells .chat-composer-tools .chat-tool-wrap:has([data-chat-action="attach"]),
+.chat-composer-tools [data-chat-action="attach"],
+.chat-attach-menu,
+input[data-chat-file-input] {
+  display: none !important;
+}
+

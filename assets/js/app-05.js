@@ -1149,7 +1149,7 @@
             </div>
             <div class="mt-2 sm:mt-0 flex items-center justify-center sm:justify-end gap-2 self-center sm:self-auto">
               <button type="button" aria-label="Ver mapa GPS" title="Ver mapa GPS" onclick="app.openAdminGpsModal()" class="group shrink-0 cursor-pointer rounded-2xl border-0 bg-transparent p-0 shadow-none transition-transform hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400">
-                <img src="assets/media/boton-ver-mapa-gps.png" alt="Ver mapa GPS" class="block h-20 w-20 object-contain sm:h-24 sm:w-24 md:h-28 md:w-28">
+                <img src="assets/media/boton-ver-mapa-gps.png" alt="Ver mapa GPS" class="gps-dashboard-shortcut block h-20 w-20 object-contain sm:h-24 sm:w-24 md:h-28 md:w-28">
               </button>
             </div>
           `;
