@@ -1,0 +1,7 @@
+/* Hace visible el acceso al selector de emojis/stickers en escritorio y móvil. */
+.chat-composer-tools [data-chat-action="emoji"] {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
