@@ -125,7 +125,9 @@
 
   function install() {
     const proto = window.PortonProApp?.prototype;
-    if (!proto || proto.__quotesArchiveStableFilter64 || typeof proto.quoteArchiveMarkup !== 'function') return false;
+    // app-44 registers the definitive inline archive after app-43 initializes.
+    // Install only after that patch, otherwise app-44 overwrites these methods.
+    if (!proto || !window.app?.__quoteModule44 || proto.__quotesArchiveStableFilter64 || typeof proto.quoteArchiveMarkup !== 'function') return false;
 
     const originalMarkup = proto.quoteArchiveMarkup;
     proto.quoteArchiveMarkup = function (...args) { return addSummary(originalMarkup.apply(this, args)); };
