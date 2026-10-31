@@ -59,17 +59,11 @@
     }
   }
 
-  // Intercept the inline handlers in capture phase so each tap executes exactly once.
+  // Route chat-window controls once without touching order or quote navigation.
   document.addEventListener('click',event=>{
     const target=event.target instanceof Element?event.target:null;
     if(!target)return;
     const app=window.app;
-    const quoteButton=target.closest('#btn-create-quote');
-    if(quoteButton){
-      event.preventDefault();event.stopImmediatePropagation();
-      try{app?.openQuoteForm?.()}catch(error){console.error('[COTIZACIONES] No se pudo abrir el formulario',error);app?.showToast?.('No se pudo abrir la cotización. Recarga la página e inténtalo de nuevo.','error');}
-      return;
-    }
     if(!app||app.currentUser?.role!=='admin')return;
     const close=target.closest('.messenger-window-close');
     if(close){

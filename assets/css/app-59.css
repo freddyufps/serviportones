@@ -1,10 +1,9 @@
-/* Cotización flotante sin capa de fondo: solo queda visible la ventana. */
+/* La navegación y los dos grupos conservan el mismo estilo, sin tarjetas adicionales. */
 #quotes-shell{background:transparent!important;pointer-events:none!important}
 #quotes-shell>.quotes-scrim{display:none!important;background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 #quotes-shell>.quotes-window{pointer-events:auto!important}
-/* Clientes queda en un grupo independiente al final del menú. */
-#orders-view-navigation{justify-content:flex-start}
-#orders-view-navigation>.orders-main-access-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
-#orders-view-navigation>.orders-clients-access-group{display:flex;align-items:center;margin-left:auto;padding-left:12px;border-left:1px solid #d8e2ea}
-#orders-view-navigation>.orders-clients-access-group button{margin:0!important}
-@media(max-width:540px){#orders-view-navigation{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:8px!important}#orders-view-navigation>.orders-main-access-group{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}#orders-view-navigation>.orders-clients-access-group{display:grid;grid-template-columns:minmax(0,1fr);margin:0;padding:8px 0 0;border-left:0;border-top:1px solid #d8e2ea}#orders-view-navigation>.orders-clients-access-group button{width:100%;min-width:0;justify-self:stretch}}
+#orders-view-navigation{display:flex!important;align-items:center;justify-content:flex-start!important;gap:8px!important;flex-wrap:wrap;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
+#orders-view-navigation>.orders-main-access-group,#orders-view-navigation>.orders-clients-access-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;margin:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}
+#orders-view-navigation button{border-color:transparent!important;border-radius:0!important;background:transparent!important;color:inherit!important;box-shadow:none!important}
+#orders-view-navigation button.is-current,#orders-view-navigation button.is-current:hover{border-color:transparent!important;background:transparent!important;color:inherit!important;box-shadow:none!important}
+@media(max-width:540px){#orders-view-navigation{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:8px!important}#orders-view-navigation>.orders-main-access-group,#orders-view-navigation>.orders-clients-access-group{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}#orders-view-navigation>.orders-clients-access-group button{width:100%;min-width:0;justify-self:stretch}}

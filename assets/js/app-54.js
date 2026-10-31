@@ -1,11 +1,11 @@
 (() => {
   'use strict';
   const artworks = {
-    active: ['Órdenes', 'assets/media/boton-ordenes.png'],
-    archived: ['Órdenes archivadas', 'assets/img/nav/ordenes-archivadas.jpg'],
-    quotes: ['Cotizaciones archivadas', 'assets/img/nav/cotizaciones-archivadas.jpg'],
-    invoices: ['Consolidado de facturas', 'assets/img/nav/consolidado-facturas.jpg'],
-    clients: ['Clientes', 'assets/img/nav/clientes.jpg']
+    active: ['Órdenes', 'assets/media/boton-ordenes-transparent.png'],
+    archived: ['Órdenes archivadas', 'assets/img/nav/ordenes-archivadas-transparent.png'],
+    quotes: ['Cotizaciones archivadas', 'assets/img/nav/cotizaciones-archivadas-transparent.png'],
+    invoices: ['Consolidado de facturas', 'assets/img/nav/consolidado-facturas-transparent.png'],
+    clients: ['Clientes', 'assets/img/nav/clientes-transparent.png']
   };
   const addArtwork = (button, label, src, countSelector) => {
     if (!button || button.dataset.navArtwork === src) return;
@@ -24,13 +24,6 @@
     addArtwork(nav.querySelector('#btn-archived-quotes'), ...artworks.quotes, '.quote-archive-count');
     addArtwork(nav.querySelector('[data-order-view="invoices"]'), ...artworks.invoices);
     addArtwork(nav.querySelector('[data-order-view="clients"]'), ...artworks.clients);
-    const quoteButton = document.getElementById('btn-create-quote');
-    if (quoteButton && quoteButton.dataset.navArtwork !== 'assets/img/nav/crear-cotizacion.jpg') {
-      quoteButton.dataset.navArtwork = 'assets/img/nav/crear-cotizacion.jpg';
-      const icon = quoteButton.querySelector('.quote-tile-icon');
-      if (icon) { const image = document.createElement('img'); image.className = 'quote-create-artwork'; image.src = 'assets/img/nav/crear-cotizacion.jpg'; image.alt = ''; icon.replaceChildren(image); }
-      quoteButton.setAttribute('aria-label', 'Crear cotización');
-    }
     const app = window.app;
     const current = app?.showDocumentControl ? 'invoices' : app?.clientsDirectoryOpen ? 'clients' : app?.quoteArchiveInlineOpen ? 'quotes' : app?.showArchivedTasks ? 'archived' : 'active';
     nav.querySelectorAll('[data-order-view], #btn-archived-quotes').forEach(button => {

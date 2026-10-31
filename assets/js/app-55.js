@@ -1,8 +1,20 @@
 (() => {
   'use strict';
+  document.addEventListener('click', event => {
+    const target = event.target instanceof Element ? event.target.closest('#btn-archived-quotes') : null;
+    if (!target) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const app = window.app;
+    if (typeof app?.openQuotesArchive === 'function') app.openQuotesArchive();
+    else {
+      console.error('[COTIZACIONES] La ruta de cotizaciones archivadas no está disponible.');
+      app?.showToast?.('No se pudo abrir Cotizaciones Archivadas. Recarga la página e inténtalo de nuevo.', 'error');
+    }
+  }, true);
   const install = () => {
     const app = window.app, proto = app?.constructor?.prototype;
-    if (!app || !proto || app.__independentOrderViews55) return false;
+    if (!app || !proto || app.__independentOrderViews55 || !app.__quoteModule44 || !app.__mobileClientModule47) return false;
     app.__independentOrderViews55 = true;
     const clearLegacyQuotesWindow = () => {
       document.getElementById('quotes-shell')?.classList.add('hidden');
