@@ -1,16 +1,48 @@
 (() => {
   'use strict';
+  const openQuotesArchive = app => {
+    if (!app || app.currentUser?.role !== 'admin') return false;
+    if (typeof app.openQuotesArchive === 'function') {
+      try { app.openQuotesArchive(); return true; } catch (error) { console.warn('[COTIZACIONES] Se activa la ruta de respaldo.', error); }
+    }
+    if (typeof app.quoteArchiveMarkup !== 'function') return false;
+    app.quotes = Array.isArray(app.quotes) ? app.quotes : [];
+    app.quoteArchiveInlineOpen = true;
+    app.clientsDirectoryOpen = false;
+    app.showArchivedTasks = false;
+    app.showDocumentControl = false;
+    const host = document.getElementById('tasks-container');
+    if (!host) return false;
+    document.getElementById('clients-directory')?.remove();
+    document.getElementById('archived-documents-panel')?.classList.add('hidden');
+    host.innerHTML = app.quoteArchiveMarkup();
+    host.style.display = 'block';
+    host.style.width = '100%';
+    const title = document.getElementById('orders-view-title');
+    if (title) title.textContent = 'Cotizaciones archivadas';
+    const count = document.getElementById('filtered-count');
+    if (count) { count.textContent = String((app.quotes || []).length); count.classList.remove('hidden'); }
+    document.getElementById('section-admin-audit-log')?.classList.add('hidden');
+    const nav = document.getElementById('orders-view-navigation');
+    if (nav) {
+      nav.dataset.currentView = 'quotes';
+      nav.querySelectorAll('[data-order-view], #btn-archived-quotes').forEach(button => {
+        const selected = button.id === 'btn-archived-quotes';
+        button.classList.toggle('is-current', selected);
+        button.setAttribute('aria-current', selected ? 'page' : 'false');
+        button.setAttribute('aria-pressed', String(selected));
+      });
+    }
+    if (window.lucide) window.lucide.createIcons();
+    return true;
+  };
   document.addEventListener('click', event => {
     const target = event.target instanceof Element ? event.target.closest('#btn-archived-quotes') : null;
     if (!target) return;
     event.preventDefault();
     event.stopImmediatePropagation();
     const app = window.app;
-    if (typeof app?.openQuotesArchive === 'function') app.openQuotesArchive();
-    else {
-      console.error('[COTIZACIONES] La ruta de cotizaciones archivadas no está disponible.');
-      app?.showToast?.('No se pudo abrir Cotizaciones Archivadas. Recarga la página e inténtalo de nuevo.', 'error');
-    }
+    openQuotesArchive(app);
   }, true);
   const install = () => {
     const app = window.app, proto = app?.constructor?.prototype;

@@ -1,4 +1,8 @@
-/* Navegación sin fondos ni bloques de hover; conserva foco accesible. */
-#orders-view-navigation button,#orders-view-navigation .quote-archive-button{transition:none!important;transform:none!important;background:transparent!important;box-shadow:none!important}
-#orders-view-navigation button:hover,#orders-view-navigation .quote-archive-button:hover{transform:none!important;border-color:transparent!important;background:transparent!important;box-shadow:none!important}
-#orders-view-navigation button:focus-visible,#orders-view-navigation .quote-archive-button:focus-visible{outline:2px solid #64748b!important;outline-offset:2px!important}
+/* Realce de navegación por borde y halo; el arte conserva fondo transparente. */
+#orders-view-navigation .orders-action-tile{transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease!important}
+#orders-view-navigation .orders-action-tile:hover{transform:translateY(-2px)!important;border:1px solid rgba(104,157,62,.75)!important;background:transparent!important;box-shadow:0 0 0 2px rgba(120,173,56,.16),0 7px 18px rgba(35,66,22,.12)!important}
+#orders-view-navigation .orders-action-tile.is-current,#orders-view-navigation .orders-action-tile.is-current:hover{border:1px solid #78ad38!important;background:transparent!important;box-shadow:0 0 0 2px rgba(120,173,56,.2),0 5px 15px rgba(82,132,37,.14)!important;transform:none!important}
+#orders-view-navigation .orders-action-tile:focus-visible{outline:3px solid rgba(104,157,62,.38)!important;outline-offset:3px!important}
+body.theme-dark #orders-view-navigation .orders-action-tile:hover,body.theme-halloween #orders-view-navigation .orders-action-tile:hover{border-color:#9acc5a!important;box-shadow:0 0 0 2px rgba(154,204,90,.2),0 7px 18px rgba(0,0,0,.24)!important}
+body.theme-dark #orders-view-navigation .orders-action-tile.is-current,body.theme-dark #orders-view-navigation .orders-action-tile.is-current:hover,body.theme-halloween #orders-view-navigation .orders-action-tile.is-current,body.theme-halloween #orders-view-navigation .orders-action-tile.is-current:hover{border-color:#9acc5a!important;box-shadow:0 0 0 2px rgba(154,204,90,.22),0 5px 15px rgba(0,0,0,.22)!important}
+@media(prefers-reduced-motion:reduce){#orders-view-navigation .orders-action-tile{transition:none!important}}

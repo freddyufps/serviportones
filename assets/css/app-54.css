@@ -1,6 +1,4 @@
-/* Navegación con imágenes transparentes, sin paneles ni resaltados detrás del arte. */
-#orders-view-navigation .orders-nav-artwork{display:block;flex:0 0 46px;width:46px;height:46px;object-fit:contain;border:0;border-radius:0;background:transparent;box-shadow:none!important}
-#orders-view-navigation .orders-nav-label{line-height:1.2}
-#orders-view-navigation button.is-current,#orders-view-navigation button.is-current:hover{border-color:transparent!important;background:transparent!important;color:inherit!important;box-shadow:none!important;transform:none!important}
-#orders-view-navigation button.is-current .orders-nav-artwork{box-shadow:none!important}
-@media(max-width:700px){#orders-view-navigation .orders-nav-artwork{flex-basis:40px;width:40px;height:40px}#orders-view-navigation .orders-nav-label{text-align:left}}
+/* Las miniaturas de navegación comparten la escala de los accesos de trabajo. */
+#orders-view-navigation .orders-nav-label{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+#orders-view-navigation .orders-archive-count,#orders-view-navigation #orders-nav-archive-count,#orders-view-navigation .quote-archive-count{position:absolute!important;top:2px!important;right:2px!important;z-index:2!important;min-width:18px!important;height:18px!important;padding:0 4px!important;border:1px solid #fff!important;border-radius:999px!important;background:#edf2f6!important;color:#334a61!important;font-size:10px!important;line-height:16px!important}
+body.theme-dark #orders-view-navigation .quote-archive-count,body.theme-dark #orders-view-navigation #orders-nav-archive-count,body.theme-halloween #orders-view-navigation .quote-archive-count,body.theme-halloween #orders-view-navigation #orders-nav-archive-count{border-color:#26384d!important;background:#26384d!important;color:#edf4fb!important}

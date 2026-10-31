@@ -10,10 +10,11 @@
   const addArtwork = (button, label, src, countSelector) => {
     if (!button || button.dataset.navArtwork === src) return;
     button.dataset.navArtwork = src;
+    button.classList.add('orders-action-tile');
     const count = countSelector ? button.querySelector(countSelector) : null;
     button.replaceChildren();
     const image = document.createElement('img');
-    image.className = 'orders-nav-artwork'; image.src = src; image.alt = ''; image.setAttribute('aria-hidden', 'true');
+    image.className = 'orders-action-artwork'; image.src = src; image.alt = ''; image.setAttribute('aria-hidden', 'true');
     const text = document.createElement('span'); text.className = 'orders-nav-label'; text.textContent = label;
     button.append(image, text); if (count) button.append(count);
   };
