@@ -1,22 +1,26 @@
 (() => {
   'use strict';
+  const selectQuotesView = () => {
+    const nav = document.getElementById('orders-view-navigation');
+    if (!nav) return;
+    nav.dataset.currentView = 'quotes';
+    nav.querySelectorAll('[data-order-view], #btn-archived-quotes').forEach(button => {
+      const selected = button.id === 'btn-archived-quotes';
+      button.classList.toggle('is-current', selected);
+      button.setAttribute('aria-current', selected ? 'page' : 'false');
+      button.setAttribute('aria-pressed', String(selected));
+    });
+  };
   const openQuotesArchive = app => {
     if (!app || app.currentUser?.role !== 'admin') return false;
-    const navBar = document.getElementById('orders-view-navigation');
-    if (navBar) {
-      navBar.dataset.currentView = 'quotes';
-      navBar.querySelectorAll('[data-order-view], #btn-archived-quotes').forEach(button => {
-        const selected = button.id === 'btn-archived-quotes';
-        button.classList.toggle('is-current', selected);
-        button.setAttribute('aria-current', selected ? 'page' : 'false');
-        button.setAttribute('aria-pressed', String(selected));
-      });
-    }
+    app.quoteConsolidationOpen = false;
+    selectQuotesView();
     if (typeof app.openQuotesArchive === 'function') {
       try {
         app.openQuotesArchive();
         const inline = document.getElementById('tasks-container')?.querySelector('.quotes-archive');
-        if (inline) return true;
+        const title = String(document.getElementById('orders-view-title')?.textContent || '').trim().toLocaleLowerCase();
+        if (inline && app.quoteArchiveInlineOpen && title === 'cotizaciones archivadas') { selectQuotesView(); return true; }
       } catch (error) { console.warn('[COTIZACIONES] Se activa la ruta de respaldo.', error); }
     }
     if (typeof app.quoteArchiveMarkup !== 'function') return false;
@@ -25,6 +29,7 @@
     app.clientsDirectoryOpen = false;
     app.showArchivedTasks = false;
     app.showDocumentControl = false;
+    app.quoteConsolidationOpen = false;
     const host = document.getElementById('tasks-container');
     if (!host) return false;
     document.getElementById('quotes-shell')?.classList.add('hidden');
@@ -39,16 +44,7 @@
     const count = document.getElementById('filtered-count');
     if (count) { count.textContent = String((app.quotes || []).length); count.classList.remove('hidden'); }
     document.getElementById('section-admin-audit-log')?.classList.add('hidden');
-    const nav = document.getElementById('orders-view-navigation');
-    if (nav) {
-      nav.dataset.currentView = 'quotes';
-      nav.querySelectorAll('[data-order-view], #btn-archived-quotes').forEach(button => {
-        const selected = button.id === 'btn-archived-quotes';
-        button.classList.toggle('is-current', selected);
-        button.setAttribute('aria-current', selected ? 'page' : 'false');
-        button.setAttribute('aria-pressed', String(selected));
-      });
-    }
+    selectQuotesView();
     if (window.lucide) window.lucide.createIcons();
     return true;
   };
@@ -71,7 +67,14 @@
     button.addEventListener('click', event => {
       event.preventDefault();
       const app = window.app;
-      if (typeof app?.openQuoteForm === 'function') app.openQuoteForm();
+      if (typeof app?.openQuoteForm !== 'function') return;
+      app.closeQuotesArchiveInline?.();
+      app.quoteArchiveInlineOpen = false;
+      app.quoteConsolidationOpen = false;
+      app.clientsDirectoryOpen = false;
+      app.showDocumentControl = false;
+      app.showArchivedTasks = false;
+      app.openQuoteForm();
     });
   };
   bindCreateQuote();
@@ -89,6 +92,7 @@
       instance.quoteArchiveInlineOpen = view === 'quotes';
       instance.clientsDirectoryOpen = view === 'clients';
       instance.showArchivedTasks = view === 'archived';
+      instance.quoteConsolidationOpen = false;
       if (closeLegacyQuotes) clearLegacyQuotesWindow();
       const host = document.getElementById('tasks-container');
       if (host) {
