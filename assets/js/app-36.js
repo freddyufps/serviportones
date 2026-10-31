@@ -37,10 +37,12 @@
       nav = document.createElement('nav');
       nav.id = 'orders-view-navigation';
       nav.setAttribute('aria-label', 'Navegación de órdenes');
-      nav.innerHTML = '<button type="button" data-order-view="archived" onclick="app.showArchivedOrdersView()" aria-current="false"><i data-lucide="archive"></i><span>Órdenes archivadas</span><b id="orders-nav-archive-count">0</b></button>' +
+      nav.innerHTML = '<button type="button" data-order-view="active" onclick="app.showActiveOrdersView()" aria-current="false"><i data-lucide="clipboard-list"></i><span>Órdenes</span></button>' +
+        '<button id="nav-assign-order" type="button" onclick="app.openNewTaskModal()" aria-label="Asignar orden"><img src="assets/media/boton-asignar-orden.png" alt=""><span>Asignar orden</span></button>' +
+        '<button type="button" data-order-view="archived" onclick="app.showArchivedOrdersView()" aria-current="false"><i data-lucide="archive"></i><span>Órdenes archivadas</span><b id="orders-nav-archive-count">0</b></button>' +
         '<button id="btn-archived-quotes" type="button" class="quote-archive-button" onclick="app.openQuotesArchive()" aria-label="Abrir cotizaciones archivadas"><span aria-hidden="true">▣</span><span>Cotizaciones archivadas</span><span id="quotes-archive-count" class="quote-archive-count">0</span></button>' +
         '<button type="button" data-order-view="invoices" onclick="app.openDocumentControl()" aria-current="false"><i data-lucide="receipt-text"></i><span>Consolidado de facturas</span></button>' +
-        '<button type="button" data-order-view="active" onclick="app.showActiveOrdersView()" aria-current="false"><i data-lucide="arrow-left"></i><span>Volver a órdenes</span></button>';
+        '<button type="button" data-order-view="clients" onclick="app.openClientsDirectory()" aria-current="false"><i data-lucide="users-round"></i><span>Clientes</span></button>';
       header.parentElement.insertBefore(nav, header);
     }
     if (typeof app.renderQuotesCount === 'function') app.renderQuotesCount();
@@ -55,18 +57,20 @@
       const archivedCount = (app.tasks || []).filter(task => !!task.archivedAt).length;
       const counter = nav.querySelector('#orders-nav-archive-count');
       if (counter) counter.textContent = String(archivedCount);
-      const view = app.showDocumentControl ? 'invoices' : app.showArchivedTasks ? 'archived' : 'active';
+      const view = app.showDocumentControl ? 'invoices' : app.clientsDirectoryOpen ? 'clients' : app.quoteArchiveInlineOpen ? 'quotes' : app.showArchivedTasks ? 'archived' : 'active';
       nav.querySelectorAll('[data-order-view]').forEach(button => {
         const key = button.dataset.orderView;
         button.setAttribute('aria-current', String(key === view));
         button.classList.toggle('is-current', key === view);
-        if (key === 'active') button.classList.toggle('hidden', view === 'active');
+        if (key === 'active') { button.classList.remove('hidden'); const label = button.querySelector('span'); if (label) label.textContent = 'Órdenes'; }
       });
+      const ordersButton = nav.querySelector('[data-order-view="active"]');
+      if (ordersButton) { const label = ordersButton.querySelector('span'); if (label) label.textContent = 'Órdenes'; ordersButton.classList.remove('hidden'); if (nav.firstElementChild !== ordersButton) nav.insertBefore(ordersButton, nav.firstElementChild); }
       if (window.lucide) lucide.createIcons();
     }
     const title = document.getElementById('orders-view-title');
     const count = document.getElementById('filtered-count');
-    const view = app.showDocumentControl ? 'invoices' : app.showArchivedTasks ? 'archived' : 'active';
+    const view = app.showDocumentControl ? 'invoices' : app.clientsDirectoryOpen ? 'clients' : app.quoteArchiveInlineOpen ? 'quotes' : app.showArchivedTasks ? 'archived' : 'active';
     if (title) title.textContent = view === 'invoices' ? 'Consolidado de facturas' : view === 'archived' ? 'Órdenes archivadas' : 'Órdenes de trabajo';
     if (count) {
       count.textContent = view === 'archived'
@@ -115,7 +119,6 @@
           disclosure.dataset.addressDisclosureApplied = 'true';
           disclosure.open = expandedArchivedOrders.has(id);
         });
-        if (window.lucide) lucide.createIcons();
       }
       updateOrdersNavigation(this);
       return result;

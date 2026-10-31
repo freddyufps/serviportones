@@ -1,0 +1,20 @@
+.quote-archive-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 12px}
+.quote-archive-summary article{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:66px;padding:12px 16px;border:1px solid #dbe5ef;border-radius:14px;background:linear-gradient(135deg,#fff,#f7faff);box-shadow:0 3px 10px rgba(20,45,70,.035)}
+.quote-archive-summary span{color:#71839a;font-size:12px;font-weight:700}.quote-archive-summary strong{color:#19324d;font-size:18px;font-weight:850;text-align:right}
+body.theme-dark .quote-archive-summary article,body.theme-halloween .quote-archive-summary article{border-color:#40536b;background:#1d2b40}body.theme-dark .quote-archive-summary strong,body.theme-halloween .quote-archive-summary strong{color:#e4edf8}
+@media(max-width:640px){.quote-archive-summary{grid-template-columns:1fr;gap:7px}.quote-archive-summary article{min-height:50px;padding:9px 12px}}
+
+/* Quote form backdrop stays light, matching the application surface. */
+.quotes-shell .quotes-scrim{background:rgba(241,245,249,.78)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.quotes-shell .quotes-window{background:#f5f8fc!important}
+/* Match the order tile footprint and keep the artwork centered. */
+#btn-create-quote{box-sizing:border-box!important;display:grid!important;place-items:center!important;flex:0 0 72px!important;width:72px!important;min-width:72px!important;max-width:72px!important;height:72px!important;min-height:72px!important;max-height:72px!important;margin:0!important;padding:0!important;border:0!important;border-radius:14px!important}
+#btn-create-quote>.quote-tile-icon{width:100%!important;height:100%!important;display:grid!important;place-items:center!important}
+#btn-create-quote .quote-create-artwork{width:100%!important;height:100%!important;object-fit:contain!important}
+@media(max-width:767px){#btn-create-quote{flex-basis:58px!important;width:58px!important;min-width:58px!important;max-width:58px!important;height:58px!important;min-height:58px!important;max-height:58px!important}}
+
+/* Keep shared destinations exclusive even when a feature stylesheet uses :has(). */
+#tasks-container.hidden{display:none!important}
+/* The quote form uses a light veil instead of a dark backdrop. */
+#quotes-shell .quotes-scrim{background:rgba(241,245,249,.78)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+

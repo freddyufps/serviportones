@@ -1,0 +1,20 @@
+/* Acciones principales y panel de órdenes con jerarquía visual coherente. */
+#btn-create-quote{box-sizing:border-box!important;display:flex!important;flex:0 0 76px!important;width:76px!important;min-width:76px!important;max-width:76px!important;height:76px!important;min-height:76px!important;max-height:76px!important;margin:-4px 0!important;padding:7px 4px!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:2px!important;border:0!important;border-radius:14px!important;background:transparent!important;color:#17314b!important;font:800 10px/1.1 Inter,Arial,sans-serif!important;text-align:center!important;white-space:normal!important;box-shadow:none!important}
+#btn-create-quote>span.quote-tile-icon{display:grid!important;flex:0 0 48px!important;place-items:center!important;width:48px!important;height:48px!important;border-radius:0!important;background:transparent!important;color:#659c31!important}
+#btn-create-quote>span.quote-tile-icon svg{width:44px!important;height:44px!important}
+#btn-create-quote>span:last-child{display:block!important;max-width:72px!important}
+#btn-create-quote:hover{transform:translateY(-2px)!important;color:#4d842b!important}
+#orders-toolbar{gap:14px;padding:16px;border-color:#d5e0eb;box-shadow:0 5px 18px rgba(20,38,62,.07)}
+#orders-toolbar .orders-search{flex:1 1 360px;max-width:none}
+#orders-toolbar .orders-filter-controls{gap:10px}
+#orders-toolbar .order-filter-dropdown,#orders-toolbar .order-filter-trigger{min-width:156px}
+#orders-toolbar .orders-reset{width:42px;height:42px}
+#orders-toolbar .orders-assign-button,#orders-toolbar #btn-create-quote{flex-basis:76px!important;width:76px!important;min-width:76px!important;max-width:76px!important;height:76px!important;min-height:76px!important;max-height:76px!important}
+#orders-toolbar .orders-assign-button img{width:72px;height:72px}
+body.theme-dark #orders-toolbar{border-color:#34465d}
+@media(max-width:900px) and (min-width:768px){#orders-toolbar .orders-search{flex-basis:100%}#orders-toolbar .orders-filter-controls{width:100%;margin-left:0;justify-content:flex-start}}
+@media(max-width:767px){#orders-toolbar{gap:10px;padding:12px}#orders-toolbar .orders-filter-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px}#orders-toolbar .order-filter-dropdown{flex:1 1 128px;min-width:0}#orders-toolbar .orders-reset{margin-left:auto}#orders-toolbar .orders-assign-button,#orders-toolbar #btn-create-quote{flex-basis:68px!important;width:68px!important;min-width:68px!important;max-width:68px!important;height:68px!important;min-height:68px!important;max-height:68px!important;margin:0!important}#orders-toolbar #btn-create-quote{font-size:9px!important}#orders-toolbar #btn-create-quote>span.quote-tile-icon{flex-basis:42px!important;width:42px!important;height:42px!important}#orders-toolbar #btn-create-quote>span.quote-tile-icon svg{width:40px!important;height:40px!important}#orders-toolbar .orders-assign-button img{width:64px;height:64px}}
+/* Lienzo de exportación visible para html2canvas e independiente de rutas relativas. */
+.quote-pdf-staging{left:0!important;top:0!important;z-index:-1!important;width:794px!important;opacity:1!important;pointer-events:none!important}
+.quote-pdf-staging .quote-document{box-sizing:border-box;width:794px;max-width:794px;min-height:1123px;padding:34px 40px 28px;font-family:Arial,Helvetica,sans-serif;box-shadow:none}
+.quote-pdf-staging .quote-doc-section,.quote-pdf-staging .quote-doc-client,.quote-pdf-staging .quote-doc-products,.quote-pdf-staging .quote-doc-two,.quote-pdf-staging .quote-doc-signature{break-inside:avoid;page-break-inside:avoid}

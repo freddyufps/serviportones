@@ -1,0 +1,11 @@
+/* Mantiene el panel de operaciones oscuro en móvil y separa vistas de cotizaciones/facturas. */
+@media (max-width: 639px) {
+  #dashboard-banner {
+    background: linear-gradient(112deg, #080f1f 0%, #14233c 56%, #0b1627 100%) !important;
+    color: #fff !important;
+  }
+  #dashboard-banner h3 { color: #fff !important; }
+  #dashboard-banner p { color: #cbd5e1 !important; }
+}
+
+/* Las opciones de navegación permanecen disponibles al cambiar entre vistas. */

@@ -1,0 +1,28 @@
+/* Consistent hover feedback across all order navigation buttons. */
+#orders-view-navigation button,
+#orders-view-navigation .quote-archive-button {
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background-color .16s ease !important;
+}
+#orders-view-navigation button:hover,
+#orders-view-navigation .quote-archive-button:hover {
+  transform: translateY(-2px) !important;
+  border-color: #86b84f !important;
+  background: #f6fbea !important;
+  box-shadow: 0 0 0 3px rgba(134,184,79,.17), 0 7px 16px rgba(43,76,24,.13) !important;
+}
+#orders-view-navigation button:focus-visible,
+#orders-view-navigation .quote-archive-button:focus-visible {
+  outline: 3px solid rgba(134,184,79,.35) !important;
+  outline-offset: 2px !important;
+}
+body.theme-dark #orders-view-navigation button:hover,
+body.theme-halloween #orders-view-navigation button:hover,
+body.theme-dark #orders-view-navigation .quote-archive-button:hover,
+body.theme-halloween #orders-view-navigation .quote-archive-button:hover {
+  border-color: #9acc5a !important;
+  background: #263a31 !important;
+  box-shadow: 0 0 0 3px rgba(154,204,90,.18), 0 7px 16px rgba(0,0,0,.24) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  #orders-view-navigation button, #orders-view-navigation .quote-archive-button { transition: none !important; }
+}

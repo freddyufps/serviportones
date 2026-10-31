@@ -1,0 +1,6 @@
+/* Crear cotización comparte la huella de Asignar orden: 72px escritorio, 58px móvil. */
+#btn-create-quote{box-sizing:border-box!important;display:grid!important;place-items:center!important;flex:0 0 72px!important;width:72px!important;min-width:72px!important;max-width:72px!important;height:72px!important;min-height:72px!important;max-height:72px!important;margin:0!important;padding:3px!important;overflow:visible!important}
+#btn-create-quote>.quote-tile-icon{display:grid!important;place-items:center!important;width:100%!important;height:100%!important;margin:0!important}
+#btn-create-quote .quote-create-artwork{display:block!important;width:100%!important;height:100%!important;object-fit:contain!important}
+#btn-create-quote>span:last-child{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+@media(max-width:767px){#btn-create-quote{flex-basis:58px!important;width:58px!important;min-width:58px!important;max-width:58px!important;height:58px!important;min-height:58px!important;max-height:58px!important}}

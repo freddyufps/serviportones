@@ -1,0 +1,8 @@
+/* Cotización flotante sin capa de fondo: solo queda visible la ventana. */
+#quotes-shell{background:transparent!important;pointer-events:none!important}
+#quotes-shell>.quotes-scrim{display:none!important;background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+#quotes-shell>.quotes-window{pointer-events:auto!important}
+#orders-view-navigation #nav-assign-order{padding:3px 11px!important}
+#orders-view-navigation #nav-assign-order img{width:44px;height:44px;object-fit:contain;display:block}
+#orders-view-navigation #nav-assign-order span{white-space:nowrap}
+@media(max-width:540px){#orders-view-navigation #nav-assign-order img{width:34px;height:34px}#orders-view-navigation #nav-assign-order{gap:5px!important}}

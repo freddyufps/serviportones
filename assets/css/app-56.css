@@ -1,0 +1,7 @@
+#orders-view-navigation button[data-order-view="quote-consolidation"] svg{color:#487cba}
+#orders-view-navigation button[data-order-view="quote-consolidation"].is-current{border-color:#6b9fd3;background:#edf5ff;color:#285983;box-shadow:0 0 0 2px rgba(79,145,207,.12),0 5px 15px rgba(51,105,158,.13)}
+.quote-consolidation-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 12px}
+.quote-consolidation-summary>div{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:60px;padding:12px 16px;border:1px solid #dbe5ef;border-radius:14px;background:linear-gradient(135deg,#fff,#f7faff)}
+.quote-consolidation-summary span{color:#71839a;font-size:12px;font-weight:700}.quote-consolidation-summary strong{color:#19324d;font-size:17px}
+body.theme-dark .quote-consolidation-summary>div,body.theme-halloween .quote-consolidation-summary>div{border-color:#40536b;background:#1d2b40}body.theme-dark .quote-consolidation-summary strong,body.theme-halloween .quote-consolidation-summary strong{color:#e4edf8}
+@media(max-width:540px){.quote-consolidation-summary{grid-template-columns:1fr}.quote-consolidation-summary>div{min-height:48px;padding:10px 12px}}
