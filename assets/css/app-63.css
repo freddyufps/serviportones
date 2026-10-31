@@ -1,0 +1,60 @@
+/* Estilo del buscador equivalente al panel .quotes-filters, solo en Órdenes Archivadas. */
+.orders-toolbar.archived-orders-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid #dce5ef;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: none;
+}
+.archived-orders-toolbar .orders-search {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  border: 1px solid #d7e0e9;
+  border-radius: 10px;
+  background: #fbfcfe;
+}
+.archived-orders-toolbar .orders-search input {
+  color: #344d65;
+  font-size: 11px;
+}
+.archived-orders-toolbar .orders-filter-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-left: 0;
+}
+.archived-orders-toolbar .order-filter-trigger,
+.archived-orders-toolbar .orders-reset {
+  min-height: 40px;
+  border-radius: 10px;
+}
+.archived-orders-toolbar .order-filter-trigger {
+  border-color: #d7e0e9;
+  background: #fbfcfe;
+  color: #344d65;
+  font-size: 11px;
+}
+.archived-invoice-summary { margin: 0 0 10px; }
+body.theme-dark .orders-toolbar.archived-orders-toolbar,
+body.theme-halloween .orders-toolbar.archived-orders-toolbar {
+  background: #1d2e44;
+  border-color: #3a506a;
+}
+body.theme-dark .archived-orders-toolbar .orders-search,
+body.theme-dark .archived-orders-toolbar .order-filter-trigger,
+body.theme-halloween .archived-orders-toolbar .orders-search,
+body.theme-halloween .archived-orders-toolbar .order-filter-trigger {
+  background: #172235;
+  border-color: #40536c;
+  color: #dce7f2;
+}
+@media (max-width: 700px) {
+  .orders-toolbar.archived-orders-toolbar { grid-template-columns: minmax(0, 1fr); }
+  .archived-orders-toolbar .orders-filter-controls { justify-content: flex-start; }
+}
