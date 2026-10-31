@@ -33,8 +33,51 @@
       month: String(quotes.filter(quote => String(quote.date || '').startsWith(monthKey)).length)
     };
     document.querySelectorAll('.quotes-summary [data-quote-metric]').forEach(node => {
-      node.textContent = values[node.dataset.quoteMetric] ?? '0';
+      const value = values[node.dataset.quoteMetric] ?? '0';
+      if (node.textContent !== value) node.textContent = value;
     });
+  }
+
+  function ensureArchiveSummary(root) {
+    const filters = root.querySelector('.quotes-filters');
+    if (!filters) return;
+    let summary = root.querySelector('.quotes-summary');
+    if (!summary) {
+      summary = document.createElement('section');
+      summary.className = 'payment-summary quotes-summary';
+      summary.setAttribute('aria-label', 'Resumen de cotizaciones');
+      summary.innerHTML = '<article><span>Cotizaciones registradas</span><b data-quote-metric="total">0</b></article>' +
+        '<article><span>Valor total cotizado</span><b data-quote-metric="value">$ 0</b></article>' +
+        '<article><span>Clientes con propuesta</span><b data-quote-metric="clients">0</b></article>' +
+        '<article><span>Promedio por propuesta</span><b data-quote-metric="average">$ 0</b></article>' +
+        '<article><span>Cotizaciones de este mes</span><b data-quote-metric="month">0</b></article>';
+    }
+    let count = root.querySelector('#quotes-visible-count');
+    if (!count) {
+      count = document.createElement('div');
+      count.id = 'quotes-visible-count';
+      count.className = 'quotes-visible-count';
+    }
+    if (summary.nextElementSibling !== count || count.nextElementSibling !== filters) filters.before(summary, count);
+  }
+
+  function annotateQuoteRows(instance, root) {
+    const quotes = instance.quotes || [];
+    root.querySelectorAll('.quote-archive-row:not([data-quote-id])').forEach(row => {
+      const text = normalize(row.textContent);
+      const match = quotes.find(quote => quote.number && text.includes(normalize(quote.number)));
+      if (match) row.dataset.quoteId = String(match.id);
+    });
+  }
+
+  function ensureLiveArchive() {
+    const root = archiveRoot();
+    const instance = window.app;
+    if (!root || !instance) return;
+    ensureArchiveSummary(root);
+    annotateQuoteRows(instance, root);
+    metrics(instance);
+    applyQuoteFilters(instance, root);
   }
 
   function refreshFilterOptions(instance, root) {
@@ -62,6 +105,7 @@
     const condo = value('quotes-condo');
     const advisor = value('quotes-advisor');
     const byId = new Map((instance.quotes || []).map(quote => [String(quote.id), quote]));
+    annotateQuoteRows(instance, root);
     let shown = 0;
     root.querySelectorAll('.quote-archive-row').forEach(row => {
       const quote = byId.get(row.dataset.quoteId) || {};
@@ -85,7 +129,10 @@
       if (originalEmpty) originalEmpty.classList.toggle('hidden', Boolean((instance.quotes || []).length));
     }
     const count = root.querySelector('#quotes-visible-count');
-    if (count) count.textContent = `${shown} de ${(instance.quotes || []).length} cotizaciones`;
+    if (count) {
+      const label = `${shown} de ${(instance.quotes || []).length} cotizaciones`;
+      if (count.textContent !== label) count.textContent = label;
+    }
     if (instance.quoteArchiveInlineOpen) {
       const topCount = document.getElementById('filtered-count');
       if (topCount) topCount.textContent = String(shown);
@@ -199,6 +246,19 @@
     event.stopImmediatePropagation();
     applyQuoteFilters(instance, root);
   }, true);
+
+  // Watch the actual inserted archive view, so the summary is visible even if
+  // another module reassigns quoteArchiveMarkup during startup.
+  const observeArchive = () => {
+    ensureLiveArchive();
+    if (document.body && !window.__quotesArchiveSummaryObserver64) {
+      const observer = new MutationObserver(ensureLiveArchive);
+      observer.observe(document.body, { childList: true, subtree: true });
+      window.__quotesArchiveSummaryObserver64 = observer;
+    }
+  };
+  observeArchive();
+  document.addEventListener('DOMContentLoaded', observeArchive, { once: true });
 
   const timer = window.setInterval(() => {
     if (install()) {
