@@ -39,6 +39,27 @@ body.theme-dark #clients-directory,body.theme-halloween #clients-directory{backg
 @media(max-width:639px){#chat-floating-button-container:not(.hidden){display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
 #dashboard-banner button[aria-label="Ver mapa GPS"]{width:68px!important;height:68px!important;min-width:68px!important;min-height:68px!important}}
 `;  style.textContent += ".client-editor-form{display:block!important;box-sizing:border-box!important;width:100%!important;min-width:0!important}.client-editor-form .clients-fields{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;align-items:start;gap:12px!important;margin:12px 0!important}.client-editor-form .clients-fields label{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:6px!important;min-width:0;line-height:1.3}.client-editor-form .clients-fields label>span{display:block!important;min-height:16px;color:#445a70;font-size:11px;font-weight:750}.client-editor-form .clients-fields input{display:block!important;box-sizing:border-box!important;width:100%!important;min-width:0!important;min-height:40px!important;margin:0!important}.client-editor-form .clients-fields label:nth-child(7){grid-column:1/-1}.client-editor-form .clients-actions{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:8px!important;margin-top:14px!important;padding-top:12px!important;border-top:1px solid #e4ebf2}@media(max-width:700px){.client-editor-form .clients-fields{grid-template-columns:minmax(0,1fr)!important;gap:10px!important}.client-editor-form .clients-fields label:nth-child(7){grid-column:auto}}";document.head.appendChild(style);
+  const clientEditorCompactStyle = document.createElement('style');
+  clientEditorCompactStyle.textContent = `
+    #client-editor.client-editor-overlay{padding:10px}
+    #client-editor .client-editor-dialog{width:min(660px,calc(100vw - 28px));max-height:min(78dvh,620px);overflow:auto;padding:18px}
+    #client-editor .client-editor-title{padding-bottom:11px}
+    #client-editor .client-editor-title h3{font-size:20px}
+    #client-editor .client-editor-form{margin-top:11px!important}
+    #client-editor .client-editor-section{padding:10px 0}
+    #client-editor .client-editor-section-heading{margin-bottom:8px;font-size:12px}
+    #client-editor .client-editor-section-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 12px}
+    #client-editor .client-editor-section[data-section="contact"] .client-editor-section-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    #client-editor .client-editor-section[data-section="contact"] .client-editor-section-grid label:nth-child(3){grid-column:1/-1}
+    #client-editor .client-editor-form .clients-fields label{gap:5px!important;font-size:11px}
+    #client-editor .client-editor-form .clients-fields label>span{min-height:14px;font-size:11px}
+    #client-editor .client-editor-form .clients-fields input{height:38px!important;min-height:38px!important;padding:0 10px!important;border-radius:9px!important;font-size:13px!important}
+    #client-editor .client-editor-form .clients-actions{margin-top:4px!important;padding-top:11px!important}
+    #client-editor .client-editor-form .clients-actions button{min-width:120px;min-height:38px;padding:0 14px!important}
+    @media(max-width:700px){#client-editor.client-editor-overlay{padding:8px}#client-editor .client-editor-dialog{width:min(600px,calc(100vw - 20px));max-height:calc(var(--app-visual-viewport-height,100dvh) - 16px);padding:14px}#client-editor .client-editor-section-grid,#client-editor .client-editor-section[data-section="contact"] .client-editor-section-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px}}
+    @media(max-width:600px){#client-editor .client-editor-section-grid,#client-editor .client-editor-section[data-section="contact"] .client-editor-section-grid{grid-template-columns:minmax(0,1fr)}#client-editor .client-editor-section[data-section="contact"] .client-editor-section-grid label:nth-child(3){grid-column:auto}#client-editor .client-editor-form .clients-actions button{min-width:0;flex:1}}
+  `;
+  document.head.appendChild(clientEditorCompactStyle);
   const patch = {
     clientDirectory: [], clientDirectoryUnsubscribe: null, clientsDirectoryOpen: false,
     clientRecordId(c){ const s=norm(c.name)+'|'+norm(c.address);let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return 'client_'+(h>>>0).toString(36); },
