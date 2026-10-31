@@ -126,3 +126,4 @@ body.theme-dark #clients-directory,body.theme-halloween #clients-directory{backg
   const clientsNavTimer=setInterval(ensureClientsAction,400);setTimeout(()=>clearInterval(clientsNavTimer),120000);
   const boot=()=>{if(install())return;const t=setInterval(()=>{if(install())clearInterval(t)},100);setTimeout(()=>clearInterval(t),60000)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
+
