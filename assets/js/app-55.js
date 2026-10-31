@@ -11,34 +11,21 @@
       button.setAttribute('aria-pressed', String(selected));
     });
   };
-  const openQuotesArchive = app => {
-    if (!app || app.currentUser?.role !== 'admin') return false;
-    app.quoteConsolidationOpen = false;
-    selectQuotesView();
-    if (typeof app.openQuotesArchive === 'function') {
-      try {
-        app.openQuotesArchive();
-        const inline = document.getElementById('tasks-container')?.querySelector('.quotes-archive');
-        const title = String(document.getElementById('orders-view-title')?.textContent || '').trim().toLocaleLowerCase();
-        if (inline && app.quoteArchiveInlineOpen && title === 'cotizaciones archivadas') { selectQuotesView(); return true; }
-      } catch (error) { console.warn('[COTIZACIONES] Se activa la ruta de respaldo.', error); }
-    }
-    if (typeof app.quoteArchiveMarkup !== 'function') return false;
-    app.quotes = Array.isArray(app.quotes) ? app.quotes : [];
-    app.quoteArchiveInlineOpen = true;
-    app.clientsDirectoryOpen = false;
-    app.showArchivedTasks = false;
-    app.showDocumentControl = false;
-    app.quoteConsolidationOpen = false;
+  const getQuoteArchiveMarkup = app => {
+    const render = typeof app?.quoteArchiveMarkup === 'function' ? app.quoteArchiveMarkup : app?.constructor?.prototype?.quoteArchiveMarkup;
+    return typeof render === 'function' ? render.call(app) : '';
+  };
+  const renderQuoteArchiveMain = app => {
     const host = document.getElementById('tasks-container');
-    if (!host) return false;
-    document.getElementById('quotes-shell')?.classList.add('hidden');
-    document.body.classList.remove('quotes-open');
-    document.getElementById('clients-directory')?.remove();
-    document.getElementById('archived-documents-panel')?.classList.add('hidden');
-    host.innerHTML = app.quoteArchiveMarkup();
+    if (!host || !app) return false;
+    const markup = getQuoteArchiveMarkup(app);
+    if (!markup) return false;
+    host.innerHTML = markup;
+    host.classList.remove('hidden');
     host.style.display = 'block';
     host.style.width = '100%';
+    document.getElementById('empty-state')?.classList.add('hidden');
+    document.getElementById('archived-documents-panel')?.classList.add('hidden');
     const title = document.getElementById('orders-view-title');
     if (title) title.textContent = 'Cotizaciones archivadas';
     const count = document.getElementById('filtered-count');
@@ -47,6 +34,56 @@
     selectQuotesView();
     if (window.lucide) window.lucide.createIcons();
     return true;
+  };
+  const keepQuoteArchiveOnRenders = app => {
+    if (!app || app.__quoteArchiveRenderGuard55 || typeof app.renderTasks !== 'function') return;
+    const original = app.renderTasks;
+    app.__quoteArchiveRenderGuard55 = true;
+    app.renderTasks = function (...args) {
+      const quoteView = this.quoteArchiveInlineOpen && !this.showDocumentControl && !this.showArchivedTasks && !this.clientsDirectoryOpen && !this.quoteConsolidationOpen;
+      const result = original.apply(this, args);
+      if (!quoteView) return result;
+      const root = document.getElementById('tasks-container')?.querySelector('.quotes-archive');
+      const title = String(document.getElementById('orders-view-title')?.textContent || '').trim().toLocaleLowerCase();
+      if (!root || title !== 'cotizaciones archivadas') {
+        try { this.renderQuoteArchiveInline?.(); } catch (error) { console.warn('[COTIZACIONES] Se repara el render de archivo.', error); }
+        const currentRoot = document.getElementById('tasks-container')?.querySelector('.quotes-archive');
+        const currentTitle = String(document.getElementById('orders-view-title')?.textContent || '').trim().toLocaleLowerCase();
+        if (!currentRoot || currentTitle !== 'cotizaciones archivadas') renderQuoteArchiveMain(this);
+      }
+      selectQuotesView();
+      return result;
+    };
+  };
+  const openQuotesArchive = app => {
+    if (!app || app.currentUser?.role !== 'admin') return false;
+    app.closeQuotesArchiveInline?.();
+    // The previous implementation also displayed this archive in a legacy modal.
+    // app-43's cloud snapshot listener treats that modal as an active route and
+    // reopens it asynchronously, competing with the single-page view below.
+    document.getElementById('quotes-shell')?.classList.add('hidden');
+    document.body.classList.remove('quotes-open');
+    app.quotes = Array.isArray(app.quotes) ? app.quotes : [];
+    app.quoteArchiveInlineOpen = true;
+    app.clientsDirectoryOpen = false;
+    app.showArchivedTasks = false;
+    app.showDocumentControl = false;
+    app.quoteConsolidationOpen = false;
+    keepQuoteArchiveOnRenders(app);
+    selectQuotesView();
+    const openArchive = typeof app.openQuotesArchive === 'function' ? app.openQuotesArchive : app.constructor?.prototype?.openQuotesArchive;
+    if (typeof openArchive === 'function') {
+      try {
+        openArchive.call(app);
+        const inline = document.getElementById('tasks-container')?.querySelector('.quotes-archive');
+        const title = String(document.getElementById('orders-view-title')?.textContent || '').trim().toLocaleLowerCase();
+        if (inline && app.quoteArchiveInlineOpen && title === 'cotizaciones archivadas') { selectQuotesView(); return true; }
+      } catch (error) { console.warn('[COTIZACIONES] Se activa la ruta de respaldo.', error); }
+    }
+    document.getElementById('quotes-shell')?.classList.add('hidden');
+    document.body.classList.remove('quotes-open');
+    document.getElementById('clients-directory')?.remove();
+    return renderQuoteArchiveMain(app);
   };
   const bindQuotesArchive = () => {
     const button = document.getElementById('btn-archived-quotes');
@@ -67,14 +104,15 @@
     button.addEventListener('click', event => {
       event.preventDefault();
       const app = window.app;
-      if (typeof app?.openQuoteForm !== 'function') return;
+      const openForm = typeof app?.openQuoteForm === 'function' ? app.openQuoteForm : app?.constructor?.prototype?.openQuoteForm;
+      if (typeof openForm !== 'function') return;
       app.closeQuotesArchiveInline?.();
       app.quoteArchiveInlineOpen = false;
       app.quoteConsolidationOpen = false;
       app.clientsDirectoryOpen = false;
       app.showDocumentControl = false;
       app.showArchivedTasks = false;
-      app.openQuoteForm();
+      openForm.call(app);
     });
   };
   bindCreateQuote();
