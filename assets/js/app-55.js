@@ -3,7 +3,12 @@
   const openQuotesArchive = app => {
     if (!app || app.currentUser?.role !== 'admin') return false;
     if (typeof app.openQuotesArchive === 'function') {
-      try { app.openQuotesArchive(); return true; } catch (error) { console.warn('[COTIZACIONES] Se activa la ruta de respaldo.', error); }
+      try {
+        app.openQuotesArchive();
+        const inline = document.getElementById('tasks-container')?.querySelector('.quotes-archive');
+        const legacy = document.getElementById('quotes-shell');
+        if (inline || (legacy && !legacy.classList.contains('hidden') && legacy.querySelector('.quotes-archive'))) return true;
+      } catch (error) { console.warn('[COTIZACIONES] Se activa la ruta de respaldo.', error); }
     }
     if (typeof app.quoteArchiveMarkup !== 'function') return false;
     app.quotes = Array.isArray(app.quotes) ? app.quotes : [];
@@ -36,14 +41,17 @@
     if (window.lucide) window.lucide.createIcons();
     return true;
   };
-  document.addEventListener('click', event => {
-    const target = event.target instanceof Element ? event.target.closest('#btn-archived-quotes') : null;
-    if (!target) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    const app = window.app;
-    openQuotesArchive(app);
-  }, true);
+  const bindQuotesArchive = () => {
+    const button = document.getElementById('btn-archived-quotes');
+    if (!button || button.dataset.quotesArchiveClickBound === '1') return;
+    button.dataset.quotesArchiveClickBound = '1';
+    button.addEventListener('click', event => {
+      event.preventDefault();
+      openQuotesArchive(window.app);
+    });
+  };
+  bindQuotesArchive();
+  new MutationObserver(bindQuotesArchive).observe(document.documentElement, { childList: true, subtree: true });
   const install = () => {
     const app = window.app, proto = app?.constructor?.prototype;
     if (!app || !proto || app.__independentOrderViews55 || !app.__quoteModule44 || !app.__mobileClientModule47) return false;
