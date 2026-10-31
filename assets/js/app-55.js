@@ -137,6 +137,10 @@
         host.style.removeProperty('display');
         host.style.removeProperty('width');
         host.style.removeProperty('grid-template-columns');
+        // The inline quote archive has a :has(.quotes-archive) display rule.
+        // Hiding its container for invoices is therefore insufficient: remove
+        // the temporary view before a different destination is rendered.
+        if (view !== 'quotes' && host.querySelector('.quotes-archive')) host.replaceChildren();
       }
       if (view !== 'invoices') document.getElementById('archived-documents-panel')?.classList.add('hidden');
       if (view !== 'clients') document.getElementById('clients-directory')?.remove();
