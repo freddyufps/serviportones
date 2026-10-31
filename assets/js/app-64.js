@@ -135,7 +135,8 @@
     }
     if (instance.quoteArchiveInlineOpen) {
       const topCount = document.getElementById('filtered-count');
-      if (topCount) topCount.textContent = String(shown);
+      const visibleCount = String(shown);
+      if (topCount && topCount.textContent !== visibleCount) topCount.textContent = visibleCount;
     }
   }
 
@@ -247,15 +248,19 @@
     applyQuoteFilters(instance, root);
   }, true);
 
-  // Watch the actual inserted archive view, so the summary is visible even if
-  // another module reassigns quoteArchiveMarkup during startup.
+  // Watch only the two archive hosts, so unrelated page updates do not rerun
+  // the filter and a summary insertion cannot trigger a document-wide loop.
   const observeArchive = () => {
     ensureLiveArchive();
-    if (document.body && !window.__quotesArchiveSummaryObserver64) {
-      const observer = new MutationObserver(ensureLiveArchive);
-      observer.observe(document.body, { childList: true, subtree: true });
-      window.__quotesArchiveSummaryObserver64 = observer;
-    }
+    const targets = [document.getElementById('tasks-container'), document.getElementById('quotes-window-content')].filter(Boolean);
+    const observed = window.__quotesArchiveObservedTargets64 || (window.__quotesArchiveObservedTargets64 = new WeakSet());
+    targets.forEach(target => {
+      if (!observed.has(target)) {
+        const observer = new MutationObserver(ensureLiveArchive);
+        observer.observe(target, { childList: true, subtree: true });
+        observed.add(target);
+      }
+    });
   };
   observeArchive();
   document.addEventListener('DOMContentLoaded', observeArchive, { once: true });
