@@ -2,12 +2,21 @@
   'use strict';
   const openQuotesArchive = app => {
     if (!app || app.currentUser?.role !== 'admin') return false;
+    const navBar = document.getElementById('orders-view-navigation');
+    if (navBar) {
+      navBar.dataset.currentView = 'quotes';
+      navBar.querySelectorAll('[data-order-view], #btn-archived-quotes').forEach(button => {
+        const selected = button.id === 'btn-archived-quotes';
+        button.classList.toggle('is-current', selected);
+        button.setAttribute('aria-current', selected ? 'page' : 'false');
+        button.setAttribute('aria-pressed', String(selected));
+      });
+    }
     if (typeof app.openQuotesArchive === 'function') {
       try {
         app.openQuotesArchive();
         const inline = document.getElementById('tasks-container')?.querySelector('.quotes-archive');
-        const legacy = document.getElementById('quotes-shell');
-        if (inline || (legacy && !legacy.classList.contains('hidden') && legacy.querySelector('.quotes-archive'))) return true;
+        if (inline) return true;
       } catch (error) { console.warn('[COTIZACIONES] Se activa la ruta de respaldo.', error); }
     }
     if (typeof app.quoteArchiveMarkup !== 'function') return false;
@@ -18,6 +27,8 @@
     app.showDocumentControl = false;
     const host = document.getElementById('tasks-container');
     if (!host) return false;
+    document.getElementById('quotes-shell')?.classList.add('hidden');
+    document.body.classList.remove('quotes-open');
     document.getElementById('clients-directory')?.remove();
     document.getElementById('archived-documents-panel')?.classList.add('hidden');
     host.innerHTML = app.quoteArchiveMarkup();
@@ -52,6 +63,19 @@
   };
   bindQuotesArchive();
   new MutationObserver(bindQuotesArchive).observe(document.documentElement, { childList: true, subtree: true });
+  const bindCreateQuote = () => {
+    const button = document.getElementById('btn-create-quote');
+    if (!button || button.dataset.createQuoteClickBound === '1') return;
+    button.dataset.createQuoteClickBound = '1';
+    button.removeAttribute('onclick');
+    button.addEventListener('click', event => {
+      event.preventDefault();
+      const app = window.app;
+      if (typeof app?.openQuoteForm === 'function') app.openQuoteForm();
+    });
+  };
+  bindCreateQuote();
+  new MutationObserver(bindCreateQuote).observe(document.documentElement, { childList: true, subtree: true });
   const install = () => {
     const app = window.app, proto = app?.constructor?.prototype;
     if (!app || !proto || app.__independentOrderViews55 || !app.__quoteModule44 || !app.__mobileClientModule47) return false;
