@@ -8,8 +8,3 @@
   #dashboard-banner p { color: #cbd5e1 !important; }
 }
 
-/* Cotizaciones archivadas tiene su propia vista; no aparece dentro del consolidado de facturas. */
-#orders-view-navigation:has([data-order-view="invoices"].is-current) #btn-archived-quotes {
-  display: none !important;
-}
-

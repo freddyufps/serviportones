@@ -25,6 +25,20 @@
     this.renderTasks();
   };
 
+  const ensureNavigationGroups = nav => {
+    if (!nav) return;
+    let mainGroup = nav.querySelector(':scope > .orders-main-access-group');
+    let clientsGroup = nav.querySelector(':scope > .orders-clients-access-group');
+    if (!mainGroup) { mainGroup = document.createElement('div'); mainGroup.className = 'orders-main-access-group'; }
+    if (!clientsGroup) { clientsGroup = document.createElement('div'); clientsGroup.className = 'orders-clients-access-group'; }
+    nav.querySelectorAll('#nav-assign-order').forEach(button => button.remove());
+    const mainButtons = [nav.querySelector('[data-order-view="active"]'), nav.querySelector('[data-order-view="archived"]'), nav.querySelector('#btn-archived-quotes'), nav.querySelector('[data-order-view="invoices"]')].filter(Boolean);
+    const clientsButton = nav.querySelector('[data-order-view="clients"]');
+    if (mainButtons.some((button, index) => button !== mainGroup.children[index])) mainGroup.replaceChildren(...mainButtons);
+    if (clientsButton && clientsGroup.firstElementChild !== clientsButton) clientsGroup.replaceChildren(clientsButton);
+    if (!clientsButton) clientsGroup.replaceChildren();
+    if (nav.children.length !== 2 || nav.children[0] !== mainGroup || nav.children[1] !== clientsGroup) nav.replaceChildren(mainGroup, clientsGroup);
+  };
   const ensureOrdersNavigation = app => {
     const tasks = document.getElementById('tasks-container');
     const section = tasks?.closest('section');
@@ -38,13 +52,13 @@
       nav.id = 'orders-view-navigation';
       nav.setAttribute('aria-label', 'Navegación de órdenes');
       nav.innerHTML = '<button type="button" data-order-view="active" onclick="app.showActiveOrdersView()" aria-current="false"><i data-lucide="clipboard-list"></i><span>Órdenes</span></button>' +
-        '<button id="nav-assign-order" type="button" onclick="app.openNewTaskModal()" aria-label="Asignar orden"><img src="assets/media/boton-asignar-orden.png" alt=""><span>Asignar orden</span></button>' +
         '<button type="button" data-order-view="archived" onclick="app.showArchivedOrdersView()" aria-current="false"><i data-lucide="archive"></i><span>Órdenes archivadas</span><b id="orders-nav-archive-count">0</b></button>' +
         '<button id="btn-archived-quotes" type="button" class="quote-archive-button" onclick="app.openQuotesArchive()" aria-label="Abrir cotizaciones archivadas"><span aria-hidden="true">▣</span><span>Cotizaciones archivadas</span><span id="quotes-archive-count" class="quote-archive-count">0</span></button>' +
         '<button type="button" data-order-view="invoices" onclick="app.openDocumentControl()" aria-current="false"><i data-lucide="receipt-text"></i><span>Consolidado de facturas</span></button>' +
         '<button type="button" data-order-view="clients" onclick="app.openClientsDirectory()" aria-current="false"><i data-lucide="users-round"></i><span>Clientes</span></button>';
       header.parentElement.insertBefore(nav, header);
     }
+    ensureNavigationGroups(nav);
     if (typeof app.renderQuotesCount === 'function') app.renderQuotesCount();
     return nav;
   };
@@ -65,7 +79,7 @@
         if (key === 'active') { button.classList.remove('hidden'); const label = button.querySelector('span'); if (label) label.textContent = 'Órdenes'; }
       });
       const ordersButton = nav.querySelector('[data-order-view="active"]');
-      if (ordersButton) { const label = ordersButton.querySelector('span'); if (label) label.textContent = 'Órdenes'; ordersButton.classList.remove('hidden'); if (nav.firstElementChild !== ordersButton) nav.insertBefore(ordersButton, nav.firstElementChild); }
+      if (ordersButton) { const label = ordersButton.querySelector('span'); if (label) label.textContent = 'Órdenes'; ordersButton.classList.remove('hidden'); const mainGroup = nav.querySelector(':scope > .orders-main-access-group') || nav; if (mainGroup.firstElementChild !== ordersButton) mainGroup.insertBefore(ordersButton, mainGroup.firstElementChild); }
       if (window.lucide) lucide.createIcons();
     }
     const title = document.getElementById('orders-view-title');

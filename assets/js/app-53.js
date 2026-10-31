@@ -15,12 +15,6 @@
         : instance.quoteArchiveInlineOpen ? 'quotes'
         : instance.showArchivedTasks ? 'archived' : 'active';
       nav.dataset.currentView = view;
-      const quotesButton = nav.querySelector('#btn-archived-quotes');
-      if (quotesButton) {
-        quotesButton.classList.toggle('hidden', view === 'invoices');
-        quotesButton.setAttribute('aria-hidden', String(view === 'invoices'));
-        quotesButton.tabIndex = view === 'invoices' ? -1 : 0;
-      }
     };
 
     const openDocuments = proto.openDocumentControl;

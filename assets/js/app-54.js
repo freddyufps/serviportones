@@ -1,6 +1,7 @@
 (() => {
   'use strict';
   const artworks = {
+    active: ['Órdenes', 'assets/media/boton-ordenes.png'],
     archived: ['Órdenes archivadas', 'assets/img/nav/ordenes-archivadas.jpg'],
     quotes: ['Cotizaciones archivadas', 'assets/img/nav/cotizaciones-archivadas.jpg'],
     invoices: ['Consolidado de facturas', 'assets/img/nav/consolidado-facturas.jpg'],
@@ -18,6 +19,7 @@
   };
   const decorate = () => {
     const nav = document.getElementById('orders-view-navigation'); if (!nav) return;
+    addArtwork(nav.querySelector('[data-order-view="active"]'), ...artworks.active);
     addArtwork(nav.querySelector('[data-order-view="archived"]'), ...artworks.archived, '#orders-nav-archive-count');
     addArtwork(nav.querySelector('#btn-archived-quotes'), ...artworks.quotes, '.quote-archive-count');
     addArtwork(nav.querySelector('[data-order-view="invoices"]'), ...artworks.invoices);
