@@ -19,7 +19,7 @@
       document.body.appendChild(host);
       const doc=host.querySelector(".quote-document");
       try{
-        const response=await fetch(new URL("assets/media/spem-logo.png",document.baseURI));
+        const response=await fetch(new URL("assets/media/invoice-pdf-company-logo.png",document.baseURI));
         if(!response.ok)throw new Error("No fue posible leer el logo");
         const blob=await response.blob();
         const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(blob)});
