@@ -101,12 +101,13 @@
     const offsetTop = viewport?.offsetTop || 0;
     const keyboardHeight = Math.max(0, window.innerHeight - height - offsetTop);
     const mobile = window.matchMedia('(max-width: 639px)').matches;
+    const keyboardOpen = mobile && keyboardHeight > 110;
     const root = document.documentElement;
 
     root.style.setProperty('--app-visual-viewport-height', `${height}px`);
     root.style.setProperty('--app-visual-viewport-offset-top', `${offsetTop}px`);
     root.style.setProperty('--app-mobile-keyboard-height', `${keyboardHeight}px`);
-    document.body.classList.toggle('mobile-keyboard-open', mobile && keyboardHeight > 110);
+    document.body.classList.toggle('mobile-keyboard-open', keyboardOpen);
     syncChatBackgroundLock();
 
     const launcher = document.getElementById('chat-floating-button-container');
@@ -129,16 +130,34 @@
       launcher.style.setProperty('z-index', '2147483005', 'important');
     }
     if (chat) {
+      const launcherHeight = Math.ceil(
+        launcher?.getBoundingClientRect().height ||
+        launcher?.querySelector('button')?.getBoundingClientRect().height ||
+        48
+      );
+      const closedKeyboardGap = launcherHeight + 20;
       chat.style.setProperty('position', 'fixed', 'important');
-      chat.style.setProperty('top', `${offsetTop}px`, 'important');
       chat.style.setProperty('right', '0', 'important');
-      chat.style.setProperty('bottom', `calc(${keyboardHeight}px + ${safeBottom} + 82px)`, 'important');
       chat.style.setProperty('left', '0', 'important');
       chat.style.setProperty('width', '100vw', 'important');
-      chat.style.setProperty('height', 'auto', 'important');
       chat.style.setProperty('min-height', '0', 'important');
-      chat.style.setProperty('max-height', `min(620px, ${Math.max(180, height - 82)}px)`, 'important');
       chat.style.setProperty('z-index', '2147483004', 'important');
+      if (keyboardOpen) {
+        // Preserve the current above-keyboard geometry while the keyboard is visible.
+        chat.style.setProperty('top', `${offsetTop}px`, 'important');
+        chat.style.setProperty('bottom', `calc(${keyboardHeight}px + ${safeBottom} + 82px)`, 'important');
+        chat.style.setProperty('height', 'auto', 'important');
+        chat.style.setProperty('max-height', `min(620px, ${Math.max(180, height - 82)}px)`, 'important');
+      } else {
+        // With the keyboard closed, anchor the window just above the launcher
+        // and let it grow upward instead of leaving a tall empty gap underneath.
+        const closedWindowBottom = `calc(${keyboardHeight}px + ${safeBottom} + ${closedKeyboardGap}px)`;
+        const closedWindowHeight = `min(620px, max(180px, calc(var(--app-visual-viewport-height, 100dvh) - ${closedKeyboardGap + 12}px - ${safeBottom})))`;
+        chat.style.setProperty('top', 'auto', 'important');
+        chat.style.setProperty('bottom', closedWindowBottom, 'important');
+        chat.style.setProperty('height', closedWindowHeight, 'important');
+        chat.style.setProperty('max-height', closedWindowHeight, 'important');
+      }
     }
   };
 
