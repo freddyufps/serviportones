@@ -82,10 +82,13 @@
     display: grid !important;
     grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
     grid-auto-flow: row;
-    justify-content: stretch;
+    justify-content: center;
     align-items: center;
-    gap: 8px !important;
-    width: 100%;
+    gap: 4px !important;
+    width: min(100%, 236px) !important;
+    margin-right: auto !important;
+    margin-left: auto !important;
+    padding: 0 !important;
   }
 
   #orders-view-navigation > .orders-main-access-group,
@@ -107,6 +110,12 @@
 }
 
 @media (max-width: 639px) {
+  html.mobile-chat-background-locked,
+  body.mobile-chat-background-locked {
+    overflow: hidden !important;
+    overscroll-behavior: none !important;
+  }
+
   /* Anchor both chat surfaces to the visible viewport above the soft keyboard. */
   #chat-floating-button-container {
     position: fixed !important;
@@ -140,6 +149,7 @@
     max-height: min(620px, calc(var(--app-visual-viewport-height, 100dvh) - 82px)) !important;
     border-radius: 0 !important;
     overflow: hidden !important;
+    overscroll-behavior: contain !important;
     z-index: 2147483004 !important;
     transition: top 120ms ease-out, bottom 120ms ease-out !important;
   }

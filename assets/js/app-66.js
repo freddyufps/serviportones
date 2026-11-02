@@ -45,6 +45,56 @@
     actionGroup = null;
   };
 
+  let mobilePageLock = null;
+  const saveInlineStyles = (element, properties) => Object.fromEntries(properties.map(property => [
+    property,
+    [element.style.getPropertyValue(property), element.style.getPropertyPriority(property)]
+  ]));
+  const restoreInlineStyles = (element, styles) => Object.entries(styles).forEach(([property, [value, priority]]) => {
+    if (value) element.style.setProperty(property, value, priority);
+    else element.style.removeProperty(property);
+  });
+
+  const syncChatBackgroundLock = () => {
+    const chatOpen = !document.getElementById('chat-window-modal')?.classList.contains('hidden');
+    const mobile = window.matchMedia('(max-width: 639px)').matches;
+    const root = document.documentElement;
+    const body = document.body;
+
+    if (mobile && chatOpen && !mobilePageLock) {
+      const scrollY = window.scrollY || root.scrollTop || body.scrollTop || 0;
+      const rootProperties = ['overflow', 'overscroll-behavior'];
+      const bodyProperties = ['position', 'top', 'left', 'right', 'width', 'overflow', 'overscroll-behavior'];
+      mobilePageLock = {
+        scrollY,
+        rootStyles: saveInlineStyles(root, rootProperties),
+        bodyStyles: saveInlineStyles(body, bodyProperties)
+      };
+      root.classList.add('mobile-chat-background-locked');
+      body.classList.add('mobile-chat-background-locked');
+      root.style.setProperty('overflow', 'hidden', 'important');
+      root.style.setProperty('overscroll-behavior', 'none', 'important');
+      body.style.setProperty('position', 'fixed', 'important');
+      body.style.setProperty('top', `${-scrollY}px`, 'important');
+      body.style.setProperty('left', '0', 'important');
+      body.style.setProperty('right', '0', 'important');
+      body.style.setProperty('width', '100%', 'important');
+      body.style.setProperty('overflow', 'hidden', 'important');
+      body.style.setProperty('overscroll-behavior', 'none', 'important');
+      return;
+    }
+
+    if (mobilePageLock && (!mobile || !chatOpen)) {
+      const saved = mobilePageLock;
+      mobilePageLock = null;
+      root.classList.remove('mobile-chat-background-locked');
+      body.classList.remove('mobile-chat-background-locked');
+      restoreInlineStyles(root, saved.rootStyles);
+      restoreInlineStyles(body, saved.bodyStyles);
+      window.scrollTo(0, saved.scrollY);
+    }
+  };
+
   const syncViewport = () => {
     const viewport = window.visualViewport;
     const height = viewport?.height || window.innerHeight;
@@ -57,6 +107,7 @@
     root.style.setProperty('--app-visual-viewport-offset-top', `${offsetTop}px`);
     root.style.setProperty('--app-mobile-keyboard-height', `${keyboardHeight}px`);
     document.body.classList.toggle('mobile-keyboard-open', mobile && keyboardHeight > 110);
+    syncChatBackgroundLock();
 
     const launcher = document.getElementById('chat-floating-button-container');
     const chat = document.getElementById('chat-window-modal');
@@ -103,6 +154,17 @@
     if (mobileTiles.addEventListener) mobileTiles.addEventListener('change', syncCreateActionGroup);
     else mobileTiles.addListener?.(syncCreateActionGroup);
     new MutationObserver(syncCreateActionGroup).observe(document.body, { childList: true, subtree: true });
+    const chatModal = document.getElementById('chat-window-modal');
+    if (chatModal) new MutationObserver(syncChatBackgroundLock).observe(chatModal, { attributes: true, attributeFilter: ['class'] });
+
+    const blockBackgroundMotion = event => {
+      if (!mobilePageLock) return;
+      const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+      if (target?.closest('#chat-messages-container, #chat-conversation-area, #chat-sidebar, .messenger-window-messages')) return;
+      event.preventDefault();
+    };
+    document.addEventListener('touchmove', blockBackgroundMotion, { capture: true, passive: false });
+    document.addEventListener('wheel', blockBackgroundMotion, { capture: true, passive: false });
 
     let frame = 0;
     const scheduleViewportSync = () => {
