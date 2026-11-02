@@ -54,7 +54,7 @@
   <div id="modal-voice-call" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[100000] hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl flex flex-col items-center zoom-photo-enter text-white">
       <div class="relative w-24 h-24 rounded-full border-4 border-brand-lime bg-slate-800 flex items-center justify-center mb-4 overflow-hidden shadow-lg">
-        <img id="call-user-photo" src="" class="w-full h-full object-cover hidden" alt="">
+        <img id="call-user-photo" class="w-full h-full object-cover hidden" alt="">
         <span id="call-user-initial" class="text-3xl font-black text-brand-lime">📞</span>
         <span class="w-4 h-4 rounded-full bg-emerald-500 absolute top-1 right-1 ring-2 ring-slate-900 animate-pulse"></span>
       </div>
@@ -187,7 +187,7 @@
 
           <div id="header-presence-profile" class="presence-profile-indicator flex items-center gap-1.5 sm:gap-2 bg-slate-800/90 pl-1 pr-2 sm:pr-3 py-1 rounded-xl border border-slate-700">
             <div onclick="app.zoomWorkerPhoto(app.getCurrentDisplayPhoto(), app.getCurrentDisplayName())" class="seasonal-worker-avatar cursor-pointer relative w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border-2 border-brand-lime bg-slate-700 flex items-center justify-center shrink-0">
-              <img id="header-user-photo" src="" alt="Foto" class="w-full h-full object-cover hidden">
+              <img id="header-user-photo" alt="Foto" class="w-full h-full object-cover hidden">
               <span id="header-avatar-initial" class="text-white font-black text-xs">A</span>
 
             </div>
@@ -420,7 +420,7 @@
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
       <div class="w-48 h-48 sm:w-64 sm:h-64 rounded-2xl overflow-hidden border-2 border-brand-lime shadow-lg bg-slate-800 mb-3 flex items-center justify-center">
-        <img id="zoom-modal-img" src="" alt="Foto" class="w-full h-full object-contain">
+        <img id="zoom-modal-img" alt="Foto" class="w-full h-full object-contain hidden">
         <span id="zoom-modal-initial" class="text-6xl font-black text-white hidden">A</span>
       </div>
       <h3 id="zoom-modal-name" class="text-sm sm:text-base font-extrabold text-white text-center">Nombre del Trabajador</h3>
@@ -651,7 +651,7 @@
           </h4>
           <div class="flex items-center gap-3">
             <div onclick="app.zoomWorkerPhoto(app.currentUser?.photo, app.getCurrentDisplayName())" class="cursor-pointer relative w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-brand-lime overflow-hidden bg-slate-200 shadow shrink-0 flex items-center justify-center">
-              <img id="settings-my-photo-preview" src="" alt="Foto" class="w-full h-full object-cover hidden">
+              <img id="settings-my-photo-preview" alt="Foto" class="w-full h-full object-cover hidden">
               <span id="settings-my-initial-preview" class="text-lg font-black text-slate-600">A</span>
             </div>
             <div class="flex-1 space-y-1">
