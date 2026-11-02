@@ -2,28 +2,47 @@
   'use strict';
 
   const mobileTiles = window.matchMedia('(max-width: 540px)');
+  let assignTileAnchor = null;
   let quoteTileAnchor = null;
+  let actionGroup = null;
 
-  const syncQuoteTile = () => {
+  const syncCreateActionGroup = () => {
     const quote = document.getElementById('btn-create-quote');
+    const assign = document.getElementById('btn-assign-order-filter');
+    const controls = document.querySelector('#orders-toolbar .orders-filter-controls');
     const nav = document.getElementById('orders-view-navigation');
-    const mainGroup = nav?.querySelector(':scope > .orders-main-access-group');
-    if (!quote || !mainGroup) return;
+    if (!quote || !assign || !controls || !nav) return;
 
     if (mobileTiles.matches) {
+      if (!assignTileAnchor && assign.parentNode) {
+        assignTileAnchor = document.createComment('assign-order-toolbar-position');
+        assign.parentNode.insertBefore(assignTileAnchor, assign);
+      }
       if (!quoteTileAnchor && quote.parentNode) {
         quoteTileAnchor = document.createComment('crear-cotizacion-toolbar-position');
         quote.parentNode.insertBefore(quoteTileAnchor, quote);
       }
-      if (quote.parentNode !== mainGroup) mainGroup.appendChild(quote);
+      if (!actionGroup) {
+        actionGroup = document.createElement('div');
+        actionGroup.className = 'orders-create-actions-group';
+      }
+      if (actionGroup.parentNode !== controls) controls.insertBefore(actionGroup, assignTileAnchor);
+      if (assign.parentNode !== actionGroup || quote.parentNode !== actionGroup) actionGroup.append(assign, quote);
       return;
     }
 
+    if (assignTileAnchor?.parentNode) {
+      assignTileAnchor.parentNode.insertBefore(assign, assignTileAnchor);
+      assignTileAnchor.remove();
+      assignTileAnchor = null;
+    }
     if (quoteTileAnchor?.parentNode) {
       quoteTileAnchor.parentNode.insertBefore(quote, quoteTileAnchor);
       quoteTileAnchor.remove();
       quoteTileAnchor = null;
     }
+    actionGroup?.remove();
+    actionGroup = null;
   };
 
   const syncViewport = () => {
@@ -73,10 +92,17 @@
   };
 
   const start = () => {
-    syncQuoteTile();
-    if (mobileTiles.addEventListener) mobileTiles.addEventListener('change', syncQuoteTile);
-    else mobileTiles.addListener?.(syncQuoteTile);
-    new MutationObserver(syncQuoteTile).observe(document.body, { childList: true, subtree: true });
+    document.querySelectorAll('img[data-fallback-src]').forEach(image => {
+      if (image.dataset.fallbackBound) return;
+      image.dataset.fallbackBound = '1';
+      image.addEventListener('error', () => {
+        image.src = image.dataset.fallbackSrc;
+      }, { once: true });
+    });
+    syncCreateActionGroup();
+    if (mobileTiles.addEventListener) mobileTiles.addEventListener('change', syncCreateActionGroup);
+    else mobileTiles.addListener?.(syncCreateActionGroup);
+    new MutationObserver(syncCreateActionGroup).observe(document.body, { childList: true, subtree: true });
 
     let frame = 0;
     const scheduleViewportSync = () => {

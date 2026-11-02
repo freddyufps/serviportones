@@ -62,21 +62,25 @@
     margin: 0;
   }
 
-  #orders-toolbar:not(.archived-orders-toolbar) #btn-assign-order-filter {
+  #orders-toolbar:not(.archived-orders-toolbar) .orders-create-actions-group {
     grid-row: 2;
     grid-column: 2;
-    justify-self: center;
-    align-self: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
   }
 
-  #orders-toolbar:not(.archived-orders-toolbar) #btn-create-quote {
-    display: none !important;
+  #orders-toolbar:not(.archived-orders-toolbar) .orders-create-actions-group > .orders-action-tile {
+    flex: 0 0 68px !important;
   }
 
-  /* Six existing access tiles form two compact rows of three. */
+  /* Five navigation tiles stay balanced around the separate paired work actions. */
   #orders-view-navigation {
     display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
     grid-auto-flow: row;
     justify-content: stretch;
     align-items: center;
@@ -94,16 +98,12 @@
     align-self: center !important;
   }
 
-  #orders-view-navigation [data-order-view="active"] { grid-column: 1 !important; grid-row: 1 !important; }
-  #orders-view-navigation [data-order-view="clients"] { grid-column: 2 !important; grid-row: 1 !important; }
-  #orders-view-navigation [data-order-view="archived"] { grid-column: 3 !important; grid-row: 1 !important; }
-  #orders-view-navigation #btn-create-quote { grid-column: 1 !important; grid-row: 2 !important; }
-  #orders-view-navigation #btn-archived-quotes { grid-column: 2 !important; grid-row: 2 !important; }
-  #orders-view-navigation [data-order-view="invoices"] { grid-column: 3 !important; grid-row: 2 !important; }
+  #orders-view-navigation [data-order-view="active"] { grid-column: 1 / span 2 !important; grid-row: 1 !important; }
+  #orders-view-navigation [data-order-view="clients"] { grid-column: 3 / span 2 !important; grid-row: 1 !important; }
+  #orders-view-navigation [data-order-view="archived"] { grid-column: 5 / span 2 !important; grid-row: 1 !important; }
+  #orders-view-navigation #btn-archived-quotes { grid-column: 2 / span 2 !important; grid-row: 2 !important; }
+  #orders-view-navigation [data-order-view="invoices"] { grid-column: 4 / span 2 !important; grid-row: 2 !important; }
 
-  #orders-view-navigation #btn-create-quote.hidden {
-    display: none !important;
-  }
 }
 
 @media (max-width: 639px) {
