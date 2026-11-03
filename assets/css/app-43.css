@@ -39,7 +39,7 @@ body.theme-dark .quote-form-toolbar h3,body.theme-dark .quote-section-heading h4
 .quote-item-image-picker{position:relative;display:grid!important;place-items:center;width:76px;height:62px;margin:auto;border:1px dashed #cbd7e4;border-radius:9px;background:#fbfcfe;overflow:hidden;cursor:pointer}
 .quote-item-image-picker input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .quote-item-image-empty{display:grid;place-items:center;width:100%;height:100%;color:#68839c;font-size:22px}
-.quote-item-image-preview{display:block;width:100%;height:100%;object-fit:contain;padding:3px}
+.quote-item-image-picker>img.quote-item-image-preview{position:absolute;left:50%;top:50%;display:block;box-sizing:border-box;width:80px;height:64px;max-width:calc(100% - 8px);max-height:calc(100% - 8px);transform:translate(-50%,-50%);object-fit:contain;padding:0}
 .quote-item-image-picker [hidden],.quote-item-image-clear[hidden]{display:none!important}
 .quote-item-image-clear{display:block;margin:4px auto 0;padding:3px 6px;border:0;background:transparent;color:#75859a;font-size:9px;cursor:pointer}
 .quote-doc-contact{display:grid;gap:6px;color:#566d83;font-size:10px;line-height:1.45}
@@ -49,6 +49,15 @@ body.theme-dark .quote-form-toolbar h3,body.theme-dark .quote-section-heading h4
 .quote-doc-products th:first-child,.quote-doc-products td:first-child{width:62px;text-align:center}
 .quote-doc-products th:nth-child(2),.quote-doc-products td:nth-child(2){text-align:left;white-space:normal}
 .quote-doc-products td.quote-pdf-item-image img{display:block;width:48px;height:42px;margin:auto;object-fit:contain}
+/* Proporciones de columnas y miniaturas de ítems en el formulario y el documento. */
+.quote-items-table th:nth-child(2),.quote-items-table td:nth-child(2){width:auto;min-width:250px}
+.quote-items-table th:nth-child(4),.quote-items-table td:nth-child(4){width:105px}
+.quote-items-table th:first-child,.quote-items-table td:first-child{width:116px;min-width:116px}
+.quote-item-image-picker{width:88px;height:72px}
+.quote-doc-products th:nth-child(2),.quote-doc-products td:nth-child(2){min-width:245px}
+.quote-doc-products th:nth-child(4),.quote-doc-products td:nth-child(4){width:94px}
+.quote-doc-products th:first-child,.quote-doc-products td:first-child{width:72px}
+.quote-doc-products td.quote-pdf-item-image img{width:58px;height:52px}
 .quote-warranty-options label:focus-within{outline:2px solid rgba(112,168,55,.35);outline-offset:2px}
 .quote-warranty-card-title{display:flex;align-items:center;gap:8px;color:#314a62;font-weight:800}
 .quote-warranty-card-title input{width:16px;height:16px;flex:0 0 16px;margin:0;accent-color:#70a837}
