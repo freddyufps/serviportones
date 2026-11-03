@@ -2957,7 +2957,7 @@ updateMessengerWindowTyping(workerName) {
       async clearCurrentConversation() {
         if (this.currentUser?.role !== 'admin') return;
         this.toggleChatOptionsMenu();
-        if (!confirm("¿Deseas vaciar todos los mensajes de esta conversación?")) return;
+        if (!(await this.showSystemConfirm("¿Deseas vaciar todos los mensajes de esta conversación?", { title: "Vaciar conversación", confirmText: "Vaciar", icon: "trash" }))) return;
 
         const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
         if (window.db && threadId) {
@@ -2971,7 +2971,7 @@ updateMessengerWindowTyping(workerName) {
       async deleteCurrentConversation() {
         if (this.currentUser?.role !== 'admin') return;
         this.toggleChatOptionsMenu();
-        if (!confirm("¿Deseas eliminar completamente esta conversación y su historial?")) return;
+        if (!(await this.showSystemConfirm("¿Deseas eliminar completamente esta conversación y su historial?", { title: "Eliminar conversación", confirmText: "Eliminar", icon: "trash" }))) return;
 
         const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
         if (window.db && threadId) {
@@ -2986,7 +2986,7 @@ updateMessengerWindowTyping(workerName) {
         const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
         const message = this.chatMessages.find(m => m.id === msgId);
         if (this.currentUser.role !== 'admin' && (!message || message.senderRole !== 'worker' || message.senderName !== (this.getCurrentDisplayName()))) return;
-        if (!confirm("¿Eliminar este mensaje para todos?")) return;
+        if (!(await this.showSystemConfirm("¿Eliminar este mensaje para todos?", { title: "Eliminar mensaje", confirmText: "Eliminar", icon: "trash" }))) return;
         if (window.db && threadId && msgId) {
           await db.collection('chats_internos').doc(threadId).collection('mensajes').doc(msgId).delete();
           this.showToast("Mensaje eliminado para todos", "info");
@@ -3887,7 +3887,7 @@ updateMessengerWindowTyping(workerName) {
         this.openEmployeeEditBubble(worker);
       }
       async deleteUser(id) {
-        if (!confirm(`¿Eliminar trabajador de Firestore?`)) return;
+        if (!(await this.showSystemConfirm("¿Eliminar trabajador de Firestore?", { title: "Eliminar trabajador", confirmText: "Eliminar", icon: "trash" }))) return;
         if (window.db) {
           try {
             await db.collection('users').doc(id).delete();
@@ -4108,7 +4108,7 @@ updateMessengerWindowTyping(workerName) {
         }
 
         if (targets.length === 0) return this.showToast(`No hay órdenes para reiniciar`, 'info');
-        if (!confirm(`¿Deseas reiniciar ${targets.length} orden(es) de ${label}?`)) return;
+        if (!(await this.showSystemConfirm(`¿Deseas reiniciar ${targets.length} orden(es) de ${label}?`, { title: "Reiniciar órdenes", confirmText: "Reiniciar", icon: "warning" }))) return;
 
         targets.forEach(t => {
           t.status = 'PENDIENTE';
@@ -4859,9 +4859,9 @@ updateMessengerWindowTyping(workerName) {
         this.showToast(id ? 'Orden modificada correctamente' : `Nueva orden ${this.tasks[0]?.id || ''} guardada`, 'success');
       }
 
-      deleteTask(id) {
+      async deleteTask(id) {
         if (this.currentUser.role !== 'admin') return;
-        if (!confirm(`¿Eliminar la orden ${id}?`)) return;
+        if (!(await this.showSystemConfirm(`¿Eliminar la orden ${id}?`, { title: "Eliminar orden", confirmText: "Eliminar", icon: "trash" }))) return;
         this.tasks = this.tasks.filter(x => x.id !== id);
         this.saveTasks();
         this.updateStats();

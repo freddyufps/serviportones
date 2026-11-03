@@ -67,3 +67,5 @@ body.theme-dark .quote-form-toolbar h3,body.theme-dark .quote-section-heading h4
 .quote-directory-actions{display:flex;flex-wrap:wrap;gap:8px;flex:none}
 .quote-directory-actions button:last-child{background:#fff;color:#53687e;border-color:#dbe4ee}
 @media(max-width:520px){.quote-directory-row{align-items:flex-start;flex-direction:column}.quote-directory-actions{width:100%}.quote-directory-actions button{flex:1}}
+
+.quote-doc-tax-note{margin:14px 0 16px;padding:10px 0;border-top:1px solid #dbe4ee;border-bottom:1px solid #dbe4ee;color:#53687e;break-inside:avoid}.quote-doc-tax-note h3{margin:0 0 4px;color:#314a62;font-size:9px;font-weight:800;letter-spacing:.08em}.quote-doc-tax-note p{margin:0;font-size:10px;line-height:1.55}

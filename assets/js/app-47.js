@@ -118,7 +118,7 @@ body.theme-dark #clients-directory,body.theme-halloween #clients-directory{backg
         const key=x=>norm(x).replace(/[^a-z0-9]/g,'');
         const mapped=rows.map(r=>{const o={};Object.entries(r).forEach(([k,v])=>{const n=key(k);if(n.includes('razonsocial')||n==='nombre')o.name=clean(v);else if(n.includes('documento')||n.includes('nit'))o.documentNumber=clean(v);else if(n.includes('direccion'))o.address=clean(v);else if(n.includes('correo')||n.includes('email'))o.email=clean(v);else if(n.includes('telefono')||n.includes('celular'))o.phone=clean(v)});return o}).filter(x=>x.name);
         if(!mapped.length){this.showToast('El archivo no contiene una columna reconocible de nombre/razón social.','error');return}
-        if(!confirm('Se encontraron '+mapped.length+' filas con cliente. Los contactos que ya existan se omitirán; solo se agregarán los nuevos a la base privada de Firestore. ¿Continuar?'))return;
+        if(!(await this.showSystemConfirm('Se encontraron '+mapped.length+' filas con cliente. Los contactos que ya existan se omitirán; solo se agregarán los nuevos a la base privada de Firestore. ¿Continuar?',{title:'Importar clientes',confirmText:'Importar',icon:'warning'})))return;
         const docKey=c=>clean(c.documentNumber).replace(/\D/g,'');
         const nameKey=c=>norm(c.name),locationKey=c=>nameKey(c)+'|'+norm(c.address||c.condo);
         let existing=[];
