@@ -6,7 +6,10 @@
   const SETTINGS_APP_VERSION = '1.001.0';
 
   PortonProApp.prototype.ensureSettingsWorkspace = function () {
-    if (document.getElementById('settings-workspace')) return;
+    if (document.getElementById('settings-workspace')) {
+      this.installQuoteSettingsRoute?.();
+      return;
+    }
     const modal = document.getElementById('modal-settings');
     const body = modal?.querySelector(':scope > div > .p-4');
     if (!modal || !body) return;
