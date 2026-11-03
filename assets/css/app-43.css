@@ -37,4 +37,4 @@ body.theme-dark .quote-form-toolbar h3,body.theme-dark .quote-section-heading h4
 .quote-warranty-card-title{display:flex;align-items:center;gap:8px;color:#314a62;font-weight:800}
 .quote-warranty-card-title input{width:16px;height:16px;flex:0 0 16px;margin:0;accent-color:#70a837}
 .quote-warranty-card-copy{display:block;line-height:1.5}
-.quote-doc-thanks{margin:14px 0 10px;padding:13px 16px;border:1px solid #dbe8cf;border-left:4px solid #78a93d;border-radius:10px;background:#f7faf3;color:#29425a;text-align:center;font-size:13px;font-weight:850;letter-spacing:.01em}
+.quote-doc-thanks{margin:10px 0 6px;padding:0;border:0;background:transparent;color:#53687e;text-align:center;font-size:10px;font-weight:500;line-height:1.55;letter-spacing:0}
