@@ -50,7 +50,7 @@
         return markup.split(old).join(replacement);
       };
     }
-    app.downloadArchivedQuotePdf=function(id){const q=(this.quotes||[]).find(item=>item.id===id);return q?exportQuotePdf.call(this,q,false):null};
+    app.downloadArchivedQuotePdf=function(id){let q=(this.quotes||[]).find(item=>item.id===id);if(!q)return null;if(this.quoteEphemeralImages?.[id])q={...q,items:(q.items||[]).map((item,index)=>({...item,imageData:this.quoteEphemeralImages[id][index]||""}))};this.showQuotePreview?.(q);return exportQuotePdf.call(this,q,false)};
     return true;
   };
   window.addEventListener("DOMContentLoaded",()=>{const timer=setInterval(()=>{if(install())clearInterval(timer)},50)});
