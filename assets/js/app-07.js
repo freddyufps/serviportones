@@ -42,6 +42,7 @@
       ['sound','Sonidos','volume-2','Avisos de audio y preferencias.',false],
       ['notifications','Notificaciones','bell','Alertas y contadores.',false],
       ['orders','Órdenes de trabajo','clipboard-list','Consecutivos y numeración.',true],
+      ['quote-route','Ruta de Descargas','folder-cog','Cotizaciones exportadas.',false],
       ['security','Seguridad','shield-check','Contraseña y acceso.',false],
       ['chat','Chat y mensajería','messages-square','Preferencias de conversación.',false],
       ['application','Aplicación','smartphone','Estado y mantenimiento.',false],
