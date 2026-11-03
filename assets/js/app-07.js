@@ -168,6 +168,7 @@
       if (!button || button.disabled) return;
       this.showSettingsCategory(button.dataset.settingsCategory);
     });
+    this.installQuoteSettingsRoute?.();
   };
 
   PortonProApp.prototype.refreshSettingsOverview = function () {
