@@ -7,6 +7,8 @@
     if(!original){app.__quotePdfLogoFix61=false;return false}
     const exportQuotePdf=async function(q,auto){
       if(!q)return;
+      let selectedDirectory=this.quoteDirectoryHandle||null;
+      if(selectedDirectory?.queryPermission){try{let permission=await selectedDirectory.queryPermission({mode:"readwrite"});if(permission!=="granted"&&selectedDirectory.requestPermission)permission=await selectedDirectory.requestPermission({mode:"readwrite"});if(permission!=="granted")selectedDirectory=null;}catch(error){console.info("[COTIZACIONES] Se usará la descarga del navegador; no se concedió permiso de carpeta.",error);selectedDirectory=null}}
       if(!await this.ensurePdfLibrary()){
         this.showQuotePreview(q);
         return this.showToast("No se cargó el exportador PDF. Usa Imprimir / Guardar como PDF.","info");
@@ -29,8 +31,9 @@
         const filename=q.date+"_"+q.number+"_"+name+".pdf";
         const pdf=await html2pdf().set({margin:[9,10,10,10],filename,image:{type:"jpeg",quality:.98},html2canvas:{scale:2,useCORS:true,allowTaint:false,backgroundColor:"#fff",scrollX:0,scrollY:0},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},pagebreak:{mode:["css","legacy"]}}).from(doc).toPdf().get("pdf");
         const file=pdf.output("blob"),url=URL.createObjectURL(file),link=document.createElement("a");link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),30000);
-        if(this.quoteDirectoryHandle){const handle=await this.quoteDirectoryHandle.getFileHandle(filename,{create:true}),writer=await handle.createWritable();await writer.write(file);await writer.close()}
-        if(!auto)this.showToast("PDF descargado.","success");
+        let savedToFolder=false;
+        if(selectedDirectory){try{const handle=await selectedDirectory.getFileHandle(filename,{create:true}),writer=await handle.createWritable();await writer.write(file);await writer.close();savedToFolder=true}catch(folderError){console.warn("[COTIZACIONES] PDF descargado por el navegador; falló la copia en carpeta.",folderError)}}
+        if(!auto)this.showToast(savedToFolder?"PDF descargado y guardado en la carpeta seleccionada.":"PDF descargado por el navegador.","success");
       }catch(error){console.error("[COTIZACIONES]",error);this.showToast("No se pudo generar el PDF. Abre la vista previa para imprimir.","error")}
       finally{host.remove()}
     };
