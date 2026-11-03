@@ -1,7 +1,7 @@
 (function installSystemDialogs(){
-  const app = window.app;
-  if (!app || app.__systemDialogsInstalled) return;
-  app.__systemDialogsInstalled = true;
+  const appPrototype = typeof PortonProApp === 'function' ? PortonProApp.prototype : null;
+  if (!appPrototype || appPrototype.__systemDialogsInstalled) return;
+  appPrototype.__systemDialogsInstalled = true;
 
   const queue = [];
   let showing = false;
@@ -75,7 +75,7 @@
   function enqueue(kind, message, options){
     return new Promise(resolve => { queue.push({kind, message, options, resolve}); presentNext(); });
   }
-  app.showSystemConfirm = (message, options={}) => enqueue('confirm', message, options);
-  app.showSystemAlert = (message, options={}) => enqueue('alert', message, options);
-  app.showSystemPrompt = (message, options={}) => enqueue('prompt', message, options);
+  appPrototype.showSystemConfirm = (message, options={}) => enqueue('confirm', message, options);
+  appPrototype.showSystemAlert = (message, options={}) => enqueue('alert', message, options);
+  appPrototype.showSystemPrompt = (message, options={}) => enqueue('prompt', message, options);
 })();
