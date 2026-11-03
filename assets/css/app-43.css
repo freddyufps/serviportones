@@ -31,5 +31,9 @@ body.theme-dark .quote-form-toolbar h3,body.theme-dark .quote-section-heading h4
 .quote-tax-controls.quote-total-only{grid-template-columns:minmax(0,min(320px,100%));justify-content:end}
 .quote-warranty-options{display:grid;grid-template-columns:1fr;margin-bottom:0}
 .quote-warranty-options.hidden{display:none}
-.quote-warranty-options label{align-items:flex-start;width:100%;border-radius:12px;white-space:normal}
-.quote-warranty-options label span{line-height:1.5}
+.quote-warranty-options label{display:flex;flex-direction:column;align-items:stretch;gap:7px;width:100%;padding:12px 14px;border-radius:12px;white-space:normal;cursor:pointer;transition:border-color .16s ease,background-color .16s ease,box-shadow .16s ease}
+.quote-warranty-options label:has(input:checked){border-color:#8bb64e;background:#f3f8ec;box-shadow:0 0 0 2px rgba(112,168,55,.12)}
+.quote-warranty-options label:focus-within{outline:2px solid rgba(112,168,55,.35);outline-offset:2px}
+.quote-warranty-card-title{display:flex;align-items:center;gap:8px;color:#314a62;font-weight:800}
+.quote-warranty-card-title input{width:16px;height:16px;flex:0 0 16px;margin:0;accent-color:#70a837}
+.quote-warranty-card-copy{display:block;line-height:1.5}

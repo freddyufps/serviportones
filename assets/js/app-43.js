@@ -36,8 +36,8 @@
        <div class='quote-scope-heading quote-field-wide'>GARANTÍA</div>
        <div class='quote-scope-options quote-field-wide' role='radiogroup' aria-label='¿Incluye garantía?'><label><input type='radio' name='warrantyEnabled' value='yes' ${warrantyEnabled==="yes"?"checked":""}><span>Sí</span></label><label><input type='radio' name='warrantyEnabled' value='no' ${warrantyEnabled==="no"?"checked":""}><span>No</span></label></div>
        <div id='quote-warranty-options' class='quote-scope-options quote-warranty-options quote-field-wide ${warrantyEnabled==="yes"?"":"hidden"}' role='radiogroup' aria-label='Selecciona una garantía'>
-         <label><input type='radio' name='warrantyOption' value='motor' ${warrantyOption==="motor"?"checked":""} ${warrantyEnabled==="yes"?"required":""}><span><b>OPCIÓN 1</b><br>${esc(WARRANTY_OPTIONS.motor)}</span></label>
-         <label><input type='radio' name='warrantyOption' value='work' ${warrantyOption==="work"?"checked":""} ${warrantyEnabled==="yes"?"required":""}><span><b>OPCIÓN 2</b><br>${esc(WARRANTY_OPTIONS.work)}</span></label>
+         <label><span class='quote-warranty-card-title'><input type='radio' name='warrantyOption' value='motor' ${warrantyOption==="motor"?"checked":""} ${warrantyEnabled==="yes"?"required":""}><b>OPCIÓN 1</b></span><span class='quote-warranty-card-copy'>${esc(WARRANTY_OPTIONS.motor)}</span></label>
+         <label><span class='quote-warranty-card-title'><input type='radio' name='warrantyOption' value='work' ${warrantyOption==="work"?"checked":""} ${warrantyEnabled==="yes"?"required":""}><b>OPCIÓN 2</b></span><span class='quote-warranty-card-copy'>${esc(WARRANTY_OPTIONS.work)}</span></label>
        </div>
        <label class='quote-block-label quote-field-wide'>Observaciones<textarea name='notes' rows='2'>${esc(q.notes||"")}</textarea></label>
      </div></section>
