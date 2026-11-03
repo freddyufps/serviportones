@@ -30,5 +30,6 @@ body.theme-dark .quote-form-toolbar h3,body.theme-dark .quote-section-heading h4
 /* Ajustes locales del nuevo formulario de cotización. */
 .quote-tax-controls.quote-total-only{grid-template-columns:minmax(0,min(320px,100%));justify-content:end}
 .quote-warranty-options{display:grid;grid-template-columns:1fr;margin-bottom:0}
+.quote-warranty-options.hidden{display:none}
 .quote-warranty-options label{align-items:flex-start;width:100%;border-radius:12px;white-space:normal}
 .quote-warranty-options label span{line-height:1.5}
