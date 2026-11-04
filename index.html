@@ -829,6 +829,11 @@
         </section>
 
         <div>
+          <label for="task-service-location" class="block text-[11px] font-semibold text-slate-700 mb-1">📍 Ubicación del Servicio</label>
+          <textarea id="task-service-location" rows="2" maxlength="1000" placeholder="Pega aquí una ubicación de WhatsApp, Google Maps, Waze o coordenadas (latitud, longitud)" class="w-full px-3 py-2.5 border rounded-xl"></textarea>
+          <p class="mt-1 text-[10px] text-slate-500">Se guarda únicamente en esta orden y estará disponible para el técnico asignado.</p>
+        </div>
+        <div>
           <label for="task-service-type" class="block text-[11px] font-semibold text-slate-700 mb-1">Motivo</label>
           <input type="text" id="task-service-type" required placeholder="Escribe el motivo del trabajo" class="w-full px-3 py-2.5 border rounded-xl">
           <button id="btn-manage-service-types" type="button" onclick="app.openServiceManager()" class="hidden" aria-hidden="true" tabindex="-1">Administrar motivos</button>
@@ -896,14 +901,15 @@
           <p><span class="text-slate-500 font-bold">Servicio:</span> <span id="rep-service" class="font-bold text-slate-800"></span></p>
           <p><span class="text-slate-500 font-bold">Equipo:</span> <span id="rep-equipment" class="font-semibold text-slate-800"></span></p>
           <p class="truncate"><span class="text-slate-500 font-bold">Dirección:</span> <span id="rep-address" class="font-semibold text-slate-800"></span></p>
+          <p class="mt-1 break-all"><span class="text-slate-500 font-bold">📍 Ubicación del Servicio:</span> <span id="rep-service-location" class="font-semibold text-slate-800">Ubicación no registrada</span></p>
         </div>
 
         <div class="flex items-center gap-2">
-          <button type="button" id="rep-btn-waze" class="flex-1 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl text-xs shadow-sm flex items-center justify-center gap-1">
-            <img src="assets/media/media-1.png" alt="" aria-hidden="true" class="w-5 h-5 object-contain"> Waze
+          <button type="button" id="rep-btn-waze" class="flex-1 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl text-xs shadow-sm flex items-center justify-center gap-1 disabled:cursor-not-allowed disabled:opacity-50">
+            <img src="assets/media/media-1.png" alt="" aria-hidden="true" class="w-5 h-5 object-contain"> Abrir en Waze
           </button>
-          <button type="button" id="rep-btn-maps" class="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm flex items-center justify-center gap-1">
-            <img src="assets/media/media-2.png" alt="" aria-hidden="true" class="w-5 h-5 object-contain"> Maps
+          <button type="button" id="rep-btn-maps" class="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm flex items-center justify-center gap-1 disabled:cursor-not-allowed disabled:opacity-50">
+            <img src="assets/media/media-2.png" alt="" aria-hidden="true" class="w-5 h-5 object-contain"> Abrir en Google Maps
           </button>
         </div>
 
@@ -980,6 +986,14 @@
             <p class="text-xs text-slate-700"><b>Cliente:</b> <span id="view-client"></span></p>
             <p class="text-xs text-slate-700 mt-1"><b>Teléfono:</b> <span id="view-phone"></span></p>
             <p class="text-xs text-slate-700 mt-1"><b>Dirección:</b> <span id="view-address"></span></p>
+            <div class="mt-3 rounded-lg border border-sky-100 bg-sky-50/60 p-3">
+              <p class="text-[10px] font-black uppercase tracking-wide text-slate-700">📍 Ubicación del Servicio</p>
+              <p id="view-service-location" class="mt-1 break-all text-xs text-slate-700">Ubicación no registrada</p>
+              <div class="mt-2 flex flex-wrap gap-2">
+                <button id="view-service-location-maps" type="button" class="rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">🗺 Abrir en Google Maps</button>
+                <button id="view-service-location-waze" type="button" class="rounded-lg bg-cyan-600 px-3 py-2 text-[11px] font-bold text-white hover:bg-cyan-700 disabled:cursor-not-allowed disabled:opacity-50">🚗 Abrir en Waze</button>
+              </div>
+            </div>
             <div class="mt-3 pt-3 border-t flex items-center gap-3">
               <div id="view-technician-avatar" class="seasonal-worker-avatar w-10 h-10 rounded-full border-2 border-brand-lime bg-slate-100 text-slate-700 font-black flex items-center justify-center overflow-hidden shrink-0"></div>
               <div class="min-w-0"><p class="text-[10px] uppercase text-slate-400 font-bold">Técnico asignado</p><p id="view-technician" class="font-bold text-sm text-slate-900 truncate"></p><p id="view-completed-at" class="text-[10px] text-slate-500"></p></div>
@@ -1123,6 +1137,7 @@
 <script id="mobile-dashboard-chat-fix" src="assets/js/app-66.js?v=20261102-mobile-dashboard-chat-fix-5"></script>
 <link rel="stylesheet" href="assets/css/app-67.css?v=20261103-system-dialogs-1" id="system-dialogs-style">
 <script id="system-dialogs" src="assets/js/app-67.js?v=20261103-system-dialogs-2"></script>
+<script id="order-service-location" src="assets/js/app-68.js?v=20261104-service-location-1"></script>
 </body>
 </html>
 
