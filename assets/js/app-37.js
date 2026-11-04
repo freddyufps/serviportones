@@ -138,14 +138,14 @@
       else if (result?.state === 'already-mine') this.showToast?.('Esta orden ya está asignada a tu usuario.', 'info');
       else if (result?.state === 'already-assigned') this.showToast?.('Esta orden ya fue asignada a otro técnico.', 'error');
       else if (result?.state === 'archived') this.showToast?.('Esta orden ya fue archivada por el administrador.', 'info');
-      else this.showToast?.('No se encontró la orden en la lista de Firestore. Actualiza e intenta otra vez.', 'error');
+      else this.showToast?.('No se encontró la orden. Actualiza e intenta otra vez.', 'error');
     } catch (error) {
       console.error('[ORDEN] No se pudo tomar la orden:', error);
       const message = isQuotaError(error)
-        ? 'Firestore agotó la cuota diaria del proyecto. No se pudo asignar la orden; intenta de nuevo cuando se restablezca la cuota.'
+        ? 'No se pudo asignar la orden en este momento. Inténtalo nuevamente más tarde.'
         : error?.code === 'permission-denied'
-          ? 'Firestore rechazó la asignación. La cuenta de trabajador necesita permiso para actualizar la orden.'
-          : 'No se pudo asignar la orden: ' + (error?.message || error?.code || 'error de conexión');
+          ? 'No tienes permiso para asignar esta orden. Contacta al administrador.'
+          : 'No se pudo asignar la orden. Revisa tu conexión e inténtalo nuevamente.';
       this.showToast?.(message, 'error');
     } finally {
       this.__claimingOrderIds.delete(claimKey);

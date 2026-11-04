@@ -130,7 +130,7 @@
       if(q.orderId){const task=(this.tasks||[]).find(item=>String(item.id)===String(q.orderId));if(task){task.quoteIds=Array.from(new Set([...(task.quoteIds||[]),q.id]));try{localStorage.setItem(TASKS_KEY,JSON.stringify(this.tasks));keepLocalTask(task);syncLocalTaskOverrides(this);}catch(error){console.warn('[ORDEN] Cotización guardada; no se pudo asociar localmente a la orden.',error);}}}
       if(window.db&&navigator.onLine){Promise.resolve().then(()=>db.collection('cotizaciones').doc(q.id).set(q,{merge:true})).catch(error=>console.warn('[COTIZACIONES] Guardada localmente; Firestore no sincronizó.',error));}
       this.renderQuotesCount?.();this.decorateQuoteOrderCards?.();this.closeQuotes?.();
-      this.showToast(window.db&&navigator.onLine?'Cotización guardada en este dispositivo; sincronización en segundo plano.':'Cotización guardada localmente; Firestore no disponible.','info');
+      this.showToast(window.db&&navigator.onLine?'Cotización guardada en este dispositivo; sincronización en segundo plano.':'Cotización guardada en este dispositivo; se sincronizará cuando haya conexión.','info');
       await this.exportQuotePdf(q,true);
     };
 

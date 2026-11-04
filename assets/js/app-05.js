@@ -822,12 +822,12 @@
             .then(() => ({ ok: true }))
             .catch(error => {
               console.error('[ORDEN] Falló la escritura de órdenes:', error);
-              if (reportError) this.showToast(`No se guardó en la nube: ${error.message || error}`, 'error');
+              if (reportError) this.showToast('No se pudo guardar la información. Revisa tu conexión e inténtalo de nuevo.', 'error');
               return { ok: false, error };
             });
         } catch (error) {
           console.error('[ORDEN] No se pudo iniciar la escritura de órdenes:', error);
-          if (reportError) this.showToast(`No se pudo guardar: ${error.message || error}`, 'error');
+          if (reportError) this.showToast('No se pudo guardar la información. Inténtalo nuevamente.', 'error');
           return Promise.resolve({ ok: false, error });
         }
       }
@@ -892,7 +892,7 @@
 
         if (btnSubmit) {
           btnSubmit.disabled = true;
-          if (btnText) btnText.textContent = "Verificando en Firestore...";
+          if (btnText) btnText.textContent = "Verificando credenciales...";
         }
 
         if (rememberChecked) {
@@ -926,7 +926,7 @@
             });
           } catch (err) {
             console.error("Error al consultar Firestore:", err);
-            errorText.textContent = "Error de conexión con Firestore: " + (err.message || "Fallo de red");
+            errorText.textContent = "No fue posible iniciar sesión en este momento. Inténtalo nuevamente.";
             errorAlert.classList.remove('hidden');
             if (btnSubmit) { btnSubmit.disabled = false; if (btnText) btnText.textContent = "Iniciar Sesión"; }
             return;
@@ -964,7 +964,7 @@
           return;
         }
 
-        errorText.textContent = 'Usuario o contraseña incorrectos en Firestore.';
+        errorText.textContent = 'Usuario o contraseña incorrectos.';
         errorAlert.classList.remove('hidden');
         if (window.lucide) lucide.createIcons();
       }
@@ -1531,7 +1531,7 @@
           this.presenceRecords[username] = previousRecord;
           this.renderAdminPresence();
           console.error('[PRESENCE] No se pudo actualizar el estado del administrador:', error);
-          this.showToast('No se pudo guardar el estado. Revisa la conexión y permisos de Firestore.', 'error');
+          this.showToast('No se pudo guardar el estado. Revisa tu conexión e inténtalo de nuevo.', 'error');
         }
       }
 
@@ -1896,7 +1896,7 @@
           console.error('[CALL] Fallo en etapa', callStage, { name: err?.name, message: err?.message }, err);
           console.error('[CALL] getUserMedia o inicio de llamada falló', { name: err?.name, message: err?.message }, err);
           console.error("Error al iniciar llamada WebRTC:", err);
-          this.showToast(`No se pudo iniciar la llamada: ${err.message || err}`, "error");
+          this.showToast('No se pudo iniciar la llamada. Inténtalo nuevamente.', "error");
           this.endVoiceCall(false);
         }
       }
@@ -3568,7 +3568,7 @@ updateMessengerWindowTyping(workerName) {
         const subtitle = document.getElementById('settings-modal-subtitle');
 
         if (isAdmin) {
-          subtitle.textContent = 'Gestión integral de personal en Firestore';
+          subtitle.textContent = 'Gestión integral del personal';
           adminIdentitiesSection?.classList.remove('hidden');
           this.renderAdminIdentities();
           adminUsersSection.classList.remove('hidden');
@@ -3636,7 +3636,7 @@ updateMessengerWindowTyping(workerName) {
           this.setupDashboardUI();
           this.renderTasks();
           if (this.currentUser.role === 'admin') this.renderTechniciansMonitor();
-          this.showToast('Foto actualizada en Firestore', 'success');
+          this.showToast('Foto actualizada correctamente.', 'success');
         };
         reader.readAsDataURL(file);
       }
@@ -3675,14 +3675,14 @@ updateMessengerWindowTyping(workerName) {
               await db.collection('users').doc(this.currentUser.id).update({ password: newPass });
               this.currentUser.password = newPass;
               SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
-              this.showToast('Contraseña actualizada en Firestore', 'success');
+              this.showToast('Contraseña actualizada correctamente.', 'success');
               this.closeSettingsModal();
               return;
             } else {
               this.showToast('Contraseña actual incorrecta', 'error');
             }
           } catch(err) {
-            this.showToast('Error al conectar con Firestore', 'error');
+            this.showToast('No fue posible actualizar la contraseña. Inténtalo nuevamente.', 'error');
           }
         }
       }
@@ -3728,7 +3728,7 @@ updateMessengerWindowTyping(workerName) {
         field('specialty').value = worker.specialty || '';
         const photoPreview = form.querySelector('[data-worker-photo-preview]');
         if (photoPreview && worker.photo) { photoPreview.src = worker.photo; photoPreview.classList.remove('hidden'); }
-        field('save').textContent = 'Actualizar en Firestore';
+        field('save').textContent = 'Actualizar trabajador';
         overlay.querySelector('[data-employee-edit-form]').appendChild(form);
         document.body.appendChild(overlay);
         overlay.__returnState = returnState;
@@ -3774,7 +3774,7 @@ updateMessengerWindowTyping(workerName) {
         document.getElementById('btn-toggle-create-worker')?.setAttribute('aria-expanded', 'false');
         document.querySelector('#manage-user-form [data-worker-photo-preview]')?.removeAttribute('src');
         document.querySelector('#manage-user-form [data-worker-photo-preview]')?.classList.add('hidden');
-        document.getElementById('btn-save-user').textContent = 'Guardar en Firestore';
+        document.getElementById('btn-save-user').textContent = 'Guardar trabajador';
         if (window.lucide) lucide.createIcons();
       }
 
@@ -3835,7 +3835,7 @@ updateMessengerWindowTyping(workerName) {
 
         if (photoFile) {
           try { photo = await this.encodeManagedWorkerPhoto(photoFile); }
-          catch (error) { this.showToast(error.message || 'No se pudo procesar la foto.', 'error'); return; }
+          catch (error) { console.error('[TRABAJADORES] No se pudo procesar la foto.', error); this.showToast('No se pudo procesar la foto seleccionada.', 'error'); return; }
         }
 
         const userData = {
@@ -3854,17 +3854,17 @@ updateMessengerWindowTyping(workerName) {
           try {
             if (id) {
               await db.collection('users').doc(id).set(userData, { merge: true });
-              this.showToast(`Trabajador ${fullName} actualizado en Firestore`, 'success');
+              this.showToast(`Trabajador ${fullName} actualizado correctamente.`, 'success');
             } else {
               const docId = 'tech-' + Date.now();
               await db.collection('users').doc(docId).set({ ...userData, lastHeartbeat: 0, lastLogin: 'Nunca' });
-              this.showToast(`Trabajador ${fullName} registrado en Firestore`, 'success');
+              this.showToast(`Trabajador ${fullName} registrado correctamente.`, 'success');
             }
             if (id) this.closeEmployeeEditBubble();
             this.resetUserForm();
           } catch(err) {
             console.error("Error guardando trabajador en Firestore:", err);
-            this.showToast('Error guardando en Firestore', 'error');
+            this.showToast('No se pudo guardar el trabajador. Inténtalo nuevamente.', 'error');
           }
         }
       }
@@ -3906,13 +3906,13 @@ updateMessengerWindowTyping(workerName) {
         this.openEmployeeEditBubble(worker);
       }
       async deleteUser(id) {
-        if (!(await this.showSystemConfirm("¿Eliminar trabajador de Firestore?", { title: "Eliminar trabajador", confirmText: "Eliminar", icon: "trash" }))) return;
+        if (!(await this.showSystemConfirm("¿Está seguro de eliminar este trabajador?", { title: "Eliminar trabajador", confirmText: "Eliminar", icon: "trash" }))) return;
         if (window.db) {
           try {
             await db.collection('users').doc(id).delete();
-            this.showToast('Trabajador eliminado de Firestore', 'info');
+            this.showToast('Trabajador eliminado.', 'info');
           } catch(err) {
-            this.showToast('Error al eliminar de Firestore', 'error');
+            this.showToast('No se pudo eliminar el trabajador. Inténtalo nuevamente.', 'error');
           }
         }
       }
@@ -4300,7 +4300,7 @@ updateMessengerWindowTyping(workerName) {
                   <p class="text-slate-600 flex items-start gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5"></i><span class="line-clamp-2 break-words">${this.escapeHtml(t.address || "Sin dirección")}</span></p>
                   <div class="mt-2 pt-2 border-t border-slate-200/80 flex items-center justify-between gap-2">
                     <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Abrir ruta</span>
-                    <div class="flex items-center gap-1.5"><button type="button" onclick="app.openWazeNavigation('${t.address.replace(/'/g, "\'")}')" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg border border-slate-200 bg-white hover:border-brand-lime hover:bg-brand-limeLight active:scale-95 transition flex items-center justify-center" aria-label="Abrir ruta en Waze" title="Abrir ruta en Waze"><img src="assets/media/media-1.png" alt="" aria-hidden="true" class="w-6 h-6 sm:w-7 sm:h-7 object-contain"></button><button type="button" onclick="app.openGoogleMapsNavigation('${t.address.replace(/'/g, "\'")}')" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg border border-slate-200 bg-white hover:border-brand-lime hover:bg-brand-limeLight active:scale-95 transition flex items-center justify-center" aria-label="Abrir ruta en Google Maps" title="Abrir ruta en Google Maps"><img src="assets/media/media-2.png" alt="" aria-hidden="true" class="w-6 h-6 sm:w-7 sm:h-7 object-contain"></button></div>
+                    <div class="flex items-center gap-1.5"><button type="button" onclick="app.openWazeNavigation(${this.escapeHtml(JSON.stringify(String(t.address || t.serviceLocation || '')))})" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg border border-slate-200 bg-white hover:border-brand-lime hover:bg-brand-limeLight active:scale-95 transition flex items-center justify-center" aria-label="Abrir ruta en Waze" title="Abrir ruta en Waze"><img src="assets/media/media-1.png" alt="" aria-hidden="true" class="w-6 h-6 sm:w-7 sm:h-7 object-contain"></button><button type="button" onclick="app.openGoogleMapsNavigation(${this.escapeHtml(JSON.stringify(String(t.address || t.serviceLocation || '')))})" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg border border-slate-200 bg-white hover:border-brand-lime hover:bg-brand-limeLight active:scale-95 transition flex items-center justify-center" aria-label="Abrir ruta en Google Maps" title="Abrir ruta en Google Maps"><img src="assets/media/media-2.png" alt="" aria-hidden="true" class="w-6 h-6 sm:w-7 sm:h-7 object-contain"></button></div>
                   </div>
                 </div>
 
@@ -4606,7 +4606,7 @@ updateMessengerWindowTyping(workerName) {
           }
         } catch (error) {
           console.error('[ORDEN] No se pudo tomar la orden:', error);
-          this.showToast(`No se pudo tomar la orden: ${error.message || error}`, 'error');
+          this.showToast('No se pudo asignar la orden. Inténtalo nuevamente.', 'error');
         }
       }
 
@@ -4735,7 +4735,7 @@ updateMessengerWindowTyping(workerName) {
         orderNumberInput.value = orderNumber || this.getNextAvailableOrderNumber();
         document.getElementById('task-client').value = t.client;
         document.getElementById('task-phone').value = t.phone || '';
-        document.getElementById('task-address').value = t.address;
+        document.getElementById('task-address').value = t.address || '';
         document.getElementById('task-administrator').value = t.administrator || t.contact || '';
         this.setTaskClientMode('new');
         this.renderServiceTypeOptions(t.serviceType);
@@ -4797,7 +4797,7 @@ updateMessengerWindowTyping(workerName) {
           await this.handleSaveTask({ preventDefault() {} });
         } catch (error) {
           console.error('[ORDEN] Error al guardar:', error);
-          this.showToast(`No se pudo guardar la orden: ${error.message || error}`, 'error');
+          this.showToast('No se pudo guardar la orden. Inténtalo nuevamente.', 'error');
         }
       }
 
@@ -4965,7 +4965,7 @@ updateMessengerWindowTyping(workerName) {
         const extension = (file.name.split('.').pop() || '').toLowerCase();
         const supportedExtensions = new Set(['pdf','doc','docx','xls','xlsx','csv','odt','ods','rtf','png','jpg','jpeg','webp','gif','bmp','heic']);
         if (!supportedExtensions.has(extension)) return this.showToast('Formato no compatible. Usa PDF, Word, Excel, CSV o una imagen (PNG/JPG y similares).', 'error');
-        if (!window.firebase?.storage) return this.showToast('El almacenamiento de facturas no está disponible', 'error');
+        if (!window.firebase?.storage) return this.showToast('No está disponible la carga de facturas en este momento.', 'error');
 
         const contentTypes = { pdf:'application/pdf', doc:'application/msword', docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xls:'application/vnd.ms-excel', xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', csv:'text/csv', odt:'application/vnd.oasis.opendocument.text', ods:'application/vnd.oasis.opendocument.spreadsheet', rtf:'application/rtf', jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', webp:'image/webp', gif:'image/gif', bmp:'image/bmp', heic:'image/heic' };
         const contentType = file.type || contentTypes[extension] || 'application/octet-stream';
@@ -4995,7 +4995,7 @@ updateMessengerWindowTyping(workerName) {
           this.viewOrderDetails(taskId);
         } catch (error) {
           console.error('[FACTURA] Error subiendo archivo:', error);
-          this.showToast(`No se pudo subir la factura: ${error.message || error}`, 'error');
+          this.showToast('No se pudo adjuntar la factura. Inténtalo nuevamente.', 'error');
         } finally {
           event.target.value = '';
         }
@@ -5102,7 +5102,7 @@ updateMessengerWindowTyping(workerName) {
           return true;
         } catch (error) {
           console.error('[EVIDENCIA] No se pudo migrar evidencia anterior a Storage:', error);
-          this.showToast(`No se pudieron sincronizar las evidencias: ${error.message || error}`, 'error');
+          this.showToast('No se pudieron guardar las evidencias. Inténtalo nuevamente.', 'error');
           return false;
         }
       }
@@ -5175,7 +5175,7 @@ updateMessengerWindowTyping(workerName) {
         const taskId = this.selectedTask?.id;
         if (!files.length || !taskId) return;
         if (!window.firebase?.storage) {
-          this.showToast('El almacenamiento de evidencias no está disponible', 'error');
+          this.showToast('No está disponible la carga de evidencias en este momento.', 'error');
           e.target.value = '';
           return;
         }
@@ -5207,7 +5207,7 @@ updateMessengerWindowTyping(workerName) {
             return true;
           })().catch(error => {
             console.error('[EVIDENCIA] Error subiendo archivo:', error);
-            this.showToast(`No se pudo subir ${file.name}: ${error.message || error}`, 'error');
+            this.showToast(`No se pudo adjuntar ${file.name}. Inténtalo nuevamente.`, 'error');
             return false;
           });
           this.pendingEvidenceReads.push(pending);

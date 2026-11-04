@@ -709,7 +709,7 @@
           <div class="flex items-center justify-between border-b pb-1">
             <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1">
               <i data-lucide="users" class="w-4 h-4 text-brand-limeHover"></i>
-              <span>Gestión de Trabajadores (Firestore)</span>
+              <span>Gestión de Trabajadores</span>
             </h4>
             <div class="flex items-center gap-2"><span id="settings-users-count-badge" class="text-[10px] font-bold px-2 py-1 rounded-lg bg-brand-limeLight text-brand-limeHover">0 Trabajadores</span><button type="button" id="btn-toggle-create-worker" onclick="app.toggleCreateWorkerForm()" aria-expanded="false" class="create-contact-button"><i data-lucide="plus" class="h-3.5 w-3.5"></i><span>Crear contacto</span></button></div>
           </div>
@@ -730,7 +730,7 @@
             </div>
             <div class="flex justify-end gap-1.5 pt-0.5">
               <button type="button" onclick="app.cancelUserForm()" class="px-2.5 py-1 text-xs border rounded-lg">Cancelar</button>
-              <button type="submit" id="btn-save-user" class="px-3 py-1 bg-brand-dark text-white rounded-lg text-xs font-bold">Guardar en Firestore</button>
+              <button type="submit" id="btn-save-user" class="px-3 py-1 bg-brand-dark text-white rounded-lg text-xs font-bold">Guardar trabajador</button>
             </div>
           </form>
 
@@ -1038,11 +1038,11 @@
   </div>
 
   <!-- JAVASCRIPT: LÓGICA DE LA APLICACIÓN -->
-  <script src="assets/js/app-05.js?v=20261104-restore-order-client-entry-1"></script>
-<script src="assets/js/app-06.js?v=20261031-mobile-emoji-layer-2"></script>
+  <script src="assets/js/app-05.js?v=20261104-user-messages-and-quote-order-1"></script>
+<script src="assets/js/app-06.js?v=20261104-user-messages-1"></script>
 <link rel="stylesheet" href="assets/css/app-05.css" id="chat-hidden-overlay-fix">
 <link rel="stylesheet" href="assets/css/app-06.css" id="chat-hide-custom-emojis-mobile">
-<script id="settings-workspace-organizer" src="assets/js/app-07.js?v=20261103-system-dialogs-1"></script>
+<script id="settings-workspace-organizer" src="assets/js/app-07.js?v=20261104-user-messages-1"></script>
 <link rel="stylesheet" href="assets/css/app-07.css" id="settings-workspace-styles">
 <link rel="stylesheet" href="assets/css/app-08.css" id="modal-transparent-backdrops"><link rel="stylesheet" href="assets/css/app-09.css" id="settings-employees-shortcut-style"><link rel="stylesheet" href="assets/css/app-10.css" id="settings-admin-employees-shortcut-style"><link rel="stylesheet" href="assets/css/app-11.css" id="settings-contained-scroll"><link rel="stylesheet" href="assets/css/app-12.css" id="employee-edit-bubble-style">
 <link rel="stylesheet" href="assets/css/app-13.css" id="settings-category-cards-style">
@@ -1068,7 +1068,7 @@
 <link rel="stylesheet" href="assets/css/app-23.css" id="admin-presence-menu-interaction-layer">
 <link rel="stylesheet" href="assets/css/app-24.css" id="dark-mode-monitor-name-contrast">
 <link rel="stylesheet" href="assets/css/app-25.css" id="mobile-reactions-and-chat-dark-bottom-fix"><link rel="stylesheet" href="assets/css/app-26.css" id="ios-chat-press-and-worker-admin-identity">
-<script id="ios-chat-press-and-worker-admin-identity" src="assets/js/app-10.js"></script><script id="optimistic-chat-reaction-update" src="assets/js/app-11.js"></script><link rel="stylesheet" href="assets/css/app-27.css" id="chat-header-admin-presence-card-sync">
+<script id="ios-chat-press-and-worker-admin-identity" src="assets/js/app-10.js"></script><script id="optimistic-chat-reaction-update" src="assets/js/app-11.js?v=20261104-user-messages-1"></script><link rel="stylesheet" href="assets/css/app-27.css" id="chat-header-admin-presence-card-sync">
 <script id="chat-header-admin-presence-card-sync" src="assets/js/app-12.js"></script><link rel="stylesheet" href="assets/css/app-28.css" id="chat-header-admin-identity-cleanup">
 <script id="chat-header-admin-identity-cleanup" src="assets/js/app-13.js"></script><link rel="stylesheet" href="assets/css/app-29.css" id="seasonal-chat-admin-card-and-unread-red-alert"><link rel="stylesheet" href="assets/css/app-30.css?v=20261104-registered-client-only-1">
 <link rel="stylesheet" href="assets/css/app-31.css?v=20261104-payment-row-weight-1" id="payments-login-compact-style">
@@ -1077,7 +1077,7 @@
 <link rel="stylesheet" href="assets/css/app-33.css?v=20261028-presence-archive-details-2">
 <script id="announcement-mobile-chat-status-fix" src="assets/js/app-33.js?v=20261028-announcement-mobile-chat-status-1"></script>
 <script id="archived-order-address-disclosure" src="assets/js/app-36.js?v=20261104-quotes-title-count-hidden-1"></script>
-<script id="order-access-route-icons-fix" src="assets/js/app-37.js?v=20261028-order-access-routes-4"></script>
+<script id="order-access-route-icons-fix" src="assets/js/app-37.js?v=20261104-user-messages-1"></script>
 <script id="worker-order-report-permissions" src="assets/js/app-38.js?v=20261028-worker-order-report-2"></script>
 <link rel="stylesheet" href="assets/css/app-34.css?v=20261028-admin-mobile-chat-profile-2" id="admin-mobile-chat-profile-fix">
 <link rel="stylesheet" href="assets/css/app-35.css?v=20261028-order-sheet-1" id="compact-order-sheet-style">
@@ -1095,7 +1095,7 @@
 <link rel="stylesheet" href="assets/css/app-45.css?v=local-chat-stability-1" id="chat-reaction-overlay-fix">
 <script id="local-chat-quote-interaction-fix" src="assets/js/app-45.js?v=20261031-quote-click-native-3"></script>
 <link rel="stylesheet" href="assets/css/app-46.css?v=20261031-quote-equal-order-actions-1" id="quote-button-assign-tile-size">
-<script id="mobile-chat-client-directory" src="assets/js/app-47.js?v=20261104-quote-number-validation-1"></script>
+<script id="mobile-chat-client-directory" src="assets/js/app-47.js?v=20261104-user-messages-1"></script>
 <link rel="stylesheet" href="assets/css/app-49.css?v=20261030-mobile-chat-keyboard-anchor-1" id="mobile-chat-keyboard-anchor-style">
 <link rel="stylesheet" href="assets/css/app-50.css?v=20261031-invoice-tab-visible-fix-1" id="mobile-ops-invoice-view-fix">
 <link rel="stylesheet" href="assets/css/app-51.css?v=20261102-emoji-mobile-hidden-2" id="chat-sticker-button-visible">
@@ -1118,7 +1118,7 @@
 <script id="mobile-dashboard-chat-fix" src="assets/js/app-66.js?v=20261102-mobile-dashboard-chat-fix-5"></script>
 <link rel="stylesheet" href="assets/css/app-67.css?v=20261103-system-dialogs-1" id="system-dialogs-style">
 <script id="system-dialogs" src="assets/js/app-67.js?v=20261103-system-dialogs-2"></script>
-<script id="order-service-location" src="assets/js/app-68.js?v=20261104-order-address-unified-1"></script>
+<script id="order-service-location" src="assets/js/app-68.js?v=20261104-order-address-routing-3"></script>
 </body>
 </html>
 

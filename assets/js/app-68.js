@@ -16,16 +16,87 @@
     return `${lat},${lon}`;
   }
 
+  function decodeLayers(value, limit = 4) {
+    let result = text(value);
+    for (let index = 0; index < limit; index++) {
+      try {
+        const decoded = decodeURIComponent(result);
+        if (decoded === result) break;
+        result = decoded;
+      } catch (_) { break; }
+    }
+    return result;
+  }
+
+  function coordinatesFromLocation(value) {
+    const source = decodeLayers(value);
+    const direct = coordinates(source);
+    if (direct) return direct;
+    const patterns = [
+      /@\s*(-?\d{1,3}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)/,
+      /!3d\s*(-?\d{1,3}(?:\.\d+)?).*?!4d\s*(-?\d{1,3}(?:\.\d+)?)/i,
+      /!2d\s*(-?\d{1,3}(?:\.\d+)?).*?!3d\s*(-?\d{1,3}(?:\.\d+)?)/i,
+      /(?:^|[^\d])(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)(?:$|[^\d])/,
+      /(?:^|[^\d])(-?\d{1,2}\.\d+)%2c\s*(-?\d{1,3}\.\d+)(?:$|[^\d])/i
+    ];
+    for (let index = 0; index < patterns.length; index++) {
+      const match = source.match(patterns[index]);
+      if (!match) continue;
+      const pair = index === 2 ? `${match[2]},${match[1]}` : `${match[1]},${match[2]}`;
+      const valid = coordinates(pair);
+      if (valid) return valid;
+    }
+    return '';
+  }
+
+  function unwrapSharedLocation(value, depth = 0) {
+    let source = decodeLayers(value).trim().replace(/^<|>$/g, '').replace(/^['"]|['"]$/g, '');
+    if (!source || depth > 3) return source;
+    const directCoords = coordinatesFromLocation(source);
+    if (directCoords) return directCoords;
+    // WhatsApp may wrap a location URL in explanatory text ("Ubicación: …").
+    // Extract the actual URL before attempting to interpret the wrapper.
+    const embeddedUrl = source.match(/(?:https?:\/\/|waze:\/\/)[^\s<>"']+/i)?.[0]
+      ?.replace(/[),.;]+$/, '');
+    if (embeddedUrl && embeddedUrl !== source) return unwrapSharedLocation(embeddedUrl, depth + 1);
+    try {
+      const candidate = /^waze:\/\//i.test(source)
+        ? source.replace(/^waze:\/\//i, 'https://waze.com/')
+        : /^https?:\/\//i.test(source) ? source : `https://${source}`;
+      const url = new URL(candidate);
+      if (/^(?:wa\.me|api\.whatsapp\.com|web\.whatsapp\.com)$/i.test(url.hostname)) {
+        for (const key of ['text', 'location', 'url', 'link']) {
+          const nested = url.searchParams.get(key);
+          if (nested) return unwrapSharedLocation(nested, depth + 1);
+        }
+      }
+      const nested = ['q', 'query', 'll', 'destination', 'center', 'daddr', 'place', 'text', 'data']
+        .map(key => url.searchParams.get(key)).find(item => item && /(?:https?:|waze:|maps|google|wa\.me|location|\d\.\d+\s*,)/i.test(item));
+      if (nested) return unwrapSharedLocation(nested, depth + 1);
+    } catch (_) {}
+    return source;
+  }
+
   function isExplicitMapLocation(value) {
     const source = text(value);
-    return Boolean(coordinates(source) || /^(?:https?:\/\/|waze:\/\/)/i.test(source) || /^(?:maps\.google\.|www\.google\.[^/]+\/maps|waze\.com\/|maps\.app\.goo\.gl\/|goo\.gl\/maps)/i.test(source));
+    return Boolean(coordinatesFromLocation(source) || /^(?:https?:\/\/|waze:\/\/|%68%74%74%70)/i.test(source) || /^(?:maps\.google\.|www\.google\.[^/]+\/maps|waze\.com\/|maps\.app\.goo\.gl\/|goo\.gl\/maps)/i.test(source));
   }
 
   function locationTargets(value) {
-    const raw = text(value);
+    const original = decodeLayers(value).trim();
+    const source = unwrapSharedLocation(value);
+    const raw = text(source);
     if (!raw) return null;
 
+    let originalUrl = null;
     let url = null;
+    try {
+      const originalCandidate = /^waze:\/\//i.test(original)
+        ? original.replace(/^waze:\/\//i, 'https://waze.com/')
+        : /^https?:\/\//i.test(original) ? original : `https://${original}`;
+      originalUrl = new URL(originalCandidate);
+      if (!['http:', 'https:'].includes(originalUrl.protocol)) originalUrl = null;
+    } catch (_) {}
     try {
       const candidate = /^waze:\/\//i.test(raw)
         ? raw.replace(/^waze:\/\//i, 'https://waze.com/')
@@ -40,14 +111,22 @@
       || /(^|\.)google\.[a-z.]+$/.test(host) && /\/maps(?:\/|$)/i.test(url?.pathname || '')
       || host === 'maps.app.goo.gl'
       || host === 'goo.gl' && /\/maps(?:\/|$)/i.test(url?.pathname || '');
+    const originalHost = originalUrl?.hostname.toLowerCase() || '';
+    const originalIsWaze = /(^|\.)waze\.com$/.test(originalHost);
+    const originalIsGoogleMaps = /^maps\.google\.[a-z.]+$/.test(originalHost)
+      || /(^|\.)google\.[a-z.]+$/.test(originalHost) && /\/maps(?:\/|$)/i.test(originalUrl?.pathname || '')
+      || originalHost === 'maps.app.goo.gl'
+      || originalHost === 'goo.gl' && /\/maps(?:\/|$)/i.test(originalUrl?.pathname || '');
 
-    const urlQuery = url && ['q', 'query', 'll', 'destination', 'center', 'daddr', 'place']
+    const urlQuery = url && ['q', 'query', 'll', 'destination', 'center', 'daddr', 'place', 'text', 'data']
       .map(key => url.searchParams.get(key)).find(Boolean) || '';
-    const pathCoords = url?.pathname.match(/@(-?\d{1,3}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)/);
-    const coords = coordinates(raw) || coordinates(urlQuery) || coordinates(pathCoords ? `${pathCoords[1]},${pathCoords[2]}` : '');
-    const query = coords || urlQuery || raw;
-    const maps = isGoogleMaps ? url.href : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-    const waze = isWaze ? url.href : coords
+    const decodedPath = decodeLayers(url?.pathname || '').replace(/\+/g, ' ');
+    const pathCoords = decodedPath.match(/@(-?\d{1,3}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)/);
+    const coords = coordinatesFromLocation(raw) || coordinatesFromLocation(urlQuery) || coordinatesFromLocation(pathCoords ? `${pathCoords[1]},${pathCoords[2]}` : '');
+    const pathPlace = decodedPath.match(/\/maps\/(?:place|dir)\/([^/]+)/i)?.[1]?.replace(/\+/g, ' ') || '';
+    const query = coords || decodeLayers(urlQuery) || pathPlace || raw;
+    const maps = originalIsGoogleMaps ? originalUrl.href : isGoogleMaps ? url.href : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}`;
+    const waze = originalIsWaze ? originalUrl.href : isWaze ? url.href : coords
       ? `https://waze.com/ul?ll=${encodeURIComponent(coords)}&navigate=yes`
       : `https://waze.com/ul?q=${encodeURIComponent(query)}&navigate=yes`;
 
@@ -164,7 +243,7 @@
 
     const bindLocationControls = (task, textId, mapsId, wazeId) => {
       const location = text(task?.address || task?.serviceLocation);
-      const routeLocation = isExplicitMapLocation(task?.serviceLocation) ? task.serviceLocation : location;
+      const routeLocation = text(task?.address) || text(task?.serviceLocation);
       const value = document.getElementById(textId);
       if (value) value.textContent = location || '—';
       const targets = locationTargets(routeLocation);

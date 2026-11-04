@@ -59,7 +59,7 @@
       if(message&&originalReactions){message.reactions=originalReactions;this.renderChatMessages?.();}
       else updateVisibleRows(previousOwn);
       console.error('[CHAT] No se pudo guardar la reacción',{id:messageId,code:err?.code,message:err?.message},err);
-      this.showToast?.('No se pudo guardar la reacción: '+(err?.message||err),'error');
+      this.showToast?.('No se pudo guardar la reacción. Inténtalo nuevamente.','error');
     }
   };
 })();
