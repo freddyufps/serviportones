@@ -29,11 +29,17 @@
     const SoundEngine = {
       ctx: null,
       pendingWorkerConnectedSound: false,
+      pendingMessageSounds: 0,
       async unlock() {
         try {
           const ctx = this.getCtx();
           if (ctx && ctx.state === 'suspended') await ctx.resume();
           console.info('[ORDER] Audio habilitado por interacción', { state: ctx?.state || 'unavailable' });
+          if (ctx?.state === 'running' && this.pendingMessageSounds > 0) {
+            const pending = this.pendingMessageSounds;
+            this.pendingMessageSounds = 0;
+            for (let i = 0; i < pending; i++) this.playMessageSound();
+          }
           if (ctx?.state === 'running' && this.pendingWorkerConnectedSound) {
             this.pendingWorkerConnectedSound = false;
             this.playWorkerConnectedSound();
@@ -48,16 +54,22 @@
           if (AudioContext) this.ctx = new AudioContext();
         }
         if (this.ctx && this.ctx.state === 'suspended') {
-          this.ctx.resume();
+          this.ctx.resume().catch(error => console.warn('[CHAT] No se pudo reactivar el audio:', error?.message || error));
         }
         return this.ctx;
       },
 
       async playMessageSound() {
+        let ctx = null;
+        let soundScheduled = false;
         try {
-          const ctx = this.getCtx();
+          ctx = this.getCtx();
           if (!ctx) return;
           if (ctx.state === 'suspended') await ctx.resume();
+          if (ctx.state !== 'running') {
+            this.pendingMessageSounds = Math.min(20, this.pendingMessageSounds + 1);
+            return;
+          }
           const now = ctx.currentTime;
 
           const osc1 = ctx.createOscillator();
@@ -85,7 +97,9 @@
           osc2.start(now);
           osc1.stop(now + 0.5);
           osc2.stop(now + 0.5);
+          soundScheduled = true;
         } catch (e) {
+          if (!soundScheduled && ctx && ctx.state !== 'running') this.pendingMessageSounds = Math.min(20, this.pendingMessageSounds + 1);
           console.warn("Audio Context bloqueado:", e);
         }
       },
@@ -234,18 +248,18 @@
     };
 
     const unlockNotificationAudio = () => {
-      const context = SoundEngine.getCtx();
-      if (context && context.state === 'running') {
+      SoundEngine.unlock().then(() => {
+        if (SoundEngine.ctx?.state !== 'running') return;
         window.removeEventListener('pointerdown', unlockNotificationAudio);
         window.removeEventListener('touchstart', unlockNotificationAudio);
         window.removeEventListener('click', unlockNotificationAudio);
-      }
+      }).catch(() => {});
     };
     window.addEventListener('pointerdown', unlockNotificationAudio, { passive: true });
     window.addEventListener('touchstart', unlockNotificationAudio, { passive: true });
     window.addEventListener('click', unlockNotificationAudio, { passive: true });
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && SoundEngine.ctx?.state === 'suspended') SoundEngine.ctx.resume().catch(error => console.warn('No se pudo reactivar el sonido:', error));
+      if (!document.hidden && SoundEngine.ctx?.state === 'suspended') SoundEngine.unlock().catch(error => console.warn('No se pudo reactivar el sonido:', error));
     });
 
     const INITIAL_TASKS = [
@@ -431,8 +445,12 @@
 
         const stack = document.getElementById('toast-notification-stack');
         if (!stack) return;
+        // El dock de conversaciones de escritorio usa una capa superior; los avisos deben quedar por delante.
+        stack.style.setProperty('z-index', '2147483647', 'important');
+        stack.style.setProperty('isolation', 'isolate');
 
         const toastId = 'pop_' + Date.now() + Math.random().toString(36).substring(2, 6);
+        const toastLifetime = type === 'chat' ? 15000 : 6500;
         const card = document.createElement('div');
         card.id = toastId;
         card.className = "pointer-events-auto bg-slate-900/95 text-white border border-slate-700/80 rounded-2xl shadow-2xl p-3.5 popup-slide-in backdrop-blur-md flex items-start gap-3 relative overflow-hidden transition cursor-pointer hover:border-brand-lime";
@@ -456,7 +474,7 @@
           <button type="button" class="absolute top-2 right-2 text-slate-400 hover:text-white p-1 rounded-lg" onclick="event.stopPropagation(); app.closePopup('${toastId}')">
             ✕
           </button>
-          <div class="absolute bottom-0 left-0 h-1 bg-brand-lime transition-all duration-[6500ms] w-full" id="${toastId}_bar"></div>
+          <div class="absolute bottom-0 left-0 h-1 bg-brand-lime transition-all ${type === 'chat' ? 'duration-[15000ms]' : 'duration-[6500ms]'} w-full" id="${toastId}_bar"></div>
         `;
 
         if (onClick) {
@@ -475,7 +493,7 @@
 
         setTimeout(() => {
           this.closePopup(toastId);
-        }, 6500);
+        }, toastLifetime);
       }
 
       closePopup(toastId) {
@@ -2544,6 +2562,16 @@
         const names = isAdmin ? this.workers.map(w => this.getChatThreadId(w)).filter(Boolean) : [this.getChatThreadId()].filter(Boolean);
         names.forEach(wName => {
           if (this.dedicatedWorkerUnsubscribes[wName]) return;
+          const listenerStartedAt = Date.now();
+          const startupGraceMs = 5000;
+          const messageTimestampMs = value => {
+            if (value && typeof value.toMillis === 'function') return value.toMillis();
+            if (value instanceof Date) return value.getTime();
+            const numeric = Number(value);
+            if (Number.isFinite(numeric) && numeric > 0) return numeric;
+            const parsed = Date.parse(value || '');
+            return Number.isFinite(parsed) ? parsed : 0;
+          };
           const query = db.collection('chats_internos').doc(wName).collection('mensajes').orderBy('timestamp', 'asc');
           let cancelled = false, unsubscribe = null, unsubscribeThreadDoc = null, baselineIds = new Set(), firstSnapshot = true;
           this.dedicatedWorkerUnsubscribes[wName] = () => { cancelled = true; if (unsubscribe) unsubscribe(); if (unsubscribeThreadDoc) unsubscribeThreadDoc(); };
@@ -2577,7 +2605,11 @@
           };
           query.get().then(snapshot => {
             if (cancelled) return;
-            snapshot.forEach(doc => baselineIds.add(doc.id));
+            snapshot.forEach(doc => {
+              const timestamp = messageTimestampMs(doc.data()?.timestamp);
+              // No clasificar como histórico un mensaje recibido mientras se conectaba el listener.
+              if (timestamp < listenerStartedAt - startupGraceMs) baselineIds.add(doc.id);
+            });
             attach();
           }).catch(error => {
             console.warn('[CHAT] No se pudo cargar la línea base de mensajes; se omitirá solo la primera lectura:', error);
@@ -2587,9 +2619,15 @@
               this.chatSyncErrorShown = false;
               this.refreshChatThreadSummary(wName, snap, isAdmin);
               if (ignoreFirstSnapshot) {
-                snap.docChanges().forEach(change => { if (change.type === 'added') baselineIds.add(change.doc.id); });
+                snap.docChanges().forEach(change => {
+                  if (change.type !== 'added') return;
+                  const data = change.doc.data();
+                  const isRecent = messageTimestampMs(data.timestamp) >= listenerStartedAt - startupGraceMs;
+                  const fromOther = isAdmin ? this.getChatRole(data.senderRole) === 'worker' : this.getChatRole(data.senderRole) === 'admin';
+                  if (isRecent && fromOther && data.type !== 'call') this.notifyIncomingChatMessage(wName, change.doc.id, data);
+                  else baselineIds.add(change.doc.id);
+                });
                 ignoreFirstSnapshot = false;
-                baselineIds.clear();
                 return;
               }
               snap.docChanges().forEach(change => {
@@ -2675,7 +2713,8 @@
         }
         this.chatActivityRanks[wName] = ++this.chatActivitySequence;
         this.ensureIncomingWorkerWindow(wName);
-        if (this.prefs.sound) SoundEngine.playMessageSound();
+        // Cada mensaje entrante debe sonar; la preferencia general controla los otros avisos.
+        SoundEngine.playMessageSound();
         this.showBrowserChatNotification(wName, data);
         this.showPopupNotification({
           title: `${data.senderName || wName} te envió un mensaje`,
