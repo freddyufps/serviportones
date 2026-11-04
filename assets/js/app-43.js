@@ -133,7 +133,85 @@
   async downloadQuotePdf(){let q=this.quotePreviewQuote?.id===this.quoteCurrentId?this.quotePreviewQuote:this.quotes.find(x=>x.id===this.quoteCurrentId);if(!q){let f=document.getElementById("quote-form");if(f)q=this.collectQuote(f)}if(q)await this.exportQuotePdf(q,false)},
   openQuotesArchive(){document.getElementById("quotes-window-heading").textContent="Cotizaciones archivadas";document.getElementById("quotes-window-content").innerHTML=this.quoteArchiveMarkup();document.getElementById("quotes-shell").classList.remove("hidden");document.body.classList.add("quotes-open")},
   quoteArchiveMarkup(){let advisors=Array.from(new Set(this.quotes.map(q=>q.advisor).filter(Boolean)));return"<div class='quotes-archive'><div class='quotes-archive-heading'><div><span class='quote-form-kicker'>ARCHIVO COMERCIAL</span><h3>Cotizaciones Archivadas</h3><p>Consulta y administra tus propuestas.</p></div><button onclick='app.openQuoteForm()'>＋ Nueva cotización</button></div><div class='quotes-filters'><input id='quotes-search' placeholder='Buscar cliente, número o condominio' aria-label='Buscar cotizaciones archivadas'><input id='quotes-month' type='month' onchange='app.filterQuotes()'><select id='quotes-advisor' onchange='app.filterQuotes()'><option value=''>Todos los asesores</option>"+advisors.map(a=>"<option>"+esc(a)+"</option>").join("")+"</select></div><div id='quotes-archive-list'>"+(this.quotes.length?this.quotes.map(q=>this.quoteRow(q)).join(""):"<div class='quotes-empty'><span>✦</span><b>Aún no hay cotizaciones</b><p>Las propuestas guardadas aparecerán aquí.</p></div>")+"</div></div>"},
-  quoteRow(q){return"<article class='quote-archive-row'><div class='quote-archive-main'><span class='quote-form-kicker'>"+esc(q.number)+"</span><b>"+esc(q.client)+"</b><span>"+esc(q.condo||"Sin condominio")+" · "+date(q.date)+"</span><small>"+esc(q.advisor||"Sin asesor")+" · "+money(q.total)+"</small></div><div class='quote-archive-actions'><button onclick='app.showQuotePreview(app.quotes.find(x=>x.id==="+JSON.stringify(q.id)+"))'>👁 Ver</button><button onclick='app.openQuoteForm("+JSON.stringify(q.id)+")'>✎ Editar</button><button onclick='app.sendQuoteWhatsApp("+JSON.stringify(q.id)+")'>WhatsApp</button><button onclick='app.sendQuoteEmail("+JSON.stringify(q.id)+")'>Correo</button><button class='quote-danger-action' onclick='app.deleteQuote("+JSON.stringify(q.id)+")'>Eliminar</button></div></article>"},
+  quoteRow(q){return"<article class='quote-archive-row'><div class='quote-archive-main'><span class='quote-form-kicker'>"+esc(q.number)+"</span><b>"+esc(q.client)+"</b><span>"+esc(q.condo||"Sin condominio")+" · "+date(q.date)+"</span><small>"+esc(q.advisor||"Sin asesor")+" · "+money(q.total)+"</small></div><div class='quote-archive-actions'>"+(this.currentUser?.role==="admin"?"<button type='button' onclick='app.createOrderFromQuote("+JSON.stringify(q.id)+",this)'>📋 Asignar Orden</button>":"")+"<button onclick='app.showQuotePreview(app.quotes.find(x=>x.id==="+JSON.stringify(q.id)+"))'>👁 Ver</button><button onclick='app.openQuoteForm("+JSON.stringify(q.id)+")'>✎ Editar</button><button onclick='app.sendQuoteWhatsApp("+JSON.stringify(q.id)+")'>WhatsApp</button><button onclick='app.sendQuoteEmail("+JSON.stringify(q.id)+")'>Correo</button><button class='quote-danger-action' onclick='app.deleteQuote("+JSON.stringify(q.id)+")'>Eliminar</button></div></article>"},
+  async createOrderFromQuote(quoteId,button){
+    if(this.currentUser?.role!=="admin")return this.showToast("Solo el administrador puede crear órdenes.","error");
+    if(this.quoteOrderCreationInProgress)return;
+    this.quoteOrderCreationInProgress=true;
+    if(button){button.disabled=true;button.dataset.originalText=button.textContent;button.textContent="Creando orden…";}
+    const releaseAction=()=>{this.quoteOrderCreationInProgress=false;if(button){button.disabled=false;button.textContent=button.dataset.originalText||"📋 Asignar Orden";delete button.dataset.originalText;}};
+    const localQuote=(this.quotes||[]).find(item=>String(item.id)===String(quoteId));
+    if(!localQuote){releaseAction();return this.showToast("No se encontró esta cotización. Actualiza el listado e inténtalo de nuevo.","error");}
+    let quote=localQuote;
+    if(window.db&&navigator.onLine){
+      try{const snapshot=await db.collection("cotizaciones").doc(String(quoteId)).get();if(!snapshot.exists){releaseAction();return this.showToast("Esta cotización ya no está disponible.","error");}quote={id:snapshot.id,...snapshot.data()};}
+      catch(error){console.error("[COTIZACIONES] No se pudo verificar la cotización antes de crear la orden.",error);releaseAction();return this.showToast("No se pudo verificar la cotización. Revisa tu conexión e inténtalo nuevamente.","error");}
+    }
+    const relatedOrders=(this.tasks||[]).filter(task=>String(task.sourceQuoteId||"")===String(quote.id)||(Array.isArray(task.quoteIds)&&task.quoteIds.some(id=>String(id)===String(quote.id))));
+    const linkedIds=new Set([quote.orderId,...(Array.isArray(quote.orderIds)?quote.orderIds:[])].filter(Boolean).map(String));
+    const existingOrder=relatedOrders.find(task=>linkedIds.has(String(task.id)))||relatedOrders[0]||(this.tasks||[]).find(task=>linkedIds.has(String(task.id)));
+    if(existingOrder&&!await this.showSystemConfirm("Esta cotización ya tiene una orden asociada ("+existingOrder.id+"). ¿Desea crear otra?",{title:"Cotización con orden asociada",confirmText:"Crear otra orden",icon:"clipboard-plus"})){releaseAction();return;}
+
+    const previousTasks=Array.isArray(this.tasks)?this.tasks.slice():[],previousSequence=this.orderSequenceNext;
+    const number=this.getNextAvailableOrderNumber(this.orderSequenceNext,this.tasks),orderId="ORD-"+number;
+    const now=new Date(),workDate=new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,10);
+    const ephemeralImages=this.quoteEphemeralImages?.[quote.id]||[];
+    const items=(Array.isArray(quote.items)?quote.items:[]).map((item,index)=>({...item,imageData:item.imageData||ephemeralImages[index]||""}));
+    const quoteLabel=String(quote.number||"Cotización").trim();
+    const itemLines=items.map(item=>"• "+String(item.description||"Producto o servicio").trim()+" · Cantidad: "+(Number(item.quantity)||0)+" · Valor unitario: "+money(Number(item.unit)||0));
+    const instructions=["Orden creada desde la cotización "+quoteLabel+".",itemLines.length?"Productos y servicios:\n"+itemLines.join("\n"):"",quote.notes?"Observaciones de la cotización:\n"+String(quote.notes).trim():"",quote.delivery?"Tiempo de entrega: "+String(quote.delivery).trim():"",quote.payment?"Forma de pago: "+String(quote.payment).trim():"",quote.warrantyEnabled==="yes"&&quote.warranty?"Garantía: "+String(quote.warranty).trim():""].filter(Boolean).join("\n\n");
+    const evidence=[];
+    const uploadedPaths=[];
+    try{
+      const imageItems=items.map((item,index)=>({item,index})).filter(({item})=>/^data:image\//i.test(String(item.imageData||"")));
+      if(imageItems.length){
+        if(!window.firebase?.storage||!navigator.onLine)throw new Error("IMAGE_STORAGE_UNAVAILABLE");
+        const storage=firebase.storage();
+        for(const {item,index} of imageItems){
+          const blob=await (await fetch(item.imageData)).blob();
+          const safeName=String(item.description||"producto").replace(/[^a-zA-Z0-9._-]/g,"_").slice(0,80)||"producto";
+          const storagePath="ordenes_evidencias/"+encodeURIComponent(orderId)+"/cotizacion_"+(index+1)+"_"+safeName;
+          const storageRef=storage.ref().child(storagePath);
+          await storageRef.put(blob,{contentType:blob.type||"image/jpeg"});
+          uploadedPaths.push(storagePath);
+          const url=await storageRef.getDownloadURL();
+          const image={type:"image",name:"Cotización "+quoteLabel+" · "+String(item.description||"Producto o servicio"),contentType:blob.type||"image/jpeg",url,storagePath,size:blob.size,uploadedAt:Date.now()};
+          evidence.push(image);
+          item.imageUrl=url;
+          delete item.imageData;
+        }
+      }
+      const task={
+        id:orderId,client:String(quote.client||""),phone:String(quote.phone||""),phone2:String(quote.phone2||""),email:String(quote.email||""),
+        address:String(quote.address||""),condo:String(quote.condo||""),city:String(quote.city||""),administrator:String(quote.contact||quote.administrator||""),
+        serviceType:String(items[0]?.description||"Trabajo aprobado desde cotización "+quoteLabel),equipment:"Según cotización",assignedTo:"LIBRE",assignedWorkerId:"",
+        priority:"MEDIA",date:workDate,depositAmount:Math.max(0,Number(quote.depositAmount??quote.deposit)||0),depositDate:quote.depositDate||null,createdAtMs:now.getTime(),instructions,fieldFindings:[],status:"PENDIENTE",observations:"",evidence,completedAt:null,
+        quoteItems:items.map(({imageData,...item})=>item),quoteTotal:Number(quote.total)||items.reduce((sum,item)=>sum+(Number(item.quantity)||0)*(Number(item.unit)||0),0),
+        sourceQuoteId:String(quote.id),sourceQuoteNumber:quoteLabel,quoteIds:[String(quote.id)],createdAt:new Date().toISOString()
+      };
+      this.tasks.unshift(task);
+      this.orderSequenceNext=this.getNextAvailableOrderNumber(number+1,this.tasks);
+      const result=await this.saveTasks(true);
+      if(!result?.ok)throw new Error("ORDER_SAVE_FAILED");
+      const updatedQuote={...quote,orderIds:Array.from(new Set([...(Array.isArray(quote.orderIds)?quote.orderIds.map(String):[]),orderId]))};
+      if(!updatedQuote.orderId)updatedQuote.orderId=orderId;
+      const quoteIndex=(this.quotes||[]).findIndex(item=>String(item.id)===String(quote.id));
+      if(quoteIndex>=0)this.quotes[quoteIndex]=updatedQuote;
+      try{localStorage.setItem(K,JSON.stringify(this.quotes||[]));}catch(storageError){console.warn("[COTIZACIONES] La orden se guardó, pero no se pudo actualizar el vínculo local.",storageError);}
+      if(window.db&&navigator.onLine)db.collection("cotizaciones").doc(String(quote.id)).set({orderId:updatedQuote.orderId,orderIds:updatedQuote.orderIds},{merge:true}).catch(error=>console.warn("[COTIZACIONES] La orden se guardó, pero no se pudo actualizar el vínculo en la cotización.",error));
+      this.renderTasks?.();this.updateStats?.();this.renderQuotesCount?.();this.closeQuotes();
+      this.showToast("Orden "+orderId+" creada desde "+quoteLabel+". Técnico: Libre.","success");
+    }catch(error){
+      console.error("[COTIZACIONES] No se pudo crear una orden desde la cotización.",error);
+      this.tasks=previousTasks;this.orderSequenceNext=previousSequence;
+      try{localStorage.setItem("portonpro_tasks_v4",JSON.stringify(this.tasks));localStorage.setItem("portonpro_order_sequence_next",String(this.orderSequenceNext));}catch(storageError){console.warn("[ORDEN] No se pudo restaurar el estado local después del error.",storageError);}
+      if(window.firebase?.storage)for(const path of uploadedPaths){try{await firebase.storage().ref().child(path).delete()}catch(cleanupError){console.warn("[ORDEN] No se pudo retirar una imagen cargada parcialmente.",cleanupError);}}
+      this.renderTasks?.();this.updateStats?.();
+      this.showToast(error?.message==="IMAGE_STORAGE_UNAVAILABLE"?"Conéctate para adjuntar las imágenes de la cotización y crear la orden.":"No se pudo crear la orden. Inténtalo nuevamente.","error");
+    }finally{
+      releaseAction();
+    }
+  },
   filterQuotes(){const root=document.querySelector('#quotes-shell:not(.hidden) .quotes-archive, #tasks-container .quotes-archive');if(!root)return;const term=(this.quoteArchiveCommittedSearch||'').trim().toLocaleLowerCase('es'),month=root.querySelector('#quotes-month')?.value||'',advisor=root.querySelector('#quotes-advisor')?.value||'',quotes=this.quotes||[];let shown=0;root.querySelectorAll('.quote-archive-row').forEach((row,index)=>{const q=quotes.find(item=>String(item.id)===String(row.dataset.quoteId))||quotes[index]||{},match=(!term||[q.number,q.client,q.condo,q.address].some(value=>String(value||'').toLocaleLowerCase('es').includes(term)))&&(!month||String(q.date||'').startsWith(month))&&(!advisor||q.advisor===advisor);row.classList.toggle('hidden',!match);if(match)shown++});const empty=root.querySelector('#quotes-empty-state');if(empty)empty.classList.toggle('hidden',quotes.length>0);const noResults=root.querySelector('#quotes-no-results');if(noResults)noResults.classList.toggle('hidden',shown>0||quotes.length===0)},
   async duplicateQuote(id){let q=this.quotes.find(x=>x.id===id);if(!q)return;q=Object.assign({},q,{id:"",number:"",date:today(),orderId:null});await this.openQuoteForm();q.number=document.querySelector("#quote-form [name=number]")?.value||nextNumber(this.quotes);document.getElementById("quotes-window-content").innerHTML=form(q);this.updateQuoteTotals();this.toggleQuoteWarrantyOptions()},
   async deleteQuote(id){if(!(await this.showSystemConfirm("¿Está seguro de eliminar esta cotización?",{title:"Confirmar eliminación",confirmText:"Eliminar",icon:"trash"})))return;this.quotes=this.quotes.filter(q=>q.id!==id);localStorage.setItem(K,JSON.stringify(this.quotes));try{if(window.db)await db.collection("cotizaciones").doc(id).delete()}catch(e){}this.renderQuotesCount();this.openQuotesArchive()},
