@@ -47,6 +47,7 @@
  }
   function documentHtml(q){
    const items=q.items||[];
+   const notes=String(q.notes||"").trim();
    const rows=items.map(x=>"<tr><td class='quote-pdf-item-image'>"+(x.imageData?"<img src='"+esc(x.imageData)+"' alt='Imagen de "+esc(x.description)+"'>":"")+"</td><td>"+esc(x.description)+"</td><td>"+x.quantity+"</td><td>"+money(x.unit)+"</td><td>"+money(x.quantity*x.unit)+"</td></tr>").join("");
    const subtotal=items.reduce((sum,x)=>sum+x.quantity*x.unit,0),total=subtotal;
    const warrantyEnabled=String(q.warrantyEnabled??(q.warranty&&!/^no$/i.test(String(q.warranty).trim())?"yes":"no")).toLowerCase()==="yes";
@@ -58,8 +59,7 @@
      <section class='quote-doc-section quote-doc-products'><h3>Productos y servicios</h3><table><thead><tr><th>Imagen</th><th>Descripción</th><th>Cantidad</th><th>Valor unitario</th><th>Total</th></tr></thead><tbody>${rows||"<tr><td colspan='5'>Sin productos</td></tr>"}</tbody></table><div class='quote-financial'><div><span>Subtotal</span><b>${money(subtotal)}</b></div><div class='quote-grand-total'><span>Total propuesta</span><b>${money(total)}</b></div></div></section>
      <section class='quote-doc-tax-note'><h3>NOTA:</h3><p>El valor indicado en la presente cotización corresponde al valor neto a pagar. En caso de que el cliente deba practicar algún tipo de retención de acuerdo con la normatividad tributaria aplicable, el valor correspondiente a dicha retención deberá adicionarse al valor cotizado, de manera que el valor neto recibido corresponda al monto establecido en la presente cotización.</p></section>
      <section class='quote-doc-two ${warrantyEnabled?"":"quote-doc-two-no-warranty"}'><div class='quote-doc-section'><h3>Condiciones comerciales</h3><p><b>Tiempo de entrega:</b> ${esc(q.delivery||DELIVERY_DEFAULT)}</p><p><b>FORMA DE PAGO:</b> ${PAYMENT_DEFAULT}</p></div>${warrantyEnabled?"<div class='quote-doc-section'><h3>GARANTÍA</h3><p>"+esc(warranty)+"</p></div>":""}</section>
-     <section class='quote-doc-section'><h3>Observaciones</h3><p>${esc(q.notes||"")}</p></section>
-     <footer class='quote-doc-signature'><div class='quote-sign-line'>Aceptación del cliente</div></footer>
+     ${notes?`<section class='quote-doc-section'><h3>Observaciones</h3><p>${esc(notes)}</p></section>`:""}
      <div class='quote-doc-thanks'>¡Gracias por su confianza!</div><div class='quote-doc-footer'>Líderes en automatización, estructuras metálicas y sistemas de acceso</div>
    </article>`;
  }
