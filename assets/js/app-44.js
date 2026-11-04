@@ -20,11 +20,17 @@
     decorateQuoteOrderCards(){ document.querySelectorAll('#tasks-container [data-task-id]').forEach(c=>{const id=String(c.dataset.taskId),qs=(this.quotes||[]).filter(q=>String(q.orderId)===id);let w=c.querySelector('.order-quotes-actions');if(!qs.length){w?.remove();return}if(!w){w=document.createElement('div');w.className='order-quotes-actions';c.appendChild(w)}w.replaceChildren();qs.forEach(q=>{const b=document.createElement('button');b.type='button';b.className='order-quotes-link';b.textContent='✦ '+q.number+' · Abrir';b.addEventListener('click',()=>this.showQuotePreview(q));w.appendChild(b)})})}
   };
   const archiveStyle=document.createElement('style');archiveStyle.textContent="\n#tasks-container:has(.quotes-archive){display:block!important;width:100%!important;grid-template-columns:minmax(0,1fr)!important}.quotes-archive{box-sizing:border-box;width:100%;padding:clamp(12px,2vw,22px);border:1px solid #dbe5ef;border-radius:18px;background:linear-gradient(145deg,#fff,#f7f9fc);box-shadow:0 8px 26px rgba(22,43,67,.06)}.quotes-archive-heading{margin-bottom:12px}.quotes-archive-heading h3{font-size:18px!important}.quotes-filters{grid-template-columns:minmax(220px,1fr) repeat(4,minmax(115px,160px));gap:8px;padding:9px}.quote-archive-row{margin-top:8px;padding:10px 12px;border-radius:12px}.quote-archive-main{gap:3px}.quote-archive-actions{gap:5px}.quote-archive-actions button{padding:6px 8px}@media(max-width:900px){.quotes-filters{grid-template-columns:repeat(3,minmax(0,1fr))}.quotes-filters input:first-child{grid-column:span 2}}@media(max-width:600px){.quotes-archive{padding:12px;border-radius:14px}.quotes-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.quotes-filters input:first-child{grid-column:1/-1}.quotes-archive-heading{align-items:center}.quotes-archive-heading h3{font-size:16px!important}.quotes-archive-heading>button{padding:8px 9px;font-size:10px}}\n";document.head.appendChild(archiveStyle);
-  document.addEventListener('input',event=>{
-    const input=event.target;
-    if(input?.id!=='quotes-search')return;
-    if(input.isConnected)window.app?.filterQuotes?.();
-  });
+  const bindQuotesArchiveSearchEnterOnly=()=>{
+    if(window.__quotesArchiveSearchEnterOnly44)return;
+    window.__quotesArchiveSearchEnterOnly44=true;
+    document.addEventListener('keydown',event=>{
+      const input=event.target;
+      if(input?.id!=='quotes-search'||event.key!=='Enter')return;
+      event.preventDefault();
+      if(input.isConnected)window.app?.filterQuotes?.();
+    });
+  };
+  bindQuotesArchiveSearchEnterOnly();
   const install=()=>{
     if(!window.app||!app.__quoteModule||app.__quoteModule44)return false;
     app.__quoteModule44=true;
