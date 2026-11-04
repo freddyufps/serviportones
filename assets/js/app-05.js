@@ -271,6 +271,7 @@
     class PortonProApp {
       constructor() {
         this.currentUser = null;
+        this.sessionInvalidating = false;
         this.users = [];
         this.workers = [];
         this.tasks = INITIAL_TASKS;
@@ -409,6 +410,10 @@
         const preferenceIds = { sound: ['pref-sound','chat-pref-sound'], popup: ['pref-popup','chat-pref-popup'], chatBadge: ['pref-chat-badge','chat-pref-chatBadge'] };
         (preferenceIds[key] || []).forEach(id => { const input = document.getElementById(id); if (input) input.checked = Boolean(value); });
         SafeStorage.setItem('portonpro_preferences', JSON.stringify(this.prefs));
+        if (key === 'popup' && value && 'Notification' in window && Notification.permission === 'default') {
+          // El permiso se pide desde el gesto del usuario al activar las alertas.
+          Promise.resolve(Notification.requestPermission()).catch(() => {});
+        }
         if (key === 'chatBadge') {
           if (this.currentUser?.role === 'admin') this.renderConversationsSidebar();
           else {
@@ -568,8 +573,12 @@
             const previousUsersById = new Map((this.users || []).map(user => [String(user.id), user]));
             const workerPhotosChanged = list.some(user => this.getChatRole(user.role) === 'worker' && previousUsersById.has(String(user.id)) && (previousUsersById.get(String(user.id))?.photo || '') !== (user.photo || ''));
             this.users = list;
-            this.applySharedSeasonalTheme();
             this.workers = list.filter(u => this.getChatRole(u.role) === 'worker');
+            if (this.currentUser && !this.validateCurrentSessionRecord(list)) {
+              this.expireActiveSession('Tu sesión venció porque la cuenta o su contraseña cambió. Inicia sesión nuevamente.');
+              return;
+            }
+            this.applySharedSeasonalTheme();
             if (this.currentUser) this.renderAdminPresence();
 
             this.renderTechOptionsInSelects();
@@ -752,8 +761,17 @@
         if (savedSession) {
           try {
             const user = JSON.parse(savedSession);
-            await this.loginSuccess(user, false);
+            if (await this.validateStoredSession(user)) {
+              await this.loginSuccess(user, false);
+            } else {
+              this.clearRememberedCredentials();
+              SafeStorage.removeItem('portonpro_session_v4');
+              this.showLoginView();
+              this.showToast('Tu sesión venció porque la cuenta o su contraseña cambió. Inicia sesión nuevamente.', 'info');
+            }
           } catch(e) {
+            this.clearRememberedCredentials();
+            SafeStorage.removeItem('portonpro_session_v4');
             this.showLoginView();
           }
         } else {
@@ -761,6 +779,47 @@
         }
 
         if (window.lucide) lucide.createIcons();
+      }
+
+      clearRememberedCredentials() {
+        SafeStorage.removeItem('portonpro_remembered');
+        const username = document.getElementById('login-username');
+        const password = document.getElementById('login-password');
+        const remember = document.getElementById('login-remember');
+        if (username) username.value = '';
+        if (password) password.value = '';
+        if (remember) remember.checked = false;
+      }
+
+      async validateStoredSession(user) {
+        if (!user?.id || !window.db) return false;
+        const snapshot = await window.db.collection('users').doc(String(user.id)).get();
+        if (!snapshot.exists) return false;
+        const record = snapshot.data() || {};
+        const storedVersion = Number(user.sessionVersion);
+        const remoteVersion = Number(record.sessionVersion);
+        if (!Number.isSafeInteger(storedVersion) || storedVersion < 1 || !Number.isSafeInteger(remoteVersion) || remoteVersion < 1) return false;
+        return record.active !== false && storedVersion === remoteVersion;
+      }
+
+      validateCurrentSessionRecord(users = this.users) {
+        const current = this.currentUser;
+        if (!current) return true;
+        const record = (users || []).find(user => String(user.id || '') === String(current.id || ''))
+          || (users || []).find(user => String(user.username || '').trim().toLowerCase() === String(current.username || '').trim().toLowerCase());
+        if (!record || record.active === false) return false;
+        const remoteVersion = Number(record.sessionVersion);
+        const currentVersion = Number(current.sessionVersion);
+        return Number.isSafeInteger(remoteVersion) && remoteVersion >= 1 && Number.isSafeInteger(currentVersion) && currentVersion >= 1 && remoteVersion === currentVersion;
+      }
+
+      expireActiveSession(message = 'Tu sesión venció. Inicia sesión nuevamente.') {
+        if (this.sessionInvalidating || !this.currentUser) return;
+        this.sessionInvalidating = true;
+        this.clearRememberedCredentials();
+        this.logout();
+        this.showToast(message, 'info');
+        this.sessionInvalidating = false;
       }
 
       getOrderNumberFromId(id) {
@@ -895,12 +954,6 @@
           if (btnText) btnText.textContent = "Verificando credenciales...";
         }
 
-        if (rememberChecked) {
-          SafeStorage.setItem('portonpro_remembered', JSON.stringify({ u: userVal, p: passVal }));
-        } else {
-          SafeStorage.removeItem('portonpro_remembered');
-        }
-
         let authenticatedUser = null;
 
         if (window.db) {
@@ -920,6 +973,8 @@
                   role: ['admin', 'administrator', 'administrador'].includes(String(uData.role || '').toLowerCase().trim()) ? 'admin' : 'worker',
                   phone: uData.phone || '',
                   photo: uData.photo || '',
+                  sessionVersion: Math.max(1, Number(uData.sessionVersion) || 1),
+                  _needsSessionVersionMigration: !Number.isSafeInteger(Number(uData.sessionVersion)) || Number(uData.sessionVersion) < 1,
                   active: isActive
                 };
               }
@@ -940,12 +995,28 @@
 
         if (authenticatedUser) {
           if (authenticatedUser.active === false) {
+            this.clearRememberedCredentials();
             errorText.textContent = 'Esta cuenta está desactivada. Consulta al Administrador.';
             errorAlert.classList.remove('hidden');
             return;
           }
 
+          if (authenticatedUser._needsSessionVersionMigration) {
+            try {
+              await db.collection('users').doc(authenticatedUser.id).update({ sessionVersion: 1 });
+              authenticatedUser.sessionVersion = 1;
+              delete authenticatedUser._needsSessionVersionMigration;
+            } catch (migrationError) {
+              this.clearRememberedCredentials();
+              errorText.textContent = 'No fue posible validar la sesión. Inténtalo nuevamente.';
+              errorAlert.classList.remove('hidden');
+              return;
+            }
+          }
+
           errorAlert.classList.add('hidden');
+          if (rememberChecked) SafeStorage.setItem('portonpro_remembered', JSON.stringify({ u: userVal, p: passVal }));
+          else SafeStorage.removeItem('portonpro_remembered');
           const now = new Date();
           const formattedTime = this.formatTime(now);
 
@@ -964,6 +1035,7 @@
           return;
         }
 
+        this.clearRememberedCredentials();
         errorText.textContent = 'Usuario o contraseña incorrectos.';
         errorAlert.classList.remove('hidden');
         if (window.lucide) lucide.createIcons();
@@ -971,6 +1043,7 @@
 
       async loginSuccess(user, notify = true) {
         user.role = this.getChatRole(user.role);
+        user.sessionVersion = Math.max(1, Number(user.sessionVersion) || 1);
         this.currentUser = user;
         // Mostrar el espacio de trabajo sin esperar a que Firestore responda.
         // Una conexión lenta no debe dejar el indicador de carga bloqueado.
@@ -2574,6 +2647,24 @@
         this.renderMessengerWindows();
       }
 
+      showBrowserChatNotification(wName, data = {}) {
+        if (!document.hidden || !('Notification' in window) || Notification.permission !== 'granted') return;
+        try {
+          const notification = new Notification(`${data.senderName || wName} te envió un mensaje`, {
+            body: String(data.text || 'Tienes un mensaje nuevo.').slice(0, 180),
+            tag: `portonpro-chat-${String(wName)}`,
+            renotify: false
+          });
+          notification.onclick = () => {
+            window.focus();
+            this.openDirectWorkerChat(wName);
+            notification.close();
+          };
+        } catch (error) {
+          console.warn('[CHAT] El navegador no permitió mostrar la notificación del sistema:', error?.message || error);
+        }
+      }
+
       notifyIncomingChatMessage(wName, msgId, data) {
         const uniqueId = `${wName}:${msgId}`;
         if (this.notifiedChatMessageIds.has(uniqueId)) return;
@@ -2585,10 +2676,13 @@
         this.chatActivityRanks[wName] = ++this.chatActivitySequence;
         this.ensureIncomingWorkerWindow(wName);
         if (this.prefs.sound) SoundEngine.playMessageSound();
+        this.showBrowserChatNotification(wName, data);
         this.showPopupNotification({
           title: `${data.senderName || wName} te envió un mensaje`,
           details: data.text || '', type: 'chat', icon: '💬',
-          onClick: () => this.openDirectWorkerChat(wName)
+          onClick: () => this.openDirectWorkerChat(wName),
+          // Los mensajes nuevos siempre dejan una alerta visible, incluso con el chat minimizado.
+          force: true
         });
         if (this.currentUser?.role === 'admin') this.renderConversationsSidebar();
       }
@@ -3786,16 +3880,19 @@ updateMessengerWindowTyping(workerName) {
           try {
             const userDoc = await db.collection('users').doc(this.currentUser.id).get();
             if (userDoc.exists && String(userDoc.data().password).trim() === currentPass) {
-              await db.collection('users').doc(this.currentUser.id).update({ password: newPass });
-              this.currentUser.password = newPass;
-              SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
-              this.showToast('Contraseña actualizada correctamente.', 'success');
-              this.closeSettingsModal();
+              const nextVersion = Math.max(1, Number(userDoc.data().sessionVersion) || 1) + 1;
+              this.sessionInvalidating = true;
+              await db.collection('users').doc(this.currentUser.id).update({ password: newPass, sessionVersion: nextVersion });
+              this.clearRememberedCredentials();
+              this.logout();
+              this.sessionInvalidating = false;
+              this.showToast('Contraseña actualizada. Inicia sesión nuevamente con la nueva contraseña.', 'success');
               return;
             } else {
               this.showToast('Contraseña actual incorrecta', 'error');
             }
           } catch(err) {
+            this.sessionInvalidating = false;
             this.showToast('No fue posible actualizar la contraseña. Inténtalo nuevamente.', 'error');
           }
         }
@@ -3940,7 +4037,8 @@ updateMessengerWindowTyping(workerName) {
         const nationalId = this.normalizeInput(getField('national-id').value);
         const specialty = this.normalizeInput(getField('specialty').value);
         const photoFile = getField('photo')?.files?.[0] || null;
-        let photo = this.users.find(user => String(user.id) === String(id))?.photo || '';
+        const existingUser = this.users.find(user => String(user.id) === String(id));
+        let photo = existingUser?.photo || '';
 
         if (username.toLowerCase() === 'administrador' && id !== 'admin') {
           this.showToast('El usuario no puede llamarse administrador', 'error');
@@ -3961,7 +4059,10 @@ updateMessengerWindowTyping(workerName) {
           specialty: specialty || 'Técnico de Portones',
           photo,
           role: 'worker',
-          active: true
+          active: true,
+          sessionVersion: existingUser
+            ? Math.max(1, Number(existingUser.sessionVersion) || 1) + (String(existingUser.password || '') !== password ? 1 : 0)
+            : 1
         };
 
         if (window.db) {
