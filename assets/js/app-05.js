@@ -4710,7 +4710,7 @@ updateMessengerWindowTyping(workerName) {
         document.getElementById('task-order-number').value = this.getNextAvailableOrderNumber();
         document.getElementById('task-administrator').value = '';
         this.renderSavedTaskClients();
-        this.setTaskClientMode('saved');
+        this.setTaskClientMode('new');
         this.renderServiceTypeOptions('');
         this.renderTaskTechnicianMenu();
         this.activeChecklistDraft = [];
@@ -4733,12 +4733,11 @@ updateMessengerWindowTyping(workerName) {
         orderNumberInput.disabled = false;
         orderNumberInput.required = true;
         orderNumberInput.value = orderNumber || this.getNextAvailableOrderNumber();
-        document.getElementById('task-client-search').value = t.client || '';
-        this.setTaskClientMode('saved');
-        document.getElementById('task-client').value = t.client || '';
+        document.getElementById('task-client').value = t.client;
         document.getElementById('task-phone').value = t.phone || '';
-        document.getElementById('task-address').value = t.address || '';
+        document.getElementById('task-address').value = t.address;
         document.getElementById('task-administrator').value = t.administrator || t.contact || '';
+        this.setTaskClientMode('new');
         this.renderServiceTypeOptions(t.serviceType);
         document.getElementById('task-equipment').value = t.equipment;
         document.getElementById('task-assigned-to').value = this.isTaskFree(t) ? 'LIBRE' : t.assignedTo;

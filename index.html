@@ -788,22 +788,6 @@
           </div>
         </div>
 
-        <div id="task-client-tabs" class="task-client-tabs" role="tablist" aria-label="Tipo de cliente">
-          <button type="button" id="task-client-tab-saved" class="task-client-tab" role="tab" aria-selected="false" aria-controls="task-client-saved-panel" onclick="app.setTaskClientMode('saved')">Clientes registrados</button>
-        </div>
-        <p id="task-client-mode-hint" class="task-client-mode-hint">Busca y selecciona un cliente registrado para completar los datos de la orden.</p>
-
-        <section id="task-client-saved-panel" class="hidden">
-          <label for="task-client-search" class="block text-[11px] font-semibold text-slate-700 mb-1">Busca un cliente registrado</label>
-          <input type="text" id="task-client-search" list="task-client-options" autocomplete="off" placeholder="Escribe el nombre del cliente..." oninput="app.searchSavedTaskClients(this.value)" onchange="app.selectSavedTaskClient(this.value)" class="task-client-search w-full px-3 py-2.5 border rounded-xl bg-white"><datalist id="task-client-options"></datalist>
-          <div id="task-client-saved-details" class="task-client-saved-details hidden">
-            <div><span>Razón social / cliente</span><strong id="task-client-saved-name">—</strong></div>
-            <div><span>Dirección</span><strong id="task-client-saved-address">—</strong></div>
-            <div><span>Administrador / contacto</span><strong id="task-client-saved-administrator">—</strong></div>
-            <div><span>Teléfono</span><strong id="task-client-saved-phone">—</strong></div>
-          </div>
-        </section>
-
         <section id="task-client-new-panel" class="space-y-2.5">
           <div>
             <label for="task-client" class="block text-[11px] font-semibold text-slate-700 mb-1">Razón social / nombre del cliente *</label>
@@ -1054,7 +1038,7 @@
   </div>
 
   <!-- JAVASCRIPT: LÓGICA DE LA APLICACIÓN -->
-  <script src="assets/js/app-05.js?v=20261104-remove-new-client-tab-1"></script>
+  <script src="assets/js/app-05.js?v=20261104-restore-order-client-entry-1"></script>
 <script src="assets/js/app-06.js?v=20261031-mobile-emoji-layer-2"></script>
 <link rel="stylesheet" href="assets/css/app-05.css" id="chat-hidden-overlay-fix">
 <link rel="stylesheet" href="assets/css/app-06.css" id="chat-hide-custom-emojis-mobile">
