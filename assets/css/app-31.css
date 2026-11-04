@@ -308,3 +308,9 @@ button[aria-label="Abrir ruta en Google Maps"] img,
   max-width:min(92vw, 34rem)!important;
 }
 #toast-message { white-space:normal!important; overflow-wrap:anywhere!important; }
+
+.payment-mobile-financials{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.payment-mobile-financials>span{display:grid;gap:3px;padding:8px;border:1px solid #e0e8f0;border-radius:9px;background:#fff;color:#718198;font-size:9px;font-weight:750}.payment-mobile-financials>span>b{color:#203650;font-size:11px;font-weight:900}.payment-mobile-financials>span:last-child{grid-column:1/-1}body.theme-dark .payment-mobile-financials>span,body.theme-halloween .payment-mobile-financials>span{background:#172235;border-color:#34465d;color:#b2c0d1}body.theme-dark .payment-mobile-financials>span>b,body.theme-halloween .payment-mobile-financials>span>b{color:#e6edf6}
+
+.payment-mobile-deposit-value{display:flex;align-items:center;justify-content:space-between;gap:5px}.payment-mobile-deposit-value>b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.payment-table tbody>tr>td,.payment-table tbody>tr>td b,.payment-table tbody>tr>td small,.payment-table tbody>tr>td .payment-invoice-display,.payment-table tbody>tr>td .payment-value-cell{font-weight:600}

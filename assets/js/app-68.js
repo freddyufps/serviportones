@@ -1,5 +1,10 @@
 (() => {
   const text = value => String(value ?? '').trim();
+  const localDateStamp = value => {
+    const date = new Date(Number(value));
+    if (!Number.isFinite(date.getTime())) return null;
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
 
   function coordinates(value) {
     const source = text(value);
@@ -9,6 +14,11 @@
     const lon = Number(match[2]);
     if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) return '';
     return `${lat},${lon}`;
+  }
+
+  function isExplicitMapLocation(value) {
+    const source = text(value);
+    return Boolean(coordinates(source) || /^(?:https?:\/\/|waze:\/\/)/i.test(source) || /^(?:maps\.google\.|www\.google\.[^/]+\/maps|waze\.com\/|maps\.app\.goo\.gl\/|goo\.gl\/maps)/i.test(source));
   }
 
   function locationTargets(value) {
@@ -66,26 +76,26 @@
       if (!target) return app.showToast?.('Ubicación no registrada', 'info');
       window.open(target.waze, '_blank', 'noopener,noreferrer');
     };
-
-    const openNew = proto.openNewTaskModal;
-    if (openNew && !openNew.__serviceLocation68) {
-      const wrapped = function (...args) {
-        const result = openNew.apply(this, args);
-        const field = document.getElementById('task-service-location');
-        if (field) field.value = '';
-        return result;
-      };
-      wrapped.__serviceLocation68 = true;
-      proto.openNewTaskModal = wrapped;
-    }
+    app.openWazeNavigation = value => {
+      const target = locationTargets(value);
+      if (!target) return app.showToast?.('No hay una dirección registrada', 'error');
+      window.open(target.waze, '_blank', 'noopener,noreferrer');
+    };
+    app.openGoogleMapsNavigation = value => {
+      const target = locationTargets(value);
+      if (!target) return app.showToast?.('No hay una dirección registrada', 'error');
+      window.open(target.maps, '_blank', 'noopener,noreferrer');
+    };
 
     const openEdit = proto.openEditTaskModal;
     if (openEdit && !openEdit.__serviceLocation68) {
       const wrapped = function (id, ...args) {
         const result = openEdit.call(this, id, ...args);
         const task = (this.tasks || []).find(item => String(item.id) === String(id));
-        const field = document.getElementById('task-service-location');
-        if (field) field.value = text(task?.serviceLocation);
+        const address = document.getElementById('task-address');
+        if (address && task && !text(task.address) && text(task.serviceLocation)) address.value = text(task.serviceLocation);
+        const deposit = document.getElementById('task-deposit-amount');
+        if (deposit) deposit.value = task?.depositAmount == null ? '' : String(task.depositAmount);
         return result;
       };
       wrapped.__serviceLocation68 = true;
@@ -98,14 +108,46 @@
         const form = document.getElementById('task-form');
         const id = text(form?.querySelector('#task-id')?.value);
         const editingTask = id ? (this.tasks || []).find(item => String(item.id) === id) : null;
-        const location = text(form?.querySelector('#task-service-location')?.value);
+        const address = text(form?.querySelector('#task-address')?.value);
+        const originalAddress = text(editingTask?.address);
+        const originalClientSave = this.saveClientRecord;
+        const shouldKeepMapLinkOutOfClient = isExplicitMapLocation(address) && typeof originalClientSave === 'function';
+        if (shouldKeepMapLinkOutOfClient) {
+          this.saveClientRecord = function (record, ...clientArgs) {
+            const existingClient = this.findDirectoryClient?.(record?.name || record?.client || record?.clientName);
+            return originalClientSave.call(this, { ...record, address: text(existingClient?.address) }, ...clientArgs);
+          };
+        }
+        const depositField = form?.querySelector('#task-deposit-amount');
+        const rawDeposit = String(depositField?.value ?? '').trim();
+        const depositAmount = rawDeposit === '' ? 0 : Number(rawDeposit);
+        if (rawDeposit !== '' && (!Number.isFinite(depositAmount) || depositAmount < 0)) {
+          this.showToast?.('Escribe un valor de abono válido, igual o mayor que cero.', 'error');
+          depositField?.focus();
+          return false;
+        }
         const originalSaveTasks = this.saveTasks;
         if (!form || typeof originalSaveTasks !== 'function') return saveTask.apply(this, args);
 
         const orderNumber = Number(form.querySelector('#task-order-number')?.value);
         const persistLocation = (...saveArgs) => {
           const target = editingTask || (this.tasks || []).find(item => String(item.id).toUpperCase() === `ORD-${orderNumber}`);
-          if (target) target.serviceLocation = location;
+          if (target) {
+            target.address = address;
+            if (editingTask && address !== originalAddress && editingTask.serviceLocation) delete target.serviceLocation;
+            if (!Number(target.createdAtMs) && target.createdAt) {
+              const existingCreatedAt = typeof target.createdAt.toMillis === 'function' ? target.createdAt.toMillis() : Date.parse(target.createdAt);
+              if (Number.isFinite(existingCreatedAt) && existingCreatedAt > 0) target.createdAtMs = existingCreatedAt;
+            }
+            if (!Number(target.createdAtMs)) {
+              const scheduledDate = String(target.date || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+              target.createdAtMs = !editingTask || !scheduledDate
+                ? Date.now()
+                : new Date(Number(scheduledDate[1]), Number(scheduledDate[2]) - 1, Number(scheduledDate[3]), 12).getTime();
+            }
+            target.depositAmount = depositAmount;
+            target.depositDate = depositAmount > 0 ? localDateStamp(target.createdAtMs) : null;
+          }
           return originalSaveTasks.apply(this, saveArgs);
         };
         this.saveTasks = persistLocation;
@@ -113,6 +155,7 @@
           return await saveTask.apply(this, args);
         } finally {
           if (this.saveTasks === persistLocation) this.saveTasks = originalSaveTasks;
+          if (shouldKeepMapLinkOutOfClient && this.saveClientRecord !== originalClientSave) this.saveClientRecord = originalClientSave;
         }
       };
       wrapped.__serviceLocation68 = true;
@@ -120,10 +163,11 @@
     }
 
     const bindLocationControls = (task, textId, mapsId, wazeId) => {
-      const location = text(task?.serviceLocation);
+      const location = text(task?.address || task?.serviceLocation);
+      const routeLocation = isExplicitMapLocation(task?.serviceLocation) ? task.serviceLocation : location;
       const value = document.getElementById(textId);
-      if (value) value.textContent = location || 'Ubicación no registrada';
-      const targets = locationTargets(location);
+      if (value) value.textContent = location || '—';
+      const targets = locationTargets(routeLocation);
       setRouteButton(document.getElementById(mapsId), targets, targets?.maps);
       setRouteButton(document.getElementById(wazeId), targets, targets?.waze);
     };
@@ -133,7 +177,22 @@
       const wrapped = function (id, ...args) {
         const result = openDetails.call(this, id, ...args);
         const task = (this.tasks || []).find(item => String(item.id) === String(id));
-        bindLocationControls(task, 'view-service-location', 'view-service-location-maps', 'view-service-location-waze');
+        const depositRow = document.getElementById('view-order-deposit-row');
+        const canSeeDeposit = this.currentUser?.role === 'admin' && Boolean(task);
+        depositRow?.classList.toggle('hidden', !canSeeDeposit);
+        if (canSeeDeposit) {
+          const amount = Number(task.depositAmount) || 0;
+          const depositValue = document.getElementById('view-order-deposit');
+          const depositDate = document.getElementById('view-order-deposit-date');
+          if (depositValue) depositValue.textContent = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount);
+          const rawDate = amount > 0 ? (task.depositDate || task.createdAtMs || task.createdAt || '') : '';
+          let date = null;
+          if (rawDate && typeof rawDate.toDate === 'function') date = rawDate.toDate();
+          else if (typeof rawDate === 'number' || /^\d+$/.test(String(rawDate))) date = new Date(Number(rawDate));
+          else if (rawDate) date = new Date(String(rawDate).length === 10 ? `${rawDate}T12:00:00` : rawDate);
+          if (depositDate) depositDate.textContent = date && Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date) : '—';
+        }
+        bindLocationControls(task, 'view-address', 'view-address-maps', 'view-address-waze');
         return result;
       };
       wrapped.__serviceLocation68 = true;
@@ -145,7 +204,7 @@
       const wrapped = function (id, ...args) {
         const result = openReport.call(this, id, ...args);
         const task = (this.tasks || []).find(item => String(item.id) === String(id));
-        bindLocationControls(task, 'rep-service-location', 'rep-btn-maps', 'rep-btn-waze');
+        bindLocationControls(task, 'rep-address', 'rep-btn-maps', 'rep-btn-waze');
         return result;
       };
       wrapped.__serviceLocation68 = true;

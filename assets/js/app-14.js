@@ -28,6 +28,16 @@
   };
   const statusOf = task => { const saved = String(task?.paymentStatus || '').toUpperCase(); return saved === 'PAGADA' || saved === 'PENDIENTE' ? saved : hasInvoice(task) ? 'PAGADA' : 'PENDIENTE'; };
   const currencyLabel = value => value === null || value === undefined || value === '' ? '—' : new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Number(value) || 0);
+  const depositOf = task => Math.max(0, Number(task?.depositAmount) || 0);
+  const depositDateLabel = task => {
+    const value = task?.depositDate || task?.createdAtMs || task?.createdAt || '';
+    let date = null;
+    if (value && typeof value.toDate === 'function') date = value.toDate();
+    else if (typeof value === 'number' || /^\d+$/.test(String(value))) date = new Date(Number(value));
+    else if (value) date = new Date(String(value).length === 10 ? `${value}T12:00:00` : value);
+    if ((!date || !Number.isFinite(date.getTime())) && task?.date) date = new Date(`${task.date}T12:00:00`);
+    return date && Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}).format(date) : '—';
+  };
   const paymentId = task => 'pago_' + encodeURIComponent(String(task?.id || ''));
 
   PortonProApp.prototype.ensureDocumentControlPanel = function () {
@@ -55,6 +65,7 @@
             <article><span>Pendientes de pago</span><b id="payment-pending">0</b></article>
             <article><span>Pagadas</span><b id="payment-paid">0</b></article>
             <article><span>Valor registrado</span><b id="payment-value-total">$ 0</b></article>
+            <article><span>💰 Abonos registrados</span><b id="payment-deposit-total">$ 0</b></article>
             <article class="payment-overdue-stat"><span>Vencidas · +30 días</span><b id="payment-overdue-count">0</b></article>
           </div>
           <section id="payment-alerts" class="payment-alerts" aria-live="polite"></section>
@@ -75,6 +86,8 @@
       }
       const editValue = event.target.closest('[data-payment-value-edit]');
       if (editValue) { this.openOrderPaymentValue(editValue.dataset.paymentValueEdit); return; }
+      const editDeposit = event.target.closest('[data-payment-deposit-edit]');
+      if (editDeposit) { this.openOrderDeposit(editDeposit.dataset.paymentDepositEdit); return; }
       const viewOrder = event.target.closest('[data-payment-view]');
       if (viewOrder) { this.openPaymentOrderPreview(viewOrder.dataset.paymentView); return; }
       const unarchiveOrder = event.target.closest('[data-payment-unarchive]');
@@ -132,6 +145,7 @@
     set('payment-pending', pending.length);
     set('payment-paid', paid.length);
     set('payment-value-total', currencyLabel(completed.reduce((sum, task) => sum + (Number(task.workValue) || 0), 0)));
+    set('payment-deposit-total', currencyLabel((this.tasks || []).reduce((sum, task) => sum + depositOf(task), 0)));
     set('payment-overdue-count', overdue.length);
     const alerts = panel.querySelector('#payment-alerts');
     alerts.innerHTML = overdue.length
@@ -165,14 +179,16 @@
       const isOverdue = status === 'PENDIENTE' && completionTime(task) && now >= completionTime(task) + 30 * DAY;
       const badge = isOverdue ? '<span class="payment-state is-overdue">Vencida</span>' : `<span class="payment-state is-${status.toLowerCase()}">${status === 'PAGADA' ? 'Pagada' : 'Pendiente'}</span>`;
       const invoice = String(task.invoiceNumber || '').replace(/^FE-/i, '');
-      return `<tr><td>${safe(dateLabel(task))}</td><td><b>${safe(task.client || '—')}</b><small>${safe(task.id || '')}</small></td><td><div class="payment-invoice-display"><span>${invoice ? 'FE-' + safe(invoice) : 'Sin FE registrada'}</span><button type="button" class="payment-edit-button" data-payment-edit="${safe(task.id)}" title="Editar factura" aria-label="Editar factura"><i data-lucide="pencil"></i></button></div></td><td><div class="payment-value-editor"><span class="payment-value-cell">${safe(currencyLabel(task.workValue))}</span><button type="button" class="payment-edit-button" data-payment-value-edit="${safe(task.id)}" title="Editar valor" aria-label="Editar valor de ${safe(task.id)}"><i data-lucide="pencil"></i></button></div></td><td>${statusEditor(task)}</td><td><div class="payment-order-actions"><button type="button" class="payment-view-order-button" data-payment-view="${safe(task.id)}" title="Ver orden completa" aria-label="Ver orden completa ${safe(task.id)}"><i data-lucide="eye"></i></button><button type="button" class="payment-unarchive-button" data-payment-unarchive="${safe(task.id)}" title="Desarchivar y retirar del consolidado" aria-label="Desarchivar orden ${safe(task.id)}"><i data-lucide="archive-restore"></i></button></div></td></tr>`;
+      const deposit = depositOf(task), balance = (Number(task.workValue) || 0) - deposit;
+      return `<tr><td>${safe(dateLabel(task))}</td><td><b>${safe(task.client || '—')}</b><small>${safe(task.id || '')}</small></td><td>${safe(deposit > 0 ? depositDateLabel(task) : '—')}</td><td><div class="payment-value-editor"><span class="payment-value-cell">${safe(currencyLabel(deposit))}</span><button type="button" class="payment-edit-button" data-payment-deposit-edit="${safe(task.id)}" title="Editar abono" aria-label="Editar abono de ${safe(task.id)}"><i data-lucide="pencil"></i></button></div></td><td><div class="payment-invoice-display"><span>${invoice ? 'FE-' + safe(invoice) : 'Sin FE registrada'}</span><button type="button" class="payment-edit-button" data-payment-edit="${safe(task.id)}" title="Editar factura" aria-label="Editar factura"><i data-lucide="pencil"></i></button></div></td><td><div class="payment-value-editor"><span class="payment-value-cell">${safe(currencyLabel(task.workValue))}</span><button type="button" class="payment-edit-button" data-payment-value-edit="${safe(task.id)}" title="Editar valor" aria-label="Editar valor de ${safe(task.id)}"><i data-lucide="pencil"></i></button></div></td><td>${safe(currencyLabel(balance))}</td><td>${statusEditor(task)}</td><td><div class="payment-order-actions"><button type="button" class="payment-view-order-button" data-payment-view="${safe(task.id)}" title="Ver orden completa" aria-label="Ver orden completa ${safe(task.id)}"><i data-lucide="eye"></i></button><button type="button" class="payment-unarchive-button" data-payment-unarchive="${safe(task.id)}" title="Desarchivar y retirar del consolidado" aria-label="Desarchivar orden ${safe(task.id)}"><i data-lucide="archive-restore"></i></button></div></td></tr>`;
     }).join('');
     const cards = filtered.map(task => {
       const status = statusOf(task), isOverdue = status === 'PENDIENTE' && completionTime(task) && now >= completionTime(task) + 30 * DAY;
       const invoice = String(task.invoiceNumber || '').replace(/^FE-/i, '');
-      return `<article class="payment-mobile-card"><div class="payment-mobile-top"><span>${safe(dateLabel(task))} · ${safe(task.id)}</span></div><b>${safe(task.client || '—')}</b><div class="payment-mobile-document-row"><div class="payment-invoice-display"><span>${invoice ? 'FE-' + safe(invoice) : 'Sin FE registrada'}</span><button type="button" class="payment-edit-button" data-payment-edit="${safe(task.id)}" title="Editar factura y valor" aria-label="Editar factura y valor"><i data-lucide="pencil"></i></button></div><div class="payment-value-editor"><span class="payment-value-cell">${safe(currencyLabel(task.workValue))}</span><button type="button" class="payment-edit-button" data-payment-value-edit="${safe(task.id)}" title="Editar valor" aria-label="Editar valor de ${safe(task.id)}"><i data-lucide="pencil"></i></button></div></div>${statusEditor(task)}<div class="payment-order-actions payment-order-actions-mobile"><button type="button" class="payment-view-order-button payment-view-order-mobile" data-payment-view="${safe(task.id)}" title="Ver orden completa" aria-label="Ver orden completa ${safe(task.id)}"><i data-lucide="eye"></i><span>Ver orden completa</span></button><button type="button" class="payment-unarchive-button payment-unarchive-mobile" data-payment-unarchive="${safe(task.id)}"><i data-lucide="archive-restore"></i><span>Desarchivar orden</span></button></div></article>`;
+      const deposit = depositOf(task), balance = (Number(task.workValue) || 0) - deposit;
+      return `<article class="payment-mobile-card"><div class="payment-mobile-top"><span>${safe(dateLabel(task))} · ${safe(task.id)}</span></div><b>${safe(task.client || '—')}</b><div class="payment-mobile-financials"><span>📅 Fecha abono<b>${safe(deposit > 0 ? depositDateLabel(task) : '—')}</b></span><span>💰 Abono<div class="payment-mobile-deposit-value"><b>${safe(currencyLabel(deposit))}</b><button type="button" class="payment-edit-button" data-payment-deposit-edit="${safe(task.id)}" title="Editar abono" aria-label="Editar abono de ${safe(task.id)}"><i data-lucide="pencil"></i></button></div></span><span>Saldo pendiente<b>${safe(currencyLabel(balance))}</b></span></div><div class="payment-mobile-document-row"><div class="payment-invoice-display"><span>${invoice ? 'FE-' + safe(invoice) : 'Sin FE registrada'}</span><button type="button" class="payment-edit-button" data-payment-edit="${safe(task.id)}" title="Editar factura y valor" aria-label="Editar factura y valor"><i data-lucide="pencil"></i></button></div><div class="payment-value-editor"><span class="payment-value-cell">${safe(currencyLabel(task.workValue))}</span><button type="button" class="payment-edit-button" data-payment-value-edit="${safe(task.id)}" title="Editar valor" aria-label="Editar valor de ${safe(task.id)}"><i data-lucide="pencil"></i></button></div></div>${statusEditor(task)}<div class="payment-order-actions payment-order-actions-mobile"><button type="button" class="payment-view-order-button payment-view-order-mobile" data-payment-view="${safe(task.id)}" title="Ver orden completa" aria-label="Ver orden completa ${safe(task.id)}"><i data-lucide="eye"></i><span>Ver orden completa</span></button><button type="button" class="payment-unarchive-button payment-unarchive-mobile" data-payment-unarchive="${safe(task.id)}"><i data-lucide="archive-restore"></i><span>Desarchivar orden</span></button></div></article>`;
     }).join('');
-    tableArea.innerHTML = `<div class="payment-table-wrap"><table class="payment-table"><thead><tr><th>Fecha</th><th>Cliente / orden</th><th>Factura</th><th>Valor</th><th>Pago</th><th>Acciones</th></tr></thead><tbody>${rows}</tbody></table></div><div class="payment-mobile-list">${cards}</div>`;
+    tableArea.innerHTML = `<div class="payment-table-wrap"><table class="payment-table"><thead><tr><th>Fecha</th><th>Cliente / orden</th><th>Fecha abono</th><th>Abono</th><th>Factura</th><th>Valor</th><th>Saldo pendiente</th><th>Pago / estado</th><th>Acciones</th></tr></thead><tbody>${rows}</tbody></table></div><div class="payment-mobile-list">${cards}</div>`;
     if (window.lucide) lucide.createIcons();
   };
 
@@ -198,7 +214,7 @@
     const amount = task.workValue == null || task.workValue === '' ? '—' : currencyLabel(task.workValue), address = String(task.address || '');
     const mapHref = address ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address) : '';
     const wazeHref = address ? 'https://waze.com/ul?q=' + encodeURIComponent(address) + '&navigate=yes' : '';
-    const techUser = (this.users || []).find(user => (user.fullName || user.username) === task.assignedTo);
+    const techUser = this.getTaskTechnician?.(task) || (this.users || []).find(user => (user.fullName || user.username) === task.assignedTo);
     const technicianPhoto = techUser?.photo || '';
     dialog.innerHTML = '<article class="payment-order-preview-card" role="dialog" aria-modal="true" aria-labelledby="payment-order-preview-title">' +
       '<header class="payment-order-preview-header"><div class="payment-order-preview-brand"><img src="assets/media/media-3.jpg" alt="ServiPortones Eléctricos Martínez"><div><span>ORDEN DE SERVICIO</span><h2 id="payment-order-preview-title">' + safe(task.id) + '</h2></div></div><div class="payment-order-preview-header-actions"><span class="payment-order-preview-status">' + safe(statusNames[task.status] || task.status || 'Pendiente') + '</span><button type="button" data-order-preview-close aria-label="Cerrar">×</button></div></header>' +
@@ -283,6 +299,63 @@
     dialog.classList.remove('hidden');
     if (window.lucide) lucide.createIcons();
     setTimeout(() => dialog.querySelector('#payment-value-input')?.focus(), 40);
+  };
+  PortonProApp.prototype.ensureDepositEditor = function () {
+    let dialog = document.getElementById('payment-deposit-dialog');
+    if (dialog) return dialog;
+    dialog = document.createElement('div');
+    dialog.id = 'payment-deposit-dialog';
+    dialog.className = 'payment-invoice-dialog hidden';
+    dialog.innerHTML = `<section class="payment-invoice-dialog-card" role="dialog" aria-modal="true" aria-labelledby="payment-deposit-title"><header><div><span class="payment-invoice-dialog-icon"><i data-lucide="hand-coins"></i></span><div><h3 id="payment-deposit-title">Editar abono</h3><p id="payment-deposit-subtitle"></p></div></div><button type="button" data-deposit-close aria-label="Cerrar">×</button></header><label for="payment-deposit-input">Valor del abono</label><div class="payment-invoice-dialog-field"><span>$</span><input id="payment-deposit-input" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div><label for="payment-deposit-date" class="payment-deposit-date-label">Fecha del abono</label><div class="payment-invoice-dialog-field"><input id="payment-deposit-date" type="date"></div><small class="payment-invoice-dialog-note">El importe y la fecha se guardan en la orden seleccionada. Si el abono es cero, la fecha queda vacía.</small><footer><button type="button" class="payment-invoice-cancel" data-deposit-close>Cancelar</button><button type="button" class="payment-invoice-confirm" data-deposit-save>Guardar abono</button></footer></section>`;
+    document.body.appendChild(dialog);
+    dialog.addEventListener('click', event => {
+      if (event.target === dialog || event.target.closest('[data-deposit-close]')) { dialog.classList.add('hidden'); return; }
+      if (event.target.closest('[data-deposit-save]')) this.saveOrderDeposit(dialog.dataset.taskId, dialog.querySelector('#payment-deposit-input')?.value, dialog.querySelector('#payment-deposit-date')?.value);
+    });
+    ['#payment-deposit-input','#payment-deposit-date'].forEach(selector => dialog.querySelector(selector)?.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); dialog.querySelector('[data-deposit-save]')?.click(); } }));
+    document.addEventListener('keydown', event => { if (event.key === 'Escape' && !dialog.classList.contains('hidden')) dialog.classList.add('hidden'); });
+    return dialog;
+  };
+  PortonProApp.prototype.openOrderDeposit = function (id) {
+    if (this.currentUser?.role !== 'admin') return;
+    const task = (this.tasks || []).find(item => String(item.id) === String(id));
+    if (!task || task.status !== 'REALIZADA') return;
+    const dialog = this.ensureDepositEditor();
+    dialog.dataset.taskId = String(task.id);
+    dialog.querySelector('#payment-deposit-subtitle').textContent = `${task.client || 'Cliente'} · Orden ${task.id}`;
+    dialog.querySelector('#payment-deposit-input').value = task.depositAmount ?? 0;
+    const storedDate = String(task.depositDate || '');
+    const createdDate = depositDateLabel(task);
+    const dateInput = dialog.querySelector('#payment-deposit-date');
+    dateInput.value = /^\d{4}-\d{2}-\d{2}$/.test(storedDate) ? storedDate : (createdDate === '—' ? '' : createdDate.split('/').reverse().join('-'));
+    dialog.classList.remove('hidden');
+    if (window.lucide) lucide.createIcons();
+    setTimeout(() => dialog.querySelector('#payment-deposit-input')?.focus(), 40);
+  };
+  PortonProApp.prototype.saveOrderDeposit = async function (id, rawAmount, rawDate) {
+    if (this.currentUser?.role !== 'admin') { this.showToast('Solo el administrador puede cambiar el abono.', 'error'); return false; }
+    if (!window.db || !navigator.onLine) { this.showToast('Conéctate a internet para guardar el abono.', 'error'); return false; }
+    const task = (this.tasks || []).find(item => String(item.id) === String(id));
+    if (!task || task.status !== 'REALIZADA') return false;
+    const amountText = String(rawAmount ?? '').trim();
+    const amount = amountText === '' ? 0 : Number(amountText);
+    if (amountText !== '' && (!Number.isFinite(amount) || amount < 0)) { this.showToast('Escribe un valor de abono válido.', 'error'); return false; }
+    const date = String(rawDate ?? '').trim();
+    if (amount > 0 && !/^\d{4}-\d{2}-\d{2}$/.test(date)) { this.showToast('Selecciona la fecha del abono.', 'error'); return false; }
+    const previous = { depositAmount: task.depositAmount, depositDate: task.depositDate };
+    task.depositAmount = amount;
+    task.depositDate = amount > 0 ? date : null;
+    const saved = await this.saveTasks(true);
+    if (!saved?.ok) {
+      Object.keys(previous).forEach(key => previous[key] === undefined ? delete task[key] : task[key] = previous[key]);
+      this.showToast('No se pudo guardar el abono. Inténtalo de nuevo.', 'error');
+      return false;
+    }
+    document.getElementById('payment-deposit-dialog')?.classList.add('hidden');
+    this.updateStats?.();
+    this.renderTasks();
+    this.showToast('Abono y fecha actualizados.', 'success');
+    return true;
   };
   PortonProApp.prototype.saveOrderPaymentValue = async function (id, rawValue) {
     if (this.currentUser?.role !== 'admin') { this.showToast('Solo el administrador puede cambiar el valor.', 'error'); return false; }

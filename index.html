@@ -813,7 +813,7 @@
           <div>
             <label for="task-address" class="block text-[11px] font-semibold text-slate-700 mb-1">Dirección del inmueble *</label>
             <div class="task-address-row">
-              <input type="text" id="task-address" required placeholder="Dirección completa" class="w-full px-3 py-2.5 border rounded-xl">
+              <input type="text" id="task-address" required placeholder="Dirección, coordenadas o enlace de Google Maps, Waze o WhatsApp" class="w-full px-3 py-2.5 border rounded-xl">
               <button type="button" onclick="app.openWazeNavigation(document.getElementById('task-address').value)" class="task-map-button" title="Abrir dirección en Waze" aria-label="Abrir dirección en Waze"><img src="assets/media/media-1.png" alt="" aria-hidden="true"></button>
               <button type="button" onclick="app.openGoogleMapsNavigation(document.getElementById('task-address').value)" class="task-map-button" title="Abrir dirección en Google Maps" aria-label="Abrir dirección en Google Maps"><img src="assets/media/media-2.png" alt="" aria-hidden="true"></button>
             </div>
@@ -829,9 +829,8 @@
         </section>
 
         <div>
-          <label for="task-service-location" class="block text-[11px] font-semibold text-slate-700 mb-1">📍 Ubicación del Servicio</label>
-          <textarea id="task-service-location" rows="2" maxlength="1000" placeholder="Pega aquí una ubicación de WhatsApp, Google Maps, Waze o coordenadas (latitud, longitud)" class="w-full px-3 py-2.5 border rounded-xl"></textarea>
-          <p class="mt-1 text-[10px] text-slate-500">Se guarda únicamente en esta orden y estará disponible para el técnico asignado.</p>
+          <label for="task-deposit-amount" class="block text-[11px] font-semibold text-slate-700 mb-1">💰 Abono (solo control administrativo)</label>
+          <input id="task-deposit-amount" type="number" min="0" step="1" inputmode="numeric" placeholder="0" class="w-full px-3 py-2.5 border rounded-xl">
         </div>
         <div>
           <label for="task-service-type" class="block text-[11px] font-semibold text-slate-700 mb-1">Motivo</label>
@@ -900,8 +899,7 @@
         <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs">
           <p><span class="text-slate-500 font-bold">Servicio:</span> <span id="rep-service" class="font-bold text-slate-800"></span></p>
           <p><span class="text-slate-500 font-bold">Equipo:</span> <span id="rep-equipment" class="font-semibold text-slate-800"></span></p>
-          <p class="truncate"><span class="text-slate-500 font-bold">Dirección:</span> <span id="rep-address" class="font-semibold text-slate-800"></span></p>
-          <p class="mt-1 break-all"><span class="text-slate-500 font-bold">📍 Ubicación del Servicio:</span> <span id="rep-service-location" class="font-semibold text-slate-800">Ubicación no registrada</span></p>
+          <p class="break-all"><span class="text-slate-500 font-bold">Dirección:</span> <span id="rep-address" class="font-semibold text-slate-800"></span></p>
         </div>
 
         <div class="flex items-center gap-2">
@@ -985,14 +983,14 @@
             <div class="flex items-center gap-2 mb-2"><span class="w-8 h-8 rounded-lg bg-sky-50 text-sky-700 flex items-center justify-center">👷</span><h3 class="text-xs font-black uppercase tracking-wide text-slate-700">Datos del servicio</h3></div>
             <p class="text-xs text-slate-700"><b>Cliente:</b> <span id="view-client"></span></p>
             <p class="text-xs text-slate-700 mt-1"><b>Teléfono:</b> <span id="view-phone"></span></p>
-            <p class="text-xs text-slate-700 mt-1"><b>Dirección:</b> <span id="view-address"></span></p>
-            <div class="mt-3 rounded-lg border border-sky-100 bg-sky-50/60 p-3">
-              <p class="text-[10px] font-black uppercase tracking-wide text-slate-700">📍 Ubicación del Servicio</p>
-              <p id="view-service-location" class="mt-1 break-all text-xs text-slate-700">Ubicación no registrada</p>
-              <div class="mt-2 flex flex-wrap gap-2">
-                <button id="view-service-location-maps" type="button" class="rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">🗺 Abrir en Google Maps</button>
-                <button id="view-service-location-waze" type="button" class="rounded-lg bg-cyan-600 px-3 py-2 text-[11px] font-bold text-white hover:bg-cyan-700 disabled:cursor-not-allowed disabled:opacity-50">🚗 Abrir en Waze</button>
-              </div>
+            <p class="text-xs text-slate-700 mt-1 break-all"><b>Dirección:</b> <span id="view-address" class="break-all"></span></p>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <button id="view-address-maps" type="button" disabled class="rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">🗺 Abrir en Google Maps</button>
+              <button id="view-address-waze" type="button" disabled class="rounded-lg bg-cyan-600 px-3 py-2 text-[11px] font-bold text-white hover:bg-cyan-700 disabled:cursor-not-allowed disabled:opacity-50">🚗 Abrir en Waze</button>
+            </div>
+            <div id="view-order-deposit-row" class="hidden mt-2 border-t border-slate-100 pt-2 text-xs text-slate-700" aria-label="Información administrativa del abono">
+              <p><b>💰 Abono:</b> <span id="view-order-deposit">$ 0</span></p>
+              <p class="mt-1"><b>📅 Fecha del abono:</b> <span id="view-order-deposit-date">—</span></p>
             </div>
             <div class="mt-3 pt-3 border-t flex items-center gap-3">
               <div id="view-technician-avatar" class="seasonal-worker-avatar w-10 h-10 rounded-full border-2 border-brand-lime bg-slate-100 text-slate-700 font-black flex items-center justify-center overflow-hidden shrink-0"></div>
@@ -1057,7 +1055,7 @@
   </div>
 
   <!-- JAVASCRIPT: LÓGICA DE LA APLICACIÓN -->
-  <script src="assets/js/app-05.js?v=20261103-system-dialogs-1"></script>
+  <script src="assets/js/app-05.js?v=20261104-worker-photo-canonical-1"></script>
 <script src="assets/js/app-06.js?v=20261031-mobile-emoji-layer-2"></script>
 <link rel="stylesheet" href="assets/css/app-05.css" id="chat-hidden-overlay-fix">
 <link rel="stylesheet" href="assets/css/app-06.css" id="chat-hide-custom-emojis-mobile">
@@ -1090,9 +1088,9 @@
 <script id="ios-chat-press-and-worker-admin-identity" src="assets/js/app-10.js"></script><script id="optimistic-chat-reaction-update" src="assets/js/app-11.js"></script><link rel="stylesheet" href="assets/css/app-27.css" id="chat-header-admin-presence-card-sync">
 <script id="chat-header-admin-presence-card-sync" src="assets/js/app-12.js"></script><link rel="stylesheet" href="assets/css/app-28.css" id="chat-header-admin-identity-cleanup">
 <script id="chat-header-admin-identity-cleanup" src="assets/js/app-13.js"></script><link rel="stylesheet" href="assets/css/app-29.css" id="seasonal-chat-admin-card-and-unread-red-alert"><link rel="stylesheet" href="assets/css/app-30.css?v=20261028-order-notes-mobile-keyboard-1">
-<link rel="stylesheet" href="assets/css/app-31.css?v=20261028-invoice-route-icons-3" id="payments-login-compact-style">
+<link rel="stylesheet" href="assets/css/app-31.css?v=20261104-payment-row-weight-1" id="payments-login-compact-style">
 <link rel="stylesheet" href="assets/css/app-32.css?v=20261028-mobile-header-single-row-1" id="mobile-contact-halloween-splash-fix">
-<script id="payment-document-control" src="assets/js/app-14.js?v=20261028-invoice-route-icons-1"></script>
+<script id="payment-document-control" src="assets/js/app-14.js?v=20261104-worker-photo-canonical-1"></script>
 <link rel="stylesheet" href="assets/css/app-33.css?v=20261028-presence-archive-details-2">
 <script id="announcement-mobile-chat-status-fix" src="assets/js/app-33.js?v=20261028-announcement-mobile-chat-status-1"></script>
 <script id="archived-order-address-disclosure" src="assets/js/app-36.js?v=20261104-quotes-title-count-hidden-1"></script>
@@ -1137,7 +1135,7 @@
 <script id="mobile-dashboard-chat-fix" src="assets/js/app-66.js?v=20261102-mobile-dashboard-chat-fix-5"></script>
 <link rel="stylesheet" href="assets/css/app-67.css?v=20261103-system-dialogs-1" id="system-dialogs-style">
 <script id="system-dialogs" src="assets/js/app-67.js?v=20261103-system-dialogs-2"></script>
-<script id="order-service-location" src="assets/js/app-68.js?v=20261104-service-location-1"></script>
+<script id="order-service-location" src="assets/js/app-68.js?v=20261104-order-address-unified-1"></script>
 </body>
 </html>
 

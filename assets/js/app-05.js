@@ -564,6 +564,8 @@
           db.collection('users').onSnapshot((snapshot) => {
             const list = [];
             snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+            const previousUsersById = new Map((this.users || []).map(user => [String(user.id), user]));
+            const workerPhotosChanged = list.some(user => String(user.role || '').toLowerCase() === 'worker' && previousUsersById.has(String(user.id)) && (previousUsersById.get(String(user.id))?.photo || '') !== (user.photo || ''));
             this.users = list;
             this.applySharedSeasonalTheme();
             this.workers = list.filter(u => String(u.role).toLowerCase() === 'worker');
@@ -576,6 +578,10 @@
               this.renderTechniciansMonitor();
               this.renderConversationsSidebar();
               this.renderTasks();
+              if (workerPhotosChanged) {
+                this.renderActiveChatHeader?.();
+                this.renderChatMessages?.();
+              }
               this.setupMultiWorkerChatListeners();
               this.listenIncomingVoiceCalls();
             } else if (this.currentUser && this.currentUser.role === 'worker') {
@@ -584,6 +590,9 @@
                 this.currentUser.photo = myUpdated.photo;
                 SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
                 this.setupDashboardUI();
+                this.renderMySettingsPhotoPreview?.();
+                this.renderTasks();
+                this.renderChatMessages?.();
               }
             }
           }, err => console.error("Snapshot users error:", err));
@@ -680,7 +689,6 @@
               const u = this.users.find(x => String(x.username || '').toLowerCase() === presenceId);
               if (u) {
                 if (data.lastHeartbeat !== undefined) u.lastHeartbeat = data.lastHeartbeat;
-                if (data.photo) u.photo = data.photo;
                 if (data.lastLogin) u.lastLogin = data.lastLogin;
               }
               const presenceUser = u || existingPresenceUser || { username: presenceId, ...data };
@@ -1202,6 +1210,17 @@
         }
         const worker = this.workers.find(item => [item.fullName, item.username].some(value => String(value || '').toLocaleLowerCase() === senderName.toLocaleLowerCase()));
         return { name: senderName || worker?.fullName || worker?.username || 'Técnico', photo: worker?.photo || '' };
+      }
+      getTaskTechnician(task) {
+        const users = Array.isArray(this.users) ? this.users : [];
+        const workerId = String(task?.assignedWorkerId || '').trim();
+        if (workerId) {
+          const byId = users.find(user => String(user.id || '').trim() === workerId);
+          if (byId) return byId;
+        }
+        const assignedName = String(task?.assignedTo || '').trim().toLocaleLowerCase();
+        if (!assignedName) return null;
+        return users.find(user => [user.fullName, user.username].some(value => String(value || '').trim().toLocaleLowerCase() === assignedName)) || null;
       }
       getCurrentDisplayName(user = this.currentUser) {
         if (!user) return '';
@@ -4251,7 +4270,7 @@ updateMessengerWindowTyping(workerName) {
           const workValueLine = isAdmin && t.workValue !== null && t.workValue !== undefined && t.workValue !== '' ? `<p class="order-work-value mt-1 text-xs font-bold text-emerald-800"><span class="font-semibold">Valor del trabajo:</span> ${new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Number(t.workValue) || 0)}</p>` : '';
           const orderInstructions = String(t.instructions || '').trim();
           const orderObservations = String(t.observations || '').trim();
-          const techObj = taskIsFree ? null : this.users.find(u => (u.fullName || u.username) === t.assignedTo);
+          const techObj = taskIsFree ? null : this.getTaskTechnician(t);
           const techPhoto = techObj && techObj.photo ? techObj.photo : '';
           const techPresenceStatus = this.getPresenceStatus(techObj);
           const techPresenceLabel = this.getPresenceLabel(techPresenceStatus);
@@ -4565,7 +4584,7 @@ updateMessengerWindowTyping(workerName) {
             if (!this.isTaskFree(task)) {
               return { state: task.assignedTo === myName ? 'already-mine' : 'already-assigned', tasks: storedTasks };
             }
-            const updatedTasks = storedTasks.map(item => String(item?.id) === String(id) ? { ...item, assignedTo: myName } : item);
+            const updatedTasks = storedTasks.map(item => String(item?.id) === String(id) ? { ...item, assignedTo: myName, assignedWorkerId: String(this.currentUser.id || this.users?.find(user => (user.fullName || user.username) === myName)?.id || '') } : item);
             transaction.set(orderRef, { ...documentData, tasks: updatedTasks }, { merge: true });
             return { state: 'claimed', tasks: updatedTasks };
           });
@@ -4807,6 +4826,7 @@ updateMessengerWindowTyping(workerName) {
             this.tasks[index].serviceType = document.getElementById('task-service-type').value;
             this.tasks[index].equipment = document.getElementById('task-equipment').value;
             this.tasks[index].assignedTo = document.getElementById('task-assigned-to').value;
+            this.tasks[index].assignedWorkerId = this.getTaskTechnician({ assignedTo: this.tasks[index].assignedTo })?.id || '';
             this.tasks[index].priority = document.getElementById('task-priority').value;
             this.tasks[index].date = document.getElementById('task-date').value;
             this.tasks[index].instructions = document.getElementById('task-instructions').value;
@@ -4825,6 +4845,7 @@ updateMessengerWindowTyping(workerName) {
             serviceType: document.getElementById('task-service-type').value,
             equipment: document.getElementById('task-equipment').value,
             assignedTo: document.getElementById('task-assigned-to').value,
+            assignedWorkerId: this.getTaskTechnician({ assignedTo: document.getElementById('task-assigned-to').value })?.id || '',
             priority: document.getElementById('task-priority').value,
             date: document.getElementById('task-date').value,
             instructions: document.getElementById('task-instructions').value,
@@ -5236,7 +5257,7 @@ updateMessengerWindowTyping(workerName) {
         const badgeStyles = { PENDIENTE: 'bg-amber-100 text-amber-800', EN_PROCESO: 'bg-blue-100 text-blue-800', REALIZADA: 'bg-emerald-100 text-emerald-800', NO_REALIZADA: 'bg-rose-100 text-rose-800' };
         badge.className = `px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${badgeStyles[t.status] || 'bg-slate-100 text-slate-700'}`;
 
-        const technician = this.users.find(user => (user.fullName || user.username) === t.assignedTo);
+        const technician = this.getTaskTechnician(t);
         const avatar = document.getElementById('view-technician-avatar');
         avatar.innerHTML = technician?.photo ? `<img src="${this.escapeHtml(technician.photo)}" alt="" class="w-full h-full object-cover">` : this.escapeHtml((t.assignedTo || '?').charAt(0).toUpperCase());
 
