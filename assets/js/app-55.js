@@ -29,7 +29,7 @@
     const title = document.getElementById('orders-view-title');
     if (title) title.textContent = 'Cotizaciones archivadas';
     const count = document.getElementById('filtered-count');
-    if (count) { count.textContent = String((app.quotes || []).length); count.classList.remove('hidden'); }
+    if (count) { count.textContent = String((app.quotes || []).length); count.classList.add('hidden'); }
     document.getElementById('section-admin-audit-log')?.classList.add('hidden');
     selectQuotesView();
     if (window.lucide) window.lucide.createIcons();

@@ -90,7 +90,7 @@
       count.textContent = view === 'archived'
         ? String((app.tasks || []).filter(task => !!task.archivedAt).length)
         : String(app.filteredTasks?.length ?? count.textContent);
-      count.classList.toggle('hidden', view === 'invoices');
+      count.classList.toggle('hidden', view === 'invoices' || view === 'quotes');
     }
     ['btn-toggle-archived-orders', 'btn-archived-document-control'].forEach(id => {
       const legacy = document.getElementById(id);
