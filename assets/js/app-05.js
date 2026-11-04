@@ -316,6 +316,7 @@
         this.chatDockUnreadByWorker = new Set();
         this.chatUnsubscribe = null;
         this.chatThreadUnsubscribe = null;
+        this.ownPresenceUnsubscribe = null;
         this.chatThreadsUnsubscribe = null;
         this.conversations = {};
         this.chatThreadSummaries = {};
@@ -565,10 +566,10 @@
             const list = [];
             snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
             const previousUsersById = new Map((this.users || []).map(user => [String(user.id), user]));
-            const workerPhotosChanged = list.some(user => String(user.role || '').toLowerCase() === 'worker' && previousUsersById.has(String(user.id)) && (previousUsersById.get(String(user.id))?.photo || '') !== (user.photo || ''));
+            const workerPhotosChanged = list.some(user => this.getChatRole(user.role) === 'worker' && previousUsersById.has(String(user.id)) && (previousUsersById.get(String(user.id))?.photo || '') !== (user.photo || ''));
             this.users = list;
             this.applySharedSeasonalTheme();
-            this.workers = list.filter(u => String(u.role).toLowerCase() === 'worker');
+            this.workers = list.filter(u => this.getChatRole(u.role) === 'worker');
             if (this.currentUser) this.renderAdminPresence();
 
             this.renderTechOptionsInSelects();
@@ -584,16 +585,11 @@
               }
               this.setupMultiWorkerChatListeners();
               this.listenIncomingVoiceCalls();
-            } else if (this.currentUser && this.currentUser.role === 'worker') {
-              const myUpdated = list.find(u => String(u.username || '').toLowerCase() === this.currentUser.username.toLowerCase());
-              if (myUpdated && myUpdated.photo !== this.currentUser.photo) {
-                this.currentUser.photo = myUpdated.photo;
-                SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
-                this.setupDashboardUI();
-                this.renderMySettingsPhotoPreview?.();
-                this.renderTasks();
-                this.renderChatMessages?.();
-              }
+            } else if (this.currentUser && this.getChatRole(this.currentUser.role) === 'worker') {
+              const currentIdentity = new Set([this.currentUser.id, this.currentUser.username].map(value => String(value || '').trim().toLocaleLowerCase()).filter(Boolean));
+              const myUpdated = list.find(u => [u.id, u.username].some(value => currentIdentity.has(String(value || '').trim().toLocaleLowerCase())))
+                || list.find(u => String(u.fullName || '').trim().toLocaleLowerCase() === String(this.currentUser.fullName || '').trim().toLocaleLowerCase());
+              if (myUpdated && (myUpdated.photo !== this.currentUser.photo || myUpdated.fullName !== this.currentUser.fullName)) this.applyWorkerProfileUpdate(myUpdated);
             }
           }, err => console.error("Snapshot users error:", err));
 
@@ -675,8 +671,8 @@
           db.collection('presencia').onSnapshot((snapshot) => {
             snapshot.forEach(doc => {
               const data = doc.data() || {};
-              const presenceId = doc.id.toLowerCase();
-              const existingPresenceUser = this.users.find(x => String(x.username || '').toLowerCase() === presenceId) || (Array.isArray(this.workers) ? this.workers.find(x => String(x.username || '').toLowerCase() === presenceId) : null);
+              const presenceId = String(doc.id || '').trim().toLowerCase();
+              const existingPresenceUser = this.users.find(x => String(x.username || '').trim().toLowerCase() === presenceId) || (Array.isArray(this.workers) ? this.workers.find(x => String(x.username || '').trim().toLowerCase() === presenceId) : null);
               const previousRecord = this.presenceRecords[presenceId];
               const previousStatus = previousRecord ? this.getPresenceStatus(existingPresenceUser || { username: presenceId }) : 'disconnected';
               this.presenceRecords[presenceId] = data;
@@ -686,13 +682,16 @@
                 if (data.activeAdminName) this.activeAdminName = String(data.activeAdminName);
                 if (data.adminIdentityPhotos && typeof data.adminIdentityPhotos === 'object') this.adminIdentityPhotos = { ...data.adminIdentityPhotos };
               }
-              const u = this.users.find(x => String(x.username || '').toLowerCase() === presenceId);
+              const u = this.users.find(x => String(x.username || '').trim().toLowerCase() === presenceId);
               if (u) {
                 if (data.lastHeartbeat !== undefined) u.lastHeartbeat = data.lastHeartbeat;
                 if (data.lastLogin) u.lastLogin = data.lastLogin;
               }
               const presenceUser = u || existingPresenceUser || { username: presenceId, ...data };
-              const isWorkerPresence = ['worker', 'trabajador'].includes(String(data.role || presenceUser.role || '').toLowerCase().trim());
+              const isWorkerPresence = this.getChatRole(data.role || presenceUser.role) === 'worker';
+              if (isWorkerPresence && this.getChatRole() === 'worker' && presenceId === String(this.currentUser?.username || '').trim().toLowerCase() && data.photo !== this.currentUser.photo) {
+                this.applyWorkerProfileUpdate({ ...data, username: data.username || this.currentUser.username });
+              }
               const becameAvailable = this.getPresenceStatus(presenceUser) === 'available';
               if (this.presenceSnapshotInitialized && this.currentUser?.role === 'admin' && isWorkerPresence && previousStatus !== 'available' && becameAvailable && this.prefs?.sound !== false) {
                 console.info('[PRESENCE] Transición de trabajador a disponible', { username: presenceId });
@@ -861,6 +860,7 @@
         document.getElementById('chat-window-modal').classList.add('hidden');
         document.getElementById('chat-desktop-windows')?.classList.add('hidden');
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+        if (this.ownPresenceUnsubscribe) { this.ownPresenceUnsubscribe(); this.ownPresenceUnsubscribe = null; }
         if (this.chatUnsubscribe) { this.chatUnsubscribe(); this.chatUnsubscribe = null; }
         if (this.chatThreadUnsubscribe) { this.chatThreadUnsubscribe(); this.chatThreadUnsubscribe = null; }
         if (this.chatThreadsUnsubscribe) { this.chatThreadsUnsubscribe(); this.chatThreadsUnsubscribe = null; }
@@ -917,7 +917,7 @@
                   id: doc.id,
                   username: uData.username || userVal,
                   fullName: uData.fullName || uData.username || userVal,
-                  role: String(uData.role || 'worker').toLowerCase().trim(),
+                  role: ['admin', 'administrator', 'administrador'].includes(String(uData.role || '').toLowerCase().trim()) ? 'admin' : 'worker',
                   phone: uData.phone || '',
                   photo: uData.photo || '',
                   active: isActive
@@ -956,7 +956,7 @@
               lastHeartbeat: Date.now(),
               photo: authenticatedUser.photo || '',
               lastLogin: `${formattedTime} (En línea)`,
-              ...(String(authenticatedUser.role || '').toLowerCase() === 'admin' ? { availabilityStatus: 'available' } : {})
+              availabilityStatus: 'available'
             }, { merge: true }).catch(e => console.error(e));
           }
 
@@ -970,6 +970,7 @@
       }
 
       async loginSuccess(user, notify = true) {
+        user.role = this.getChatRole(user.role);
         this.currentUser = user;
         // Mostrar el espacio de trabajo sin esperar a que Firestore responda.
         // Una conexión lenta no debe dejar el indicador de carga bloqueado.
@@ -1026,10 +1027,17 @@
         document.getElementById('chat-desktop-windows')?.classList.remove('hidden');
 
         this.sendHeartbeat();
+        this.subscribeOwnPresenceProfile();
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
         this.heartbeatTimer = setInterval(() => this.sendHeartbeat(), 6000);
         if (this.presenceRefreshTimer) clearInterval(this.presenceRefreshTimer);
-        this.presenceRefreshTimer = setInterval(() => this.renderAdminPresence(), 10000);
+        this.presenceRefreshTimer = setInterval(() => {
+          this.renderAdminPresence();
+          if (this.currentUser?.role === 'admin') {
+            this.renderTechniciansMonitor();
+            this.renderConversationsSidebar();
+          }
+        }, 4000);
 
         this.setupDashboardUI();
         this.renderTechOptionsInSelects();
@@ -1051,10 +1059,11 @@
         const formattedLogout = `${this.formatTime(now)} (Desconectado)`;
 
         if (this.currentUser && window.db) {
-          db.collection('presencia').doc(this.currentUser.username.toLowerCase()).set({
+          db.collection('presencia').doc(String(this.currentUser.username || '').trim().toLowerCase()).set({
             lastHeartbeat: 0,
             lastLogin: formattedLogout,
-            ...(this.currentUser.role === 'admin' ? { availabilityStatus: 'disconnected' } : {})
+            role: String(this.currentUser.role || '').toLowerCase() === 'admin' ? 'admin' : 'worker',
+            availabilityStatus: 'disconnected'
           }, { merge: true }).catch(e => console.error(e));
         }
 
@@ -1070,13 +1079,23 @@
         if (!this.currentUser) return;
         const now = Date.now();
         if (window.db) {
-          db.collection('presencia').doc(this.currentUser.username.toLowerCase()).set({
+          const username = String(this.currentUser.username || '').trim().toLowerCase();
+          const currentRecord = this.presenceRecords?.[username] || {};
+          const role = String(this.currentUser.role || '').toLowerCase() === 'admin' ? 'admin' : 'worker';
+          const heartbeatData = {
             username: this.currentUser.username,
             fullName: this.getCurrentDisplayName(),
             lastHeartbeat: now,
-            photo: this.currentUser.photo || '',
-            role: this.currentUser.role
-          }, { merge: true }).catch(e => console.error(e));
+            ...(role === 'admin' ? { photo: this.currentUser.photo || '' } : {}),
+            role,
+            ...(role === 'worker' ? { availabilityStatus: 'available', lastLogin: `${this.formatTime(new Date(now))} (En línea)` } : {})
+          };
+          this.presenceRecords = this.presenceRecords || {};
+          this.presenceRecords[username] = { ...currentRecord, ...heartbeatData };
+          db.collection('presencia').doc(username).set(heartbeatData, { merge: true }).catch(e => {
+            console.error('[PRESENCE] No se pudo actualizar el estado en línea:', e);
+            this.showToast?.('No se pudo sincronizar tu estado de conexión.', 'error');
+          });
         }
         if (this.currentUser.role === 'admin') this.renderTechniciansMonitor();
       }
@@ -1191,6 +1210,45 @@
         return user.photo || '';
       }
 
+      subscribeOwnPresenceProfile() {
+        if (this.ownPresenceUnsubscribe) { this.ownPresenceUnsubscribe(); this.ownPresenceUnsubscribe = null; }
+        if (!window.db || this.getChatRole() !== 'worker' || !this.currentUser?.username) return;
+        const username = String(this.currentUser.username).trim().toLowerCase();
+        this.ownPresenceUnsubscribe = db.collection('presencia').doc(username).onSnapshot(snapshot => {
+          if (!snapshot.exists) return;
+          const record = snapshot.data() || {};
+          if (record.photo !== undefined && record.photo !== this.currentUser?.photo) this.applyWorkerProfileUpdate({ ...record, username: record.username || this.currentUser.username });
+        }, error => console.warn('[PERFIL] No se pudo sincronizar el perfil del trabajador:', error?.message || error));
+      }
+
+      applyWorkerProfileUpdate(profile = {}) {
+        if (this.getChatRole() !== 'worker' || !this.currentUser) return;
+        const username = String(profile.username || this.currentUser.username || '').trim().toLowerCase();
+        const photo = profile.photo === undefined ? (this.currentUser.photo || '') : String(profile.photo || '');
+        const fullName = String(profile.fullName || this.currentUser.fullName || this.currentUser.username || '');
+        this.currentUser.username = profile.username || this.currentUser.username;
+        this.currentUser.fullName = fullName;
+        this.currentUser.photo = photo;
+        if (profile.id) this.currentUser.id = profile.id;
+        SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
+        [this.users, this.workers].forEach(list => {
+          if (!Array.isArray(list)) return;
+          list.forEach(user => {
+            if ([user.id, user.username].some(value => String(value || '').trim().toLowerCase() === username)) {
+              user.photo = photo;
+              user.fullName = fullName;
+            }
+          });
+        });
+        this.setupDashboardUI();
+        this.renderMySettingsPhotoPreview?.();
+        this.renderTasks();
+        this.renderChatMessages?.();
+        this.renderActiveChatHeader?.();
+        this.renderConversationsSidebar?.();
+        this.renderMessengerWindows?.();
+      }
+
       applyAdminIdentityPresence(record = {}) {
         if (Array.isArray(record.adminIdentityNames) && record.adminIdentityNames.length === 2) { const names = record.adminIdentityNames.map(name => String(name || '').trim()); if (names.every(Boolean)) this.adminIdentityNames = names; }
         if (record.adminIdentityPhotos && typeof record.adminIdentityPhotos === 'object') this.adminIdentityPhotos = { ...record.adminIdentityPhotos };
@@ -1226,6 +1284,27 @@
         if (!user) return '';
         if (String(user.role || '').toLowerCase() === 'admin') return this.activeAdminName || user.activeAdminName || user.fullName || user.username || 'Administrador';
         return user.fullName || user.username || '';
+      }
+
+      getChatRole(role = this.currentUser?.role) {
+        const normalized = String(role || '').trim().toLowerCase();
+        return normalized === 'admin' || normalized === 'administrator' || normalized === 'administrador' ? 'admin' : 'worker';
+      }
+
+      getChatThreadId(value) {
+        const role = this.getChatRole();
+        const source = value ?? (role === 'admin' ? this.activeChatWorker : this.currentUser);
+        const identities = item => typeof item === 'object' && item
+          ? [item.id, item.username, item.fullName, item.name]
+          : [item];
+        const keys = new Set(identities(source).map(value => String(value || '').trim().toLocaleLowerCase()).filter(Boolean));
+        if (!keys.size) return '';
+        const roster = [...(Array.isArray(this.workers) ? this.workers : []), ...(Array.isArray(this.users) ? this.users : [])];
+        const person = roster.find(user => [user.id, user.username, user.fullName].some(value => keys.has(String(value || '').trim().toLocaleLowerCase())));
+        const canonical = String(person?.fullName || person?.username || '').trim();
+        if (canonical) return canonical;
+        const fallback = typeof source === 'object' && source ? (source.fullName || source.username || source.name || source.id) : source;
+        return String(fallback || '').trim();
       }
 
       renderAdminIdentities() {
@@ -1389,15 +1468,25 @@
       }
       getPresenceStatus(user) {
         if (!user) return 'disconnected';
-        const username = String(user.username || '').toLowerCase();
-        const record = this.presenceRecords[username] || {};
-        const heartbeat = Number(record.lastHeartbeat ?? user.lastHeartbeat ?? 0);
-        const savedStatus = record.availabilityStatus;
-        if (savedStatus === 'absent') return 'absent';
-        if (savedStatus === 'disconnected') return 'disconnected';
-        const isActiveAdminSession = String(this.currentUser?.role || '').toLowerCase() === 'admin' && username === String(this.currentUser?.username || '').toLowerCase();
-        if (savedStatus === 'available' && isActiveAdminSession) return 'available';
-        return heartbeat > 0 && Date.now() - heartbeat < 60000 ? 'available' : 'disconnected';
+        const username = String(user.username || user.id || '').trim().toLowerCase();
+        const record = this.presenceRecords[username]
+          || Object.values(this.presenceRecords || {}).find(item => String(item?.username || '').trim().toLowerCase() === username)
+          || {};
+        const rawHeartbeat = record.lastHeartbeat ?? user.lastHeartbeat ?? 0;
+        const heartbeat = typeof rawHeartbeat?.toMillis === 'function' ? rawHeartbeat.toMillis() : Number(rawHeartbeat);
+        const savedStatus = String(record.availabilityStatus || '').trim().toLowerCase();
+        const isAdminUser = this.getChatRole(user.role || record.role) === 'admin';
+        const heartbeatFresh = heartbeat > 0 && Date.now() - heartbeat >= 0 && Date.now() - heartbeat < 20000;
+        if (isAdminUser) {
+          if (savedStatus === 'absent') return 'absent';
+          if (savedStatus === 'disconnected') return 'disconnected';
+          if (heartbeatFresh || savedStatus === 'available') return 'available';
+          return 'disconnected';
+        }
+        // Para trabajadores, una sesión con heartbeat fresco significa "En línea".
+        // Los estados viejos guardados no deben ocultar una conexión actual.
+        if (heartbeatFresh) return 'available';
+        return 'disconnected';
       }
 
       getPresenceLabel(status) {
@@ -2347,7 +2436,7 @@
       }
 
       initChatModule() {
-        const isAdmin = this.currentUser.role === 'admin';
+        const isAdmin = this.getChatRole() === 'admin';
         const sidebar = document.getElementById('chat-sidebar');
         const backBar = document.getElementById('chat-mobile-back-bar');
         document.getElementById('chat-window-modal')?.classList.toggle('worker-chat-mode', !isAdmin);
@@ -2368,7 +2457,7 @@
         } else {
           sidebar.classList.add('hidden');
           if (backBar) backBar.classList.add('hidden');
-          this.activeChatWorker = this.getCurrentDisplayName();
+          this.activeChatWorker = this.getChatThreadId();
           this.renderActiveChatHeader();
         }
 
@@ -2378,8 +2467,8 @@
 
       setupMultiWorkerChatListeners() {
         if (!window.db || !this.currentUser) return;
-        const isAdmin = this.currentUser.role === 'admin';
-        const names = isAdmin ? this.workers.map(w => w.fullName || w.username) : [this.getCurrentDisplayName()];
+        const isAdmin = this.getChatRole() === 'admin';
+        const names = isAdmin ? this.workers.map(w => this.getChatThreadId(w)).filter(Boolean) : [this.getChatThreadId()].filter(Boolean);
         names.forEach(wName => {
           if (this.dedicatedWorkerUnsubscribes[wName]) return;
           const query = db.collection('chats_internos').doc(wName).collection('mensajes').orderBy('timestamp', 'asc');
@@ -2394,10 +2483,11 @@
             if (isAdmin) this.renderConversationsSidebar();
             this.updateMessengerWindowTyping(wName);
             this.renderChatTypingIndicators();
-          }, error => console.error('[CHAT] Error escuchando escritura de ' + wName + ':', error));
+          }, error => this.reportChatSyncError(`estado de escritura de ${wName}`, error));
           const attach = () => {
             if (cancelled) return;
             unsubscribe = query.onSnapshot(snap => {
+              this.chatSyncErrorShown = false;
               this.refreshChatThreadSummary(wName, snap, isAdmin);
               snap.docChanges().forEach(change => {
                 if (change.type !== 'added') return;
@@ -2405,12 +2495,12 @@
                 if (baselineIds.has(msgId)) return;
                 const data = change.doc.data();
                 if (data.type === 'call') return;
-                const fromOther = isAdmin ? data.senderRole === 'worker' : data.senderRole === 'admin';
+                const fromOther = isAdmin ? this.getChatRole(data.senderRole) === 'worker' : this.getChatRole(data.senderRole) === 'admin';
                 if (!fromOther) return;
                 this.notifyIncomingChatMessage(wName, msgId, data);
               });
               if (firstSnapshot) { firstSnapshot = false; baselineIds.clear(); }
-            }, error => console.error('[CHAT] Error escuchando mensajes de ' + wName + ':', error));
+            }, error => this.reportChatSyncError(`mensajes de ${wName}`, error));
           };
           query.get().then(snapshot => {
             if (cancelled) return;
@@ -2421,6 +2511,7 @@
             if (cancelled) return;
             let ignoreFirstSnapshot = true;
             unsubscribe = query.onSnapshot(snap => {
+              this.chatSyncErrorShown = false;
               this.refreshChatThreadSummary(wName, snap, isAdmin);
               if (ignoreFirstSnapshot) {
                 snap.docChanges().forEach(change => { if (change.type === 'added') baselineIds.add(change.doc.id); });
@@ -2432,11 +2523,11 @@
                 if (change.type !== 'added' || baselineIds.has(change.doc.id)) return;
                 const data = change.doc.data();
                 if (data.type === 'call') return;
-                const fromOther = isAdmin ? data.senderRole === 'worker' : data.senderRole === 'admin';
+                const fromOther = isAdmin ? this.getChatRole(data.senderRole) === 'worker' : this.getChatRole(data.senderRole) === 'admin';
                 if (!fromOther) return;
                 this.notifyIncomingChatMessage(wName, change.doc.id, data);
               });
-            }, listenError => console.error('[CHAT] Error escuchando mensajes de ' + wName + ':', listenError));
+            }, listenError => this.reportChatSyncError(`mensajes de ${wName}`, listenError));
           });
         });
       }
@@ -2450,7 +2541,7 @@
           const data = doc.data();
           const timestamp = Number(data.timestamp || 0);
           if (!latest || timestamp >= latest.timestamp) latest = { data, timestamp };
-          const isIncoming = isAdmin ? data.senderRole === 'worker' : data.senderRole === 'admin';
+            const isIncoming = isAdmin ? this.getChatRole(data.senderRole) === 'worker' : this.getChatRole(data.senderRole) === 'admin';
           if (isIncoming && data.status !== 'read' && !data[`hiddenFor_${myRole}`]) unreadCount++;
         });
         const summary = {
@@ -2500,6 +2591,13 @@
           onClick: () => this.openDirectWorkerChat(wName)
         });
         if (this.currentUser?.role === 'admin') this.renderConversationsSidebar();
+      }
+
+      reportChatSyncError(context, error) {
+        console.error(`[CHAT] Falló la sincronización (${context}):`, error);
+        if (this.chatSyncErrorShown) return;
+        this.chatSyncErrorShown = true;
+        this.showToast('No se pudieron sincronizar los mensajes en tiempo real. Revisa la conexión e inténtalo de nuevo.', 'error');
       }
 
       clearDedicatedWorkerChatListeners() {
@@ -2635,6 +2733,7 @@
       }
 
       selectChatConversation(wName) {
+        wName = this.getChatThreadId(wName);
         const previousWorker = this.activeChatWorker;
         const previousMessages = document.getElementById('chat-messages-container');
         if (previousWorker && previousMessages) this.chatConversationHtmlCache[previousWorker] = previousMessages.innerHTML;
@@ -2964,7 +3063,7 @@ updateMessengerWindowTyping(workerName) {
 
       async archiveCurrentConversation() {
         if (this.currentUser?.role !== 'admin') return;
-        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
+        const threadId = this.getChatThreadId();
         this.toggleChatOptionsMenu();
 
         if (window.db && threadId) {
@@ -2978,7 +3077,7 @@ updateMessengerWindowTyping(workerName) {
         this.toggleChatOptionsMenu();
         if (!(await this.showSystemConfirm("¿Deseas vaciar todos los mensajes de esta conversación?", { title: "Vaciar conversación", confirmText: "Vaciar", icon: "trash" }))) return;
 
-        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
+        const threadId = this.getChatThreadId();
         if (window.db && threadId) {
           const snap = await db.collection('chats_internos').doc(threadId).collection('mensajes').get();
           snap.forEach(d => d.ref.delete());
@@ -2992,7 +3091,7 @@ updateMessengerWindowTyping(workerName) {
         this.toggleChatOptionsMenu();
         if (!(await this.showSystemConfirm("¿Deseas eliminar completamente esta conversación y su historial?", { title: "Eliminar conversación", confirmText: "Eliminar", icon: "trash" }))) return;
 
-        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
+        const threadId = this.getChatThreadId();
         if (window.db && threadId) {
           const snap = await db.collection('chats_internos').doc(threadId).collection('mensajes').get();
           snap.forEach(d => d.ref.delete());
@@ -3002,9 +3101,9 @@ updateMessengerWindowTyping(workerName) {
       }
 
       async deleteMessageForEveryone(msgId) {
-        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
+        const threadId = this.getChatThreadId();
         const message = this.chatMessages.find(m => m.id === msgId);
-        if (this.currentUser.role !== 'admin' && (!message || message.senderRole !== 'worker' || message.senderName !== (this.getCurrentDisplayName()))) return;
+        if (this.getChatRole() !== 'admin' && (!message || this.getChatRole(message.senderRole) !== 'worker' || message.senderName !== this.getCurrentDisplayName())) return;
         if (!(await this.showSystemConfirm("¿Eliminar este mensaje para todos?", { title: "Eliminar mensaje", confirmText: "Eliminar", icon: "trash" }))) return;
         if (window.db && threadId && msgId) {
           await db.collection('chats_internos').doc(threadId).collection('mensajes').doc(msgId).delete();
@@ -3018,8 +3117,8 @@ updateMessengerWindowTyping(workerName) {
       }
 
       handleTypingInput() {
-        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
-        const myRole = this.currentUser.role;
+        const threadId = this.getChatThreadId();
+        const myRole = this.getChatRole();
 
         if (window.db && threadId) {
           db.collection('chats_internos').doc(threadId).set({
@@ -3040,16 +3139,17 @@ updateMessengerWindowTyping(workerName) {
         this.chatMessageInitialRenderDone = false;
         if (this.chatUnsubscribe) { this.chatUnsubscribe(); }
 
-        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
+        const role = this.getChatRole();
+        const threadId = this.getChatThreadId();
 
         if (this.chatThreadUnsubscribe) this.chatThreadUnsubscribe();
         this.chatThreadUnsubscribe = db.collection('chats_internos').doc(threadId).onSnapshot(doc => {
           if (doc.exists) {
             const data = doc.data();
-            const otherRole = this.currentUser.role === 'admin' ? 'worker' : 'admin';
+            const otherRole = role === 'admin' ? 'worker' : 'admin';
             const isOtherTyping = data.typing && data.typing[otherRole];
             this.chatTypingByWorker[threadId] = Boolean(isOtherTyping);
-            if (this.currentUser.role === 'worker') {
+            if (role === 'worker') {
               this.workerUnreadCount = Number(data.unreadByWorker || 0);
               const summary = this.chatThreadSummaries[threadId];
               const count = summary?.hasMessages ? summary.unreadCount : this.workerUnreadCount;
@@ -3058,7 +3158,7 @@ updateMessengerWindowTyping(workerName) {
 
             this.renderChatTypingIndicators();
           }
-        });
+        }, error => this.reportChatSyncError(`conversación ${threadId}`, error));
 
         this.chatUnsubscribe = db.collection('chats_internos')
           .doc(threadId)
@@ -3066,6 +3166,7 @@ updateMessengerWindowTyping(workerName) {
           .orderBy('timestamp', 'desc')
           .limit(80)
           .onSnapshot(snapshot => {
+            this.chatSyncErrorShown = false;
             const msgs = [];
             let unreadCount = 0;
 
@@ -3074,12 +3175,12 @@ updateMessengerWindowTyping(workerName) {
               const data = doc.data();
               const msgId = doc.id;
 
-              const myHiddenKey = `hiddenFor_${this.currentUser.role}`;
+              const myHiddenKey = `hiddenFor_${role}`;
               if (!data[myHiddenKey]) {
                 msgs.push({ id: msgId, ...data });
               }
 
-              const isFromOther = data.senderRole !== this.currentUser.role;
+              const isFromOther = this.getChatRole(data.senderRole) !== role;
               if (isFromOther && data.status !== 'read') {
                 unreadCount++;
                 if (data.status === 'sent') {
@@ -3094,13 +3195,13 @@ updateMessengerWindowTyping(workerName) {
             this.renderChatMessages();
 
             const threadSummary = this.chatThreadSummaries[threadId];
-            const badgeCount = threadSummary?.hasMessages ? threadSummary.unreadCount : (this.currentUser.role === 'worker' && this.workerUnreadCount !== null ? this.workerUnreadCount : unreadCount);
+            const badgeCount = threadSummary?.hasMessages ? threadSummary.unreadCount : (role === 'worker' && this.workerUnreadCount !== null ? this.workerUnreadCount : unreadCount);
             this.updateChatLauncherUnread(badgeCount);
             const chatWindow = document.getElementById('chat-window-modal');
-            const desktopConversationOpen = this.currentUser.role === 'admin' && window.innerWidth >= 640 && this.openChatTabs.includes(threadId) && !this.minimizedChatWindows[threadId];
-            const mobileOrWorkerConversationOpen = chatWindow && !chatWindow.classList.contains('hidden') && (this.currentUser.role !== 'admin' || window.innerWidth < 640);
+            const desktopConversationOpen = role === 'admin' && window.innerWidth >= 640 && this.openChatTabs.includes(threadId) && !this.minimizedChatWindows[threadId];
+            const mobileOrWorkerConversationOpen = chatWindow && !chatWindow.classList.contains('hidden') && (role !== 'admin' || window.innerWidth < 640);
             if ((desktopConversationOpen || mobileOrWorkerConversationOpen) && !document.hidden) this.markMessagesAsRead();
-          }, err => console.error("Error chat snapshot:", err));
+          }, err => this.reportChatSyncError(`mensajes de ${threadId}`, err));
       }
 
       renderChatMessages() {
@@ -3131,7 +3232,7 @@ updateMessengerWindowTyping(workerName) {
           const previousTimestamp = getTimestampMs(previousMessage);
           const sameSender = previousMessage && previousMessage.senderRole === m.senderRole && previousMessage.senderName === m.senderName;
           const isGroupStart = !previousMessage || !sameSender || !Number.isFinite(currentTimestamp) || !Number.isFinite(previousTimestamp) || currentTimestamp < previousTimestamp || currentTimestamp - previousTimestamp > 5 * 60 * 1000;
-          const isMine = this.currentUser.role === 'admin' ? m.senderRole === 'admin' : m.senderName === myName;
+          const isMine = this.getChatRole() === 'admin' ? this.getChatRole(m.senderRole) === 'admin' : m.senderName === myName;
           let messageText = m.text || '';
           if (m.type === 'call') {
             const isCaller = this.currentUser.role === 'admin' ? m.callerRole === 'admin' : m.callerName === myName && m.callerRole === this.currentUser.role;
@@ -3176,45 +3277,57 @@ updateMessengerWindowTyping(workerName) {
         const text = input.value.trim();
         if (!text) return;
 
+        if (!window.db) {
+          this.showToast('El mensaje no se envió porque no hay conexión con el servicio de mensajería.', 'error');
+          return;
+        }
+        if (this.chatSending) return;
+        this.chatSending = true;
         const myName = this.getCurrentDisplayName();
-        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : myName;
+        const role = this.getChatRole();
+        const threadId = this.getChatThreadId();
+        if (!threadId) {
+          this.chatSending = false;
+          this.showToast('No se pudo identificar la conversación. Vuelve a abrir el chat.', 'error');
+          return;
+        }
 
         const msgObj = {
           threadId: threadId,
           text: text,
           senderName: myName,
-          senderRole: this.currentUser.role,
-          recipient: this.currentUser.role === 'admin' ? this.activeChatWorker : this.getAdminPresenceInfo().name,
+          senderRole: role,
+          recipient: role === 'admin' ? threadId : this.getAdminPresenceInfo().name,
           time: this.formatTime(new Date()),
           timestamp: Date.now(),
           status: 'sent'
         };
 
-        input.value = '';
-
-        if (window.db) {
+        try {
+          const messageRef = db.collection('chats_internos').doc(threadId).collection('mensajes').doc();
+          const threadRef = db.collection('chats_internos').doc(threadId);
+          const updatePayload = {
+            lastMessage: text,
+            lastTime: this.formatTime(new Date()),
+            lastTimestamp: msgObj.timestamp,
+            workerName: threadId,
+            archived: false,
+            typing: { [role]: false }
+          };
+          updatePayload[role === 'admin' ? 'unreadByWorker' : 'unreadByAdmin'] = firebase.firestore.FieldValue.increment(1);
+          await messageRef.set(msgObj);
+          input.value = '';
           try {
-            await db.collection('chats_internos').doc(threadId).collection('mensajes').add(msgObj);
-
-            const updatePayload = {
-              lastMessage: text,
-              lastTime: this.formatTime(new Date()),
-              lastTimestamp: Date.now(),
-              workerName: threadId,
-              archived: false,
-              typing: { [this.currentUser.role]: false }
-            };
-
-            if (this.currentUser.role === 'admin') {
-              updatePayload.unreadByWorker = firebase.firestore.FieldValue.increment(1);
-            } else {
-              updatePayload.unreadByAdmin = firebase.firestore.FieldValue.increment(1);
-            }
-
-            await db.collection('chats_internos').doc(threadId).set(updatePayload, { merge: true });
-          } catch(err) {
-            console.error("Error al enviar mensaje:", err);
+            await threadRef.set(updatePayload, { merge: true });
+          } catch (threadError) {
+            console.warn('[CHAT] Mensaje enviado; no se pudo actualizar el resumen de la conversación:', threadError);
+            this.showToast('El mensaje se envió, pero el resumen de la conversación tardó en actualizarse.', 'info');
           }
+        } catch(err) {
+          console.error('[CHAT] No se pudo enviar el mensaje:', { threadId, role, code: err?.code, message: err?.message }, err);
+          this.showToast('No se pudo enviar el mensaje. Conservamos el texto; revisa la conexión e inténtalo de nuevo.', 'error');
+        } finally {
+          this.chatSending = false;
         }
       }
 
@@ -3227,7 +3340,7 @@ updateMessengerWindowTyping(workerName) {
             .get();
           const pending = snapshot.docs.filter(doc => {
             const message = doc.data();
-            return message.senderRole !== this.currentUser.role && message.status !== 'read';
+            return this.getChatRole(message.senderRole) !== this.getChatRole() && message.status !== 'read';
           });
           for (let start = 0; start < pending.length; start += 450) {
             const batch = db.batch();
@@ -3248,15 +3361,16 @@ updateMessengerWindowTyping(workerName) {
 
       markMessagesAsRead() {
         if (!window.db || this.chatMessages.length === 0) return;
-        const threadId = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
+        const role = this.getChatRole();
+        const threadId = this.getChatThreadId();
 
         this.chatMessages.forEach(m => {
-          if (m.senderRole !== this.currentUser.role && m.status !== 'read' && m.id) {
+          if (this.getChatRole(m.senderRole) !== role && m.status !== 'read' && m.id) {
             db.collection('chats_internos').doc(threadId).collection('mensajes').doc(m.id).update({ status: 'read' }).catch(() => {});
           }
         });
 
-        const resetField = this.currentUser.role === 'admin' ? 'unreadByAdmin' : 'unreadByWorker';
+        const resetField = role === 'admin' ? 'unreadByAdmin' : 'unreadByWorker';
         db.collection('chats_internos').doc(threadId).set({ [resetField]: 0 }, { merge: true }).catch(() => {});
       }
 
@@ -3854,12 +3968,18 @@ updateMessengerWindowTyping(workerName) {
           try {
             if (id) {
               await db.collection('users').doc(id).set(userData, { merge: true });
-              this.showToast(`Trabajador ${fullName} actualizado correctamente.`, 'success');
             } else {
               const docId = 'tech-' + Date.now();
               await db.collection('users').doc(docId).set({ ...userData, lastHeartbeat: 0, lastLogin: 'Nunca' });
-              this.showToast(`Trabajador ${fullName} registrado correctamente.`, 'success');
             }
+            let presencePhotoSynced = true;
+            try {
+              await db.collection('presencia').doc(String(username).trim().toLowerCase()).set({ username, fullName, role: 'worker', photo }, { merge: true });
+            } catch (syncError) {
+              presencePhotoSynced = false;
+              console.warn('[PERFIL] No se pudo publicar el avatar en el registro de presencia:', syncError);
+            }
+            this.showToast(presencePhotoSynced ? (id ? `Trabajador ${fullName} actualizado correctamente.` : `Trabajador ${fullName} registrado correctamente.`) : 'El trabajador se guardó, pero la foto puede tardar en sincronizarse.', presencePhotoSynced ? 'success' : 'info');
             if (id) this.closeEmployeeEditBubble();
             this.resetUserForm();
           } catch(err) {
