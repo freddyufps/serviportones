@@ -73,3 +73,4 @@ body.theme-dark .quote-form-toolbar h3,body.theme-dark .quote-section-heading h4
 .quote-document::before{content:"";position:absolute;z-index:-1;top:49%;left:50%;width:46%;aspect-ratio:2.96;transform:translate(-50%,-50%);background:url("../media/invoice-pdf-company-logo.png") center/contain no-repeat;filter:grayscale(1);opacity:.07;mix-blend-mode:multiply;pointer-events:none}
 .quote-document>.quote-doc-products,.quote-document>.quote-doc-two .quote-doc-section{background-color:transparent}
 .quotes-archive .quotes-summary,.quotes-archive .quote-archive-summary,.quotes-archive .quotes-visible-count{display:none!important}
+.quote-code-card .quote-number-input{width:100%;min-width:0;padding:0;border:0;border-bottom:1px solid transparent;background:transparent;color:#1b3856;text-align:right;font-size:15px;font-weight:800;outline:none}.quote-code-card .quote-number-input:focus{border-bottom-color:#79a940;box-shadow:0 1px 0 #79a940}

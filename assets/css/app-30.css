@@ -78,7 +78,7 @@ body.theme-dark #gps-map-container{background:#e9eff5!important}
 .task-modal-header{background:linear-gradient(115deg,#102238,#1d3a55)!important}
 .task-form-content{padding:clamp(16px,3vw,26px);display:flex;flex-direction:column;gap:14px}
 .task-form-content>div,.task-form-content>section{margin-top:0!important}
-.task-client-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:5px;border:1px solid #dce5ed;border-radius:14px;background:#f1f5f9}
+.task-client-tabs{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;padding:5px;border:1px solid #dce5ed;border-radius:14px;background:#f1f5f9}
 .task-client-tab{min-height:42px;padding:9px 14px;border:0;border-radius:10px;background:transparent;color:#58677a;font-size:13px;font-weight:700;cursor:pointer;transition:background .16s,color .16s,box-shadow .16s}
 .task-client-tab:hover{color:#0f253b;background:#fff}
 .task-client-tab.active{background:#fff;color:#0f253b;box-shadow:0 2px 7px rgba(15,35,59,.12)}

@@ -789,10 +789,9 @@
         </div>
 
         <div id="task-client-tabs" class="task-client-tabs" role="tablist" aria-label="Tipo de cliente">
-          <button type="button" id="task-client-tab-new" class="task-client-tab active" role="tab" aria-selected="true" aria-controls="task-client-new-panel" onclick="app.setTaskClientMode('new')">Cliente nuevo</button>
           <button type="button" id="task-client-tab-saved" class="task-client-tab" role="tab" aria-selected="false" aria-controls="task-client-saved-panel" onclick="app.setTaskClientMode('saved')">Clientes registrados</button>
         </div>
-        <p id="task-client-mode-hint" class="task-client-mode-hint">Ingresa los datos del cliente. Al guardar, estarán disponibles para próximas órdenes.</p>
+        <p id="task-client-mode-hint" class="task-client-mode-hint">Busca y selecciona un cliente registrado para completar los datos de la orden.</p>
 
         <section id="task-client-saved-panel" class="hidden">
           <label for="task-client-search" class="block text-[11px] font-semibold text-slate-700 mb-1">Busca un cliente registrado</label>
@@ -1055,7 +1054,7 @@
   </div>
 
   <!-- JAVASCRIPT: LÓGICA DE LA APLICACIÓN -->
-  <script src="assets/js/app-05.js?v=20261104-worker-photo-canonical-1"></script>
+  <script src="assets/js/app-05.js?v=20261104-remove-new-client-tab-1"></script>
 <script src="assets/js/app-06.js?v=20261031-mobile-emoji-layer-2"></script>
 <link rel="stylesheet" href="assets/css/app-05.css" id="chat-hidden-overlay-fix">
 <link rel="stylesheet" href="assets/css/app-06.css" id="chat-hide-custom-emojis-mobile">
@@ -1087,7 +1086,7 @@
 <link rel="stylesheet" href="assets/css/app-25.css" id="mobile-reactions-and-chat-dark-bottom-fix"><link rel="stylesheet" href="assets/css/app-26.css" id="ios-chat-press-and-worker-admin-identity">
 <script id="ios-chat-press-and-worker-admin-identity" src="assets/js/app-10.js"></script><script id="optimistic-chat-reaction-update" src="assets/js/app-11.js"></script><link rel="stylesheet" href="assets/css/app-27.css" id="chat-header-admin-presence-card-sync">
 <script id="chat-header-admin-presence-card-sync" src="assets/js/app-12.js"></script><link rel="stylesheet" href="assets/css/app-28.css" id="chat-header-admin-identity-cleanup">
-<script id="chat-header-admin-identity-cleanup" src="assets/js/app-13.js"></script><link rel="stylesheet" href="assets/css/app-29.css" id="seasonal-chat-admin-card-and-unread-red-alert"><link rel="stylesheet" href="assets/css/app-30.css?v=20261028-order-notes-mobile-keyboard-1">
+<script id="chat-header-admin-identity-cleanup" src="assets/js/app-13.js"></script><link rel="stylesheet" href="assets/css/app-29.css" id="seasonal-chat-admin-card-and-unread-red-alert"><link rel="stylesheet" href="assets/css/app-30.css?v=20261104-registered-client-only-1">
 <link rel="stylesheet" href="assets/css/app-31.css?v=20261104-payment-row-weight-1" id="payments-login-compact-style">
 <link rel="stylesheet" href="assets/css/app-32.css?v=20261028-mobile-header-single-row-1" id="mobile-contact-halloween-splash-fix">
 <script id="payment-document-control" src="assets/js/app-14.js?v=20261104-worker-photo-canonical-1"></script>
@@ -1106,13 +1105,13 @@
 <script id="premium-order-chat-presentation" src="assets/js/app-41.js?v=20261029-chat-minimized-toggle-13"></script>
 <link rel="stylesheet" href="assets/css/app-42.css?v=20261029-chat-mobile-keyboard-clean-1" id="chat-mobile-keyboard-clean-style">
 <script id="chat-mobile-keyboard-clean" src="assets/js/app-42.js?v=20261029-chat-mobile-keyboard-clean-1"></script>
-<link rel="stylesheet" href="assets/css/app-43.css?v=20261104-quote-summary-hidden-1" id="professional-quotes-module-style">
-<script id="professional-quotes-module" src="assets/js/app-43.js?v=20261104-quote-pdf-notes-signature-1"></script>
+<link rel="stylesheet" href="assets/css/app-43.css?v=20261104-edit-quote-number-1" id="professional-quotes-module-style">
+<script id="professional-quotes-module" src="assets/js/app-43.js?v=20261104-edit-quote-number-1"></script>
 <script id="professional-quotes-followup" src="assets/js/app-44.js?v=20261104-quotes-search-text-only-1"></script>
 <link rel="stylesheet" href="assets/css/app-45.css?v=local-chat-stability-1" id="chat-reaction-overlay-fix">
 <script id="local-chat-quote-interaction-fix" src="assets/js/app-45.js?v=20261031-quote-click-native-3"></script>
 <link rel="stylesheet" href="assets/css/app-46.css?v=20261031-quote-equal-order-actions-1" id="quote-button-assign-tile-size">
-<script id="mobile-chat-client-directory" src="assets/js/app-47.js?v=20261103-system-dialogs-1"></script>
+<script id="mobile-chat-client-directory" src="assets/js/app-47.js?v=20261104-quote-number-validation-1"></script>
 <link rel="stylesheet" href="assets/css/app-49.css?v=20261030-mobile-chat-keyboard-anchor-1" id="mobile-chat-keyboard-anchor-style">
 <link rel="stylesheet" href="assets/css/app-50.css?v=20261031-invoice-tab-visible-fix-1" id="mobile-ops-invoice-view-fix">
 <link rel="stylesheet" href="assets/css/app-51.css?v=20261102-emoji-mobile-hidden-2" id="chat-sticker-button-visible">

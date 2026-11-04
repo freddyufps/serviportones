@@ -15,6 +15,9 @@
   function form(q){
    const cs=contacts(),items=q.items?.length?q.items:[{quantity:1,unit:0}];
    const advisor=q.advisor||app.getCurrentDisplayName?.()||"";
+   const quoteNumber=q.number||nextNumber();
+   const quoteNumberControl=q.id?`<input class='quote-number-input' name='number' type='text' value='${esc(quoteNumber)}' pattern='COT[0-9]{4,}' maxlength='16' autocomplete='off' aria-label='Número de cotización' title='Usa el formato COT0001' required>`:`<b>${esc(quoteNumber)}</b>`;
+   const quoteNumberField=q.id?"":`<input type='hidden' name='number' value='${esc(quoteNumber)}'>`;
    const warrantyValue=String(q.warrantyEnabled??(q.warranty&&!/^no$/i.test(String(q.warranty).trim())?"yes":"no")).toLowerCase();
    const warrantyEnabled=warrantyValue==="yes"?"yes":"no";
    const legacyWarranty=String(q.warranty||"").toLowerCase();
@@ -23,8 +26,8 @@
    const orderField="<input type='hidden' name='orderId' value='"+esc(q.orderId||"")+"'>";
    const paymentField=field("payment","FORMA DE PAGO",PAYMENT_DEFAULT).replace("<label>","<label class='quote-field-wide'>").replace("<input","<input readonly");
    return `<form id='quote-form' class='quote-form' onsubmit='app.saveQuote(event)'>
-     <div class='quote-form-toolbar'><div><span class='quote-form-kicker'>PROPUESTA COMERCIAL</span><h3>${q.id?"Editar cotización":"Nueva cotización"}</h3></div><div class='quote-code-card'><span>Número</span><b>${esc(q.number||nextNumber())}</b><span>${date(q.date||today())}</span></div></div>
-     <input type='hidden' name='id' value='${esc(q.id||"")}'><input type='hidden' name='number' value='${esc(q.number||nextNumber())}'><input type='hidden' name='date' value='${esc(q.date||today())}'>${advisorField}${orderField}
+     <div class='quote-form-toolbar'><div><span class='quote-form-kicker'>PROPUESTA COMERCIAL</span><h3>${q.id?"Editar cotización":"Nueva cotización"}</h3></div><div class='quote-code-card'><span>Número</span>${quoteNumberControl}<span>${date(q.date||today())}</span></div></div>
+     <input type='hidden' name='id' value='${esc(q.id||"")}'>${quoteNumberField}<input type='hidden' name='date' value='${esc(q.date||today())}'>${advisorField}${orderField}
      <section class='quote-form-section'><div class='quote-section-heading'><span>01</span><div><h4>Datos del cliente</h4><p>Contacto y ubicación del proyecto</p></div></div><div class='quote-fields-grid'>
        ${field("client","Nombre del cliente",q.client,"text","Nombre o razón social").replace("<input","<input list='q-clients' required")}<datalist id='q-clients'>${cs.clients.map(v=>"<option value='"+esc(v)+"'>").join("")}</datalist>
        <input type="hidden" name="condo" value="${esc(q.condo||"")}"><input type="hidden" name="phone" value="${esc(q.phone||"")}"><input type="hidden" name="phone2" value="${esc(q.phone2||"")}"><input type="hidden" name="email" value="${esc(q.email||"")}">
@@ -80,7 +83,48 @@
   updateQuoteTotals(){let f=document.getElementById("quote-form");if(!f)return;let total=0;f.querySelectorAll("#quote-items-body tr").forEach(r=>{let n=Number(r.querySelector("[name=itemQuantity]").value)||0,u=Number(r.querySelector("[name=itemUnit]").value)||0;total+=n*u;r.querySelector(".quote-row-total").textContent=money(n*u)});let totals=document.getElementById("quote-totals");if(totals)totals.innerHTML="<div><span>Subtotal</span><b>"+money(total)+"</b></div><div class=\"quote-total-highlight\"><span>Total</span><b>"+money(total)+"</b></div>"},
   toggleQuoteWarrantyOptions(){const f=document.getElementById("quote-form"),enabled=f?.querySelector("[name=warrantyEnabled]:checked")?.value==="yes",options=document.getElementById("quote-warranty-options");options?.classList.toggle("hidden",!enabled);f?.querySelectorAll("[name=warrantyOption]").forEach(input=>input.required=enabled)},
   collectQuote(f){const items=Array.from(f.querySelectorAll("#quote-items-body tr")).map(r=>({description:r.querySelector("[name=itemDescription]").value.trim(),quantity:Number(r.querySelector("[name=itemQuantity]").value)||0,unit:Number(r.querySelector("[name=itemUnit]").value)||0,imageData:r.dataset.imageData||""})).filter(x=>x.description),subtotal=items.reduce((sum,x)=>sum+x.quantity*x.unit,0),get=name=>f.elements.namedItem(name)?.value?.trim?.()||"",warrantyEnabled=f.querySelector("[name=warrantyEnabled]:checked")?.value||"no",warrantyOption=warrantyEnabled==="yes"?(f.querySelector("[name=warrantyOption]:checked")?.value||"motor"):"";return{id:get("id")||"q_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),number:get("number"),date:get("date"),client:get("client"),condo:get("condo"),address:get("address"),city:get("city"),phone:get("phone"),phone2:get("phone2"),email:get("email"),validity:"",advisor:get("advisor"),orderId:get("orderId")||null,summary:"",scope:[],technical:"",items,tax:0,discount:0,subtotal,taxValue:0,total:subtotal,deposit:0,balance:0,delivery:get("delivery")||DELIVERY_DEFAULT,payment:PAYMENT_DEFAULT,warrantyEnabled,warrantyOption,warranty:warrantyEnabled==="yes"?WARRANTY_OPTIONS[warrantyOption]:"",notes:get("notes"),updatedAt:new Date().toISOString(),createdBy:this.currentUser?.username||""}},
-  async saveQuote(e){e.preventDefault();let f=e.currentTarget;if(!f.reportValidity())return;const creating=!f.elements.namedItem("id")?.value;let q=this.collectQuote(f);if(!q.items.length)return this.showToast("Agrega al menos un producto o servicio.","error");if(creating){await this.refreshQuotesForNumbering();q.number=nextNumber(this.quotes);const numberField=f.elements.namedItem("number");if(numberField)numberField.value=q.number;const numberLabel=f.querySelector(".quote-code-card b");if(numberLabel)numberLabel.textContent=q.number}else{const original=(this.quotes||[]).find(x=>x.id===q.id);if(original?.number)q.number=original.number}let old=(this.quotes||[]).find(x=>x.id===q.id);q.createdAt=old?.createdAt||q.updatedAt;const imageData=q.items.map(item=>item.imageData||"");if(imageData.some(Boolean))this.quoteEphemeralImages[q.id]=imageData;else delete this.quoteEphemeralImages[q.id];const stored={...q,items:q.items.map(({imageData,...item})=>item)};try{if(window.db&&navigator.onLine)await db.collection("cotizaciones").doc(q.id).set(stored,{merge:true});let i=this.quotes.findIndex(x=>x.id===q.id);if(i<0)this.quotes.unshift(stored);else this.quotes[i]=stored;localStorage.setItem(K,JSON.stringify(this.quotes));if(q.orderId){let t=this.tasks.find(x=>x.id===q.orderId);if(t){t.quoteIds=Array.from(new Set([...(t.quoteIds||[]),q.id]));await this.saveTasks(true)}}this.renderQuotesCount();this.decorateQuoteOrderCards();this.closeQuotes();this.showToast("Cotización guardada y archivada.","success")}catch(err){console.error("[COTIZACIONES]",err);this.showToast("No se pudo guardar en Firestore; revisa permisos y conexión.","error")}},
+  async saveQuote(e){
+    e.preventDefault();
+    const f=e.currentTarget;
+    if(!f.reportValidity())return false;
+    const creating=!f.elements.namedItem("id")?.value;
+    const q=this.collectQuote(f);
+    if(!q.items.length){this.showToast("Agrega al menos un producto o servicio.","error");return false}
+    const numberField=f.elements.namedItem("number");
+    if(creating){
+      await this.refreshQuotesForNumbering();
+      q.number=nextNumber(this.quotes);
+      if(numberField)numberField.value=q.number;
+      const numberLabel=f.querySelector(".quote-code-card b");
+      if(numberLabel)numberLabel.textContent=q.number;
+    }else{
+      await this.refreshQuotesForNumbering();
+      q.number=String(q.number||"").trim().toUpperCase();
+      if(!/^COT\d{4,}$/.test(q.number)){
+        this.showToast("Usa el formato COT0001 para el número de cotización.","error");
+        numberField?.focus();numberField?.select?.();return false;
+      }
+      const duplicate=(this.quotes||[]).some(existing=>String(existing.id)!==String(q.id)&&String(existing.number||"").trim().toUpperCase()===q.number);
+      if(duplicate){
+        this.showToast("Ese número de cotización ya existe. Elige un número disponible.","error");
+        numberField?.focus();numberField?.select?.();return false;
+      }
+      if(numberField)numberField.value=q.number;
+    }
+    const old=(this.quotes||[]).find(x=>String(x.id)===String(q.id));
+    q.createdAt=old?.createdAt||q.updatedAt;
+    const imageData=q.items.map(item=>item.imageData||"");
+    if(imageData.some(Boolean))this.quoteEphemeralImages[q.id]=imageData;else delete this.quoteEphemeralImages[q.id];
+    const stored={...q,items:q.items.map(({imageData,...item})=>item)};
+    try{
+      if(window.db&&navigator.onLine)await db.collection("cotizaciones").doc(q.id).set(stored,{merge:true});
+      const i=this.quotes.findIndex(x=>String(x.id)===String(q.id));
+      if(i<0)this.quotes.unshift(stored);else this.quotes[i]=stored;
+      localStorage.setItem(K,JSON.stringify(this.quotes));
+      if(q.orderId){const task=this.tasks.find(x=>x.id===q.orderId);if(task){task.quoteIds=Array.from(new Set([...(task.quoteIds||[]),q.id]));await this.saveTasks(true)}}
+      this.renderQuotesCount();this.decorateQuoteOrderCards();this.closeQuotes();this.showToast("Cotización guardada y archivada.","success");return true;
+    }catch(err){console.error("[COTIZACIONES]",err);this.showToast("No se pudo guardar en Firestore; revisa permisos y conexión.","error");return false}
+  },
   previewQuoteFromForm(){let f=document.getElementById("quote-form");if(f.reportValidity())this.showQuotePreview(this.collectQuote(f))},
   showQuotePreview(q){if(!q)return;if(q.id&&this.quoteEphemeralImages?.[q.id])q={...q,items:(q.items||[]).map((item,index)=>({...item,imageData:item.imageData||this.quoteEphemeralImages[q.id][index]||""}))};this.quotePreviewQuote=q;this.quoteCurrentId=q.id||null;document.getElementById("quote-preview-content").innerHTML=documentHtml(q);document.getElementById("quote-preview-shell").classList.remove("hidden")},
   async ensurePdfLibrary(){if(window.html2pdf)return true;return new Promise(r=>{let s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js";s.onload=()=>r(true);s.onerror=()=>r(false);document.head.appendChild(s)})},
