@@ -60,7 +60,7 @@
 .technical-report-preview-controls>b{color:#1b344e;font-size:13px}
 .technical-report-preview-controls>div{display:flex;gap:7px}
 .technical-report-print-root{background:#e8edf0;padding:20px}
-.technical-report-document{position:relative;box-sizing:border-box;width:210mm;min-height:297mm;margin:0 auto;padding:42mm 18mm 34mm;background:#fff;color:#333;font-family:Arial,sans-serif;box-shadow:0 8px 24px rgba(15,31,45,.18)}
+.technical-report-document{position:relative;box-sizing:border-box;width:210mm;min-height:297mm;margin:0 auto;padding:42mm 18mm 34mm;background:#fff;color:#333;font-family:Inter,Arial,sans-serif;box-shadow:0 8px 24px rgba(15,31,45,.18)}
 .technical-report-document-header{position:absolute;top:2mm;left:0;width:100%;height:39mm}
 .technical-report-green-bar{position:absolute;top:13mm;left:0;width:40%;height:10mm;background:#8cc63e}
 .technical-report-black-banner{position:absolute;top:13mm;right:0;display:grid;place-content:center;gap:4px;width:66%;height:31mm;padding-left:18mm;clip-path:polygon(0 0,100% 0,100% 100%,17% 100%);background:#050505;color:#fff;text-align:center}
