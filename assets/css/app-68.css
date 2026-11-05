@@ -3,6 +3,10 @@
   padding: 0.7rem 0.85rem;
 }
 
+#tasks-container .admin-order-card-compact > div > h3 {
+  font-weight: 600 !important;
+}
+
 #tasks-container .admin-order-card-compact .order-administrator,
 #tasks-container .admin-order-card-compact .order-phone,
 #tasks-container .admin-order-card-compact .order-work-value,

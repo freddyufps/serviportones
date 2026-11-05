@@ -51,7 +51,12 @@
       getCtx() {
         if (!this.ctx || this.ctx.state === 'closed') {
           const AudioContext = window.AudioContext || window.webkitAudioContext;
-          if (AudioContext) this.ctx = new AudioContext();
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+            this.ctx.addEventListener?.('statechange', () => {
+              if (this.ctx?.state !== 'running' && this.ctx?.state !== 'closed') armNotificationAudioUnlock();
+            });
+          }
         }
         if (this.ctx && this.ctx.state !== 'running' && this.ctx.state !== 'closed') {
           this.ctx.resume().catch(error => console.warn('[CHAT] No se pudo reactivar el audio:', error?.message || error));
@@ -254,17 +259,29 @@
       }
     };
 
-    const unlockNotificationAudio = () => {
-      // Mantener los gestos de desbloqueo instalados: el navegador puede cerrar o
-      // suspender el AudioContext después del primer aviso y volver a bloquearlo.
-      SoundEngine.unlock().catch(() => {});
+    const notificationAudioUnlockEvents = ['pointerdown', 'touchstart', 'click', 'keydown'];
+    let notificationAudioUnlockArmed = false;
+    const disarmNotificationAudioUnlock = () => {
+      if (!notificationAudioUnlockArmed) return;
+      notificationAudioUnlockEvents.forEach(type => window.removeEventListener(type, unlockNotificationAudio));
+      notificationAudioUnlockArmed = false;
     };
-    window.addEventListener('pointerdown', unlockNotificationAudio, { passive: true });
-    window.addEventListener('touchstart', unlockNotificationAudio, { passive: true });
-    window.addEventListener('click', unlockNotificationAudio, { passive: true });
-    window.addEventListener('keydown', unlockNotificationAudio, { passive: true });
+    function armNotificationAudioUnlock() {
+      if (notificationAudioUnlockArmed) return;
+      notificationAudioUnlockEvents.forEach(type => window.addEventListener(type, unlockNotificationAudio, { passive: true }));
+      notificationAudioUnlockArmed = true;
+    }
+    const unlockNotificationAudio = () => {
+      SoundEngine.unlock().then(() => {
+        if (SoundEngine.ctx?.state === 'running') disarmNotificationAudioUnlock();
+      }).catch(() => {});
+    };
+    armNotificationAudioUnlock();
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && SoundEngine.ctx?.state !== 'running' && SoundEngine.ctx?.state !== 'closed') SoundEngine.unlock().catch(error => console.warn('No se pudo reactivar el sonido:', error));
+      if (!document.hidden && SoundEngine.ctx?.state !== 'running' && SoundEngine.ctx?.state !== 'closed') {
+        armNotificationAudioUnlock();
+        SoundEngine.unlock().then(() => { if (SoundEngine.ctx?.state === 'running') disarmNotificationAudioUnlock(); }).catch(error => console.warn('No se pudo reactivar el sonido:', error));
+      }
     });
 
     const INITIAL_TASKS = [
