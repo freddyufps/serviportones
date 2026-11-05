@@ -293,6 +293,10 @@
       constructor() {
         this.currentUser = null;
         this.sessionInvalidating = false;
+        this.presenceSessionId = `tab_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
+        this.ownAvailabilityStatus = 'available';
+        window.addEventListener('pagehide', () => this.releasePresenceSession());
+        window.addEventListener('pageshow', () => { if (this.currentUser) this.sendHeartbeat(); });
         this.users = [];
         this.workers = [];
         this.tasks = INITIAL_TASKS;
@@ -1071,6 +1075,7 @@
         user.role = this.getChatRole(user.role);
         user.sessionVersion = Math.max(1, Number(user.sessionVersion) || 1);
         this.currentUser = user;
+        this.ownAvailabilityStatus = 'available';
         // Mostrar el espacio de trabajo sin esperar a que Firestore responda.
         // Una conexión lenta no debe dejar el indicador de carga bloqueado.
         if (window.db) {
@@ -1101,7 +1106,8 @@
             photo: this.getCurrentDisplayPhoto() || user.photo || '',
             lastHeartbeat: heartbeat,
             lastLogin: `${this.formatTime(new Date())} (En línea)`,
-            availabilityStatus: 'available'
+            availabilityStatus: 'available',
+            sessions: { [this.presenceSessionId]: { lastHeartbeat: heartbeat, availabilityStatus: 'available' } }
           };
           this.presenceRecords[adminUsername] = { ...(this.presenceRecords[adminUsername] || {}), ...activePresence };
           if (window.db) {
@@ -1154,17 +1160,7 @@
       }
 
       logout() {
-        const now = new Date();
-        const formattedLogout = `${this.formatTime(now)} (Desconectado)`;
-
-        if (this.currentUser && window.db) {
-          db.collection('presencia').doc(String(this.currentUser.username || '').trim().toLowerCase()).set({
-            lastHeartbeat: 0,
-            lastLogin: formattedLogout,
-            role: String(this.currentUser.role || '').toLowerCase() === 'admin' ? 'admin' : 'worker',
-            availabilityStatus: 'disconnected'
-          }, { merge: true }).catch(e => console.error(e));
-        }
+        this.releasePresenceSession();
 
         this.currentUser = null;
         this.applyDarkMode();
@@ -1181,13 +1177,16 @@
           const username = String(this.currentUser.username || '').trim().toLowerCase();
           const currentRecord = this.presenceRecords?.[username] || {};
           const role = String(this.currentUser.role || '').toLowerCase() === 'admin' ? 'admin' : 'worker';
+          const sessionStatus = role === 'worker' ? 'available' : (this.ownAvailabilityStatus || 'available');
           const heartbeatData = {
             username: this.currentUser.username,
             fullName: this.getCurrentDisplayName(),
             lastHeartbeat: now,
             ...(role === 'admin' ? { photo: this.currentUser.photo || '' } : {}),
             role,
-            ...(role === 'worker' ? { availabilityStatus: 'available', lastLogin: `${this.formatTime(new Date(now))} (En línea)` } : {})
+            availabilityStatus: sessionStatus,
+            sessions: { [this.presenceSessionId]: { lastHeartbeat: now, availabilityStatus: sessionStatus } },
+            lastLogin: sessionStatus === 'disconnected' ? `${this.formatTime(new Date(now))} (Desconectado)` : `${this.formatTime(new Date(now))} (En línea)`
           };
           this.presenceRecords = this.presenceRecords || {};
           this.presenceRecords[username] = { ...currentRecord, ...heartbeatData };
@@ -1197,6 +1196,31 @@
           });
         }
         if (this.currentUser.role === 'admin') this.renderTechniciansMonitor();
+      }
+
+      releasePresenceSession() {
+        if (!this.currentUser || !window.db) return Promise.resolve(false);
+        const username = String(this.currentUser.username || '').trim().toLowerCase();
+        const record = this.presenceRecords?.[username] || {};
+        const sessions = record.sessions && typeof record.sessions === 'object' ? record.sessions : {};
+        const now = Date.now();
+        const otherLiveSessions = Object.entries(sessions)
+          .filter(([id, session]) => id !== this.presenceSessionId && now - Number(session?.lastHeartbeat || 0) < 20000)
+          .map(([, session]) => session);
+        const latestHeartbeat = otherLiveSessions.reduce((latest, session) => Math.max(latest, Number(session.lastHeartbeat || 0)), 0);
+        const nextStatus = otherLiveSessions.some(session => session.availabilityStatus === 'available')
+          ? 'available'
+          : otherLiveSessions.some(session => session.availabilityStatus === 'absent') ? 'absent' : 'disconnected';
+        const payload = {
+          [`sessions.${this.presenceSessionId}`]: firebase.firestore.FieldValue.delete(),
+          lastHeartbeat: latestHeartbeat,
+          availabilityStatus: nextStatus,
+          ...(latestHeartbeat ? {} : { lastLogin: `${this.formatTime(new Date())} (Desconectado)` })
+        };
+        return db.collection('presencia').doc(username).update(payload).then(() => true).catch(error => {
+          console.warn('[PRESENCE] No se pudo cerrar la sesión de presencia de inmediato; vencerá por tiempo de espera:', error?.message || error);
+          return false;
+        });
       }
 
       togglePasswordVisibility(fieldId) {
@@ -1571,15 +1595,26 @@
         const record = this.presenceRecords[username]
           || Object.values(this.presenceRecords || {}).find(item => String(item?.username || '').trim().toLowerCase() === username)
           || {};
+        const toHeartbeatMs = value => typeof value?.toMillis === 'function' ? value.toMillis() : Number(value || 0);
+        if (Object.prototype.hasOwnProperty.call(record, 'sessions')) {
+          const now = Date.now();
+          const liveSessions = Object.values(record.sessions || {}).filter(session => {
+            const heartbeat = toHeartbeatMs(session?.lastHeartbeat);
+            return heartbeat > 0 && now - heartbeat >= 0 && now - heartbeat < 20000;
+          });
+          if (!liveSessions.length) return 'disconnected';
+          if (liveSessions.some(session => String(session.availabilityStatus || '').toLowerCase() === 'available')) return 'available';
+          if (liveSessions.some(session => String(session.availabilityStatus || '').toLowerCase() === 'absent')) return 'absent';
+          return 'disconnected';
+        }
         const rawHeartbeat = record.lastHeartbeat ?? user.lastHeartbeat ?? 0;
-        const heartbeat = typeof rawHeartbeat?.toMillis === 'function' ? rawHeartbeat.toMillis() : Number(rawHeartbeat);
+        const heartbeat = toHeartbeatMs(rawHeartbeat);
         const savedStatus = String(record.availabilityStatus || '').trim().toLowerCase();
         const isAdminUser = this.getChatRole(user.role || record.role) === 'admin';
         const heartbeatFresh = heartbeat > 0 && Date.now() - heartbeat >= 0 && Date.now() - heartbeat < 20000;
         if (isAdminUser) {
-          if (savedStatus === 'absent') return 'absent';
-          if (savedStatus === 'disconnected') return 'disconnected';
-          if (heartbeatFresh || savedStatus === 'available') return 'available';
+          if (heartbeatFresh && savedStatus === 'absent') return 'absent';
+          if (heartbeatFresh) return 'available';
           return 'disconnected';
         }
         // Para trabajadores, una sesión con heartbeat fresco significa "En línea".
@@ -1702,7 +1737,9 @@
         const username = String(this.currentUser.username || '').toLowerCase();
         const previousRecord = { ...(this.presenceRecords[username] || {}) };
         const lastHeartbeat = Date.now();
-        this.presenceRecords[username] = { ...previousRecord, username: this.currentUser.username, fullName: this.getCurrentDisplayName(), role: 'admin', photo: this.currentUser.photo || '', lastHeartbeat, availabilityStatus: status };
+        this.ownAvailabilityStatus = status;
+        const sessions = { ...(previousRecord.sessions || {}), [this.presenceSessionId]: { lastHeartbeat, availabilityStatus: status } };
+        this.presenceRecords[username] = { ...previousRecord, username: this.currentUser.username, fullName: this.getCurrentDisplayName(), role: 'admin', photo: this.currentUser.photo || '', lastHeartbeat, availabilityStatus: status, sessions };
         this.renderAdminPresence();
         try {
           await db.collection('presencia').doc(username).set({
@@ -1711,7 +1748,8 @@
             role: 'admin',
             photo: this.currentUser.photo || '',
             lastHeartbeat,
-            availabilityStatus: status
+            availabilityStatus: status,
+            sessions: { [this.presenceSessionId]: { lastHeartbeat, availabilityStatus: status } }
           }, { merge: true });
           console.info('[PRESENCE] Estado del administrador guardado', { username, status });
           this.showToast('Estado actualizado: ' + this.getPresenceLabel(status), 'success');
