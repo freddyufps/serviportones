@@ -4,14 +4,16 @@
   const mobileTiles = window.matchMedia('(max-width: 540px)');
   let assignTileAnchor = null;
   let quoteTileAnchor = null;
+  let reportTileAnchor = null;
   let actionGroup = null;
 
   const syncCreateActionGroup = () => {
     const quote = document.getElementById('btn-create-quote');
+    const report = document.getElementById('btn-create-report');
     const assign = document.getElementById('btn-assign-order-filter');
     const controls = document.querySelector('#orders-toolbar .orders-filter-controls');
     const nav = document.getElementById('orders-view-navigation');
-    if (!quote || !assign || !controls || !nav) return;
+    if (!quote || !report || !assign || !controls || !nav) return;
 
     if (mobileTiles.matches) {
       if (!assignTileAnchor && assign.parentNode) {
@@ -22,12 +24,16 @@
         quoteTileAnchor = document.createComment('crear-cotizacion-toolbar-position');
         quote.parentNode.insertBefore(quoteTileAnchor, quote);
       }
+      if (!reportTileAnchor && report.parentNode) {
+        reportTileAnchor = document.createComment('realizar-informe-toolbar-position');
+        report.parentNode.insertBefore(reportTileAnchor, report);
+      }
       if (!actionGroup) {
         actionGroup = document.createElement('div');
         actionGroup.className = 'orders-create-actions-group';
       }
       if (actionGroup.parentNode !== controls) controls.insertBefore(actionGroup, assignTileAnchor);
-      if (assign.parentNode !== actionGroup || quote.parentNode !== actionGroup) actionGroup.append(assign, quote);
+      if (assign.parentNode !== actionGroup || quote.parentNode !== actionGroup || report.parentNode !== actionGroup) actionGroup.append(assign, quote, report);
       return;
     }
 
@@ -40,6 +46,11 @@
       quoteTileAnchor.parentNode.insertBefore(quote, quoteTileAnchor);
       quoteTileAnchor.remove();
       quoteTileAnchor = null;
+    }
+    if (reportTileAnchor?.parentNode) {
+      reportTileAnchor.parentNode.insertBefore(report, reportTileAnchor);
+      reportTileAnchor.remove();
+      reportTileAnchor = null;
     }
     actionGroup?.remove();
     actionGroup = null;

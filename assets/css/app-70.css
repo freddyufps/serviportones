@@ -1,0 +1,124 @@
+.report-action-icon{display:grid;place-items:center;width:40px;height:40px;color:#5a8c29}
+.report-action-icon svg{width:33px;height:33px;stroke-width:1.8}
+#btn-create-report{display:grid;grid-template-rows:42px auto;place-items:center;gap:1px;color:#17314b;font-size:8px;font-weight:800;line-height:1.05;text-align:center}
+.report-action-label{max-width:72px}
+@media(max-width:540px){#orders-toolbar .orders-create-actions-group{grid-row:3!important;grid-column:1/-1!important;justify-self:center;width:auto!important;gap:5px!important}#orders-toolbar .orders-create-actions-group>.orders-action-tile{flex:0 0 68px!important}}
+.technical-report-modal,.technical-report-preview-modal{position:fixed;inset:0;z-index:2147482500;display:grid;place-items:center;padding:18px;background:rgba(15,23,42,.58);backdrop-filter:blur(4px)}
+.technical-report-modal.hidden,.technical-report-preview-modal.hidden{display:none!important}
+.technical-report-form-card,.technical-signature-card{width:min(920px,100%);max-height:min(92dvh,980px);overflow:auto;border:1px solid #d9e4eb;border-radius:20px;background:#fff;box-shadow:0 24px 70px rgba(13,28,44,.28);color:#172b43}
+.technical-report-form-header{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:14px;padding:18px 22px;border-bottom:1px solid #e0e8ed;background:linear-gradient(135deg,#fff,#f6f9f4)}
+.technical-report-heading-icon{display:grid;place-items:center;width:46px;height:46px;flex:none;border-radius:14px;background:#eef6e7;color:#5e922b}
+.technical-report-heading-icon svg{width:24px;height:24px}
+.technical-report-form-header>div:nth-child(2){min-width:0;flex:1}
+.technical-report-form-header span,.technical-signature-card header span,.technical-reports-archive-heading>div>span{color:#5e922b;font-size:10px;font-weight:900;letter-spacing:.13em}
+.technical-report-form-header h2,.technical-signature-card h2{margin:2px 0;color:#172b43;font-size:21px;font-weight:800}
+.technical-report-form-header p{margin:0;color:#60758a;font-size:12px}
+.technical-report-form-header>button,.technical-signature-card header>button,.technical-report-preview-controls [data-report-preview-close]{display:grid;place-items:center;width:38px;height:38px;border:1px solid #d8e2e8;border-radius:11px;background:#fff;color:#536579;font-size:23px;cursor:pointer}
+.technical-report-form{padding:18px 22px 20px}
+.technical-report-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.technical-report-fields>label{display:grid;align-content:start;gap:7px;color:#40536a;font-size:12px;font-weight:800}
+.technical-report-fields input,.technical-report-fields textarea{box-sizing:border-box;width:100%;min-width:0;border:1px solid #d4e0e8;border-radius:11px;background:#fbfcfd;padding:11px 12px;color:#18314b;font-family:inherit;font-size:14px;font-weight:500;line-height:1.45;outline:none}
+.technical-report-fields input{height:44px}
+.technical-report-fields textarea{min-height:300px;resize:vertical}
+.technical-report-fields input:focus,.technical-report-fields textarea:focus{border-color:#83ad50;box-shadow:0 0 0 3px rgba(112,157,61,.13)}
+.technical-report-fields input[readonly]{background:#f3f6f8;color:#52667b}
+.technical-report-body-field{grid-column:1/-1}
+.technical-report-signature-editor{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;padding:13px 15px;border:1px solid #e0e8ed;border-radius:13px;background:#fbfcfd}
+.technical-report-signature-editor>div:first-child{display:grid;gap:4px;color:#344b62;font-size:13px}
+.technical-report-signature-editor small{color:#72849a;font-size:11px;font-weight:500}
+.technical-report-signature-controls{display:flex;align-items:center;gap:12px}
+.technical-report-signature-controls img{width:130px;height:54px;object-fit:contain}
+.technical-report-signature-controls button,.technical-report-row-actions button,.technical-reports-tools label,.technical-report-preview-controls button:not([data-report-preview-close]){display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #d7e1e8;border-radius:10px;background:#fff;padding:9px 11px;color:#40566d;font-size:11px;font-weight:800;cursor:pointer}
+.technical-report-signature-controls button svg,.technical-report-row-actions button svg,.technical-report-preview-controls button svg{width:15px;height:15px}
+.technical-report-form-actions,.technical-signature-card footer{display:flex;justify-content:flex-end;gap:9px;margin-top:18px;padding-top:15px;border-top:1px solid #e6edf1}
+.technical-report-secondary,.technical-report-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;border:1px solid #d1dde5;border-radius:11px;padding:0 16px;background:#fff;color:#43576c;font-size:12px;font-weight:800;cursor:pointer}
+.technical-report-primary{border-color:#172b43;background:#172b43;color:#fff}
+.technical-report-primary svg{width:16px;height:16px}
+.technical-reports-archive{width:100%;padding:18px;border:1px solid #dbe5eb;border-radius:19px;background:linear-gradient(145deg,#fff,#f8fafb);box-shadow:0 12px 28px rgba(17,41,63,.055)}
+.technical-reports-archive-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:17px}
+.technical-reports-archive-heading h3{margin:4px 0 2px;color:#172b43;font-size:20px;font-weight:850}
+.technical-reports-archive-heading p{margin:0;color:#667c91;font-size:12px}
+.technical-reports-tools{display:flex;align-items:center;gap:12px;margin-bottom:13px}
+.technical-reports-tools label{flex:1;justify-content:flex-start;min-height:42px;padding:0 12px}
+.technical-reports-tools label svg{width:17px;height:17px;color:#8a9cb0}
+.technical-reports-tools input{width:100%;height:40px;border:0;outline:0;background:transparent;color:#233c55;font-family:inherit;font-size:13px;font-weight:500}
+.technical-reports-tools>span{color:#73869a;font-size:11px;white-space:nowrap}
+.technical-reports-list{display:grid;gap:9px}
+.technical-report-row{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px 16px;border:1px solid #dce6ec;border-radius:14px;background:#fff}
+.technical-report-row-main{display:grid;gap:4px;min-width:0}
+.technical-report-number{color:#63952f;font-size:10px;font-weight:900;letter-spacing:.11em}
+.technical-report-row-main>b{overflow-wrap:anywhere;color:#18314b;font-size:14px;font-weight:750}
+.technical-report-row-main>small{color:#718399;font-size:11px}
+.technical-report-row-actions{display:flex;flex:none;gap:6px}
+.technical-report-row-actions button[data-report-delete]{color:#b34343}
+.technical-reports-empty{display:grid;justify-items:center;gap:7px;padding:36px 16px;border:1px dashed #d6e0e7;border-radius:14px;color:#708297;text-align:center}
+.technical-reports-empty svg{width:28px;height:28px;color:#85a962}
+.technical-reports-empty b{color:#354d64;font-size:14px}
+.technical-report-preview-modal{display:block;overflow:auto;padding:22px}
+.technical-report-preview-shell{width:min(900px,100%);margin:0 auto}
+.technical-report-preview-controls{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 auto 14px;padding:10px 12px;border:1px solid #dbe4ea;border-radius:13px;background:#fff;box-shadow:0 8px 22px rgba(18,38,58,.12)}
+.technical-report-preview-controls>b{color:#1b344e;font-size:13px}
+.technical-report-preview-controls>div{display:flex;gap:7px}
+.technical-report-print-root{background:#e8edf0;padding:20px}
+.technical-report-document{position:relative;box-sizing:border-box;width:210mm;min-height:297mm;margin:0 auto;padding:42mm 18mm 34mm;background:#fff;color:#333;font-family:Arial,sans-serif;box-shadow:0 8px 24px rgba(15,31,45,.18)}
+.technical-report-document-header{position:absolute;top:0;left:0;width:100%;height:39mm}
+.technical-report-green-bar{position:absolute;top:13mm;left:0;width:40%;height:10mm;background:#8cc63e}
+.technical-report-black-banner{position:absolute;top:13mm;right:0;display:grid;place-content:center;gap:4px;width:66%;height:31mm;padding-left:18mm;clip-path:polygon(0 0,100% 0,100% 100%,17% 100%);background:#050505;color:#fff;text-align:center}
+.technical-report-black-banner b{font-size:14px;letter-spacing:.04em}
+.technical-report-black-banner span{font-size:10px;letter-spacing:.1em}
+.technical-report-document-header>img{position:absolute;top:17mm;left:12mm;width:60mm;height:24mm;object-fit:contain;object-position:left center}
+.technical-report-document-body{position:relative;z-index:1;min-height:210mm;padding-bottom:32mm;font-size:11.5pt;line-height:1.55}
+.technical-report-general{margin:5mm 0 13mm}
+.technical-report-general h2{margin:0 0 8mm;color:#111;font-size:12pt}
+.technical-report-general p{margin:1.5mm 0}
+.technical-report-document-text{white-space:normal;overflow-wrap:anywhere;text-align:justify;line-height:1.65}
+.technical-report-signature-block{display:grid;justify-items:center;gap:3px;width:max-content;max-width:100%;margin:30mm auto 0;break-inside:avoid;page-break-inside:avoid;color:#555;text-align:center;font-size:10.5pt}
+.technical-report-signature-block img{width:56mm;height:25mm;margin-bottom:2mm;object-fit:contain}
+.technical-report-document-footer{position:absolute;right:0;bottom:0;left:0;display:grid;grid-template-columns:1.25fr 1fr 1fr;align-items:center;gap:5mm;min-height:22mm;padding:0 18mm 8mm;color:#8cc63e;font-size:9pt;text-align:center}
+.technical-report-document-footer:after{position:absolute;z-index:0;right:38%;bottom:0;left:0;height:18mm;background:#8cc63e;clip-path:polygon(0 0,100% 0,89% 100%,0 100%);content:""}
+.technical-report-document-footer span{position:relative;z-index:1}
+.technical-signature-card{width:min(720px,100%);padding:22px}
+.technical-signature-card header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.technical-signature-card header h2{font-size:18px}
+.technical-signature-card>p{color:#657a8f;font-size:12px}
+#technical-signature-canvas{display:block;box-sizing:border-box;width:100%;height:210px;border:1px dashed #aebdca;border-radius:12px;background:#fff;touch-action:none}
+.technical-report-preview-modal.hidden{display:none!important}
+
+@media(max-width:700px){
+  .technical-report-modal{padding:8px}
+  .technical-report-form-card,.technical-signature-card{max-height:95dvh;border-radius:15px}
+  .technical-report-form-header{padding:14px}
+  .technical-report-form{padding:14px}
+  .technical-report-fields{grid-template-columns:minmax(0,1fr);gap:12px}
+  .technical-report-body-field{grid-column:auto}
+  .technical-report-fields textarea{min-height:240px}
+  .technical-report-signature-editor,.technical-report-row{align-items:flex-start;flex-direction:column}
+  .technical-report-signature-controls{width:100%;justify-content:space-between}
+  .technical-reports-archive{padding:12px}
+  .technical-reports-archive-heading{align-items:flex-start}
+  .technical-reports-archive-heading h3{font-size:17px}
+  .technical-reports-archive-heading p{max-width:42vw}
+  .technical-reports-tools{align-items:stretch;flex-direction:column}
+  .technical-report-row-actions{width:100%}
+  .technical-report-row-actions button{flex:1;padding:9px 7px}
+  .technical-report-preview-modal{padding:9px}
+  .technical-report-print-root{overflow:auto;padding:10px}
+  .technical-report-document{width:210mm;max-width:none}
+}
+
+@media print{
+  @page{size:A4;margin:29mm 18mm 29mm}
+  body.printing-technical-report *{visibility:hidden!important}
+  body.printing-technical-report #technical-report-preview-modal,
+  body.printing-technical-report #technical-report-preview-modal *{visibility:visible!important}
+  body.printing-technical-report #technical-report-preview-modal{position:static!important;display:block!important;overflow:visible!important;width:auto!important;height:auto!important;padding:0!important;background:#fff!important}
+  body.printing-technical-report .technical-report-preview-shell{width:auto!important;margin:0!important}
+  body.printing-technical-report .technical-report-preview-controls{display:none!important}
+  body.printing-technical-report .technical-report-print-root{overflow:visible!important;padding:0!important;background:#fff!important}
+  body.printing-technical-report .technical-report-document{width:auto!important;min-height:0!important;margin:0!important;padding:0!important;box-shadow:none!important}
+  body.printing-technical-report .technical-report-document-header{position:fixed!important;top:-24mm!important;right:-18mm!important;left:-18mm!important;width:auto!important;height:37mm!important}
+  body.printing-technical-report .technical-report-document-footer{position:fixed!important;right:-18mm!important;bottom:-25mm!important;left:-18mm!important;width:auto!important;height:23mm!important;padding-right:18mm!important;padding-left:18mm!important}
+  body.printing-technical-report .technical-report-document-body{min-height:0!important;padding-top:0!important;padding-bottom:0!important}
+  body.printing-technical-report .technical-report-general{margin-top:0!important}
+  body.printing-technical-report .technical-report-signature-block{margin-top:22mm!important}
+}

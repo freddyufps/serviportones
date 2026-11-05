@@ -134,8 +134,9 @@
   PortonProApp.prototype.renderDocumentControlRecords = function () {
     const panel = this.ensureDocumentControlPanel();
     if (!panel) return;
-    // El consolidado solo cuenta órdenes que siguen archivadas; al restaurarlas desaparecen y los totales se recalculan.
-    const completed = (this.tasks || []).filter(task => task?.status === 'REALIZADA' && Boolean(task.archivedAt));
+    // Conserva las órdenes archivadas existentes y agrega las facturas de Gestión FE
+    // sin obligar a archivar la orden de trabajo.
+    const completed = (this.tasks || []).filter(task => task?.status === 'REALIZADA' && (Boolean(task.archivedAt) || task.invoiceInConsolidated === true));
     const now = Date.now();
     const overdue = completed.filter(task => statusOf(task) === 'PENDIENTE' && completionTime(task) && now >= completionTime(task) + 30 * DAY);
     const pending = completed.filter(task => statusOf(task) === 'PENDIENTE');
@@ -388,10 +389,11 @@
     const valueText = String(rawValue ?? '').trim();
     const workValue = valueText === '' ? null : Number(valueText);
     if (valueText !== '' && (!Number.isFinite(workValue) || workValue < 0)) return this.showToast('Escribe un valor válido para el trabajo.', 'error');
-    const previous = { invoiceNumber: task.invoiceNumber, paymentStatus: task.paymentStatus, invoiceIssuedAt: task.invoiceIssuedAt, paymentDate: task.paymentDate, workValue: task.workValue, archivedAt: task.archivedAt, archivedBy: task.archivedBy };
+    const previous = { invoiceNumber: task.invoiceNumber, paymentStatus: task.paymentStatus, invoiceIssuedAt: task.invoiceIssuedAt, paymentDate: task.paymentDate, workValue: task.workValue, invoiceInConsolidated: task.invoiceInConsolidated };
     task.invoiceNumber = number;
     task.paymentStatus = 'PENDIENTE';
     task.workValue = workValue;
+    task.invoiceInConsolidated = Boolean(number);
     if (number) {
       task.invoiceIssuedAt = task.invoiceIssuedAt || Date.now();
       delete task.paymentDate;
@@ -399,8 +401,6 @@
       delete task.invoiceIssuedAt;
       delete task.paymentDate;
     }
-    task.archivedAt = task.archivedAt || Date.now();
-    task.archivedBy = task.archivedBy || this.getCurrentDisplayName?.() || 'Administrador';
     const saved = await this.saveTasks(true);
     if (!saved?.ok) {
       Object.keys(previous).forEach(key => previous[key] === undefined ? delete task[key] : task[key] = previous[key]);
@@ -415,7 +415,7 @@
     document.getElementById('payment-invoice-dialog')?.classList.add('hidden');
     this.updateStats?.();
     this.renderTasks();
-    this.showToast('Gestión FE guardada · orden archivada como pendiente de pago.', 'success');
+    this.showToast('Gestión FE guardada · factura enviada al consolidado.', 'success');
   };
 
   PortonProApp.prototype.saveOrderPaymentStatus = async function (id, nextStatus) {

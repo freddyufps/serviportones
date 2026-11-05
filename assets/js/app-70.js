@@ -1,0 +1,425 @@
+(() => {
+  'use strict';
+
+  const STORE_KEY = 'spem_technical_reports_v1';
+  const SIGNATURE_KEY = 'spem_technical_report_signature_v1';
+  const DELETED_KEY = 'spem_technical_reports_deleted_v1';
+  const COLLECTION = 'informes_tecnicos';
+  const SIGNATURE_ASSET = 'assets/img/firmas/polo-martinez-firma.png';
+  const FOOTER = {
+    email: 'serviportoneselectricos@hotmail.com',
+    address: 'Urb. Santa Ana CL 9A #27-78',
+    phones: '3133885836 - 3157716656'
+  };
+  const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
+  const localRead = () => {
+    try { const value = JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); return Array.isArray(value) ? value : []; }
+    catch { return []; }
+  };
+  const localWrite = reports => {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(reports)); return true; }
+    catch { return false; }
+  };
+  const deletedRead = () => { try { const value = JSON.parse(localStorage.getItem(DELETED_KEY) || '[]'); return Array.isArray(value) ? value.map(String) : []; } catch { return []; } };
+  const reportDate = value => {
+    if (!value) return '—';
+    // Date inputs are stored as YYYY-MM-DD; parse them locally so UTC timezone
+    // conversion cannot shift the inspection or creation date to the day before.
+    const raw = String(value);
+    const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+    const date = value instanceof Date ? value : dateOnly
+      ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+      : new Date(value);
+    return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('es-CO', { day:'2-digit', month:'long', year:'numeric' }).format(date);
+  };
+  const isoToday = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  };
+  const numberFromId = value => Number(String(value || '').match(/INF[- ]?(\d+)/i)?.[1] || 0);
+  const byCreated = (a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0);
+  const signatureSource = () => {
+    try { return localStorage.getItem(SIGNATURE_KEY) || SIGNATURE_ASSET; } catch { return SIGNATURE_ASSET; }
+  };
+
+  const install = () => {
+    const app = window.app;
+    const proto = app?.constructor?.prototype;
+    if (!app || !proto || app.__technicalReports70) return false;
+    app.__technicalReports70 = true;
+    app.technicalReports = localRead();
+    app.technicalReportsArchiveOpen = false;
+    let reportsNavButton = null;
+
+    const persist = function () { localWrite(this.technicalReports || []); };
+    const mergeCloudReports = function (snapshot) {
+      const remote = [];
+      snapshot?.forEach(doc => remote.push({ ...doc.data(), id: doc.id }));
+      const local = localRead();
+      const deleted = new Set(deletedRead());
+      const merged = new Map(remote.filter(item => !deleted.has(String(item.id))).map(item => [String(item.id), item]));
+      local.forEach(item => { const key = String(item.id); if (deleted.has(key)) return; const saved = merged.get(key); if (!saved || Number(item.updatedAt || 0) > Number(saved.updatedAt || 0)) merged.set(key, item); });
+      this.technicalReports = [...merged.values()].sort(byCreated);
+      persist.call(this);
+      if (this.technicalReportsArchiveOpen) this.renderTechnicalReportsArchive();
+    };
+
+    proto.loadTechnicalReports = async function () {
+      this.technicalReports = localRead();
+      if (window.db && navigator.onLine) {
+        try {
+          const snapshot = await db.collection(COLLECTION).get();
+          const remoteById = new Map();
+          snapshot?.forEach(doc => remoteById.set(String(doc.id), doc.data() || {}));
+          mergeCloudReports.call(this, snapshot);
+          const localRows = localRead();
+          const pendingWrites = localRows.filter(item => {
+            if (deletedRead().includes(String(item.id))) return false;
+            const remote = remoteById.get(String(item.id));
+            return !remote || Number(item.updatedAt || 0) > Number(remote.updatedAt || 0);
+          });
+          await Promise.all(pendingWrites.map(item => db.collection(COLLECTION).doc(String(item.id)).set(item, { merge: true }).catch(error => console.warn('[INFORMES] Un informe local sigue pendiente de sincronización.', error))));
+          const pendingDeletes = deletedRead();
+          await Promise.all(pendingDeletes.map(id => db.collection(COLLECTION).doc(id).delete().catch(() => null)));
+          if (pendingDeletes.length) localStorage.removeItem(DELETED_KEY);
+        } catch (error) { console.warn('[INFORMES] Se usarán los informes guardados en este dispositivo.', error); }
+      }
+      if (this.technicalReportsArchiveOpen) this.renderTechnicalReportsArchive();
+      return this.technicalReports;
+    };
+
+    proto.subscribeTechnicalReports = function () {
+      if (this.technicalReportsUnsubscribe || !window.db || !navigator.onLine) return;
+      try {
+        this.technicalReportsUnsubscribe = db.collection(COLLECTION).onSnapshot(snapshot => mergeCloudReports.call(this, snapshot), error => {
+          console.warn('[INFORMES] No se pudo actualizar la lista en tiempo real.', error);
+        });
+      } catch (error) { console.warn('[INFORMES] La lista seguirá disponible con los datos guardados localmente.', error); }
+    };
+
+    proto.nextTechnicalReportNumber = async function () {
+      const used = (this.technicalReports || []).reduce((max, report) => Math.max(max, numberFromId(report.number)), 0);
+      if (window.db && navigator.onLine && typeof db.runTransaction === 'function') {
+        try {
+          const ref = db.collection('configuracion').doc('consecutivo_informes_tecnicos');
+          const next = await db.runTransaction(async transaction => {
+            const snapshot = await transaction.get(ref);
+            const previous = Number(snapshot.data()?.lastNumber || 0);
+            const value = Math.max(previous, used) + 1;
+            transaction.set(ref, { lastNumber: value, updatedAt: Date.now() }, { merge: true });
+            return value;
+          });
+          return `INF-${String(next).padStart(4, '0')}`;
+        } catch (error) { console.warn('[INFORMES] Se generará un consecutivo local.', error); }
+      }
+      return `INF-${String(used + 1).padStart(4, '0')}`;
+    };
+    proto.previewTechnicalReportNumber = async function () {
+      let used = (this.technicalReports || []).reduce((max, report) => Math.max(max, numberFromId(report.number)), 0);
+      if (window.db && navigator.onLine) {
+        try {
+          const sequence = await db.collection('configuracion').doc('consecutivo_informes_tecnicos').get();
+          used = Math.max(used, Number(sequence.data()?.lastNumber || 0));
+        } catch (error) { console.warn('[INFORMES] No se pudo leer el último consecutivo; se usará el del archivo local.', error); }
+      }
+      return `INF-${String(used + 1).padStart(4, '0')}`;
+    };
+
+    proto.ensureTechnicalReportForm = function () {
+      let modal = document.getElementById('technical-report-form-modal');
+      if (modal) return modal;
+      modal = document.createElement('div');
+      modal.id = 'technical-report-form-modal';
+      modal.className = 'technical-report-modal hidden';
+      modal.innerHTML = `<section class="technical-report-form-card" role="dialog" aria-modal="true" aria-labelledby="technical-report-form-title">
+        <header class="technical-report-form-header"><div class="technical-report-heading-icon"><i data-lucide="clipboard-pen-line"></i></div><div><span>INFORME TÉCNICO</span><h2 id="technical-report-form-title">Realizar informe</h2><p id="technical-report-number-label"></p></div><button type="button" data-report-close aria-label="Cerrar">×</button></header>
+        <form id="technical-report-form" class="technical-report-form">
+          <input type="hidden" id="technical-report-id">
+          <div class="technical-report-fields"><label>Cliente<input id="technical-report-client" list="technical-report-client-options" autocomplete="off" required placeholder="Selecciona o escribe el cliente"></label><datalist id="technical-report-client-options"></datalist>
+            <label>Fecha de inspección<input id="technical-report-inspection-date" type="date" required></label>
+            <label>Técnico responsable<input value="Polo Martínez" readonly aria-readonly="true"></label>
+            <label class="technical-report-body-field">Contenido del informe<textarea id="technical-report-body" rows="13" required placeholder="Escribe el informe técnico completo..."></textarea></label>
+          </div>
+          <section class="technical-report-signature-editor"><div><b>Firma digital reutilizable</b><small>Se guarda en este dispositivo y se agrega a los futuros informes.</small></div><div class="technical-report-signature-controls"><img id="technical-report-signature-preview" alt="Firma digital de Polo Martínez"><button type="button" data-signature-open><i data-lucide="pen-line"></i><span>Registrar o cambiar firma</span></button></div></section>
+          <footer class="technical-report-form-actions"><button type="button" data-report-close class="technical-report-secondary">Cancelar</button><button type="submit" class="technical-report-primary"><i data-lucide="save"></i><span>Guardar informe</span></button></footer>
+        </form>
+      </section>`;
+      document.body.appendChild(modal);
+      modal.addEventListener('click', event => {
+        if (event.target === modal || event.target.closest('[data-report-close]')) { modal.classList.add('hidden'); return; }
+        if (event.target.closest('[data-signature-open]')) this.openTechnicalSignaturePad();
+      });
+      modal.querySelector('#technical-report-form').addEventListener('submit', event => { event.preventDefault(); this.saveTechnicalReport(); });
+      return modal;
+    };
+
+    proto.openTechnicalSignaturePad = function () {
+      let modal = document.getElementById('technical-signature-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'technical-signature-modal';
+        modal.className = 'technical-report-modal technical-signature-modal hidden';
+        modal.innerHTML = `<section class="technical-signature-card" role="dialog" aria-modal="true" aria-labelledby="technical-signature-title"><header><div><span>FIRMA DIGITAL</span><h2 id="technical-signature-title">Registra la firma de Polo Martínez</h2></div><button type="button" data-signature-close aria-label="Cerrar">×</button></header><p>Firma una vez dentro del recuadro. Se conservará en este dispositivo y se reutilizará automáticamente.</p><canvas id="technical-signature-canvas" width="900" height="280" aria-label="Área para dibujar la firma"></canvas><footer><button type="button" class="technical-report-secondary" data-signature-clear>Limpiar</button><button type="button" class="technical-report-secondary" data-signature-close>Cancelar</button><button type="button" class="technical-report-primary" data-signature-save>Guardar firma</button></footer></section>`;
+        document.body.appendChild(modal);
+        const canvas = modal.querySelector('canvas');
+        const context = canvas.getContext('2d');
+        context.strokeStyle = '#17212b'; context.lineWidth = 3; context.lineCap = 'round'; context.lineJoin = 'round';
+        let drawing = false;
+        const point = event => { const rect = canvas.getBoundingClientRect(); return { x:(event.clientX - rect.left) * canvas.width / rect.width, y:(event.clientY - rect.top) * canvas.height / rect.height }; };
+        canvas.addEventListener('pointerdown', event => { drawing = true; canvas.setPointerCapture?.(event.pointerId); const p = point(event); context.beginPath(); context.moveTo(p.x, p.y); });
+        canvas.addEventListener('pointermove', event => { if (!drawing) return; const p = point(event); context.lineTo(p.x, p.y); context.stroke(); });
+        ['pointerup','pointercancel','lostpointercapture'].forEach(name => canvas.addEventListener(name, () => { drawing = false; }));
+        modal.addEventListener('click', event => {
+          if (event.target === modal || event.target.closest('[data-signature-close]')) { modal.classList.add('hidden'); return; }
+          if (event.target.closest('[data-signature-clear]')) { context.clearRect(0, 0, canvas.width, canvas.height); return; }
+          if (event.target.closest('[data-signature-save]')) {
+            const data = canvas.toDataURL('image/png');
+            try { localStorage.setItem(SIGNATURE_KEY, data); }
+            catch { return this.showToast?.('No se pudo guardar la firma en este dispositivo.', 'error'); }
+            modal.classList.add('hidden');
+            this.renderTechnicalSignaturePreview();
+            this.showToast?.('Firma guardada para futuros informes en este dispositivo.', 'success');
+          }
+        });
+      }
+      modal.querySelector('canvas').getContext('2d').clearRect(0, 0, 900, 280);
+      modal.classList.remove('hidden');
+    };
+
+    proto.renderTechnicalSignaturePreview = function () {
+      const image = document.getElementById('technical-report-signature-preview');
+      if (image) image.src = signatureSource();
+    };
+
+    proto.openTechnicalReportForm = async function (id = '') {
+      if (this.currentUser?.role !== 'admin') return this.showToast?.('Esta función está disponible para el administrador.', 'error');
+      const modal = this.ensureTechnicalReportForm();
+      const form = modal.querySelector('#technical-report-form');
+      form.reset();
+      const existing = id ? (this.technicalReports || []).find(report => String(report.id) === String(id)) : null;
+      const number = existing?.number || await this.previewTechnicalReportNumber();
+      modal.dataset.reportId = existing?.id || '';
+      modal.querySelector('#technical-report-id').value = existing?.id || '';
+      modal.querySelector('#technical-report-form-title').textContent = existing ? 'Editar informe técnico' : 'Realizar informe';
+      modal.querySelector('#technical-report-number-label').textContent = number;
+      modal.querySelector('#technical-report-client').value = existing?.client || '';
+      modal.querySelector('#technical-report-inspection-date').value = existing?.inspectionDate || isoToday();
+      modal.querySelector('#technical-report-body').value = existing?.body || '';
+      const clients = new Map();
+      (this.getRegisteredTaskClients?.() || []).forEach(item => { if (item.name) clients.set(item.name.toLocaleLowerCase(), item.name); });
+      (this.tasks || []).forEach(task => { const name = String(task.client || '').trim(); if (name) clients.set(name.toLocaleLowerCase(), name); });
+      modal.querySelector('#technical-report-client-options').replaceChildren(...[...clients.values()].sort((a,b)=>a.localeCompare(b,'es')).map(name => new Option(name, name)));
+      this.renderTechnicalSignaturePreview();
+      modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+      setTimeout(() => modal.querySelector('#technical-report-client')?.focus(), 30);
+    };
+
+    proto.saveTechnicalReport = async function () {
+      if (this.currentUser?.role !== 'admin') return this.showToast?.('Esta función está disponible para el administrador.', 'error');
+      const modal = document.getElementById('technical-report-form-modal');
+      const form = modal?.querySelector('#technical-report-form');
+      if (!form?.reportValidity()) return;
+      const id = String(modal.dataset.reportId || '');
+      const old = id ? (this.technicalReports || []).find(report => String(report.id) === id) : null;
+      const timestamp = Date.now();
+      const automaticNumber = old?.number || await this.nextTechnicalReportNumber();
+      const report = {
+        id: old?.id || (window.crypto?.randomUUID?.() || `inf_${timestamp}_${Math.random().toString(36).slice(2, 9)}`),
+        number: automaticNumber,
+        client: modal.querySelector('#technical-report-client').value.trim(),
+        inspectionDate: modal.querySelector('#technical-report-inspection-date').value,
+        technician: 'Polo Martínez',
+        body: modal.querySelector('#technical-report-body').value.trim(),
+        signature: old?.signature || signatureSource(),
+        createdAt: old?.createdAt || timestamp,
+        updatedAt: timestamp,
+        status: 'Realizado'
+      };
+      const rows = [...(this.technicalReports || [])];
+      const index = rows.findIndex(item => String(item.id) === String(report.id));
+      if (index < 0) rows.unshift(report); else rows[index] = report;
+      this.technicalReports = rows.sort(byCreated);
+      if (!localWrite(this.technicalReports)) return this.showToast?.('No hay espacio disponible para guardar el informe en este dispositivo.', 'error');
+      modal.classList.add('hidden');
+      this.showToast?.('Informe guardado.', 'success');
+      if (window.db && navigator.onLine) {
+        try { await db.collection(COLLECTION).doc(report.id).set(report, { merge: true }); }
+        catch (error) { console.warn('[INFORMES] Se conservaron los cambios locales; no se sincronizaron.', error); this.showToast?.('Informe guardado en este dispositivo; la sincronización quedó pendiente.', 'info'); }
+      }
+      this.technicalReportsArchiveOpen = true;
+      this.renderTechnicalReportsArchive();
+    };
+
+    proto.ensureTechnicalReportsArchive = function () {
+      let host = document.getElementById('tasks-container');
+      if (!host) return null;
+      return host;
+    };
+
+    proto.renderTechnicalReportsArchive = function () {
+      if (this.currentUser?.role !== 'admin') return;
+      const host = this.ensureTechnicalReportsArchive();
+      if (!host) return;
+      const reports = [...(this.technicalReports || [])].sort(byCreated);
+      const query = String(document.getElementById('technical-reports-search')?.value || '').trim().toLocaleLowerCase('es');
+      const filtered = reports.filter(report => `${report.number} ${report.client} ${report.technician} ${report.inspectionDate}`.toLocaleLowerCase('es').includes(query));
+      const dateText = value => escapeHtml(reportDate(value));
+      host.classList.remove('hidden'); host.style.display = 'block'; host.style.width = '100%'; host.style.gridTemplateColumns = 'minmax(0,1fr)';
+      host.innerHTML = `<section class="technical-reports-archive"><header class="technical-reports-archive-heading"><div><span>ARCHIVO TÉCNICO</span><h3>Informes realizados</h3><p>Consulta, edita o exporta los informes técnicos guardados.</p></div><button type="button" class="technical-report-primary" data-create-report><i data-lucide="plus"></i><span>Realizar informe</span></button></header>
+        <div class="technical-reports-tools"><label><i data-lucide="search"></i><input id="technical-reports-search" type="search" autocomplete="off" placeholder="Buscar número, cliente o fecha" value="${escapeHtml(query)}"></label><span>${filtered.length} de ${reports.length} informes</span></div>
+        <div class="technical-reports-list">${filtered.length ? filtered.map(report => `<article class="technical-report-row"><div class="technical-report-row-main"><span class="technical-report-number">${escapeHtml(report.number)}</span><b>${escapeHtml(report.client || 'Cliente')}</b><small>Inspección: ${dateText(report.inspectionDate)} · Técnico: ${escapeHtml(report.technician || 'Polo Martínez')}</small><small>Creado: ${dateText(report.createdAt)} · Estado: ${escapeHtml(report.status || 'Realizado')}</small></div><div class="technical-report-row-actions"><button type="button" data-report-view="${escapeHtml(report.id)}" title="Ver informe" aria-label="Ver ${escapeHtml(report.number)}"><i data-lucide="eye"></i><span>Ver</span></button><button type="button" data-report-edit="${escapeHtml(report.id)}" title="Editar informe" aria-label="Editar ${escapeHtml(report.number)}"><i data-lucide="pencil"></i><span>Editar</span></button><button type="button" data-report-delete="${escapeHtml(report.id)}" title="Eliminar informe" aria-label="Eliminar ${escapeHtml(report.number)}"><i data-lucide="trash-2"></i><span>Eliminar</span></button></div></article>`).join('') : `<div class="technical-reports-empty"><i data-lucide="file-search"></i><b>${reports.length ? 'No se encontraron informes.' : 'Aún no hay informes realizados.'}</b><span>${reports.length ? 'Prueba con otro número, cliente o fecha.' : 'Usa “Realizar informe” para crear el primero.'}</span></div>`}</div></section>`;
+      host.querySelector('[data-create-report]')?.addEventListener('click', () => this.openTechnicalReportForm());
+      host.querySelector('#technical-reports-search')?.addEventListener('input', event => {
+        const input = event.currentTarget, start = input.selectionStart, end = input.selectionEnd;
+        this.renderTechnicalReportsArchive();
+        const next = document.getElementById('technical-reports-search');
+        if (next) { next.focus({ preventScroll: true }); next.setSelectionRange(start, end); }
+      });
+      host.querySelectorAll('[data-report-view]').forEach(button => button.addEventListener('click', () => this.openTechnicalReportPreview(button.dataset.reportView)));
+      host.querySelectorAll('[data-report-edit]').forEach(button => button.addEventListener('click', () => this.openTechnicalReportForm(button.dataset.reportEdit)));
+      host.querySelectorAll('[data-report-delete]').forEach(button => button.addEventListener('click', async () => {
+        const report = (this.technicalReports || []).find(item => String(item.id) === button.dataset.reportDelete);
+        if (!report || !await this.showSystemConfirm?.(`¿Eliminar el informe ${report.number}?`, { title:'Eliminar informe', confirmText:'Eliminar', icon:'trash' })) return;
+        this.technicalReports = this.technicalReports.filter(item => String(item.id) !== String(report.id));
+        localWrite(this.technicalReports);
+        const tombstones = [...new Set([...deletedRead(), String(report.id)])];
+        try { localStorage.setItem(DELETED_KEY, JSON.stringify(tombstones)); } catch {}
+        if (window.db && navigator.onLine) db.collection(COLLECTION).doc(report.id).delete().then(() => { try { localStorage.setItem(DELETED_KEY, JSON.stringify(deletedRead().filter(id => id !== String(report.id)))); } catch {} }).catch(error => console.warn('[INFORMES] El informe se eliminó en este dispositivo; la nube no sincronizó.', error));
+        this.renderTechnicalReportsArchive();
+        this.showToast?.('Informe eliminado.', 'success');
+      }));
+      const title = document.getElementById('orders-view-title'); if (title) title.textContent = 'Informes realizados';
+      const count = document.getElementById('filtered-count'); if (count) count.classList.add('hidden');
+      document.getElementById('empty-state')?.classList.add('hidden');
+      document.getElementById('archived-documents-panel')?.classList.add('hidden');
+      document.getElementById('clients-directory')?.remove();
+      document.getElementById('section-admin-audit-log')?.classList.add('hidden');
+      this.syncTechnicalReportsNavigation();
+      if (window.lucide) lucide.createIcons();
+    };
+
+    proto.syncTechnicalReportsNavigation = function () {
+      const nav = document.getElementById('orders-view-navigation');
+      if (!nav) return;
+      let button = nav.querySelector('[data-order-view="archived"], [data-order-view="reports"]');
+      if (button) reportsNavButton = button;
+      if (!button) button = reportsNavButton;
+      if (!button) return;
+      button.dataset.orderView = 'reports';
+      button.setAttribute('aria-label', 'Informes realizados');
+      const label = button.querySelector('.orders-nav-label') || button.querySelector('span:not([id])');
+      if (label) label.textContent = 'Informes Realizados';
+      button.querySelector('#orders-nav-archive-count')?.remove();
+      const group = nav.querySelector(':scope > .orders-main-access-group') || nav;
+      if (button.parentElement !== group) group.appendChild(button);
+      nav.dataset.currentView = this.technicalReportsArchiveOpen ? 'reports' : (this.showDocumentControl ? 'invoices' : this.clientsDirectoryOpen ? 'clients' : this.quoteArchiveInlineOpen ? 'quotes' : this.showArchivedTasks ? 'archived' : 'active');
+      nav.querySelectorAll('[data-order-view], #btn-archived-quotes').forEach(item => {
+        const key = item.dataset.orderView || (item.id === 'btn-archived-quotes' ? 'quotes' : '');
+        const selected = this.technicalReportsArchiveOpen ? key === 'reports' : key === nav.dataset.currentView;
+        item.classList.toggle('is-current', selected);
+        item.setAttribute('aria-current', selected ? 'page' : 'false');
+        item.setAttribute('aria-pressed', String(selected));
+      });
+    };
+
+    proto.openTechnicalReportsArchive = async function () {
+      if (this.currentUser?.role !== 'admin') return this.showToast?.('Esta sección está disponible para el administrador.', 'error');
+      this.showDocumentControl = false;
+      this.clientsDirectoryOpen = false;
+      this.quoteArchiveInlineOpen = false;
+      this.quoteConsolidationOpen = false;
+      this.showArchivedTasks = false;
+      this.technicalReportsArchiveOpen = true;
+      document.getElementById('quotes-shell')?.classList.add('hidden');
+      document.body.classList.remove('quotes-open');
+      await this.loadTechnicalReports();
+      this.subscribeTechnicalReports();
+      this.renderTechnicalReportsArchive();
+    };
+
+    proto.openTechnicalReportPreview = function (id) {
+      if (this.currentUser?.role !== 'admin') return this.showToast?.('Esta vista está disponible para el administrador.', 'error');
+      const report = (this.technicalReports || []).find(item => String(item.id) === String(id));
+      if (!report) return this.showToast?.('No se encontró el informe solicitado.', 'error');
+      let modal = document.getElementById('technical-report-preview-modal');
+      if (!modal) { modal = document.createElement('div'); modal.id = 'technical-report-preview-modal'; modal.className = 'technical-report-preview-modal hidden'; document.body.appendChild(modal); }
+      const contactFooter = `<footer class="technical-report-document-footer"><span>${escapeHtml(FOOTER.email)}</span><span>${escapeHtml(FOOTER.address)}</span><span>${escapeHtml(FOOTER.phones)}</span></footer>`;
+      modal.innerHTML = `<section class="technical-report-preview-shell" role="dialog" aria-modal="true" aria-label="Vista previa del informe"><header class="technical-report-preview-controls"><b>${escapeHtml(report.number)} · Vista previa</b><div><button type="button" data-report-print><i data-lucide="printer"></i><span>Exportar PDF</span></button><button type="button" data-report-preview-close aria-label="Cerrar">×</button></div></header><div class="technical-report-print-root"><article class="technical-report-document"><header class="technical-report-document-header"><div class="technical-report-green-bar"></div><div class="technical-report-black-banner"><b>INFORME TÉCNICO</b><span>${escapeHtml(report.number)}</span></div><img src="assets/media/invoice-pdf-company-logo.png" alt="ServiPortones Eléctricos Martínez"></header><main class="technical-report-document-body"><section class="technical-report-general"><h2>Datos Generales</h2><p>Cliente: <b>${escapeHtml(report.client)}</b></p><p>Fecha de inspección: ${escapeHtml(reportDate(report.inspectionDate))}</p><p>Técnico responsable: ${escapeHtml(report.technician || 'Polo Martínez')}</p></section><div class="technical-report-document-text">${escapeHtml(report.body).replace(/\r?\n/g, '<br>')}</div><section class="technical-report-signature-block"><img src="${escapeHtml(report.signature || signatureSource())}" alt="Firma digital"><b>POLO MARTÍNEZ VALENCIA</b><b>13390420</b><b>Representante legal</b></section></main>${contactFooter}</article></div></section>`;
+      modal.classList.remove('hidden');
+      modal.querySelector('[data-report-preview-close]').addEventListener('click', () => modal.classList.add('hidden'));
+      modal.querySelector('[data-report-print]').addEventListener('click', () => {
+        document.body.classList.add('printing-technical-report');
+        const finish = () => document.body.classList.remove('printing-technical-report');
+        window.addEventListener('afterprint', finish, { once: true });
+        window.print();
+        setTimeout(finish, 2000);
+      });
+      if (window.lucide) lucide.createIcons();
+    };
+
+    const ensureReportAction = () => {
+      const quote = document.getElementById('btn-create-quote');
+      let button = document.getElementById('btn-create-report');
+      if (!button && quote) {
+        button = document.createElement('button');
+        button.id = 'btn-create-report'; button.type = 'button'; button.className = 'orders-assign-button orders-action-tile';
+        button.setAttribute('aria-label', 'Realizar informe'); button.title = 'Realizar informe';
+        button.innerHTML = '<span class="report-action-icon"><i data-lucide="clipboard-pen-line"></i></span><span class="report-action-label">REALIZAR INFORME</span>';
+        quote.insertAdjacentElement('afterend', button);
+      }
+      if (!button) return;
+      if (button.dataset.reportActionBound !== '1') {
+        button.dataset.reportActionBound = '1';
+        button.addEventListener('click', () => window.app?.openTechnicalReportForm());
+      }
+      if (window.lucide) lucide.createIcons();
+    };
+
+    const syncActionVisibility = () => {
+      const button = document.getElementById('btn-create-report');
+      if (button) button.classList.toggle('hidden', window.app?.currentUser?.role !== 'admin');
+    };
+    document.addEventListener('click', event => {
+      const archiveButton = event.target.closest('[data-order-view="archived"], [data-order-view="reports"]');
+      if (archiveButton) { event.preventDefault(); event.stopImmediatePropagation(); window.app?.openTechnicalReportsArchive(); }
+    }, true);
+    document.addEventListener('click', event => {
+      if (event.target.closest('#btn-create-quote, #btn-assign-order-filter')) app.technicalReportsArchiveOpen = false;
+      if (event.target.closest('[data-technical-report-preview-close]')) document.getElementById('technical-report-preview-modal')?.classList.add('hidden');
+    }, true);
+    ['showActiveOrdersView','showArchivedOrdersView','openQuotesArchive','openDocumentControl','openClientsDirectory','openNewTaskModal'].forEach(method => {
+      const original = proto[method];
+      if (typeof original !== 'function' || original.__clearReportArchive70) return;
+      const wrapped = function (...args) { this.technicalReportsArchiveOpen = false; return original.apply(this, args); };
+      wrapped.__clearReportArchive70 = true; proto[method] = wrapped;
+    });
+    const originalRenderTasks = proto.renderTasks;
+    if (typeof originalRenderTasks === 'function' && !originalRenderTasks.__renderTechnicalReports70) {
+      const wrapped = function (...args) {
+        if (this.technicalReportsArchiveOpen && this.currentUser?.role === 'admin') { this.renderTechnicalReportsArchive(); return; }
+        if (this.technicalReportsArchiveOpen) {
+          this.technicalReportsArchiveOpen = false;
+          this.technicalReports = [];
+        }
+        const result = originalRenderTasks.apply(this, args);
+        ensureReportAction();
+        this.syncTechnicalReportsNavigation();
+        syncActionVisibility();
+        return result;
+      };
+      wrapped.__renderTechnicalReports70 = true; proto.renderTasks = wrapped;
+    }
+    const initialize = () => { ensureReportAction(); syncActionVisibility(); app.syncTechnicalReportsNavigation(); };
+    initialize();
+    const observer = new MutationObserver(initialize);
+    const toolbar = document.getElementById('orders-toolbar');
+    if (toolbar) observer.observe(toolbar, { childList: true, subtree: true });
+    return true;
+  };
+  if (!install()) {
+    const timer = setInterval(() => { if (install()) clearInterval(timer); }, 50);
+    setTimeout(() => clearInterval(timer), 20000);
+  }
+  window.addEventListener('online', () => { if (window.app?.currentUser?.role === 'admin') window.app.loadTechnicalReports?.(); });
+})();
