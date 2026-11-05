@@ -61,7 +61,7 @@
 .technical-report-preview-controls>div{display:flex;gap:7px}
 .technical-report-print-root{background:#e8edf0;padding:20px}
 .technical-report-document{position:relative;box-sizing:border-box;width:210mm;min-height:297mm;margin:0 auto;padding:42mm 18mm 34mm;background:#fff;color:#333;font-family:Arial,sans-serif;box-shadow:0 8px 24px rgba(15,31,45,.18)}
-.technical-report-document-header{position:absolute;top:0;left:0;width:100%;height:39mm}
+.technical-report-document-header{position:absolute;top:2mm;left:0;width:100%;height:39mm}
 .technical-report-green-bar{position:absolute;top:13mm;left:0;width:40%;height:10mm;background:#8cc63e}
 .technical-report-black-banner{position:absolute;top:13mm;right:0;display:grid;place-content:center;gap:4px;width:66%;height:31mm;padding-left:18mm;clip-path:polygon(0 0,100% 0,100% 100%,17% 100%);background:#050505;color:#fff;text-align:center}
 .technical-report-black-banner b{font-size:14px;letter-spacing:.04em}
@@ -74,9 +74,9 @@
 .technical-report-document-text{white-space:normal;overflow-wrap:anywhere;text-align:justify;line-height:1.65}
 .technical-report-signature-block{display:grid;justify-items:center;gap:3px;width:max-content;max-width:100%;margin:30mm auto 0;break-inside:avoid;page-break-inside:avoid;color:#555;text-align:center;font-size:10.5pt}
 .technical-report-signature-block img{width:56mm;height:25mm;margin-bottom:2mm;object-fit:contain}
-.technical-report-document-footer{position:absolute;right:0;bottom:0;left:0;display:grid;grid-template-columns:1.25fr 1fr 1fr;align-items:center;gap:5mm;min-height:22mm;padding:0 18mm 8mm;color:#8cc63e;font-size:9pt;text-align:center}
+.technical-report-document-footer{position:absolute;right:0;bottom:6mm;left:0;display:grid;grid-template-columns:1.25fr 1fr 1fr;align-items:start;gap:5mm;min-height:22mm;padding:2mm 18mm 8mm;color:#344054;font-size:9pt;line-height:1.25;text-align:center}
 .technical-report-document-footer:after{position:absolute;z-index:0;right:38%;bottom:0;left:0;height:18mm;background:#8cc63e;clip-path:polygon(0 0,100% 0,89% 100%,0 100%);content:""}
-.technical-report-document-footer span{position:relative;z-index:1}
+.technical-report-document-footer span{position:relative;z-index:1;color:#344054;overflow-wrap:anywhere}
 .technical-signature-card{width:min(720px,100%);padding:22px}
 .technical-signature-card header{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .technical-signature-card header h2{font-size:18px}
@@ -116,8 +116,8 @@
   body.printing-technical-report .technical-report-preview-controls{display:none!important}
   body.printing-technical-report .technical-report-print-root{overflow:visible!important;padding:0!important;background:#fff!important}
   body.printing-technical-report .technical-report-document{width:auto!important;min-height:0!important;margin:0!important;padding:0!important;box-shadow:none!important}
-  body.printing-technical-report .technical-report-document-header{position:fixed!important;top:-19mm!important;right:-18mm!important;left:-18mm!important;width:auto!important;height:37mm!important}
-  body.printing-technical-report .technical-report-document-footer{position:fixed!important;right:-18mm!important;bottom:-18mm!important;left:-18mm!important;width:auto!important;height:23mm!important;padding-right:18mm!important;padding-left:18mm!important}
+  body.printing-technical-report .technical-report-document-header{position:fixed!important;top:-17mm!important;right:-18mm!important;left:-18mm!important;width:auto!important;height:37mm!important}
+  body.printing-technical-report .technical-report-document-footer{position:fixed!important;right:-18mm!important;bottom:-10mm!important;left:-18mm!important;width:auto!important;height:23mm!important;padding-right:18mm!important;padding-left:18mm!important}
   body.printing-technical-report .technical-report-document-body{min-height:0!important;padding-top:0!important;padding-bottom:0!important}
   body.printing-technical-report .technical-report-general{margin-top:0!important}
   body.printing-technical-report .technical-report-signature-block{margin-top:22mm!important}
