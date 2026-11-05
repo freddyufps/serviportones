@@ -33,7 +33,7 @@
       async unlock() {
         try {
           const ctx = this.getCtx();
-          if (ctx && ctx.state === 'suspended') await ctx.resume();
+          if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') await ctx.resume();
           console.info('[ORDER] Audio habilitado por interacción', { state: ctx?.state || 'unavailable' });
           if (ctx?.state === 'running' && this.pendingMessageSounds > 0) {
             const pending = this.pendingMessageSounds;
@@ -53,7 +53,7 @@
           const AudioContext = window.AudioContext || window.webkitAudioContext;
           if (AudioContext) this.ctx = new AudioContext();
         }
-        if (this.ctx && this.ctx.state === 'suspended') {
+        if (this.ctx && this.ctx.state !== 'running' && this.ctx.state !== 'closed') {
           this.ctx.resume().catch(error => console.warn('[CHAT] No se pudo reactivar el audio:', error?.message || error));
         }
         return this.ctx;
@@ -64,11 +64,15 @@
         let soundScheduled = false;
         try {
           ctx = this.getCtx();
-          if (!ctx) return;
-          if (ctx.state === 'suspended') await ctx.resume();
+          if (!ctx) {
+            console.warn('[CHAT] No hay Web Audio disponible para reproducir la alerta sonora.');
+            return false;
+          }
+          if (ctx.state !== 'running' && ctx.state !== 'closed') await ctx.resume();
           if (ctx.state !== 'running') {
             this.pendingMessageSounds = Math.min(20, this.pendingMessageSounds + 1);
-            return;
+            console.info('[CHAT] Alerta sonora en espera de que el navegador habilite audio.', { state: ctx.state });
+            return false;
           }
           const now = ctx.currentTime;
 
@@ -98,9 +102,12 @@
           osc1.stop(now + 0.5);
           osc2.stop(now + 0.5);
           soundScheduled = true;
+          console.info('[CHAT] Alerta sonora programada para mensaje entrante.');
+          return true;
         } catch (e) {
           if (!soundScheduled && ctx && ctx.state !== 'running') this.pendingMessageSounds = Math.min(20, this.pendingMessageSounds + 1);
-          console.warn("Audio Context bloqueado:", e);
+          console.warn('[CHAT] No se pudo reproducir la alerta sonora:', e?.message || e);
+          return false;
         }
       },
 
@@ -259,7 +266,7 @@
     window.addEventListener('touchstart', unlockNotificationAudio, { passive: true });
     window.addEventListener('click', unlockNotificationAudio, { passive: true });
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && SoundEngine.ctx?.state === 'suspended') SoundEngine.unlock().catch(error => console.warn('No se pudo reactivar el sonido:', error));
+      if (!document.hidden && SoundEngine.ctx?.state !== 'running' && SoundEngine.ctx?.state !== 'closed') SoundEngine.unlock().catch(error => console.warn('No se pudo reactivar el sonido:', error));
     });
 
     const INITIAL_TASKS = [
@@ -343,6 +350,7 @@
 
         // Listeners Globales dedicados por técnico
         this.dedicatedWorkerUnsubscribes = {};
+        this.dedicatedWorkerRetryTimers = {};
 
         // Estado del GPS
         this.gpsWatchId = null;
@@ -2562,6 +2570,10 @@
         const names = isAdmin ? this.workers.map(w => this.getChatThreadId(w)).filter(Boolean) : [this.getChatThreadId()].filter(Boolean);
         names.forEach(wName => {
           if (this.dedicatedWorkerUnsubscribes[wName]) return;
+          if (this.dedicatedWorkerRetryTimers[wName]) {
+            clearTimeout(this.dedicatedWorkerRetryTimers[wName]);
+            delete this.dedicatedWorkerRetryTimers[wName];
+          }
           const listenerStartedAt = Date.now();
           const startupGraceMs = 5000;
           const messageTimestampMs = value => {
@@ -2573,7 +2585,21 @@
             return Number.isFinite(parsed) ? parsed : 0;
           };
           const query = db.collection('chats_internos').doc(wName).collection('mensajes').orderBy('timestamp', 'asc');
-          let cancelled = false, unsubscribe = null, unsubscribeThreadDoc = null, baselineIds = new Set(), firstSnapshot = true;
+          let cancelled = false, unsubscribe = null, unsubscribeThreadDoc = null, baselineIds = new Set(), firstSnapshot = true, retryScheduled = false;
+          const retryAfterListenerError = (context, error) => {
+            this.reportChatSyncError(context, error);
+            if (cancelled || retryScheduled) return;
+            retryScheduled = true;
+            cancelled = true;
+            if (unsubscribe) unsubscribe();
+            if (unsubscribeThreadDoc) unsubscribeThreadDoc();
+            delete this.dedicatedWorkerUnsubscribes[wName];
+            this.dedicatedWorkerRetryTimers[wName] = setTimeout(() => {
+              delete this.dedicatedWorkerRetryTimers[wName];
+              if (!this.currentUser || this.getChatRole() !== (isAdmin ? 'admin' : 'worker')) return;
+              this.setupMultiWorkerChatListeners();
+            }, 1500);
+          };
           this.dedicatedWorkerUnsubscribes[wName] = () => { cancelled = true; if (unsubscribe) unsubscribe(); if (unsubscribeThreadDoc) unsubscribeThreadDoc(); };
           unsubscribeThreadDoc = db.collection('chats_internos').doc(wName).onSnapshot(threadDoc => {
             const threadData = threadDoc.exists ? threadDoc.data() : {};
@@ -2584,7 +2610,7 @@
             if (isAdmin) this.renderConversationsSidebar();
             this.updateMessengerWindowTyping(wName);
             this.renderChatTypingIndicators();
-          }, error => this.reportChatSyncError(`estado de escritura de ${wName}`, error));
+          }, error => retryAfterListenerError(`estado de escritura de ${wName}`, error));
           const attach = () => {
             if (cancelled) return;
             unsubscribe = query.onSnapshot(snap => {
@@ -2601,7 +2627,7 @@
                 this.notifyIncomingChatMessage(wName, msgId, data);
               });
               if (firstSnapshot) { firstSnapshot = false; baselineIds.clear(); }
-            }, error => this.reportChatSyncError(`mensajes de ${wName}`, error));
+            }, error => retryAfterListenerError(`mensajes de ${wName}`, error));
           };
           query.get().then(snapshot => {
             if (cancelled) return;
@@ -2638,7 +2664,7 @@
                 if (!fromOther) return;
                 this.notifyIncomingChatMessage(wName, change.doc.id, data);
               });
-            }, listenError => this.reportChatSyncError(`mensajes de ${wName}`, listenError));
+            }, listenError => retryAfterListenerError(`mensajes de ${wName}`, listenError));
           });
         });
       }
@@ -2698,13 +2724,18 @@
         this.renderConversationsSidebar();
       }
 
-      showBrowserChatNotification(wName, data = {}) {
-        if (!document.hidden || !('Notification' in window) || Notification.permission !== 'granted') return;
+      showBrowserChatNotification(wName, data = {}, msgId = '') {
+        const desktopAdmin = this.currentUser?.role === 'admin' && window.innerWidth >= 640;
+        if ((!document.hidden && !desktopAdmin) || !('Notification' in window)) return;
+        if (Notification.permission !== 'granted') {
+          console.info('[CHAT] Notificación del sistema no disponible: permiso del navegador en', Notification.permission);
+          return;
+        }
         try {
           const notification = new Notification(`${data.senderName || wName} te envió un mensaje`, {
             body: String(data.text || 'Tienes un mensaje nuevo.').slice(0, 180),
-            tag: `portonpro-chat-${String(wName)}`,
-            renotify: false
+            tag: `portonpro-chat-${String(wName)}-${String(msgId || Date.now())}`,
+            renotify: true
           });
           notification.onclick = () => {
             window.focus();
@@ -2728,7 +2759,7 @@
         this.ensureIncomingWorkerWindow(wName);
         // Cada mensaje entrante debe sonar; la preferencia general controla los otros avisos.
         SoundEngine.playMessageSound();
-        this.showBrowserChatNotification(wName, data);
+        this.showBrowserChatNotification(wName, data, msgId);
         this.showPopupNotification({
           title: `${data.senderName || wName} te envió un mensaje`,
           details: data.text || '', type: 'chat', icon: '💬',
@@ -2751,6 +2782,8 @@
           this.dedicatedWorkerUnsubscribes[k]();
         });
         this.dedicatedWorkerUnsubscribes = {};
+        Object.keys(this.dedicatedWorkerRetryTimers || {}).forEach(k => clearTimeout(this.dedicatedWorkerRetryTimers[k]));
+        this.dedicatedWorkerRetryTimers = {};
       }
 
       subscribeAllChatThreads() {
