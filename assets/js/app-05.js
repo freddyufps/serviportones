@@ -304,6 +304,26 @@
       }
     ];
 
+    const settleBeforeTimeout = (promise, timeoutMs) => new Promise(resolve => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        resolve({ timeout: true });
+      }, timeoutMs);
+      Promise.resolve(promise).then(value => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve({ value });
+      }, error => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve({ error });
+      });
+    });
+
     class PortonProApp {
       constructor() {
         this.currentUser = null;
@@ -1035,6 +1055,11 @@
         const errorText = document.getElementById('login-error-text');
         const btnSubmit = document.getElementById('btn-submit-login');
         const btnText = document.getElementById('btn-submit-text');
+        const resetLoginButton = () => {
+          if (btnSubmit) btnSubmit.disabled = false;
+          if (btnText) btnText.textContent = 'Iniciar Sesión';
+        };
+        errorAlert.classList.add('hidden');
 
         const userVal = String(rawUser || '').trim().toLowerCase();
         const passVal = String(rawPass || '').trim();
@@ -1050,11 +1075,25 @@
           if (btnText) btnText.textContent = "Verificando credenciales...";
         }
 
+        if (!window.db) {
+          resetLoginButton();
+          errorText.textContent = 'No fue posible conectar con el servicio de acceso. Verifica tu conexión e inténtalo nuevamente.';
+          errorAlert.classList.remove('hidden');
+          return;
+        }
+
         let authenticatedUser = null;
 
         if (window.db) {
           try {
-            const snapshot = await db.collection('users').get();
+            const lookup = await settleBeforeTimeout(db.collection('users').get(), 15000);
+            if (lookup.timeout) {
+              const timeoutError = new Error('LOGIN_LOOKUP_TIMEOUT');
+              timeoutError.loginTimeout = true;
+              throw timeoutError;
+            }
+            if (lookup.error) throw lookup.error;
+            const snapshot = lookup.value;
             snapshot.forEach(doc => {
               const uData = doc.data() || {};
               const dbUser = String(uData.username !== undefined ? uData.username : '').trim().toLowerCase();
@@ -1077,34 +1116,36 @@
             });
           } catch (err) {
             console.error("Error al consultar Firestore:", err);
-            errorText.textContent = "No fue posible iniciar sesión en este momento. Inténtalo nuevamente.";
+            errorText.textContent = err?.loginTimeout
+              ? 'La conexión está tardando demasiado. Verifica internet e inténtalo nuevamente.'
+              : 'No fue posible iniciar sesión en este momento. Inténtalo nuevamente.';
             errorAlert.classList.remove('hidden');
-            if (btnSubmit) { btnSubmit.disabled = false; if (btnText) btnText.textContent = "Iniciar Sesión"; }
+            resetLoginButton();
             return;
           }
-        }
-
-        if (btnSubmit) {
-          btnSubmit.disabled = false;
-          if (btnText) btnText.textContent = "Iniciar Sesión";
         }
 
         if (authenticatedUser) {
           if (authenticatedUser.active === false) {
             this.clearRememberedCredentials();
+            resetLoginButton();
             errorText.textContent = 'Esta cuenta está desactivada. Consulta al Administrador.';
             errorAlert.classList.remove('hidden');
             return;
           }
 
           if (authenticatedUser._needsSessionVersionMigration) {
+            if (btnText) btnText.textContent = 'Validando cuenta...';
             try {
-              await db.collection('users').doc(authenticatedUser.id).update({ sessionVersion: 1 });
+              const migration = await settleBeforeTimeout(db.collection('users').doc(authenticatedUser.id).update({ sessionVersion: 1 }), 15000);
+              if (migration.timeout) throw new Error('SESSION_VERSION_MIGRATION_TIMEOUT');
+              if (migration.error) throw migration.error;
               authenticatedUser.sessionVersion = 1;
               delete authenticatedUser._needsSessionVersionMigration;
             } catch (migrationError) {
-              this.clearRememberedCredentials();
-              errorText.textContent = 'No fue posible validar la sesión. Inténtalo nuevamente.';
+              console.error('[LOGIN] No se pudo validar la versión de sesión:', migrationError);
+              resetLoginButton();
+              errorText.textContent = 'No se pudieron validar los datos de la cuenta. Verifica la conexión e inténtalo nuevamente.';
               errorAlert.classList.remove('hidden');
               return;
             }
@@ -1127,10 +1168,23 @@
             }, { merge: true }).catch(e => console.error(e));
           }
 
-          await this.loginSuccess(authenticatedUser, true);
+          try {
+            await this.loginSuccess(authenticatedUser, true);
+          } catch (loginError) {
+            console.error('[LOGIN] Error al preparar el panel después de validar la cuenta:', loginError);
+            this.currentUser = null;
+            SafeStorage.removeItem('portonpro_session_v4');
+            try { this.showLoginView(); }
+            catch (recoveryError) { console.error('[LOGIN] No se pudo restaurar la pantalla de acceso:', recoveryError); }
+            resetLoginButton();
+            errorText.textContent = 'La cuenta fue validada, pero no se pudo cargar el panel. Inténtalo nuevamente.';
+            errorAlert.classList.remove('hidden');
+            return;
+          }
           return;
         }
 
+        resetLoginButton();
         this.clearRememberedCredentials();
         errorText.textContent = 'Usuario o contraseña incorrectos.';
         errorAlert.classList.remove('hidden');
