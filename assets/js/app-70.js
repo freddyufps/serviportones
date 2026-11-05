@@ -173,6 +173,10 @@
           if (event.target === modal || event.target.closest('[data-signature-close]')) { modal.classList.add('hidden'); return; }
           if (event.target.closest('[data-signature-clear]')) { context.clearRect(0, 0, canvas.width, canvas.height); return; }
           if (event.target.closest('[data-signature-save]')) {
+            const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+            let hasInk = false;
+            for (let index = 3; index < pixels.length; index += 4) { if (pixels[index] > 0) { hasInk = true; break; } }
+            if (!hasInk) return this.showToast?.('Firma dentro del recuadro antes de guardar.', 'error');
             const data = canvas.toDataURL('image/png');
             try { localStorage.setItem(SIGNATURE_KEY, data); }
             catch { return this.showToast?.('No se pudo guardar la firma en este dispositivo.', 'error'); }
