@@ -116,8 +116,8 @@
   body.printing-technical-report .technical-report-preview-controls{display:none!important}
   body.printing-technical-report .technical-report-print-root{overflow:visible!important;padding:0!important;background:#fff!important}
   body.printing-technical-report .technical-report-document{width:auto!important;min-height:0!important;margin:0!important;padding:0!important;box-shadow:none!important}
-  body.printing-technical-report .technical-report-document-header{position:fixed!important;top:-24mm!important;right:-18mm!important;left:-18mm!important;width:auto!important;height:37mm!important}
-  body.printing-technical-report .technical-report-document-footer{position:fixed!important;right:-18mm!important;bottom:-25mm!important;left:-18mm!important;width:auto!important;height:23mm!important;padding-right:18mm!important;padding-left:18mm!important}
+  body.printing-technical-report .technical-report-document-header{position:fixed!important;top:-19mm!important;right:-18mm!important;left:-18mm!important;width:auto!important;height:37mm!important}
+  body.printing-technical-report .technical-report-document-footer{position:fixed!important;right:-18mm!important;bottom:-18mm!important;left:-18mm!important;width:auto!important;height:23mm!important;padding-right:18mm!important;padding-left:18mm!important}
   body.printing-technical-report .technical-report-document-body{min-height:0!important;padding-top:0!important;padding-bottom:0!important}
   body.printing-technical-report .technical-report-general{margin-top:0!important}
   body.printing-technical-report .technical-report-signature-block{margin-top:22mm!important}
