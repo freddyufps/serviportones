@@ -537,7 +537,7 @@
         button = document.createElement('button');
         button.id = 'btn-create-report'; button.type = 'button'; button.className = 'orders-assign-button orders-action-tile';
         button.setAttribute('aria-label', 'Realizar informe'); button.title = 'Realizar informe';
-        button.innerHTML = '<span class="report-action-icon"><i data-lucide="clipboard-pen-line"></i></span><span class="report-action-label">REALIZAR INFORME</span>';
+        button.innerHTML = '<img class="orders-action-artwork" src="assets/img/nav/realizar-informe-transparent.png?v=20261105-report-action-icon-1" alt="" aria-hidden="true" decoding="async" fetchpriority="high">';
         quote.insertAdjacentElement('afterend', button);
       }
       if (!button) return;

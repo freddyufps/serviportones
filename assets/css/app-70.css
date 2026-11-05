@@ -1,7 +1,4 @@
-.report-action-icon{display:grid;place-items:center;width:40px;height:40px;color:#5a8c29}
-.report-action-icon svg{width:33px;height:33px;stroke-width:1.8}
-#btn-create-report{display:grid;grid-template-rows:42px auto;place-items:center;gap:1px;color:#17314b;font-size:8px;font-weight:800;line-height:1.05;text-align:center}
-.report-action-label{max-width:72px}
+#orders-toolbar #btn-create-report{grid-template-rows:1fr;gap:0;color:inherit;font-size:inherit;font-weight:inherit;line-height:normal;text-align:center}
 @media(max-width:540px){#orders-toolbar .orders-create-actions-group{grid-row:3!important;grid-column:1/-1!important;justify-self:center;width:auto!important;gap:5px!important}#orders-toolbar .orders-create-actions-group>.orders-action-tile{flex:0 0 68px!important}}
 .technical-report-modal,.technical-report-preview-modal{position:fixed;inset:0;z-index:2147482500;display:grid;place-items:center;padding:18px;background:rgba(15,23,42,.58);backdrop-filter:blur(4px)}
 .technical-report-modal.hidden,.technical-report-preview-modal.hidden{display:none!important}
