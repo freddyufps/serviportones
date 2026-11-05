@@ -62,8 +62,8 @@
 .technical-report-print-root{background:#e8edf0;padding:20px}
 .technical-report-document{position:relative;box-sizing:border-box;width:210mm;min-height:297mm;margin:0 auto;padding:60mm 18mm 34mm;background:#fff;color:#333;font-family:Inter,Arial,sans-serif;box-shadow:0 8px 24px rgba(15,31,45,.18)}
 .technical-report-document-header{position:absolute;top:0;left:0;width:100%;height:39mm}
-.technical-report-green-bar{position:absolute;top:13mm;left:0;width:40%;height:10mm;background:#8cc63e}
-.technical-report-black-banner{position:absolute;top:13mm;right:0;display:grid;place-content:center;gap:4px;width:62%;height:31mm;padding-left:18mm;clip-path:polygon(0 0,100% 0,100% 100%,17% 100%);background:#050505;color:#fff;text-align:center}
+.technical-report-green-bar{position:absolute;z-index:1;top:13mm;left:0;width:52%;height:10mm;background:#8cc63e}
+.technical-report-black-banner{position:absolute;z-index:2;top:13mm;right:0;display:grid;place-content:center;gap:4px;width:62%;height:31mm;padding-left:18mm;clip-path:polygon(0 0,100% 0,100% 100%,17% 100%);background:#050505;color:#fff;text-align:center}
 .technical-report-black-banner b{font-size:14px;letter-spacing:.04em}
 .technical-report-black-banner span{font-size:10px;letter-spacing:.1em}
 .technical-report-document-header>img{position:absolute;top:31mm;left:12mm;width:60mm;height:24mm;object-fit:contain;object-position:left center}
@@ -74,7 +74,7 @@
 .technical-report-document-text{white-space:normal;overflow-wrap:anywhere;text-align:justify;line-height:1.65}
 .technical-report-signature-block{display:grid;justify-items:center;gap:3px;width:max-content;max-width:100%;margin:30mm auto 0;break-inside:avoid;page-break-inside:avoid;color:#555;text-align:center;font-size:10.5pt}
 .technical-report-signature-block img{width:56mm;height:25mm;margin-bottom:2mm;object-fit:contain}
-.technical-report-document-footer{position:absolute;right:0;bottom:0;left:0;display:grid;grid-template-columns:1.25fr 1fr 1fr;align-items:center;gap:5mm;min-height:22mm;padding:2mm 18mm 8mm;color:#8cc63e;font-size:9pt;line-height:1.25;text-align:center}
+.technical-report-document-footer{position:absolute;right:0;bottom:3mm;left:0;display:grid;grid-template-columns:1.25fr 1fr 1fr;align-items:center;gap:5mm;min-height:22mm;padding:2mm 18mm 8mm;color:#8cc63e;font-size:9pt;line-height:1.25;text-align:center}
 .technical-report-footer-accent{position:absolute;z-index:0;bottom:0;left:0;width:62%;height:14mm;overflow:visible;pointer-events:none}
 .technical-report-document-footer span{position:relative;z-index:1;color:#8cc63e;overflow-wrap:anywhere}
 .technical-signature-card{width:min(720px,100%);padding:22px}
@@ -83,6 +83,17 @@
 .technical-signature-card>p{color:#657a8f;font-size:12px}
 #technical-signature-canvas{display:block;box-sizing:border-box;width:100%;height:210px;border:1px dashed #aebdca;border-radius:12px;background:#fff;touch-action:none}
 .technical-report-preview-modal.hidden{display:none!important}
+
+/* Informe PDF: conexión visual continua entre las franjas del encabezado y controles de carpeta legibles. */
+#settings-category-technical-report-downloads .spem-docs-settings{display:grid;gap:14px;padding:8px 2px}
+#settings-category-technical-report-downloads .spem-docs-location{display:grid;gap:10px;padding:18px;border:1px solid #d9e3ef;border-radius:16px;background:#f8fafc}
+#settings-category-technical-report-downloads .spem-docs-location>b{display:block;color:#18314a;font-size:14px;font-weight:750}
+#settings-category-technical-report-downloads .spem-docs-location>span{display:block;color:#40546c;font-weight:700;overflow-wrap:anywhere}
+#settings-category-technical-report-downloads .spem-docs-location>div{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:2px}
+#settings-category-technical-report-downloads .spem-docs-location button{display:inline-flex;align-items:center;justify-content:center;min-height:38px;border:1px solid #d4dfed;border-radius:10px;background:#fff;color:#18314a;font:inherit;font-size:13px;font-weight:650;padding:8px 13px;cursor:pointer;transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease}
+#settings-category-technical-report-downloads .spem-docs-location button:hover{border-color:#6aab35;background:#f2fae9;box-shadow:0 2px 8px #6aab3520}
+#settings-category-technical-report-downloads .spem-docs-location button:focus-visible{outline:2px solid #6aab35;outline-offset:2px}
+#settings-category-technical-report-downloads .spem-docs-location small{display:block;color:#61758d;line-height:1.5}
 
 @media(max-width:700px){
   .technical-report-modal{padding:8px}
@@ -117,7 +128,7 @@
   body.printing-technical-report .technical-report-print-root{overflow:visible!important;padding:0!important;background:#fff!important}
   body.printing-technical-report .technical-report-document{width:auto!important;min-height:0!important;margin:0!important;padding:0!important;box-shadow:none!important}
   body.printing-technical-report .technical-report-document-header{position:fixed!important;top:-17mm!important;right:-18mm!important;left:-18mm!important;width:auto!important;height:37mm!important}
-  body.printing-technical-report .technical-report-document-footer{position:fixed!important;right:-18mm!important;bottom:0!important;left:-18mm!important;width:auto!important;height:23mm!important;padding-right:18mm!important;padding-left:18mm!important}
+  body.printing-technical-report .technical-report-document-footer{position:fixed!important;right:-18mm!important;bottom:3mm!important;left:-18mm!important;width:auto!important;height:23mm!important;padding-right:18mm!important;padding-left:18mm!important}
   body.printing-technical-report .technical-report-footer-accent{height:14mm!important}
   body.printing-technical-report .technical-report-document-body{min-height:0!important;padding-top:0!important;padding-bottom:0!important}
   body.printing-technical-report .technical-report-general{margin-top:0!important}
