@@ -113,7 +113,7 @@
         <p class="text-[10px] sm:text-[11px] text-slate-500 uppercase tracking-widest font-extrabold mt-1">Plataforma Operativa de Automatismos</p>
       </div>
 
-      <form onsubmit="app.handleLogin(event)" class="p-5 sm:p-8 space-y-3.5 sm:space-y-4">
+      <form onsubmit="return app.handleLoginSafely(event)" class="p-5 sm:p-8 space-y-3.5 sm:space-y-4">
         <div id="login-error-alert" class="hidden p-3 rounded-xl text-xs font-semibold bg-rose-50 border border-rose-200 text-rose-700 flex items-center gap-2">
           <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
           <span id="login-error-text">Credenciales incorrectas.</span>
@@ -1041,7 +1041,7 @@
   </div>
 
   <!-- JAVASCRIPT: LÓGICA DE LA APLICACIÓN -->
-  <script src="assets/js/app-05.js?v=20261105-login-timeouts-1"></script>
+  <script src="assets/js/app-05.js?v=20261105-login-safe-submit-1"></script>
 <script src="assets/js/app-06.js?v=20261104-user-messages-1"></script>
 <link rel="stylesheet" href="assets/css/app-05.css" id="chat-hidden-overlay-fix">
 <link rel="stylesheet" href="assets/css/app-06.css" id="chat-hide-custom-emojis-mobile">
@@ -1098,7 +1098,7 @@
 <link rel="stylesheet" href="assets/css/app-45.css?v=local-chat-stability-1" id="chat-reaction-overlay-fix">
 <script id="local-chat-quote-interaction-fix" src="assets/js/app-45.js?v=20261105-independent-chat-windows-2"></script>
 <link rel="stylesheet" href="assets/css/app-46.css?v=20261031-quote-equal-order-actions-1" id="quote-button-assign-tile-size">
-<script id="mobile-chat-client-directory" src="assets/js/app-47.js?v=20261104-user-messages-1"></script>
+<script id="mobile-chat-client-directory" src="assets/js/app-47.js?v=20261105-login-safe-submit-1"></script>
 <link rel="stylesheet" href="assets/css/app-49.css?v=20261030-mobile-chat-keyboard-anchor-1" id="mobile-chat-keyboard-anchor-style">
 <link rel="stylesheet" href="assets/css/app-50.css?v=20261031-invoice-tab-visible-fix-1" id="mobile-ops-invoice-view-fix">
 <link rel="stylesheet" href="assets/css/app-51.css?v=20261102-emoji-mobile-hidden-2" id="chat-sticker-button-visible">

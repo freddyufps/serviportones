@@ -1043,6 +1043,40 @@
         this.endVoiceCall();
       }
 
+      handleLoginSafely(e) {
+        const recoverFromLoginError = error => {
+          console.error('[LOGIN] Error no controlado durante el acceso:', error);
+          const loginView = document.getElementById('view-login');
+          const dashboard = document.getElementById('view-dashboard');
+          if (dashboard && !dashboard.classList.contains('hidden')) return;
+
+          this.currentUser = null;
+          SafeStorage.removeItem('portonpro_session_v4');
+          try { this.showLoginView(); }
+          catch (recoveryError) { console.error('[LOGIN] No se pudo restaurar el formulario:', recoveryError); }
+
+          const button = document.getElementById('btn-submit-login');
+          const buttonText = document.getElementById('btn-submit-text');
+          if (button) button.disabled = false;
+          if (buttonText) buttonText.textContent = 'Iniciar Sesión';
+          const alert = document.getElementById('login-error-alert');
+          const message = document.getElementById('login-error-text');
+          if (alert && message && alert.classList.contains('hidden')) {
+            message.textContent = 'No fue posible completar el inicio de sesión. Inténtalo nuevamente.';
+            alert.classList.remove('hidden');
+          }
+          loginView?.classList.remove('hidden');
+        };
+
+        try {
+          return Promise.resolve(this.handleLogin(e)).catch(recoverFromLoginError);
+        } catch (error) {
+          e?.preventDefault?.();
+          recoverFromLoginError(error);
+          return false;
+        }
+      }
+
       async handleLogin(e) {
         e.preventDefault();
         this.manualLoginStarted = true;
