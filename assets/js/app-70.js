@@ -5,6 +5,9 @@
   const SIGNATURE_KEY = 'spem_technical_report_signature_v1';
   const DELETED_KEY = 'spem_technical_reports_deleted_v1';
   const COLLECTION = 'informes_tecnicos';
+  const REPORT_FOLDER_DB = 'spem_technical_report_downloads_v1';
+  const REPORT_FOLDER_STORE = 'settings';
+  const REPORT_FOLDER_KEY = 'destination';
   const SIGNATURE_ASSET = 'assets/img/firmas/polo-martinez-firma.png';
   const FOOTER = {
     email: 'serviportoneselectricos@hotmail.com',
@@ -41,6 +44,51 @@
   const signatureSource = () => {
     try { return localStorage.getItem(SIGNATURE_KEY) || SIGNATURE_ASSET; } catch { return SIGNATURE_ASSET; }
   };
+  const openReportFolderDb = () => new Promise((resolve, reject) => {
+    if (!window.indexedDB) return resolve(null);
+    const request = indexedDB.open(REPORT_FOLDER_DB, 1);
+    request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains(REPORT_FOLDER_STORE)) request.result.createObjectStore(REPORT_FOLDER_STORE); };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  const persistReportFolder = async handle => {
+    const db = await openReportFolderDb(); if (!db) return false;
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(REPORT_FOLDER_STORE, 'readwrite'), store = tx.objectStore(REPORT_FOLDER_STORE);
+      if (handle) store.put(handle, REPORT_FOLDER_KEY); else store.delete(REPORT_FOLDER_KEY);
+      tx.oncomplete = () => { db.close(); resolve(true); };
+      tx.onerror = () => { db.close(); reject(tx.error); };
+    });
+  };
+  const restoreReportFolder = async () => {
+    const db = await openReportFolderDb(); if (!db) return null;
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(REPORT_FOLDER_STORE, 'readonly'), request = tx.objectStore(REPORT_FOLDER_STORE).get(REPORT_FOLDER_KEY);
+      request.onsuccess = () => { const handle = request.result || null; db.close(); resolve(handle); };
+      request.onerror = () => { db.close(); reject(request.error); };
+    });
+  };
+  const safeReportFilename = report => {
+    const client = String(report?.client || 'Cliente').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 48);
+    return `${String(report?.number || 'Informe').replace(/[^A-Za-z0-9_-]/g, '_')}_${client || 'Cliente'}.pdf`;
+  };
+  const downloadReportBlob = (blob, filename) => {
+    const url = URL.createObjectURL(blob), anchor = document.createElement('a');
+    anchor.href = url; anchor.download = filename; anchor.style.display = 'none';
+    document.body.appendChild(anchor); anchor.click(); anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  };
+  const writeReportToFolder = async (handle, blob, filename) => {
+    if (!handle) return false;
+    try {
+      let permission = await handle.queryPermission?.({ mode: 'readwrite' });
+      if (permission !== 'granted') permission = await handle.requestPermission?.({ mode: 'readwrite' });
+      if (permission !== 'granted') return false;
+      const file = await handle.getFileHandle(filename, { create: true });
+      const writable = await file.createWritable(); await writable.write(blob); await writable.close();
+      return true;
+    } catch (error) { console.warn('[INFORMES] Se descargó el PDF, pero no se pudo guardar una copia en la carpeta elegida.', error); return false; }
+  };
 
   const install = () => {
     const app = window.app;
@@ -49,7 +97,14 @@
     app.__technicalReports70 = true;
     app.technicalReports = localRead();
     app.technicalReportsArchiveOpen = false;
+    app.technicalReportsDirectoryHandle = null;
     let reportsNavButton = null;
+    restoreReportFolder().then(handle => {
+      if (!handle || window.app !== app) return;
+      app.technicalReportsDirectoryHandle = handle;
+      const label = document.getElementById('technical-report-directory-label');
+      if (label) label.textContent = handle.name || 'Carpeta seleccionada';
+    }).catch(error => console.warn('[INFORMES] No se restauró la carpeta de descargas.', error));
 
     const persist = function () { localWrite(this.technicalReports || []); };
     const mergeCloudReports = function (snapshot) {
@@ -342,6 +397,118 @@
       this.renderTechnicalReportsArchive();
     };
 
+    proto.ensureTechnicalReportDownloadSettings = function () {
+      if (this.currentUser?.role !== 'admin') return;
+      const nav = document.querySelector('#settings-workspace .settings-category-nav');
+      const content = document.getElementById('settings-category-content');
+      if (!nav || !content) return;
+      let navButton = nav.querySelector('[data-settings-category="technical-report-downloads"]');
+      if (!navButton) {
+        navButton = document.createElement('button'); navButton.type = 'button';
+        navButton.className = 'settings-category-button'; navButton.dataset.settingsCategory = 'technical-report-downloads'; navButton.dataset.adminOnly = 'true';
+        navButton.innerHTML = '<i data-lucide="file-down"></i><span><b>Ruta de Descargas de Informes</b><small>Carpeta para los PDF técnicos.</small></span>';
+        const quoteRoute = nav.querySelector('[data-settings-category="quote-route"]');
+        if (quoteRoute?.nextSibling) nav.insertBefore(navButton, quoteRoute.nextSibling); else nav.appendChild(navButton);
+      }
+      let panel = document.getElementById('settings-category-technical-report-downloads');
+      if (!panel) {
+        panel = document.createElement('section'); panel.id = 'settings-category-technical-report-downloads'; panel.className = 'settings-category-panel hidden';
+        panel.innerHTML = '<div class="settings-category-title"><div><h4>Ruta de Descargas de Informes</h4><p>Configura dónde guardar los PDF de Informes Realizados.</p></div></div><div class="spem-docs-settings"><div id="technical-report-download-settings" class="spem-docs-location"><b>Carpeta actual de informes</b><span id="technical-report-directory-label">Descargas del navegador</span><div><button type="button" data-report-folder-choose>Seleccionar carpeta</button><button type="button" data-report-folder-reset>Restablecer</button></div><small>En Chrome y Edge sobre una conexión segura puedes elegir una carpeta local. Si el navegador no permite acceso a carpetas, el informe se descargará en Descargas.</small></div></div>';
+        content.appendChild(panel);
+      }
+      if (panel.dataset.technicalReportFolderBound !== '1') {
+        panel.dataset.technicalReportFolderBound = '1';
+        panel.addEventListener('click', event => {
+          if (event.target.closest('[data-report-folder-choose]')) this.chooseTechnicalReportDirectory();
+          if (event.target.closest('[data-report-folder-reset]')) this.resetTechnicalReportDirectory();
+        });
+      }
+      const label = panel.querySelector('#technical-report-directory-label');
+      if (label) label.textContent = this.technicalReportsDirectoryHandle?.name || 'Descargas del navegador';
+      if (window.lucide) lucide.createIcons({ root: navButton });
+    };
+
+    proto.chooseTechnicalReportDirectory = async function () {
+      if (this.currentUser?.role !== 'admin') return this.showToast?.('Solo el administrador puede configurar esta carpeta.', 'error');
+      if (!window.isSecureContext || !window.showDirectoryPicker) return this.showToast?.('Este navegador no permite seleccionar carpetas. Los PDF se descargarán en Descargas.', 'info');
+      try {
+        const handle = await window.showDirectoryPicker({ id: 'serviportones-technical-reports', mode: 'readwrite' });
+        this.technicalReportsDirectoryHandle = handle;
+        await persistReportFolder(handle);
+        const label = document.getElementById('technical-report-directory-label');
+        if (label) label.textContent = handle.name || 'Carpeta seleccionada';
+        this.showToast?.('La carpeta quedó configurada para descargar informes.', 'success');
+      } catch (error) {
+        if (error?.name !== 'AbortError') this.showToast?.('No se pudo guardar la carpeta elegida. Revisa los permisos del navegador.', 'error');
+      }
+    };
+
+    proto.resetTechnicalReportDirectory = async function () {
+      if (this.currentUser?.role !== 'admin') return this.showToast?.('Solo el administrador puede configurar esta carpeta.', 'error');
+      try {
+        await persistReportFolder(null);
+        this.technicalReportsDirectoryHandle = null;
+        const label = document.getElementById('technical-report-directory-label');
+        if (label) label.textContent = 'Descargas del navegador';
+        this.showToast?.('Los informes volverán a descargarse en Descargas.', 'success');
+      } catch (error) { this.showToast?.('No se pudo restablecer la carpeta de informes.', 'error'); }
+    };
+
+    const originalShowSettingsCategory = proto.showSettingsCategory;
+    if (typeof originalShowSettingsCategory === 'function' && !originalShowSettingsCategory.__technicalReportDownloads70) {
+      const wrapped = function (category, ...args) {
+        if (category === 'technical-report-downloads') this.ensureTechnicalReportDownloadSettings();
+        return originalShowSettingsCategory.call(this, category, ...args);
+      };
+      wrapped.__technicalReportDownloads70 = true; proto.showSettingsCategory = wrapped;
+    }
+    const originalOpenSettingsModal = proto.openSettingsModal;
+    if (typeof originalOpenSettingsModal === 'function' && !originalOpenSettingsModal.__technicalReportDownloads70) {
+      const wrapped = function (...args) {
+        this.ensureSettingsWorkspace?.();
+        this.ensureTechnicalReportDownloadSettings();
+        return originalOpenSettingsModal.apply(this, args);
+      };
+      wrapped.__technicalReportDownloads70 = true; proto.openSettingsModal = wrapped;
+    }
+
+    proto.downloadTechnicalReportPdf = async function (report, documentNode, button) {
+      if (this.currentUser?.role !== 'admin') return this.showToast?.('Solo el administrador puede descargar informes.', 'error');
+      if (!report || !documentNode) return this.showToast?.('No se encontró el informe para descargar.', 'error');
+      const directoryHandle = this.technicalReportsDirectoryHandle;
+      let directoryPermissionGranted = false;
+      if (directoryHandle) {
+        try {
+          let permission = await directoryHandle.queryPermission?.({ mode: 'readwrite' });
+          if (permission !== 'granted') permission = await directoryHandle.requestPermission?.({ mode: 'readwrite' });
+          directoryPermissionGranted = permission === 'granted';
+        } catch (error) { console.warn('[INFORMES] Se descargará el PDF en Descargas porque no se pudo confirmar el acceso a la carpeta.', error); }
+      }
+      if (!window.html2pdf && typeof this.ensurePdfLibrary === 'function') await this.ensurePdfLibrary();
+      if (!window.html2pdf) return this.showToast?.('No se pudo preparar el PDF. Revisa la conexión e inténtalo de nuevo.', 'error');
+      const filename = safeReportFilename(report), originalText = button?.innerHTML;
+      if (button) { button.disabled = true; button.innerHTML = '<i data-lucide="loader-circle"></i><span>Preparando PDF…</span>'; if (window.lucide) lucide.createIcons({ root: button }); }
+      try {
+        const pdf = await window.html2pdf().set({
+          margin: 0,
+          filename,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#fff', scrollX: 0, scrollY: 0 },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['css', 'legacy'] }
+        }).from(documentNode).toPdf().get('pdf');
+        const blob = pdf.output('blob');
+        const savedToFolder = directoryPermissionGranted && await writeReportToFolder(directoryHandle, blob, filename);
+        if (!savedToFolder) downloadReportBlob(blob, filename);
+        this.showToast?.(savedToFolder ? `PDF guardado en ${directoryHandle.name}.` : 'PDF descargado en la carpeta Descargas del navegador.', 'success');
+      } catch (error) {
+        console.error('[INFORMES] No se pudo generar el PDF.', error);
+        this.showToast?.('No se pudo generar el PDF del informe. Inténtalo nuevamente.', 'error');
+      } finally {
+        if (button) { button.disabled = false; button.innerHTML = originalText || '<i data-lucide="download"></i><span>Descargar PDF</span>'; if (window.lucide) lucide.createIcons({ root: button }); }
+      }
+    };
+
     proto.openTechnicalReportPreview = function (id) {
       if (this.currentUser?.role !== 'admin') return this.showToast?.('Esta vista está disponible para el administrador.', 'error');
       const report = (this.technicalReports || []).find(item => String(item.id) === String(id));
@@ -349,16 +516,10 @@
       let modal = document.getElementById('technical-report-preview-modal');
       if (!modal) { modal = document.createElement('div'); modal.id = 'technical-report-preview-modal'; modal.className = 'technical-report-preview-modal hidden'; document.body.appendChild(modal); }
       const contactFooter = `<footer class="technical-report-document-footer"><span>${escapeHtml(FOOTER.email)}</span><span>${escapeHtml(FOOTER.address)}</span><span>${escapeHtml(FOOTER.phones)}</span></footer>`;
-      modal.innerHTML = `<section class="technical-report-preview-shell" role="dialog" aria-modal="true" aria-label="Vista previa del informe"><header class="technical-report-preview-controls"><b>${escapeHtml(report.number)} · Vista previa</b><div><button type="button" data-report-print><i data-lucide="printer"></i><span>Exportar PDF</span></button><button type="button" data-report-preview-close aria-label="Cerrar">×</button></div></header><div class="technical-report-print-root"><article class="technical-report-document"><header class="technical-report-document-header"><div class="technical-report-green-bar"></div><div class="technical-report-black-banner"><b>INFORME TÉCNICO</b><span>${escapeHtml(report.number)}</span></div><img src="assets/media/invoice-pdf-company-logo.png" alt="ServiPortones Eléctricos Martínez"></header><main class="technical-report-document-body"><section class="technical-report-general"><h2>Datos Generales</h2><p>Cliente: <b>${escapeHtml(report.client)}</b></p><p>Fecha de inspección: ${escapeHtml(reportDate(report.inspectionDate))}</p><p>Técnico responsable: ${escapeHtml(report.technician || 'Polo Martínez')}</p></section><div class="technical-report-document-text">${escapeHtml(report.body).replace(/\r?\n/g, '<br>')}</div><section class="technical-report-signature-block"><img src="${escapeHtml(report.signature || signatureSource())}" alt="Firma digital"><b>POLO MARTÍNEZ VALENCIA</b><b>13390420</b><b>Representante legal</b></section></main>${contactFooter}</article></div></section>`;
+      modal.innerHTML = `<section class="technical-report-preview-shell" role="dialog" aria-modal="true" aria-label="Vista previa del informe"><header class="technical-report-preview-controls"><b>${escapeHtml(report.number)} · Vista previa</b><div><button type="button" data-report-download><i data-lucide="download"></i><span>Descargar PDF</span></button><button type="button" data-report-preview-close aria-label="Cerrar">×</button></div></header><div class="technical-report-print-root"><article class="technical-report-document"><header class="technical-report-document-header"><div class="technical-report-green-bar"></div><div class="technical-report-black-banner"><b>INFORME TÉCNICO</b><span>${escapeHtml(report.number)}</span></div><img src="assets/media/invoice-pdf-company-logo.png" alt="ServiPortones Eléctricos Martínez"></header><main class="technical-report-document-body"><section class="technical-report-general"><h2>Datos Generales</h2><p>Cliente: <b>${escapeHtml(report.client)}</b></p><p>Fecha de inspección: ${escapeHtml(reportDate(report.inspectionDate))}</p><p>Técnico responsable: ${escapeHtml(report.technician || 'Polo Martínez')}</p></section><div class="technical-report-document-text">${escapeHtml(report.body).replace(/\r?\n/g, '<br>')}</div><section class="technical-report-signature-block"><img src="${escapeHtml(report.signature || signatureSource())}" alt="Firma digital"><b>POLO MARTÍNEZ VALENCIA</b><b>13390420</b><b>Representante legal</b></section></main>${contactFooter}</article></div></section>`;
       modal.classList.remove('hidden');
       modal.querySelector('[data-report-preview-close]').addEventListener('click', () => modal.classList.add('hidden'));
-      modal.querySelector('[data-report-print]').addEventListener('click', () => {
-        document.body.classList.add('printing-technical-report');
-        const finish = () => document.body.classList.remove('printing-technical-report');
-        window.addEventListener('afterprint', finish, { once: true });
-        window.print();
-        setTimeout(finish, 2000);
-      });
+      modal.querySelector('[data-report-download]').addEventListener('click', event => this.downloadTechnicalReportPdf(report, modal.querySelector('.technical-report-document'), event.currentTarget));
       if (window.lucide) lucide.createIcons();
     };
 
