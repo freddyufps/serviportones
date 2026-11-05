@@ -458,11 +458,20 @@
         const stack = document.getElementById('toast-notification-stack');
         if (!stack) return;
         // El dock de conversaciones de escritorio usa una capa superior; los avisos deben quedar por delante.
+        stack.style.setProperty('position', 'fixed', 'important');
+        stack.style.setProperty('top', '12px', 'important');
+        stack.style.setProperty('right', '12px', 'important');
+        stack.style.setProperty('left', 'auto', 'important');
+        stack.style.setProperty('display', 'flex', 'important');
+        stack.style.setProperty('visibility', 'visible', 'important');
+        stack.style.setProperty('opacity', '1', 'important');
+        stack.style.setProperty('pointer-events', 'none', 'important');
         stack.style.setProperty('z-index', '2147483647', 'important');
         stack.style.setProperty('isolation', 'isolate');
 
         const toastId = 'pop_' + Date.now() + Math.random().toString(36).substring(2, 6);
-        const toastLifetime = type === 'chat' ? 15000 : 6500;
+        const isMobileViewport = window.matchMedia?.('(max-width: 639px)').matches ?? window.innerWidth < 640;
+        const toastLifetime = isMobileViewport ? 4500 : type === 'chat' ? 15000 : 6500;
         const card = document.createElement('div');
         card.id = toastId;
         card.className = "pointer-events-auto bg-slate-900/95 text-white border border-slate-700/80 rounded-2xl shadow-2xl p-3.5 popup-slide-in backdrop-blur-md flex items-start gap-3 relative overflow-hidden transition cursor-pointer hover:border-brand-lime";
@@ -486,7 +495,7 @@
           <button type="button" class="absolute top-2 right-2 text-slate-400 hover:text-white p-1 rounded-lg" onclick="event.stopPropagation(); app.closePopup('${toastId}')">
             ✕
           </button>
-          <div class="absolute bottom-0 left-0 h-1 bg-brand-lime transition-all ${type === 'chat' ? 'duration-[15000ms]' : 'duration-[6500ms]'} w-full" id="${toastId}_bar"></div>
+          <div class="absolute bottom-0 left-0 h-1 bg-brand-lime transition-all w-full" id="${toastId}_bar" style="transition-duration:${toastLifetime}ms"></div>
         `;
 
         if (onClick) {
@@ -2794,17 +2803,21 @@
           this.notifiedChatMessageIds.delete(oldestId);
         }
         this.chatActivityRanks[wName] = ++this.chatActivitySequence;
-        this.ensureIncomingWorkerWindow(wName);
-        // Cada mensaje entrante debe sonar; la preferencia general controla los otros avisos.
-        SoundEngine.playMessageSound();
-        this.showBrowserChatNotification(wName, data, msgId);
-        this.showPopupNotification({
-          title: `${data.senderName || wName} te envió un mensaje`,
-          details: data.text || '', type: 'chat', icon: '💬',
-          onClick: () => this.openDirectWorkerChat(wName),
-          // Los mensajes nuevos siempre dejan una alerta visible, incluso con el chat minimizado.
-          force: true
-        });
+        // Las alertas no deben depender de que el dock de chat pueda renderizarse.
+        try {
+          this.showPopupNotification({
+            title: `${data.senderName || wName} te envió un mensaje`,
+            details: data.text || '', type: 'chat', icon: '💬',
+            onClick: () => this.openDirectWorkerChat(wName),
+            force: true
+          });
+        } catch (error) { console.warn('[CHAT] No se pudo pintar el aviso dentro de la aplicación:', error); }
+        try { this.showBrowserChatNotification(wName, data, msgId); }
+        catch (error) { console.warn('[CHAT] No se pudo mostrar el aviso del navegador:', error); }
+        try { SoundEngine.playMessageSound(); }
+        catch (error) { console.warn('[CHAT] No se pudo reproducir el sonido:', error); }
+        try { this.ensureIncomingWorkerWindow(wName); }
+        catch (error) { console.warn('[CHAT] No se pudo restaurar la conversación minimizada:', error); }
         if (this.currentUser?.role === 'admin') this.renderConversationsSidebar();
       }
 
@@ -4308,7 +4321,8 @@ updateMessengerWindowTyping(workerName) {
         const previousAssigned = taskAssignedSelect?.value || '';
         const opts = this.workers.map(u => `<option value="${u.fullName || u.username}">${u.fullName || u.username}</option>`).join('');
         if (taskAssignedSelect) {
-          taskAssignedSelect.innerHTML = `<option value="LIBRE">🟠 LIBRE</option>${opts}`;
+          const hiddenOption = this.currentUser?.role === 'admin' ? '<option value="NO_VISIBLE_WORKERS">🔒 No visible para trabajadores</option>' : '';
+          taskAssignedSelect.innerHTML = `<option value="LIBRE">🟠 LIBRE</option>${hiddenOption}${opts}`;
           if ([...taskAssignedSelect.options].some(option => option.value === previousAssigned)) taskAssignedSelect.value = previousAssigned;
         }
         if (filterTechSelect) filterTechSelect.innerHTML = `<option value="ALL">Todos los Técnicos</option><option value="LIBRE">🟠 LIBRE</option>` + opts;
@@ -4432,10 +4446,14 @@ updateMessengerWindowTyping(workerName) {
         return !assignedTo || assignedTo.toUpperCase() === 'LIBRE';
       }
 
+      isTaskHiddenFromWorkers(task) {
+        return task?.hiddenFromWorkers === true || String(task?.assignedTo || '').trim().toUpperCase() === 'NO_VISIBLE_WORKERS';
+      }
+
       updateStats() {
         const isAdmin = this.currentUser.role === 'admin';
         const myName = this.getCurrentDisplayName();
-        const relevantTasks = (isAdmin ? this.tasks : this.tasks.filter(t => this.isTaskFree(t) || t.assignedTo === myName)).filter(t => !t.archivedAt);
+        const relevantTasks = (isAdmin ? this.tasks : this.tasks.filter(t => !this.isTaskHiddenFromWorkers(t) && (this.isTaskFree(t) || t.assignedTo === myName))).filter(t => !t.archivedAt);
         document.getElementById('stat-total').textContent = relevantTasks.length;
         document.getElementById('stat-pending').textContent = relevantTasks.filter(t => t.status === 'PENDIENTE' || t.status === 'EN_PROCESO').length;
         document.getElementById('stat-done').textContent = relevantTasks.filter(t => t.status === 'REALIZADA').length;
@@ -4563,7 +4581,7 @@ updateMessengerWindowTyping(workerName) {
 
         let filtered = this.tasks.filter(t => {
           if (this.showArchivedTasks ? (!isAdmin || !t.archivedAt) : !!t.archivedAt) return false;
-          if (!isAdmin && !this.isTaskFree(t) && t.assignedTo !== myName) return false;
+          if (!isAdmin && (this.isTaskHiddenFromWorkers(t) || (!this.isTaskFree(t) && t.assignedTo !== myName))) return false;
 
           const matchText = !search ||
             t.client.toLowerCase().includes(search) ||
@@ -4607,6 +4625,7 @@ updateMessengerWindowTyping(workerName) {
           }
 
           const taskIsFree = this.isTaskFree(t);
+          const taskIsHiddenFromWorkers = this.isTaskHiddenFromWorkers(t);
           const rawWorkDate = String(t.date || '');
           const workDate = /^\d{4}-\d{2}-\d{2}$/.test(rawWorkDate) ? rawWorkDate.split('-').reverse().join('/') : rawWorkDate;
           const adminLine = t.administrator ? `<p class="order-administrator mt-1 text-xs text-slate-600"><span class="font-semibold">Administrador / contacto:</span> ${this.escapeHtml(t.administrator)}</p>` : '';
@@ -4658,7 +4677,9 @@ updateMessengerWindowTyping(workerName) {
 
                 <div class="order-tech-section mt-2.5 pt-2 border-t text-xs">
                   <span class="text-slate-500 text-[11px] block mb-1.5">Técnico:</span>
-                  ${taskIsFree
+                  ${taskIsHiddenFromWorkers
+                    ? '<span class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-700">🔒 No visible para trabajadores</span>'
+                    : taskIsFree
                     ? '<span class="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] font-black text-orange-700">🟠 LIBRE · Disponible</span>'
                     : `<div class="flex items-center gap-2"><div onclick="app.zoomWorkerPhoto('${techPhoto}', '${t.assignedTo}')" class="seasonal-worker-avatar cursor-pointer w-9 h-9 rounded-full overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center border-2 border-brand-lime" title="Ampliar foto">${techPhoto ? `<img src="${this.escapeHtml(techPhoto)}" alt="Foto de ${this.escapeHtml(t.assignedTo)}" class="w-full h-full object-cover">` : `<span class="text-xs font-bold">${this.escapeHtml(String(t.assignedTo || '?').charAt(0).toUpperCase())}</span>`}</div><div class="min-w-0"><div class="font-bold text-slate-800 text-[11px]">${this.escapeHtml(t.assignedTo)}</div><span class="presence-label is-${techPresenceStatus}">${techPresenceLabel}</span>${techDetails.length ? `<div class="mt-0.5 flex flex-wrap gap-x-2 text-[10px] text-slate-500">${techDetails.map(detail => `<span>${detail}</span>`).join('')}</div>` : ''}</div></div>`}
                 </div>
@@ -5084,7 +5105,7 @@ updateMessengerWindowTyping(workerName) {
         this.setTaskClientMode('new');
         this.renderServiceTypeOptions(t.serviceType);
         document.getElementById('task-equipment').value = t.equipment;
-        document.getElementById('task-assigned-to').value = this.isTaskFree(t) ? 'LIBRE' : t.assignedTo;
+        document.getElementById('task-assigned-to').value = this.isTaskHiddenFromWorkers(t) ? 'NO_VISIBLE_WORKERS' : this.isTaskFree(t) ? 'LIBRE' : t.assignedTo;
         this.renderTaskTechnicianMenu();
         document.getElementById('task-priority').value = t.priority;
         document.getElementById('task-date').value = t.date;
@@ -5170,6 +5191,7 @@ updateMessengerWindowTyping(workerName) {
             this.tasks[index].serviceType = document.getElementById('task-service-type').value;
             this.tasks[index].equipment = document.getElementById('task-equipment').value;
             this.tasks[index].assignedTo = document.getElementById('task-assigned-to').value;
+            this.tasks[index].hiddenFromWorkers = this.tasks[index].assignedTo === 'NO_VISIBLE_WORKERS';
             this.tasks[index].assignedWorkerId = this.getTaskTechnician({ assignedTo: this.tasks[index].assignedTo })?.id || '';
             this.tasks[index].priority = document.getElementById('task-priority').value;
             this.tasks[index].date = document.getElementById('task-date').value;
@@ -5189,6 +5211,7 @@ updateMessengerWindowTyping(workerName) {
             serviceType: document.getElementById('task-service-type').value,
             equipment: document.getElementById('task-equipment').value,
             assignedTo: document.getElementById('task-assigned-to').value,
+            hiddenFromWorkers: document.getElementById('task-assigned-to').value === 'NO_VISIBLE_WORKERS',
             assignedWorkerId: this.getTaskTechnician({ assignedTo: document.getElementById('task-assigned-to').value })?.id || '',
             priority: document.getElementById('task-priority').value,
             date: document.getElementById('task-date').value,
@@ -5348,6 +5371,8 @@ updateMessengerWindowTyping(workerName) {
       openReportModal(id) {
         const t = this.tasks.find(x => x.id === id);
         if (!t) return;
+        const currentName = this.getCurrentDisplayName();
+        if (this.currentUser?.role !== 'admin' && (this.isTaskHiddenFromWorkers(t) || (!this.isTaskFree(t) && t.assignedTo !== currentName))) return;
         this.selectedTask = t;
 
         document.getElementById('report-order-subtitle').textContent = `Orden #${t.id} - ${t.client}`;
@@ -5576,7 +5601,7 @@ updateMessengerWindowTyping(workerName) {
         const t = this.tasks.find(x => x.id === id);
         if (!t) return;
         const myName = this.getCurrentDisplayName();
-        if (this.currentUser?.role !== 'admin' && !this.isTaskFree(t) && t.assignedTo !== myName) return;
+        if (this.currentUser?.role !== 'admin' && (this.isTaskHiddenFromWorkers(t) || (!this.isTaskFree(t) && t.assignedTo !== myName))) return;
         this.selectedTask = t;
 
         document.getElementById('view-order-number').textContent = t.id;
@@ -5591,7 +5616,7 @@ updateMessengerWindowTyping(workerName) {
         document.getElementById('view-service-line').textContent = t.serviceType || 'Servicio sin especificar';
         document.getElementById('view-equipment-line').textContent = `Equipo: ${t.equipment || 'No especificado'}`;
         document.getElementById('view-instructions').textContent = t.instructions || 'No se registraron instrucciones adicionales.';
-        document.getElementById('view-technician').textContent = t.assignedTo || '—';
+        document.getElementById('view-technician').textContent = this.isTaskHiddenFromWorkers(t) ? 'No visible para trabajadores' : t.assignedTo || '—';
         document.getElementById('view-completed-at').textContent = `Fecha del trabajo: ${t.date || '—'}` + (t.completedAt ? ` · Realizada: ${t.completedAt}` : '');
         document.getElementById('view-observations').textContent = t.observations || 'No se registraron observaciones del trabajo realizado.';
 
@@ -5603,7 +5628,7 @@ updateMessengerWindowTyping(workerName) {
 
         const technician = this.getTaskTechnician(t);
         const avatar = document.getElementById('view-technician-avatar');
-        avatar.innerHTML = technician?.photo ? `<img src="${this.escapeHtml(technician.photo)}" alt="" class="w-full h-full object-cover">` : this.escapeHtml((t.assignedTo || '?').charAt(0).toUpperCase());
+        avatar.innerHTML = this.isTaskHiddenFromWorkers(t) ? '🔒' : technician?.photo ? `<img src="${this.escapeHtml(technician.photo)}" alt="" class="w-full h-full object-cover">` : this.escapeHtml((t.assignedTo || '?').charAt(0).toUpperCase());
 
         // Se conserva el checklist existente en los datos, pero se retiró de la vista de órdenes.
 
@@ -5659,6 +5684,7 @@ updateMessengerWindowTyping(workerName) {
       editCompletedOrderReport() {
         const task = this.selectedTask;
         if (this.currentUser?.role !== 'worker' || !task) return;
+        if (this.isTaskHiddenFromWorkers(task) || (!this.isTaskFree(task) && task.assignedTo !== this.getCurrentDisplayName())) return;
         const taskId = task.id;
         const status = task.status;
         this.closeViewModal();
