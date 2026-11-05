@@ -1,10 +1,10 @@
 (() => {
   'use strict';
   const artworks = {
-    active: ['Órdenes', 'assets/media/boton-ordenes-transparent.webp?v=20261102-icons-webp-1', 'assets/media/boton-ordenes-transparent.png'],
-    archived: ['Órdenes archivadas', 'assets/img/nav/ordenes-archivadas-transparent.webp?v=20261102-icons-webp-1', 'assets/img/nav/ordenes-archivadas-transparent.png'],
-    quotes: ['Cotizaciones archivadas', 'assets/img/nav/cotizaciones-archivadas-transparent.webp?v=20261102-icons-webp-1', 'assets/img/nav/cotizaciones-archivadas-transparent.png'],
-    invoices: ['Consolidado de facturas', 'assets/img/nav/consolidado-facturas-transparent.webp?v=20261102-icons-webp-1', 'assets/img/nav/consolidado-facturas-transparent.png'],
+    active: ['Órdenes', 'assets/media/boton-ordenes-transparent.png?v=20261105-menu-icons-transparent-1', 'assets/media/boton-ordenes-transparent.png'],
+    archived: ['Informes Realizados', 'assets/img/nav/ordenes-archivadas-transparent.png?v=20261105-menu-icons-transparent-1', 'assets/img/nav/ordenes-archivadas-transparent.png'],
+    quotes: ['Cotizaciones archivadas', 'assets/img/nav/cotizaciones-archivadas-transparent.png?v=20261105-menu-icons-transparent-1', 'assets/img/nav/cotizaciones-archivadas-transparent.png'],
+    invoices: ['Consolidado de facturas', 'assets/img/nav/consolidado-facturas-transparent.png?v=20261105-menu-icons-transparent-1', 'assets/img/nav/consolidado-facturas-transparent.png'],
     clients: ['Clientes', 'assets/img/nav/clientes-transparent.webp?v=20261102-icons-webp-1', 'assets/img/nav/clientes-transparent.png']
   };
   const addArtwork = (button, label, src, fallbackSrc, countSelector) => {
@@ -17,6 +17,7 @@
     image.className = 'orders-action-artwork'; image.src = src; image.alt = ''; image.loading = 'eager'; image.decoding = 'async'; image.fetchPriority = 'high'; image.setAttribute('aria-hidden', 'true');
     image.onerror = () => { image.onerror = null; image.src = fallbackSrc; };
     const text = document.createElement('span'); text.className = 'orders-nav-label'; text.textContent = label;
+    button.title = label; button.setAttribute('aria-label', label);
     button.append(image, text); if (count) button.append(count);
   };
   const decorate = () => {
