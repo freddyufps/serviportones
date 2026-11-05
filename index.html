@@ -290,8 +290,8 @@
         <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between group">
           <div>
             <div class="flex items-center gap-1">
-              <p class="text-[9px] sm:text-[10px] font-bold uppercase text-rose-600 tracking-wider">No Realizadas</p>
-              <button id="btn-reset-failed" onclick="app.resetCategoryTasks('NO_REALIZADA')" class="text-slate-400 hover:text-rose-600 transition hidden" title="Reiniciar no realizadas">
+              <p class="text-[9px] sm:text-[10px] font-bold uppercase text-rose-600 tracking-wider">Pendientes</p>
+              <button id="btn-reset-failed" onclick="app.resetCategoryTasks('NO_REALIZADA')" class="text-slate-400 hover:text-rose-600 transition hidden" title="Reiniciar pendientes">
                 <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
               </button>
             </div>
@@ -323,7 +323,7 @@
             <option value="PENDIENTE">⏳ Pendientes</option>
             <option value="EN_PROCESO">⚙️ En Proceso</option>
             <option value="REALIZADA">✅ Realizadas</option>
-            <option value="NO_REALIZADA">❌ No Realizadas</option>
+            <option value="NO_REALIZADA">❌ Pendientes</option>
           </select>
 
           <details id="filter-tech-control" name="orders-filter-dropdown" class="order-filter-dropdown hidden">
@@ -903,7 +903,7 @@
               <span>✅ Realizada</span>
             </button>
             <button type="button" id="btn-choice-failed" aria-pressed="false" onclick="app.setReportStatus('NO_REALIZADA')" class="py-2 px-2.5 rounded-xl border-2 flex items-center justify-center gap-1 font-bold text-xs">
-              <span>❌ No Realizada</span>
+              <span>❌ Pendiente</span>
             </button>
             <button type="button" id="btn-choice-progress" aria-pressed="false" onclick="app.setTaskInProgress()" class="py-2 px-2.5 rounded-xl border-2 flex items-center justify-center gap-1 font-bold text-xs">
               <span>⏳ En Proceso</span>
@@ -1038,7 +1038,7 @@
   </div>
 
   <!-- JAVASCRIPT: LÓGICA DE LA APLICACIÓN -->
-  <script src="assets/js/app-05.js?v=20261105-chat-alert-event-5"></script>
+  <script src="assets/js/app-05.js?v=20261105-report-pending-label-1"></script>
 <script src="assets/js/app-06.js?v=20261104-user-messages-1"></script>
 <link rel="stylesheet" href="assets/css/app-05.css" id="chat-hidden-overlay-fix">
 <link rel="stylesheet" href="assets/css/app-06.css" id="chat-hide-custom-emojis-mobile">
@@ -1073,7 +1073,7 @@
 <script id="chat-header-admin-identity-cleanup" src="assets/js/app-13.js"></script><link rel="stylesheet" href="assets/css/app-29.css" id="seasonal-chat-admin-card-and-unread-red-alert"><link rel="stylesheet" href="assets/css/app-30.css?v=20261104-registered-client-only-1">
 <link rel="stylesheet" href="assets/css/app-31.css?v=20261104-payment-row-weight-1" id="payments-login-compact-style">
 <link rel="stylesheet" href="assets/css/app-32.css?v=20261028-mobile-header-single-row-1" id="mobile-contact-halloween-splash-fix">
-<script id="payment-document-control" src="assets/js/app-14.js?v=20261104-worker-photo-canonical-1"></script>
+<script id="payment-document-control" src="assets/js/app-14.js?v=20261105-report-pending-label-1"></script>
 <link rel="stylesheet" href="assets/css/app-33.css?v=20261028-presence-archive-details-2">
 <script id="announcement-mobile-chat-status-fix" src="assets/js/app-33.js?v=20261028-announcement-mobile-chat-status-1"></script>
 <script id="archived-order-address-disclosure" src="assets/js/app-36.js?v=20261104-quotes-title-count-hidden-1"></script>
@@ -1081,7 +1081,7 @@
 <script id="worker-order-report-permissions" src="assets/js/app-38.js?v=20261028-worker-order-report-2"></script>
 <link rel="stylesheet" href="assets/css/app-34.css?v=20261028-admin-mobile-chat-profile-2" id="admin-mobile-chat-profile-fix">
 <link rel="stylesheet" href="assets/css/app-35.css?v=20261028-order-sheet-1" id="compact-order-sheet-style">
-<script id="unified-order-sheet-view" src="assets/js/app-39.js?v=20261028-order-sheet-3"></script>
+<script id="unified-order-sheet-view" src="assets/js/app-39.js?v=20261105-report-pending-label-1"></script>
 <link rel="stylesheet" href="assets/css/app-40.css?v=20261028-order-form-date-1" id="compact-order-form-date-style">
 <script id="task-date-toggle-fix" src="assets/js/app-40.js?v=20261028-order-form-date-1"></script>
 <link rel="stylesheet" href="assets/css/app-41.css?v=20261029-chat-brand-icon-white-close-15" id="premium-order-chat-style">

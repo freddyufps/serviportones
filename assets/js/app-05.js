@@ -4567,7 +4567,7 @@ updateMessengerWindowTyping(workerName) {
           label = 'REALIZADAS';
         } else if (category === 'NO_REALIZADA') {
           targets = this.tasks.filter(t => t.status === 'NO_REALIZADA' && !t.archivedAt);
-          label = 'NO REALIZADAS';
+          label = 'PENDIENTES';
         } else if (category === 'PENDIENTE_GRUPO') {
           targets = this.tasks.filter(t => t.status === 'EN_PROCESO' && !t.archivedAt);
           label = 'EN PROCESO';
@@ -4705,7 +4705,7 @@ updateMessengerWindowTyping(workerName) {
             statusBadge = '<span class="bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder text-[10px] px-2 py-0.5 rounded-full font-bold">✅ Realizada</span>';
             borderClass = 'border-brand-lime/40';
           } else if (t.status === 'NO_REALIZADA') {
-            statusBadge = '<span class="bg-rose-100 text-rose-800 text-[10px] px-2 py-0.5 rounded-full font-bold">❌ No Realizada</span>';
+            statusBadge = '<span class="bg-rose-100 text-rose-800 text-[10px] px-2 py-0.5 rounded-full font-bold">❌ Pendiente</span>';
             borderClass = 'border-rose-200';
           }
 
@@ -5580,15 +5580,10 @@ updateMessengerWindowTyping(workerName) {
 
       async submitReport() {
         if (!this.selectedTask) return;
-        if (!this.activeReportStatus) return this.showToast('Selecciona Realizada, No Realizada o En Proceso antes de guardar', 'error');
+        if (!this.activeReportStatus) return this.showToast('Selecciona Realizada, Pendiente o En Proceso antes de guardar', 'error');
         const taskId = this.selectedTask.id;
         if (!await this.waitForEvidenceReads() || this.selectedTask?.id !== taskId || !await this.persistLegacyEvidence(taskId)) return;
         const observations = document.getElementById('rep-observations').value.trim();
-
-        if (this.activeReportStatus === 'NO_REALIZADA' && !observations) {
-          this.showToast('Indica el motivo de no realización', 'error');
-          return;
-        }
 
         const taskIndex = this.tasks.findIndex(t => t.id === this.selectedTask.id);
         if (taskIndex !== -1) {
@@ -5706,7 +5701,7 @@ updateMessengerWindowTyping(workerName) {
         document.getElementById('view-observations').textContent = t.observations || 'No se registraron observaciones del trabajo realizado.';
 
         const badge = document.getElementById('view-order-badge');
-        const statusLabels = { PENDIENTE: 'Pendiente', EN_PROCESO: 'En proceso', REALIZADA: 'Realizada', NO_REALIZADA: 'No realizada' };
+        const statusLabels = { PENDIENTE: 'Pendiente', EN_PROCESO: 'En proceso', REALIZADA: 'Realizada', NO_REALIZADA: 'Pendiente' };
         badge.textContent = statusLabels[t.status] || t.status || 'Pendiente';
         const badgeStyles = { PENDIENTE: 'bg-amber-100 text-amber-800', EN_PROCESO: 'bg-blue-100 text-blue-800', REALIZADA: 'bg-emerald-100 text-emerald-800', NO_REALIZADA: 'bg-rose-100 text-rose-800' };
         badge.className = `px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${badgeStyles[t.status] || 'bg-slate-100 text-slate-700'}`;
