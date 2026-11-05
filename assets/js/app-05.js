@@ -2677,12 +2677,25 @@
         if (this.currentUser?.role !== 'admin' || window.innerWidth < 640) return;
         if (!Array.isArray(this.openChatTabs)) this.openChatTabs = [];
         const alreadyOpen = this.openChatTabs.includes(wName);
-        if (!alreadyOpen) {
-          this.openChatTabs.push(wName);
-          this.minimizedChatWindows[wName] = true;
+        if (!alreadyOpen) this.openChatTabs.push(wName);
+
+        // En escritorio, un mensaje entrante restaura la conversación en el dock.
+        // Antes se creaba (o se conservaba) como minimizada, por lo que el mensaje
+        // podía llegar sin que la ventana llamara la atención del administrador.
+        const previousWorker = this.activeChatWorker;
+        const previousMessages = document.getElementById('chat-messages-container');
+        if (previousWorker && previousWorker !== wName && previousMessages) {
+          this.chatConversationHtmlCache[previousWorker] = previousMessages.innerHTML;
         }
-        if (!alreadyOpen || this.minimizedChatWindows[wName]) this.chatDockUnreadByWorker.add(wName);
+        this.minimizedChatWindows[wName] = false;
+        this.activeChatWorker = wName;
+        this.chatDockUnreadByWorker?.delete(wName);
+        document.getElementById('chat-desktop-windows')?.classList.remove('hidden');
+        this.renderChatTabs();
+        this.renderActiveChatHeader();
+        if (previousWorker !== wName) this.subscribeChatMessages();
         this.renderMessengerWindows();
+        this.renderConversationsSidebar();
       }
 
       showBrowserChatNotification(wName, data = {}) {
