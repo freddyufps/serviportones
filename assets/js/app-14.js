@@ -204,7 +204,7 @@
       document.addEventListener('keydown', event => { if (event.key === 'Escape' && !dialog.classList.contains('hidden')) dialog.classList.add('hidden'); });
     }
     const line = (label, value) => '<div class="payment-order-preview-field"><span>' + safe(label) + '</span><b>' + safe(value || '—') + '</b></div>';
-    const statusNames = {PENDIENTE:'Pendiente',EN_PROCESO:'En proceso',REALIZADA:'Realizada',NO_REALIZADA:'Pendiente'};
+    const statusNames = {PENDIENTE:'⏳ Pendiente',EN_PROCESO:'En proceso',REALIZADA:'Realizada',NO_REALIZADA:'⏳ Pendiente'};
     const payStatus = statusOf(task), invoice = String(task.invoiceNumber || '').replace(/^FE-/i, '');
     const adminContact = task.administrator || task.adminContact || task.contact || task.contactName || '';
     const report = task.report || {}, performed = task.completedWork || task.workDone || report.description || report.details || task.reportText || '';

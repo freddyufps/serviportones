@@ -36,7 +36,7 @@
             if (label === 'factura' || label === 'valor del trabajo') field.remove();
           });
           const status = dialog?.querySelector('.payment-order-preview-status');
-          if (status) status.textContent = ({ PENDIENTE:'Pendiente', EN_PROCESO:'En proceso', REALIZADA:'Realizada', NO_REALIZADA:'Pendiente' })[task.status] || task.status || 'Pendiente';
+          if (status) status.textContent = ({ PENDIENTE:'⏳ Pendiente', EN_PROCESO:'En proceso', REALIZADA:'Realizada', NO_REALIZADA:'⏳ Pendiente' })[task.status] || task.status || 'Pendiente';
         }
         return result;
       } finally {

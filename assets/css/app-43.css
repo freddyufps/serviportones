@@ -74,3 +74,17 @@ body.theme-dark .quote-form-toolbar h3,body.theme-dark .quote-section-heading h4
 .quote-document>.quote-doc-products,.quote-document>.quote-doc-two .quote-doc-section{background-color:transparent}
 .quotes-archive .quotes-summary,.quotes-archive .quote-archive-summary,.quotes-archive .quotes-visible-count{display:none!important}
 .quote-code-card .quote-number-input{width:100%;min-width:0;padding:0;border:0;border-bottom:1px solid transparent;background:transparent;color:#1b3856;text-align:right;font-size:15px;font-weight:800;outline:none}.quote-code-card .quote-number-input:focus{border-bottom-color:#79a940;box-shadow:0 1px 0 #79a940}
+
+/* Refinamiento visual del PDF: verde tomado del logo, solo como acento secundario. */
+.quote-document{color:#3f464b}
+.quote-doc-topline{background:linear-gradient(90deg,#465057 0 72%,#648525 72%)}
+.quote-document .quote-doc-brand img{width:156px;height:72px}
+.quote-document .quote-doc-number>span:first-child,.quote-document .quote-doc-client>div>span,.quote-document .quote-doc-section h3{color:#648525}
+.quote-document .quote-doc-number b,.quote-document .quote-doc-client h2{color:#3f464b}
+.quote-document .quote-doc-client h2{font-size:17px}
+.quote-document .quote-doc-client{background:#f7f9f4;border-color:#e0e6d8}
+.quote-document .quote-doc-section{border-color:#e1e6dc}
+.quote-document .quote-grand-total{background:#edf3e5;color:#394431!important;border:1px solid #d5e0c6}
+.quote-document .quote-grand-total b{color:#4f7025!important}
+.quote-document .quote-doc-footer{border-top-color:#648525}
+@media(max-width:700px){.quote-document .quote-doc-brand img{width:94px;height:50px}}

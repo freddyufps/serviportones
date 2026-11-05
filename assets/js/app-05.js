@@ -4695,8 +4695,8 @@ updateMessengerWindowTyping(workerName) {
         emptyState.classList.add('hidden');
 
         container.innerHTML = filtered.map(t => {
-          let statusBadge = '<span class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-bold">⏳ Pendiente</span>';
-          let borderClass = 'border-amber-200';
+          let statusBadge = '<span class="bg-rose-100 text-rose-800 text-[10px] px-2 py-0.5 rounded-full font-bold">⏳ Pendiente</span>';
+          let borderClass = 'border-rose-200';
 
           if (t.status === 'EN_PROCESO') {
             statusBadge = '<span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded-full font-bold">⚙️ En Proceso</span>';
@@ -4705,7 +4705,7 @@ updateMessengerWindowTyping(workerName) {
             statusBadge = '<span class="bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder text-[10px] px-2 py-0.5 rounded-full font-bold">✅ Realizada</span>';
             borderClass = 'border-brand-lime/40';
           } else if (t.status === 'NO_REALIZADA') {
-            statusBadge = '<span class="bg-rose-100 text-rose-800 text-[10px] px-2 py-0.5 rounded-full font-bold">❌ Pendiente</span>';
+            statusBadge = '<span class="bg-rose-100 text-rose-800 text-[10px] px-2 py-0.5 rounded-full font-bold">⏳ Pendiente</span>';
             borderClass = 'border-rose-200';
           }
 
@@ -5701,9 +5701,9 @@ updateMessengerWindowTyping(workerName) {
         document.getElementById('view-observations').textContent = t.observations || 'No se registraron observaciones del trabajo realizado.';
 
         const badge = document.getElementById('view-order-badge');
-        const statusLabels = { PENDIENTE: 'Pendiente', EN_PROCESO: 'En proceso', REALIZADA: 'Realizada', NO_REALIZADA: 'Pendiente' };
+        const statusLabels = { PENDIENTE: '⏳ Pendiente', EN_PROCESO: 'En proceso', REALIZADA: 'Realizada', NO_REALIZADA: '⏳ Pendiente' };
         badge.textContent = statusLabels[t.status] || t.status || 'Pendiente';
-        const badgeStyles = { PENDIENTE: 'bg-amber-100 text-amber-800', EN_PROCESO: 'bg-blue-100 text-blue-800', REALIZADA: 'bg-emerald-100 text-emerald-800', NO_REALIZADA: 'bg-rose-100 text-rose-800' };
+        const badgeStyles = { PENDIENTE: 'bg-rose-100 text-rose-800', EN_PROCESO: 'bg-blue-100 text-blue-800', REALIZADA: 'bg-emerald-100 text-emerald-800', NO_REALIZADA: 'bg-rose-100 text-rose-800' };
         badge.className = `px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${badgeStyles[t.status] || 'bg-slate-100 text-slate-700'}`;
 
         const technician = this.getTaskTechnician(t);
