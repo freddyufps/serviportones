@@ -10,6 +10,7 @@ body.theme-dark #orders-toolbar{border-color:#34465d}
 @media(max-width:900px) and (min-width:768px){#orders-toolbar .orders-search{flex-basis:100%}#orders-toolbar .orders-filter-controls{width:100%;margin-left:0;justify-content:flex-start}}
 @media(max-width:767px){#orders-toolbar{gap:10px;padding:12px}#orders-toolbar .orders-filter-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px}#orders-toolbar .order-filter-dropdown{flex:1 1 128px;min-width:0}#orders-toolbar .orders-reset{margin-left:auto}#orders-toolbar .orders-assign-button,#orders-toolbar #btn-create-quote{flex-basis:68px!important;width:68px!important;min-width:68px!important;max-width:68px!important;height:68px!important;min-height:68px!important;max-height:68px!important;margin:0!important}#orders-toolbar .orders-assign-button img{width:64px;height:64px}}
 /* Lienzo de exportación visible para html2canvas e independiente de rutas relativas. */
-.quote-pdf-staging{left:0!important;top:0!important;z-index:-1!important;width:794px!important;opacity:1!important;pointer-events:none!important}
-.quote-pdf-staging .quote-document{box-sizing:border-box;width:794px;max-width:794px;min-height:1123px;padding:34px 40px 28px;font-family:Arial,Helvetica,sans-serif;box-shadow:none}
+.quote-pdf-staging{left:0!important;top:0!important;z-index:-1!important;width:auto!important;max-width:none!important;opacity:1!important;pointer-events:none!important}
+.quote-pdf-staging .quote-document{margin:0!important;min-height:0;box-shadow:none}
+.quote-doc-client-no-contact{grid-template-columns:minmax(0,1fr)!important}
 .quote-pdf-staging .quote-doc-section,.quote-pdf-staging .quote-doc-client,.quote-pdf-staging .quote-doc-products,.quote-pdf-staging .quote-doc-two,.quote-pdf-staging .quote-doc-signature{break-inside:avoid;page-break-inside:avoid}

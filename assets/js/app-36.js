@@ -54,7 +54,7 @@
       nav.innerHTML = '<button type="button" data-order-view="active" onclick="app.showActiveOrdersView()" aria-current="false"><i data-lucide="clipboard-list"></i><span>Órdenes</span></button>' +
         '<button type="button" data-order-view="archived" onclick="app.showArchivedOrdersView()" aria-current="false"><i data-lucide="archive"></i><span>Órdenes archivadas</span><b id="orders-nav-archive-count">0</b></button>' +
         '<button id="btn-archived-quotes" type="button" class="quote-archive-button" aria-label="Cotizaciones archivadas" title="Cotizaciones archivadas"><span aria-hidden="true">▣</span><span>Cotizaciones archivadas</span><span id="quotes-archive-count" class="quote-archive-count">0</span></button>' +
-        '<button type="button" data-order-view="invoices" onclick="app.openDocumentControl()" aria-current="false"><i data-lucide="receipt-text"></i><span>Consolidado de facturas</span></button>' +
+        '<button type="button" data-order-view="invoices" onclick="app.openDocumentControl()" aria-current="false"><i data-lucide="receipt-text"></i><span>Consolidado</span></button>' +
         '<button type="button" data-order-view="clients" onclick="app.openClientsDirectory()" aria-current="false"><i data-lucide="users-round"></i><span>Clientes</span></button>';
       header.parentElement.insertBefore(nav, header);
     }
@@ -85,7 +85,7 @@
     const title = document.getElementById('orders-view-title');
     const count = document.getElementById('filtered-count');
     const view = app.showDocumentControl ? 'invoices' : app.clientsDirectoryOpen ? 'clients' : app.quoteArchiveInlineOpen ? 'quotes' : app.showArchivedTasks ? 'archived' : 'active';
-    if (title) title.textContent = view === 'invoices' ? 'Consolidado de facturas' : view === 'archived' ? 'Órdenes archivadas' : 'Órdenes de trabajo';
+    if (title) title.textContent = view === 'invoices' ? 'Consolidado' : view === 'archived' ? 'Órdenes archivadas' : 'Órdenes de trabajo';
     if (count) {
       count.textContent = view === 'archived'
         ? String((app.tasks || []).filter(task => !!task.archivedAt).length)

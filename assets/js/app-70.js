@@ -89,6 +89,22 @@
       return true;
     } catch (error) { console.warn('[INFORMES] Se descargó el PDF, pero no se pudo guardar una copia en la carpeta elegida.', error); return false; }
   };
+  const reportRowsMarkup = (filtered, total) => filtered.length ? filtered.map(report => `<article class="technical-report-row"><div class="technical-report-row-main"><span class="technical-report-number">${escapeHtml(report.number)}</span><b>${escapeHtml(report.client || 'Cliente')}</b><small>Inspección: ${escapeHtml(reportDate(report.inspectionDate))} · Técnico: ${escapeHtml(report.technician || 'Polo Martínez')}</small><small>Creado: ${escapeHtml(reportDate(report.createdAt))} · Estado: ${escapeHtml(report.status || 'Realizado')}</small></div><div class="technical-report-row-actions"><button type="button" data-report-view="${escapeHtml(report.id)}" title="Ver informe" aria-label="Ver ${escapeHtml(report.number)}"><i data-lucide="eye"></i><span>Ver</span></button><button type="button" data-report-edit="${escapeHtml(report.id)}" title="Editar informe" aria-label="Editar ${escapeHtml(report.number)}"><i data-lucide="pencil"></i><span>Editar</span></button><button type="button" data-report-delete="${escapeHtml(report.id)}" title="Eliminar informe" aria-label="Eliminar ${escapeHtml(report.number)}"><i data-lucide="trash-2"></i><span>Eliminar</span></button></div></article>`).join('') : `<div class="technical-reports-empty"><i data-lucide="file-search"></i><b>${total ? 'No se encontraron informes.' : 'Aún no hay informes realizados.'}</b><span>${total ? 'Prueba con otro número, cliente o fecha.' : 'Usa “Realizar informe” para crear el primero.'}</span></div>`;
+  const bindReportRowActions = (app, host) => {
+    host.querySelectorAll('[data-report-view]').forEach(button => button.addEventListener('click', () => app.openTechnicalReportPreview(button.dataset.reportView)));
+    host.querySelectorAll('[data-report-edit]').forEach(button => button.addEventListener('click', () => app.openTechnicalReportForm(button.dataset.reportEdit)));
+    host.querySelectorAll('[data-report-delete]').forEach(button => button.addEventListener('click', async () => {
+      const report = (app.technicalReports || []).find(item => String(item.id) === button.dataset.reportDelete);
+      if (!report || !await app.showSystemConfirm?.(`¿Eliminar el informe ${report.number}?`, { title:'Eliminar informe', confirmText:'Eliminar', icon:'trash' })) return;
+      app.technicalReports = app.technicalReports.filter(item => String(item.id) !== String(report.id));
+      localWrite(app.technicalReports);
+      const tombstones = [...new Set([...deletedRead(), String(report.id)])];
+      try { localStorage.setItem(DELETED_KEY, JSON.stringify(tombstones)); } catch {}
+      if (window.db && navigator.onLine) db.collection(COLLECTION).doc(report.id).delete().then(() => { try { localStorage.setItem(DELETED_KEY, JSON.stringify(deletedRead().filter(id => id !== String(report.id)))); } catch {} }).catch(error => console.warn('[INFORMES] El informe se eliminó en este dispositivo; la nube no sincronizó.', error));
+      app.renderTechnicalReportsArchive();
+      app.showToast?.('Informe eliminado.', 'success');
+    }));
+  };
 
   const install = () => {
     const app = window.app;
@@ -99,6 +115,8 @@
     app.technicalReportsArchiveOpen = false;
     app.technicalReportsDirectoryHandle = null;
     let reportsNavButton = null;
+    let reportsNavigationRequest = 0;
+    let clientsNavigationRequest = 0;
     restoreReportFolder().then(handle => {
       if (!handle || window.app !== app) return;
       app.technicalReportsDirectoryHandle = handle;
@@ -317,37 +335,38 @@
     };
 
     proto.renderTechnicalReportsArchive = function () {
-      if (this.currentUser?.role !== 'admin') return;
+      if (this.currentUser?.role !== 'admin' || !this.technicalReportsArchiveOpen) return;
       const host = this.ensureTechnicalReportsArchive();
       if (!host) return;
+      const previousSearch = host.querySelector('#technical-reports-search');
+      const restoreSearchFocus = previousSearch && document.activeElement === previousSearch;
+      const selectionStart = restoreSearchFocus ? previousSearch.selectionStart : null;
+      const selectionEnd = restoreSearchFocus ? previousSearch.selectionEnd : null;
       const reports = [...(this.technicalReports || [])].sort(byCreated);
       const query = String(document.getElementById('technical-reports-search')?.value || '').trim().toLocaleLowerCase('es');
       const filtered = reports.filter(report => `${report.number} ${report.client} ${report.technician} ${report.inspectionDate}`.toLocaleLowerCase('es').includes(query));
-      const dateText = value => escapeHtml(reportDate(value));
       host.classList.remove('hidden'); host.style.display = 'block'; host.style.width = '100%'; host.style.gridTemplateColumns = 'minmax(0,1fr)';
       host.innerHTML = `<section class="technical-reports-archive"><header class="technical-reports-archive-heading"><div><span>ARCHIVO TÉCNICO</span><h3>Informes realizados</h3><p>Consulta, edita o exporta los informes técnicos guardados.</p></div><button type="button" class="technical-report-primary" data-create-report><i data-lucide="plus"></i><span>Realizar informe</span></button></header>
-        <div class="technical-reports-tools"><label><i data-lucide="search"></i><input id="technical-reports-search" type="search" autocomplete="off" placeholder="Buscar número, cliente o fecha" value="${escapeHtml(query)}"></label><span>${filtered.length} de ${reports.length} informes</span></div>
-        <div class="technical-reports-list">${filtered.length ? filtered.map(report => `<article class="technical-report-row"><div class="technical-report-row-main"><span class="technical-report-number">${escapeHtml(report.number)}</span><b>${escapeHtml(report.client || 'Cliente')}</b><small>Inspección: ${dateText(report.inspectionDate)} · Técnico: ${escapeHtml(report.technician || 'Polo Martínez')}</small><small>Creado: ${dateText(report.createdAt)} · Estado: ${escapeHtml(report.status || 'Realizado')}</small></div><div class="technical-report-row-actions"><button type="button" data-report-view="${escapeHtml(report.id)}" title="Ver informe" aria-label="Ver ${escapeHtml(report.number)}"><i data-lucide="eye"></i><span>Ver</span></button><button type="button" data-report-edit="${escapeHtml(report.id)}" title="Editar informe" aria-label="Editar ${escapeHtml(report.number)}"><i data-lucide="pencil"></i><span>Editar</span></button><button type="button" data-report-delete="${escapeHtml(report.id)}" title="Eliminar informe" aria-label="Eliminar ${escapeHtml(report.number)}"><i data-lucide="trash-2"></i><span>Eliminar</span></button></div></article>`).join('') : `<div class="technical-reports-empty"><i data-lucide="file-search"></i><b>${reports.length ? 'No se encontraron informes.' : 'Aún no hay informes realizados.'}</b><span>${reports.length ? 'Prueba con otro número, cliente o fecha.' : 'Usa “Realizar informe” para crear el primero.'}</span></div>`}</div></section>`;
+        <div class="technical-reports-tools"><label><i data-lucide="search"></i><input id="technical-reports-search" name="reportsQuery" type="search" inputmode="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" placeholder="Buscar número, cliente o fecha" value="${escapeHtml(query)}"></label><span data-reports-result-count>${filtered.length} de ${reports.length} informes</span></div>
+        <div class="technical-reports-list">${reportRowsMarkup(filtered, reports.length)}</div></section>`;
       host.querySelector('[data-create-report]')?.addEventListener('click', () => this.openTechnicalReportForm());
       host.querySelector('#technical-reports-search')?.addEventListener('input', event => {
-        const input = event.currentTarget, start = input.selectionStart, end = input.selectionEnd;
-        this.renderTechnicalReportsArchive();
-        const next = document.getElementById('technical-reports-search');
-        if (next) { next.focus({ preventScroll: true }); next.setSelectionRange(start, end); }
+        const value = event.currentTarget.value.trim().toLocaleLowerCase('es');
+        const currentReports = [...(this.technicalReports || [])].sort(byCreated);
+        const currentFiltered = currentReports.filter(report => `${report.number} ${report.client} ${report.technician} ${report.inspectionDate}`.toLocaleLowerCase('es').includes(value));
+        const list = host.querySelector('.technical-reports-list');
+        if (list) list.innerHTML = reportRowsMarkup(currentFiltered, currentReports.length);
+        const resultCount = host.querySelector('[data-reports-result-count]');
+        if (resultCount) resultCount.textContent = `${currentFiltered.length} de ${currentReports.length} informes`;
+        bindReportRowActions(this, host);
+        if (window.lucide && list) lucide.createIcons({ root: list });
       });
-      host.querySelectorAll('[data-report-view]').forEach(button => button.addEventListener('click', () => this.openTechnicalReportPreview(button.dataset.reportView)));
-      host.querySelectorAll('[data-report-edit]').forEach(button => button.addEventListener('click', () => this.openTechnicalReportForm(button.dataset.reportEdit)));
-      host.querySelectorAll('[data-report-delete]').forEach(button => button.addEventListener('click', async () => {
-        const report = (this.technicalReports || []).find(item => String(item.id) === button.dataset.reportDelete);
-        if (!report || !await this.showSystemConfirm?.(`¿Eliminar el informe ${report.number}?`, { title:'Eliminar informe', confirmText:'Eliminar', icon:'trash' })) return;
-        this.technicalReports = this.technicalReports.filter(item => String(item.id) !== String(report.id));
-        localWrite(this.technicalReports);
-        const tombstones = [...new Set([...deletedRead(), String(report.id)])];
-        try { localStorage.setItem(DELETED_KEY, JSON.stringify(tombstones)); } catch {}
-        if (window.db && navigator.onLine) db.collection(COLLECTION).doc(report.id).delete().then(() => { try { localStorage.setItem(DELETED_KEY, JSON.stringify(deletedRead().filter(id => id !== String(report.id)))); } catch {} }).catch(error => console.warn('[INFORMES] El informe se eliminó en este dispositivo; la nube no sincronizó.', error));
-        this.renderTechnicalReportsArchive();
-        this.showToast?.('Informe eliminado.', 'success');
-      }));
+      bindReportRowActions(this, host);
+      if (restoreSearchFocus) {
+        const nextSearch = host.querySelector('#technical-reports-search');
+        nextSearch?.focus({ preventScroll: true });
+        if (nextSearch && selectionStart !== null && selectionEnd !== null) nextSearch.setSelectionRange(selectionStart, selectionEnd);
+      }
       const title = document.getElementById('orders-view-title'); if (title) title.textContent = 'Informes realizados';
       const count = document.getElementById('filtered-count'); if (count) count.classList.add('hidden');
       document.getElementById('empty-state')?.classList.add('hidden');
@@ -367,11 +386,14 @@
       if (!button) return;
       button.dataset.orderView = 'reports';
       button.setAttribute('aria-label', 'Informes realizados');
+      button.title = 'Informes Realizados';
       const label = button.querySelector('.orders-nav-label') || button.querySelector('span:not([id])');
       if (label) label.textContent = 'Informes Realizados';
       button.querySelector('#orders-nav-archive-count')?.remove();
       const group = nav.querySelector(':scope > .orders-main-access-group') || nav;
-      if (button.parentElement !== group) group.appendChild(button);
+      const invoicesButton = group.querySelector('[data-order-view="invoices"]');
+      if (invoicesButton && invoicesButton !== button) group.insertBefore(button, invoicesButton);
+      else if (button.parentElement !== group) group.appendChild(button);
       nav.dataset.currentView = this.technicalReportsArchiveOpen ? 'reports' : (this.showDocumentControl ? 'invoices' : this.clientsDirectoryOpen ? 'clients' : this.quoteArchiveInlineOpen ? 'quotes' : this.showArchivedTasks ? 'archived' : 'active');
       nav.querySelectorAll('[data-order-view], #btn-archived-quotes').forEach(item => {
         const key = item.dataset.orderView || (item.id === 'btn-archived-quotes' ? 'quotes' : '');
@@ -384,6 +406,7 @@
 
     proto.openTechnicalReportsArchive = async function () {
       if (this.currentUser?.role !== 'admin') return this.showToast?.('Esta sección está disponible para el administrador.', 'error');
+      const requestId = ++reportsNavigationRequest;
       this.showDocumentControl = false;
       this.clientsDirectoryOpen = false;
       this.quoteArchiveInlineOpen = false;
@@ -393,6 +416,9 @@
       document.getElementById('quotes-shell')?.classList.add('hidden');
       document.body.classList.remove('quotes-open');
       await this.loadTechnicalReports();
+      // La carga puede terminar después de que el usuario ya navegó a Clientes u otra vista.
+      // Descarta esta respuesta obsoleta para que no reemplace el módulo que está activo.
+      if (requestId !== reportsNavigationRequest || !this.technicalReportsArchiveOpen) return;
       this.subscribeTechnicalReports();
       this.renderTechnicalReportsArchive();
     };
@@ -475,35 +501,16 @@
     proto.downloadTechnicalReportPdf = async function (report, documentNode, button) {
       if (this.currentUser?.role !== 'admin') return this.showToast?.('Solo el administrador puede descargar informes.', 'error');
       if (!report || !documentNode) return this.showToast?.('No se encontró el informe para descargar.', 'error');
-      const directoryHandle = this.technicalReportsDirectoryHandle;
-      let directoryPermissionGranted = false;
-      if (directoryHandle) {
-        try {
-          let permission = await directoryHandle.queryPermission?.({ mode: 'readwrite' });
-          if (permission !== 'granted') permission = await directoryHandle.requestPermission?.({ mode: 'readwrite' });
-          directoryPermissionGranted = permission === 'granted';
-        } catch (error) { console.warn('[INFORMES] Se descargará el PDF en Descargas porque no se pudo confirmar el acceso a la carpeta.', error); }
-      }
-      if (!window.html2pdf && typeof this.ensurePdfLibrary === 'function') await this.ensurePdfLibrary();
-      if (!window.html2pdf) return this.showToast?.('No se pudo preparar el PDF. Revisa la conexión e inténtalo de nuevo.', 'error');
       const filename = safeReportFilename(report), originalText = button?.innerHTML;
       if (button) { button.disabled = true; button.innerHTML = '<i data-lucide="loader-circle"></i><span>Preparando PDF…</span>'; if (window.lucide) lucide.createIcons({ root: button }); }
       try {
-        const pdf = await window.html2pdf().set({
-          margin: 0,
-          filename,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#fff', scrollX: 0, scrollY: 0 },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak: { mode: ['css', 'legacy'] }
-        }).from(documentNode).toPdf().get('pdf');
-        const blob = pdf.output('blob');
-        const savedToFolder = directoryPermissionGranted && await writeReportToFolder(directoryHandle, blob, filename);
-        if (!savedToFolder) downloadReportBlob(blob, filename);
-        this.showToast?.(savedToFolder ? `PDF guardado en ${directoryHandle.name}.` : 'PDF descargado en la carpeta Descargas del navegador.', 'success');
+        if (typeof window.printPreviewPdf !== 'function') throw new Error('No está disponible la impresión de la vista previa.');
+        // Imprime el mismo nodo abierto, usando el motor del navegador para conservar clip-path y vectores.
+        await window.printPreviewPdf(documentNode, filename);
+        this.showToast?.('En el diálogo de impresión, selecciona “Guardar como PDF”.', 'info');
       } catch (error) {
-        console.error('[INFORMES] No se pudo generar el PDF.', error);
-        this.showToast?.('No se pudo generar el PDF del informe. Inténtalo nuevamente.', 'error');
+        console.error('[INFORMES] No se pudo imprimir la vista previa.', error);
+        this.showToast?.('No se pudo abrir la impresión del informe. Inténtalo nuevamente.', 'error');
       } finally {
         if (button) { button.disabled = false; button.innerHTML = originalText || '<i data-lucide="download"></i><span>Descargar PDF</span>'; if (window.lucide) lucide.createIcons({ root: button }); }
       }
@@ -516,7 +523,7 @@
       let modal = document.getElementById('technical-report-preview-modal');
       if (!modal) { modal = document.createElement('div'); modal.id = 'technical-report-preview-modal'; modal.className = 'technical-report-preview-modal hidden'; document.body.appendChild(modal); }
       const contactFooter = `<footer class="technical-report-document-footer"><svg class="technical-report-footer-accent" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,0 920,0 1000,100 0,100" fill="#8cc63e"></polygon></svg><span>${escapeHtml(FOOTER.email)}</span><span>${escapeHtml(FOOTER.address)}</span><span>${escapeHtml(FOOTER.phones)}</span></footer>`;
-      modal.innerHTML = `<section class="technical-report-preview-shell" role="dialog" aria-modal="true" aria-label="Vista previa del informe"><header class="technical-report-preview-controls"><b>${escapeHtml(report.number)} · Vista previa</b><div><button type="button" data-report-download><i data-lucide="download"></i><span>Descargar PDF</span></button><button type="button" data-report-preview-close aria-label="Cerrar">×</button></div></header><div class="technical-report-print-root"><article class="technical-report-document"><header class="technical-report-document-header"><div class="technical-report-green-bar"></div><div class="technical-report-black-banner"><b>INFORME TÉCNICO</b><span>${escapeHtml(report.number)}</span></div><img src="assets/media/invoice-pdf-company-logo.png" alt="ServiPortones Eléctricos Martínez"></header><main class="technical-report-document-body"><section class="technical-report-general"><h2>Datos Generales</h2><p>Cliente: <b>${escapeHtml(report.client)}</b></p><p>Fecha de inspección: ${escapeHtml(reportDate(report.inspectionDate))}</p><p>Técnico responsable: ${escapeHtml(report.technician || 'Polo Martínez')}</p></section><div class="technical-report-document-text">${escapeHtml(report.body).replace(/\r?\n/g, '<br>')}</div><section class="technical-report-signature-block"><img src="${escapeHtml(report.signature || signatureSource())}" alt="Firma digital"><b>POLO MARTÍNEZ VALENCIA</b><b>13390420</b><b>Representante legal</b></section></main>${contactFooter}</article></div></section>`;
+      modal.innerHTML = `<section class="technical-report-preview-shell" role="dialog" aria-modal="true" aria-label="Vista previa del informe"><header class="technical-report-preview-controls"><b>${escapeHtml(report.number)} · Vista previa</b><div><button type="button" data-report-download><i data-lucide="printer"></i><span>Imprimir / Guardar PDF</span></button><button type="button" data-report-preview-close aria-label="Cerrar">×</button></div></header><div class="technical-report-print-root"><article class="technical-report-document"><header class="technical-report-document-header"><div class="technical-report-green-bar"></div><div class="technical-report-black-banner"><b>INFORME TÉCNICO</b><span>${escapeHtml(report.number)}</span></div><img src="assets/media/invoice-pdf-company-logo.png" alt="ServiPortones Eléctricos Martínez"></header><main class="technical-report-document-body"><section class="technical-report-general"><h2>Datos Generales</h2><p>Cliente: <b>${escapeHtml(report.client)}</b></p><p>Fecha de inspección: ${escapeHtml(reportDate(report.inspectionDate))}</p><p>Técnico responsable: ${escapeHtml(report.technician || 'Polo Martínez')}</p></section><div class="technical-report-document-text">${escapeHtml(report.body).replace(/\r?\n/g, '<br>')}</div><section class="technical-report-signature-block"><img src="${escapeHtml(report.signature || signatureSource())}" alt="Firma digital"><b>POLO MARTÍNEZ VALENCIA</b><b>13390420</b><b>Representante legal</b></section></main>${contactFooter}</article></div></section>`;
       modal.classList.remove('hidden');
       modal.querySelector('[data-report-preview-close]').addEventListener('click', () => modal.classList.add('hidden'));
       modal.querySelector('[data-report-download]').addEventListener('click', event => this.downloadTechnicalReportPdf(report, modal.querySelector('.technical-report-document'), event.currentTarget));
@@ -552,8 +559,20 @@
       if (button) button.classList.toggle('hidden', window.app?.currentUser?.role !== 'admin');
     };
     document.addEventListener('click', event => {
-      const archiveButton = event.target.closest('[data-order-view="archived"], [data-order-view="reports"]');
-      if (archiveButton) { event.preventDefault(); event.stopImmediatePropagation(); window.app?.openTechnicalReportsArchive(); }
+      const viewButton = event.target.closest('#orders-view-navigation [data-order-view]');
+      if (!viewButton) return;
+      if (viewButton.dataset.orderView === 'archived' || viewButton.dataset.orderView === 'reports') {
+        event.preventDefault(); event.stopImmediatePropagation(); window.app?.openTechnicalReportsArchive();
+        return;
+      }
+      if (viewButton.dataset.orderView !== 'clients') clientsNavigationRequest += 1;
+      // Invalida cualquier carga asíncrona de informes antes de ejecutar la navegación destino.
+      reportsNavigationRequest += 1;
+      if (window.app) window.app.technicalReportsArchiveOpen = false;
+      if (viewButton.dataset.orderView === 'clients') {
+        event.preventDefault(); event.stopImmediatePropagation();
+        window.app?.openClientsDirectory?.();
+      }
     }, true);
     document.addEventListener('click', event => {
       if (event.target.closest('#btn-create-quote, #btn-assign-order-filter')) app.technicalReportsArchiveOpen = false;
@@ -562,9 +581,29 @@
     ['showActiveOrdersView','showArchivedOrdersView','openQuotesArchive','openDocumentControl','openClientsDirectory','openNewTaskModal'].forEach(method => {
       const original = proto[method];
       if (typeof original !== 'function' || original.__clearReportArchive70) return;
-      const wrapped = function (...args) { this.technicalReportsArchiveOpen = false; return original.apply(this, args); };
+      const wrapped = function (...args) { reportsNavigationRequest += 1; this.technicalReportsArchiveOpen = false; return original.apply(this, args); };
       wrapped.__clearReportArchive70 = true; proto[method] = wrapped;
     });
+    const originalOpenClients = proto.openClientsDirectory;
+    if (typeof originalOpenClients === 'function' && !originalOpenClients.__refreshClientsDirectory70) {
+      const wrappedOpenClients = function (...args) {
+        const requestId = ++clientsNavigationRequest;
+        const result = originalOpenClients.apply(this, args);
+        if (this.currentUser?.role === 'admin') {
+          this.startClientDirectorySync?.();
+          // Refresh on explicit entry while preserving the existing live Firestore listener.
+          const clientDb = window.db;
+          if (clientDb?.collection) clientDb.collection('clientes').get().then(snapshot => {
+            if (requestId !== clientsNavigationRequest || !this.clientsDirectoryOpen) return;
+            this.clientDirectory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            this.renderClientsDirectory?.();
+          }).catch(error => console.warn('[CLIENTES] No se pudo actualizar el directorio al abrirlo.', error));
+        }
+        return result;
+      };
+      wrappedOpenClients.__refreshClientsDirectory70 = true;
+      proto.openClientsDirectory = wrappedOpenClients;
+    }
     const originalRenderTasks = proto.renderTasks;
     if (typeof originalRenderTasks === 'function' && !originalRenderTasks.__renderTechnicalReports70) {
       const wrapped = function (...args) {
@@ -572,6 +611,27 @@
         if (this.technicalReportsArchiveOpen) {
           this.technicalReportsArchiveOpen = false;
           this.technicalReports = [];
+        }
+        // Firestore dispara renderTasks por cambios en órdenes/usuarios. Si Clientes está
+        // abierto, esos callbacks no deben volver a dibujar las tarjetas de Órdenes encima.
+        if (this.clientsDirectoryOpen && this.currentUser?.role === 'admin') {
+          this.showDocumentControl = false;
+          this.quoteArchiveInlineOpen = false;
+          this.quoteConsolidationOpen = false;
+          this.showArchivedTasks = false;
+          this.startClientDirectorySync?.();
+          const host = document.getElementById('tasks-container');
+          host?.classList.remove('hidden');
+          host?.style.removeProperty('display');
+          host?.style.removeProperty('width');
+          host?.style.removeProperty('grid-template-columns');
+          this.ensureClientsNav?.();
+          this.renderClientsDirectory?.();
+          const title = document.getElementById('orders-view-title');
+          if (title) title.textContent = 'Clientes';
+          document.getElementById('section-admin-audit-log')?.classList.add('hidden');
+          this.syncTechnicalReportsNavigation?.();
+          return;
         }
         const result = originalRenderTasks.apply(this, args);
         ensureReportAction();

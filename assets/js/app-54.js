@@ -4,7 +4,7 @@
     active: ['Órdenes', 'assets/media/boton-ordenes-transparent.png?v=20261105-menu-icons-transparent-1', 'assets/media/boton-ordenes-transparent.png'],
     archived: ['Informes Realizados', 'assets/img/nav/ordenes-archivadas-transparent.png?v=20261105-menu-icons-transparent-1', 'assets/img/nav/ordenes-archivadas-transparent.png'],
     quotes: ['Cotizaciones archivadas', 'assets/img/nav/cotizaciones-archivadas-transparent.png?v=20261105-menu-icons-transparent-1', 'assets/img/nav/cotizaciones-archivadas-transparent.png'],
-    invoices: ['Consolidado de facturas', 'assets/img/nav/consolidado-facturas-transparent.png?v=20261105-menu-icons-transparent-1', 'assets/img/nav/consolidado-facturas-transparent.png'],
+    invoices: ['Consolidado', 'assets/img/nav/consolidado-facturas-transparent.png?v=20261105-menu-icons-consolidado-2', 'assets/img/nav/consolidado-facturas-transparent.png'],
     clients: ['Clientes', 'assets/img/nav/clientes-transparent.webp?v=20261102-icons-webp-1', 'assets/img/nav/clientes-transparent.png']
   };
   const addArtwork = (button, label, src, fallbackSrc, countSelector) => {

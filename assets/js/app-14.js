@@ -56,7 +56,7 @@
       <section class="payment-console">
         <header class="payment-console-header">
           <div class="payment-console-heading-icon"><i data-lucide="receipt-text"></i></div>
-          <div class="payment-console-heading"><h3>Consolidado de facturas</h3><p>Órdenes realizadas y seguimiento de pago a 30 días</p></div>
+          <div class="payment-console-heading"><h3>Consolidado</h3><p>Órdenes realizadas y seguimiento de pago a 30 días</p></div>
           <button type="button" class="payment-back-button" data-payment-back><i data-lucide="arrow-left"></i><span>Volver a órdenes archivadas</span></button>
         </header>
         <div class="payment-console-content">

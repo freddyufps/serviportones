@@ -75,6 +75,18 @@ body.theme-dark .quote-form-toolbar h3,body.theme-dark .quote-section-heading h4
 .quotes-archive .quotes-summary,.quotes-archive .quote-archive-summary,.quotes-archive .quotes-visible-count{display:none!important}
 .quote-code-card .quote-number-input{width:100%;min-width:0;padding:0;border:0;border-bottom:1px solid transparent;background:transparent;color:#1b3856;text-align:right;font-size:15px;font-weight:800;outline:none}.quote-code-card .quote-number-input:focus{border-bottom-color:#79a940;box-shadow:0 1px 0 #79a940}
 
+/* Encabezado del PDF de cotización con la misma franja verde, banda diagonal y logo del informe técnico. */
+.quote-doc-header.quote-doc-report-header{position:relative;display:block;box-sizing:border-box;height:210px;margin:-34px -40px 0}
+.quote-doc-report-header .quote-report-green-band{position:absolute;z-index:1;top:49px;left:0;width:52%;height:38px;background:#8cc63e}
+.quote-doc-report-header .quote-report-black-banner{position:absolute;z-index:2;top:49px;right:0;width:62%;height:117px;clip-path:polygon(0 0,100% 0,100% 100%,17% 100%);background:#050505}
+.quote-doc-report-header .quote-doc-logo{position:absolute;z-index:3;top:117px;left:40px;width:227px;height:91px;object-fit:contain;object-position:left center}
+.quote-doc-report-header .quote-report-meta{position:absolute;z-index:4;top:67px;right:38px;display:grid;justify-items:center;gap:4px;width:39%;text-align:center}
+.quote-doc-report-header .quote-report-meta>span:first-child{color:#fff;font-size:10px;font-weight:900;letter-spacing:.1em}
+.quote-doc-report-header .quote-report-meta>b{color:#fff;font-size:20px;letter-spacing:.04em}
+.quote-doc-report-header .quote-report-meta>small{color:#e5e7eb;font-size:10px}
+.quote-company-line{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;margin:0 0 18px;padding:9px 0;border-block:1px solid #e1e8ef;color:#64758a;font-size:9px;line-height:1.5}
+@media(max-width:700px){.quote-doc-header.quote-doc-report-header{height:174px;margin:-23px -18px 0}.quote-doc-report-header .quote-report-green-band{top:23px;height:22px;width:54%}.quote-doc-report-header .quote-report-black-banner{top:23px;width:64%;height:83px}.quote-doc-report-header .quote-doc-logo{top:82px;left:20px;width:145px;height:58px}.quote-doc-report-header .quote-report-meta{top:38px;right:8px;width:45%;gap:3px}.quote-doc-report-header .quote-report-meta>span:first-child{font-size:7px}.quote-doc-report-header .quote-report-meta>b{font-size:14px}.quote-doc-report-header .quote-report-meta>small{font-size:8px}.quote-company-line{grid-template-columns:1fr;gap:3px;margin-bottom:12px;font-size:8px}}
+
 /* Refinamiento visual del PDF: verde tomado del logo, solo como acento secundario. */
 .quote-document{color:#3f464b}
 .quote-doc-topline{background:linear-gradient(90deg,#465057 0 72%,#648525 72%)}

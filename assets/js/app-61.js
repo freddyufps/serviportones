@@ -1,5 +1,22 @@
-/* Capture the company wordmark into the PDF canvas as a same-origin data URI. */
+/* Imprime directamente el DOM de la vista previa con el motor vectorial del navegador. */
 (function(){
+  const printPreviewPdf=async(node,filename)=>{
+    if(!node)throw new Error("No se encontró el documento de vista previa");
+    await document.fonts?.ready;
+    await Promise.all(Array.from(node.querySelectorAll("img"),image=>image.decode?.().catch(()=>undefined)));
+    const rect=node.getBoundingClientRect(),width=Math.ceil(rect.width),height=Math.ceil(Math.max(rect.height,node.scrollHeight));
+    if(!width||!height)throw new Error("La vista previa no tiene dimensiones imprimibles");
+    const isQuote=node.matches(".quote-document"),target=isQuote?"#quote-preview-shell":"#technical-report-preview-modal",style=document.createElement("style");
+    style.id="spem-exact-preview-print-style";
+    style.textContent=`@media print{@page{size:${width}px ${height}px;margin:0}html,body{width:${width}px!important;min-width:0!important;height:${height}px!important;min-height:0!important;margin:0!important;padding:0!important;overflow:visible!important;background:#fff!important}body.printing-preview-document,body.printing-preview-document *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body.printing-preview-document>*:not(${target}){display:none!important}body.printing-preview-document ${target},body.printing-preview-document ${target} *{visibility:visible!important}body.printing-preview-document ${target}{position:static!important;inset:auto!important;display:block!important;width:${width}px!important;height:auto!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;overflow:visible!important;border:0!important;border-radius:0!important;background:#fff!important;box-shadow:none!important}body.printing-preview-document .quotes-scrim,body.printing-preview-document .quote-preview-toolbar,body.printing-preview-document .technical-report-preview-controls{display:none!important}body.printing-preview-document .quote-preview-window,body.printing-preview-document .technical-report-preview-shell{position:static!important;display:block!important;width:${width}px!important;height:auto!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;overflow:visible!important;border:0!important;border-radius:0!important;background:#fff!important;box-shadow:none!important}body.printing-preview-document .quote-preview-content,body.printing-preview-document .technical-report-print-root{display:block!important;width:${width}px!important;height:auto!important;min-height:0!important;margin:0!important;padding:0!important;overflow:visible!important;background:#fff!important}body.printing-preview-document .quote-document{box-sizing:border-box!important;width:${width}px!important;max-width:none!important;height:auto!important;min-height:0!important;margin:0!important;box-shadow:none!important;break-after:avoid!important;page-break-after:avoid!important}body.printing-preview-document .technical-report-document{box-sizing:border-box!important;width:${width}px!important;max-width:none!important;height:${height}px!important;min-height:${height}px!important;margin:0!important;box-shadow:none!important;break-after:avoid!important;page-break-after:avoid!important}}`;
+    document.head.appendChild(style);
+    const oldTitle=document.title,clean=()=>{document.body.classList.remove("printing-preview-document");style.remove();document.title=oldTitle;window.removeEventListener("afterprint",clean)};
+    document.title=filename.replace(/\.pdf$/i,"");document.body.classList.add("printing-preview-document");
+    window.addEventListener("afterprint",clean,{once:true});
+    requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
+    return true;
+  };
+  window.printPreviewPdf=window.printPreviewPdf||printPreviewPdf;
   const install=()=>{
     if(!window.app||!app.__quoteModule||app.__quotePdfLogoFix61)return false;
     app.__quotePdfLogoFix61=true;
@@ -7,37 +24,18 @@
     if(!original){app.__quotePdfLogoFix61=false;return false}
     const exportQuotePdf=async function(q,auto){
       if(!q)return;
-      let selectedDirectory=this.quoteDirectoryHandle||null;
-      if(selectedDirectory?.queryPermission){try{let permission=await selectedDirectory.queryPermission({mode:"readwrite"});if(permission!=="granted"&&selectedDirectory.requestPermission)permission=await selectedDirectory.requestPermission({mode:"readwrite"});if(permission!=="granted")selectedDirectory=null;}catch(error){console.info("[COTIZACIONES] Se usará la descarga del navegador; no se concedió permiso de carpeta.",error);selectedDirectory=null}}
-      if(!await this.ensurePdfLibrary()){
-        this.showQuotePreview(q);
-        return this.showToast("No se cargó el exportador PDF. Usa Imprimir / Guardar como PDF.","info");
-      }
-      const host=document.createElement("div");
-      host.className="quote-pdf-staging";
-      host.innerHTML=document.querySelector("#quote-preview-content .quote-document")?.outerHTML||"";
-      if(!host.innerHTML){this.showQuotePreview(q);host.innerHTML=document.getElementById("quote-preview-content")?.querySelector(".quote-document")?.outerHTML||"";}
-      if(!host.innerHTML){host.remove();return original.call(this,q,auto)}
-      document.body.appendChild(host);
-      const doc=host.querySelector(".quote-document");
+      if(auto){this.showQuotePreview(q);return this.showToast("La cotización quedó guardada. Desde su vista previa puedes seleccionar Guardar PDF.","info")}
+      let doc=document.querySelector("#quote-preview-content .quote-document");
+      if(!doc||this.quotePreviewQuote?.id!==q.id){this.showQuotePreview(q);await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));doc=document.querySelector("#quote-preview-content .quote-document");}
+      if(!doc)return this.showToast("No se encontró la vista previa para imprimir el PDF. Abre la vista previa e inténtalo de nuevo.","error");
       try{
-        const response=await fetch(new URL("assets/media/invoice-pdf-company-logo.png",document.baseURI));
-        if(!response.ok)throw new Error("No fue posible leer el logo");
-        const blob=await response.blob();
-        const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(blob)});
-        const logo=doc.querySelector(".quote-doc-brand img");
-        if(logo){logo.src=data;await new Promise((resolve,reject)=>{if(logo.complete&&logo.naturalWidth)return resolve();logo.onload=resolve;logo.onerror=reject})}
+        await this.embedQuoteLogo?.(doc);
         const name=(q.client||"CLIENTE").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"").toUpperCase();
         const filename=q.date+"_"+q.number+"_"+name+".pdf";
-        const pdf=await html2pdf().set({margin:[9,10,10,10],filename,image:{type:"jpeg",quality:.98},html2canvas:{scale:2,useCORS:true,allowTaint:false,backgroundColor:"#fff",scrollX:0,scrollY:0},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},pagebreak:{mode:["css","legacy"]}}).from(doc).toPdf().get("pdf");
-        const file=pdf.output("blob"),url=URL.createObjectURL(file),link=document.createElement("a");link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),30000);
-        let savedToFolder=false;
-        if(selectedDirectory){try{const handle=await selectedDirectory.getFileHandle(filename,{create:true}),writer=await handle.createWritable();await writer.write(file);await writer.close();savedToFolder=true}catch(folderError){console.warn("[COTIZACIONES] PDF descargado por el navegador; falló la copia en carpeta.",folderError)}}
-        if(!auto)this.showToast(savedToFolder?"PDF descargado y guardado en la carpeta seleccionada.":"PDF descargado por el navegador.","success");
+        await window.printPreviewPdf(doc,filename);
+        if(!auto)this.showToast("En el diálogo de impresión, selecciona “Guardar como PDF”.","info");
       }catch(error){console.error("[COTIZACIONES]",error);this.showToast("No se pudo generar el PDF. Abre la vista previa para imprimir.","error")}
-      finally{host.remove()}
     };
-    const archiveExport=app.exportQuotePdf;
     app.exportQuotePdf=exportQuotePdf;
     if(typeof app.quoteRow==="function"&&!app.__quotePdfLogoRows61){
       app.__quotePdfLogoRows61=true;
