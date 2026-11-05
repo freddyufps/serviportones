@@ -49,7 +49,7 @@
         }
       },
       getCtx() {
-        if (!this.ctx) {
+        if (!this.ctx || this.ctx.state === 'closed') {
           const AudioContext = window.AudioContext || window.webkitAudioContext;
           if (AudioContext) this.ctx = new AudioContext();
         }
@@ -2752,17 +2752,17 @@
         const alreadyOpen = this.openChatTabs.includes(wName);
         if (!alreadyOpen) this.openChatTabs.push(wName);
 
-        // En escritorio, un mensaje entrante restaura la conversación en el dock.
-        // Antes se creaba (o se conservaba) como minimizada, por lo que el mensaje
-        // podía llegar sin que la ventana llamara la atención del administrador.
+        // En escritorio, cada mensaje vuelve a mostrar el acceso compacto del remitente.
         const previousWorker = this.activeChatWorker;
         const previousMessages = document.getElementById('chat-messages-container');
         if (previousWorker && previousWorker !== wName && previousMessages) {
           this.chatConversationHtmlCache[previousWorker] = previousMessages.innerHTML;
         }
-        this.minimizedChatWindows[wName] = false;
+        // Al recibir un mensaje, abrir el acceso compacto del trabajador (como el dock
+        // visible de la interfaz), manteniendo el indicador de no leídos.
+        this.minimizedChatWindows[wName] = true;
         this.activeChatWorker = wName;
-        this.chatDockUnreadByWorker?.delete(wName);
+        this.chatDockUnreadByWorker?.add(wName);
         document.getElementById('chat-desktop-windows')?.classList.remove('hidden');
         this.renderChatTabs();
         this.renderActiveChatHeader();
@@ -4645,7 +4645,7 @@ updateMessengerWindowTyping(workerName) {
           ].filter(Boolean);
 
           return `
-            <div data-task-id="${this.escapeHtml(t.id)}" class="order-card bg-white rounded-2xl p-3.5 sm:p-4 border ${borderClass} shadow-sm flex flex-col justify-between min-w-0 overflow-hidden transition-all duration-200 hover:shadow-md ${isAdmin && t.status === 'REALIZADA' && !t.archivedAt ? 'completed-order-alert' : ''}">
+            <div data-task-id="${this.escapeHtml(t.id)}" class="order-card ${isAdmin ? 'admin-order-card-compact' : ''} bg-white rounded-2xl p-3.5 sm:p-4 border ${borderClass} shadow-sm flex flex-col justify-between min-w-0 overflow-hidden transition-all duration-200 hover:shadow-md ${isAdmin && t.status === 'REALIZADA' && !t.archivedAt ? 'completed-order-alert' : ''}">
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <span class="text-xs font-mono font-black text-slate-500">${t.id}</span>
@@ -4687,7 +4687,7 @@ updateMessengerWindowTyping(workerName) {
                 ${this.showArchivedTasks ? '</div></details>' : ''}
               </div>
 
-              <div class="mt-3 pt-2 border-t flex items-center justify-between gap-1">
+              <div class="order-card-actions mt-3 pt-2 border-t flex items-center justify-between gap-1">
                 <button type="button" onclick="app.viewOrderDetails('${this.escapeHtml(t.id)}')" class="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-brand-dark hover:border-brand-lime flex items-center justify-center" title="Ver orden" aria-label="Ver orden"><i data-lucide="eye" class="w-4 h-4"></i></button>
 
                 <div class="flex items-center gap-1">

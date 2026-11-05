@@ -1,0 +1,41 @@
+/* Compact cards apply only to the administrator's order list. */
+#tasks-container .admin-order-card-compact {
+  padding: 0.7rem 0.85rem;
+}
+
+#tasks-container .admin-order-card-compact .order-administrator,
+#tasks-container .admin-order-card-compact .order-phone,
+#tasks-container .admin-order-card-compact .order-work-value,
+#tasks-container .admin-order-card-compact .order-client-panel,
+#tasks-container .admin-order-card-compact .order-instructions,
+#tasks-container .admin-order-card-compact .order-completed-notes {
+  display: none !important;
+}
+
+#tasks-container .admin-order-card-compact .order-service-line {
+  display: none !important;
+}
+
+#tasks-container .admin-order-card-compact .order-date-line {
+  margin-top: 0.35rem !important;
+  line-height: 1.25;
+}
+
+#tasks-container .admin-order-card-compact .order-tech-section {
+  margin-top: 0.55rem !important;
+  padding-top: 0.45rem !important;
+}
+
+#tasks-container .admin-order-card-compact .order-tech-section > span:first-child {
+  margin-bottom: 0.25rem !important;
+}
+
+#tasks-container .admin-order-card-compact .order-tech-section .seasonal-worker-avatar {
+  width: 1.75rem !important;
+  height: 1.75rem !important;
+}
+
+#tasks-container .admin-order-card-compact .order-card-actions {
+  margin-top: 0.5rem !important;
+  padding-top: 0.45rem !important;
+}
