@@ -13,7 +13,9 @@
 }
 
 #tasks-container .admin-order-card-compact .order-service-line {
-  display: none !important;
+  display: block !important;
+  margin-top: 0.15rem !important;
+  line-height: 1.25;
 }
 
 #tasks-container .admin-order-card-compact .order-date-line {

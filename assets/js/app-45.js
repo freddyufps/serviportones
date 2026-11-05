@@ -27,7 +27,8 @@
     if(typeof originalToggle==='function'&&!proto.__singleTapChatRestoreFix){
       proto.__singleTapChatRestoreFix=true;
       proto.toggleMessengerWindow=function(name,...args){
-        if(this.minimizedChatWindows?.[name]) return this.selectChatConversation(name);
+        // Restaurar el chat compacto del trabajador sin abrir el panel general
+        // "Chat ServiPortones"; cada superficie conserva su estado independiente.
         return originalToggle.call(this,name,...args);
       };
     }
@@ -78,7 +79,7 @@
     const minimizedHeader=target.closest('#chat-minimized-windows .messenger-window-header');
     if(minimizedHeader){
       const windowEl=minimizedHeader.closest('[data-messenger-window]');if(!windowEl)return;
-      event.preventDefault();event.stopImmediatePropagation();app.selectChatConversation(windowEl.dataset.messengerWindow);return;
+      event.preventDefault();event.stopImmediatePropagation();app.toggleMessengerWindow(windowEl.dataset.messengerWindow);return;
     }
     const contact=target.closest('[data-chat-contact]');
     if(contact){

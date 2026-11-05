@@ -255,16 +255,14 @@
     };
 
     const unlockNotificationAudio = () => {
-      SoundEngine.unlock().then(() => {
-        if (SoundEngine.ctx?.state !== 'running') return;
-        window.removeEventListener('pointerdown', unlockNotificationAudio);
-        window.removeEventListener('touchstart', unlockNotificationAudio);
-        window.removeEventListener('click', unlockNotificationAudio);
-      }).catch(() => {});
+      // Mantener los gestos de desbloqueo instalados: el navegador puede cerrar o
+      // suspender el AudioContext después del primer aviso y volver a bloquearlo.
+      SoundEngine.unlock().catch(() => {});
     };
     window.addEventListener('pointerdown', unlockNotificationAudio, { passive: true });
     window.addEventListener('touchstart', unlockNotificationAudio, { passive: true });
     window.addEventListener('click', unlockNotificationAudio, { passive: true });
+    window.addEventListener('keydown', unlockNotificationAudio, { passive: true });
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && SoundEngine.ctx?.state !== 'running' && SoundEngine.ctx?.state !== 'closed') SoundEngine.unlock().catch(error => console.warn('No se pudo reactivar el sonido:', error));
     });
@@ -379,6 +377,8 @@
         this.isMuted = false;
         this.lastIncomingCallId = null;
         this.notifiedChatMessageIds = new Set();
+        this.chatReadMessageCacheKey = null;
+        this.chatReadMessageCache = {};
 
         // Preferencias de Notificación
         this.prefs = {
@@ -455,7 +455,13 @@
       showPopupNotification({ title, subtitle, details, type, icon, onClick, force = false }) {
         if (!force && !this.prefs.popup) return;
 
-        const stack = document.getElementById('toast-notification-stack');
+        let stack = document.getElementById('toast-notification-stack');
+        if (!stack && document.body) {
+          stack = document.createElement('div');
+          stack.id = 'toast-notification-stack';
+          stack.setAttribute('aria-live', 'polite');
+          document.body.appendChild(stack);
+        }
         if (!stack) return;
         // El dock de conversaciones de escritorio usa una capa superior; los avisos deben quedar por delante.
         stack.style.setProperty('position', 'fixed', 'important');
@@ -466,6 +472,10 @@
         stack.style.setProperty('visibility', 'visible', 'important');
         stack.style.setProperty('opacity', '1', 'important');
         stack.style.setProperty('pointer-events', 'none', 'important');
+        stack.style.setProperty('width', 'min(92vw, 384px)', 'important');
+        stack.style.setProperty('max-width', 'min(92vw, 384px)', 'important');
+        stack.style.setProperty('flex-direction', 'column', 'important');
+        stack.style.setProperty('gap', '10px', 'important');
         stack.style.setProperty('z-index', '2147483647', 'important');
         stack.style.setProperty('isolation', 'isolate');
 
@@ -474,7 +484,10 @@
         const toastLifetime = isMobileViewport ? 4500 : type === 'chat' ? 15000 : 6500;
         const card = document.createElement('div');
         card.id = toastId;
+        card.setAttribute('role', 'status');
         card.className = "pointer-events-auto bg-slate-900/95 text-white border border-slate-700/80 rounded-2xl shadow-2xl p-3.5 popup-slide-in backdrop-blur-md flex items-start gap-3 relative overflow-hidden transition cursor-pointer hover:border-brand-lime";
+        card.style.setProperty('width', '100%');
+        card.style.setProperty('box-sizing', 'border-box');
 
         let badgeBg = "bg-brand-lime/20 text-brand-lime border border-brand-lime/40";
         if (type === 'chat') badgeBg = "bg-cyan-500/20 text-cyan-400 border border-cyan-500/40";
@@ -2726,7 +2739,7 @@
           const timestamp = Number(data.timestamp || 0);
           if (!latest || timestamp >= latest.timestamp) latest = { data, timestamp };
             const isIncoming = isAdmin ? this.getChatRole(data.senderRole) === 'worker' : this.getChatRole(data.senderRole) === 'admin';
-          if (isIncoming && data.status !== 'read' && !data[`hiddenFor_${myRole}`]) unreadCount++;
+          if (isIncoming && !this.isChatMessageReadForCurrentUser(wName, doc.id, data) && !data[`hiddenFor_${myRole}`]) unreadCount++;
         });
         const summary = {
           hasMessages: docs.length > 0,
@@ -2796,6 +2809,9 @@
 
       notifyIncomingChatMessage(wName, msgId, data) {
         const uniqueId = `${wName}:${msgId}`;
+        // Los listeners pueden emitir como "added" registros recientes al reconectar.
+        // El estado persistido y el respaldo local evitan resucitar avisos ya leídos.
+        if (this.isChatMessageReadForCurrentUser(wName, msgId, data)) return;
         if (this.notifiedChatMessageIds.has(uniqueId)) return;
         this.notifiedChatMessageIds.add(uniqueId);
         if (this.notifiedChatMessageIds.size > 500) {
@@ -2819,6 +2835,42 @@
         try { this.ensureIncomingWorkerWindow(wName); }
         catch (error) { console.warn('[CHAT] No se pudo restaurar la conversación minimizada:', error); }
         if (this.currentUser?.role === 'admin') this.renderConversationsSidebar();
+      }
+
+      getChatReadMessageCache() {
+        const user = this.currentUser || {};
+        const identity = String(user.id || user.username || user.fullName || '').trim().toLocaleLowerCase();
+        if (!identity) return null;
+        const key = `portonpro_chat_read_ids_v1_${this.getChatRole()}_${encodeURIComponent(identity)}`;
+        if (this.chatReadMessageCacheKey !== key) {
+          this.chatReadMessageCacheKey = key;
+          try {
+            const saved = JSON.parse(SafeStorage.getItem(key) || '{}');
+            this.chatReadMessageCache = saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {};
+          } catch (_) { this.chatReadMessageCache = {}; }
+        }
+        return { key, threads: this.chatReadMessageCache };
+      }
+
+      isChatMessageReadForCurrentUser(threadId, messageId, data = {}) {
+        const role = this.getChatRole();
+        if (data?.status === 'read' || data?.[`hiddenFor_${role}`]) return true;
+        if (!threadId || !messageId) return false;
+        const cache = this.getChatReadMessageCache();
+        return Boolean(cache?.threads?.[String(threadId)]?.includes(String(messageId)));
+      }
+
+      rememberChatMessagesAsRead(threadId, messageIds = []) {
+        if (!threadId || !Array.isArray(messageIds) || messageIds.length === 0) return;
+        const cache = this.getChatReadMessageCache();
+        if (!cache) return;
+        const key = String(threadId);
+        const current = Array.isArray(cache.threads[key]) ? cache.threads[key] : [];
+        const ids = new Set(current.map(String));
+        messageIds.forEach(id => { if (id !== undefined && id !== null) ids.add(String(id)); });
+        // Acota el almacenamiento local para no hacer crecer indefinidamente el perfil.
+        cache.threads[key] = [...ids].slice(-1500);
+        SafeStorage.setItem(cache.key, JSON.stringify(cache.threads));
       }
 
       reportChatSyncError(context, error) {
@@ -3411,7 +3463,7 @@ updateMessengerWindowTyping(workerName) {
               }
 
               const isFromOther = this.getChatRole(data.senderRole) !== role;
-              if (isFromOther && data.status !== 'read') {
+              if (isFromOther && !this.isChatMessageReadForCurrentUser(threadId, msgId, data)) {
                 unreadCount++;
                 if (data.status === 'sent') {
                   db.collection('chats_internos').doc(threadId).collection('mensajes').doc(msgId).update({
@@ -3568,10 +3620,12 @@ updateMessengerWindowTyping(workerName) {
           const snapshot = await threadRef.collection('mensajes')
             .orderBy('timestamp', 'desc')
             .get();
-          const pending = snapshot.docs.filter(doc => {
+          const incoming = snapshot.docs.filter(doc => {
             const message = doc.data();
-            return this.getChatRole(message.senderRole) !== this.getChatRole() && message.status !== 'read';
+            return this.getChatRole(message.senderRole) !== this.getChatRole();
           });
+          this.rememberChatMessagesAsRead(workerName, incoming.map(doc => doc.id));
+          const pending = incoming.filter(doc => doc.data().status !== 'read');
           for (let start = 0; start < pending.length; start += 450) {
             const batch = db.batch();
             pending.slice(start, start + 450).forEach(doc => batch.update(doc.ref, { status: 'read' }));
@@ -3594,10 +3648,11 @@ updateMessengerWindowTyping(workerName) {
         const role = this.getChatRole();
         const threadId = this.getChatThreadId();
 
-        this.chatMessages.forEach(m => {
-          if (this.getChatRole(m.senderRole) !== role && m.status !== 'read' && m.id) {
-            db.collection('chats_internos').doc(threadId).collection('mensajes').doc(m.id).update({ status: 'read' }).catch(() => {});
-          }
+        const incoming = this.chatMessages.filter(message => this.getChatRole(message.senderRole) !== role && message.id);
+        const pendingRead = incoming.filter(message => !this.isChatMessageReadForCurrentUser(threadId, message.id, message));
+        this.rememberChatMessagesAsRead(threadId, incoming.map(message => message.id));
+        pendingRead.forEach(m => {
+          db.collection('chats_internos').doc(threadId).collection('mensajes').doc(m.id).update({ status: 'read' }).catch(() => {});
         });
 
         const resetField = role === 'admin' ? 'unreadByAdmin' : 'unreadByWorker';
