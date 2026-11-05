@@ -2701,7 +2701,7 @@
                 if (data.type === 'call') return;
                 const fromOther = isAdmin ? this.getChatRole(data.senderRole) === 'worker' : this.getChatRole(data.senderRole) === 'admin';
                 if (!fromOther) return;
-                this.notifyIncomingChatMessage(wName, msgId, data);
+                this.notifyIncomingChatMessage(wName, msgId, data, { receivedAsNew: true });
               });
               if (firstSnapshot) { firstSnapshot = false; baselineIds.clear(); }
             }, error => retryAfterListenerError(`mensajes de ${wName}`, error));
@@ -2727,7 +2727,7 @@
                   const data = change.doc.data();
                   const isRecent = messageTimestampMs(data.timestamp) >= listenerStartedAt - startupGraceMs;
                   const fromOther = isAdmin ? this.getChatRole(data.senderRole) === 'worker' : this.getChatRole(data.senderRole) === 'admin';
-                  if (isRecent && fromOther && data.type !== 'call') this.notifyIncomingChatMessage(wName, change.doc.id, data);
+                  if (isRecent && fromOther && data.type !== 'call') this.notifyIncomingChatMessage(wName, change.doc.id, data, { receivedAsNew: true });
                   else baselineIds.add(change.doc.id);
                 });
                 ignoreFirstSnapshot = false;
@@ -2739,7 +2739,7 @@
                 if (data.type === 'call') return;
                 const fromOther = isAdmin ? this.getChatRole(data.senderRole) === 'worker' : this.getChatRole(data.senderRole) === 'admin';
                 if (!fromOther) return;
-                this.notifyIncomingChatMessage(wName, change.doc.id, data);
+                this.notifyIncomingChatMessage(wName, change.doc.id, data, { receivedAsNew: true });
               });
             }, listenError => retryAfterListenerError(`mensajes de ${wName}`, listenError));
           });
@@ -2824,11 +2824,15 @@
         }
       }
 
-      notifyIncomingChatMessage(wName, msgId, data) {
+      notifyIncomingChatMessage(wName, msgId, data, { receivedAsNew = false } = {}) {
         const uniqueId = `${wName}:${msgId}`;
-        // Los listeners pueden emitir como "added" registros recientes al reconectar.
-        // El estado persistido y el respaldo local evitan resucitar avisos ya leídos.
-        if (this.isChatMessageReadForCurrentUser(wName, msgId, data)) return;
+        // El listener filtra los mensajes históricos antes de llegar aquí. En un mensaje
+        // recién agregado, el campo compartido `status` puede cambiar a "read" por otra
+        // suscripción antes de procesar este snapshot; eso no debe silenciar el aviso.
+        // La caché local y el indicador oculto sí representan lectura previa real.
+        const readCache = this.getChatReadMessageCache()?.threads?.[String(wName)] || [];
+        if (data?.[`hiddenFor_${this.getChatRole()}`] || readCache.map(String).includes(String(msgId))) return;
+        if (!receivedAsNew && this.isChatMessageReadForCurrentUser(wName, msgId, data)) return;
         if (this.notifiedChatMessageIds.has(uniqueId)) return;
         this.notifiedChatMessageIds.add(uniqueId);
         if (this.notifiedChatMessageIds.size > 500) {
@@ -2836,6 +2840,7 @@
           this.notifiedChatMessageIds.delete(oldestId);
         }
         this.chatActivityRanks[wName] = ++this.chatActivitySequence;
+        console.info('[CHAT] Mensaje nuevo: ejecutar alerta de escritorio/móvil.', { worker: wName, messageId: msgId, receivedAsNew });
         // Las alertas no deben depender de que el dock de chat pueda renderizarse.
         try {
           this.showPopupNotification({
@@ -2847,9 +2852,17 @@
         } catch (error) { console.warn('[CHAT] No se pudo pintar el aviso dentro de la aplicación:', error); }
         try { this.showBrowserChatNotification(wName, data, msgId); }
         catch (error) { console.warn('[CHAT] No se pudo mostrar el aviso del navegador:', error); }
-        try { SoundEngine.playMessageSound(); }
+        try {
+          const soundResult = SoundEngine.playMessageSound();
+          soundResult?.then?.(played => {
+            if (!played) console.info('[CHAT] Sonido pendiente o bloqueado por la política de audio del navegador.');
+          });
+        }
         catch (error) { console.warn('[CHAT] No se pudo reproducir el sonido:', error); }
-        try { this.ensureIncomingWorkerWindow(wName); }
+        try {
+          this.ensureIncomingWorkerWindow(wName);
+          console.info('[CHAT] Ventana compacta del trabajador abierta/restaurada.', { worker: wName });
+        }
         catch (error) { console.warn('[CHAT] No se pudo restaurar la conversación minimizada:', error); }
         if (this.getChatRole() === 'admin') this.renderConversationsSidebar();
       }
