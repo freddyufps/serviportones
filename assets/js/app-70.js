@@ -377,7 +377,13 @@
         button.dataset.reportActionBound = '1';
         button.addEventListener('click', () => window.app?.openTechnicalReportForm());
       }
-      if (window.lucide) lucide.createIcons();
+      // Lucide keeps data-lucide on generated SVGs. Re-running createIcons()
+      // while observing this toolbar would replace the SVG repeatedly and
+      // generate an endless MutationObserver loop that freezes the main thread.
+      if (window.lucide && button.dataset.reportIconRendered !== '1' && button.querySelector('i[data-lucide]')) {
+        button.dataset.reportIconRendered = '1';
+        lucide.createIcons({ root: button });
+      }
     };
 
     const syncActionVisibility = () => {
@@ -416,9 +422,6 @@
     }
     const initialize = () => { ensureReportAction(); syncActionVisibility(); app.syncTechnicalReportsNavigation(); };
     initialize();
-    const observer = new MutationObserver(initialize);
-    const toolbar = document.getElementById('orders-toolbar');
-    if (toolbar) observer.observe(toolbar, { childList: true, subtree: true });
     return true;
   };
   if (!install()) {
