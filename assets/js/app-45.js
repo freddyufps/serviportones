@@ -65,7 +65,7 @@
     const target=event.target instanceof Element?event.target:null;
     if(!target)return;
     const app=window.app;
-    if(!app||app.currentUser?.role!=='admin')return;
+    if(!app||app.getChatRole?.()!=='admin')return;
     const close=target.closest('.messenger-window-close');
     if(close){
       const windowEl=close.closest('[data-messenger-window]');if(!windowEl)return;

@@ -2760,7 +2760,7 @@
       }
 
       ensureIncomingWorkerWindow(wName) {
-        if (this.currentUser?.role !== 'admin' || window.innerWidth < 640) return;
+        if (this.getChatRole() !== 'admin' || window.innerWidth < 640) return;
         if (!Array.isArray(this.openChatTabs)) this.openChatTabs = [];
         const alreadyOpen = this.openChatTabs.includes(wName);
         if (!alreadyOpen) this.openChatTabs.push(wName);
@@ -2785,7 +2785,7 @@
       }
 
       showBrowserChatNotification(wName, data = {}, msgId = '') {
-        const desktopAdmin = this.currentUser?.role === 'admin' && window.innerWidth >= 640;
+        const desktopAdmin = this.getChatRole() === 'admin' && window.innerWidth >= 640;
         if ((!document.hidden && !desktopAdmin) || !('Notification' in window)) return;
         if (Notification.permission !== 'granted') {
           console.info('[CHAT] Notificación del sistema no disponible: permiso del navegador en', Notification.permission);
@@ -2834,7 +2834,7 @@
         catch (error) { console.warn('[CHAT] No se pudo reproducir el sonido:', error); }
         try { this.ensureIncomingWorkerWindow(wName); }
         catch (error) { console.warn('[CHAT] No se pudo restaurar la conversación minimizada:', error); }
-        if (this.currentUser?.role === 'admin') this.renderConversationsSidebar();
+        if (this.getChatRole() === 'admin') this.renderConversationsSidebar();
       }
 
       getChatReadMessageCache() {
@@ -3021,14 +3021,14 @@
         if (previousWorker && previousMessages) this.chatConversationHtmlCache[previousWorker] = previousMessages.innerHTML;
         this.activeChatWorker = wName;
         this.chatDockUnreadByWorker?.delete(wName);
-        if (this.currentUser?.role === 'admin') {
+        if (this.getChatRole() === 'admin') {
           const summary = this.chatThreadSummaries[wName];
           if (summary) summary.unreadCount = 0;
           if (this.conversations[wName]) this.conversations[wName].unreadByAdmin = 0;
           this.markChatConversationAsRead(wName);
           this.renderConversationsSidebar();
         }
-        if (this.currentUser?.role === 'admin') {
+        if (this.getChatRole() === 'admin') {
           if (!Array.isArray(this.openChatTabs)) this.openChatTabs = [];
           const isNewTab = !this.openChatTabs.includes(wName);
           if (isNewTab) this.openChatTabs.push(wName);
@@ -3059,7 +3059,7 @@
         let name = '';
         let photo = '';
         let status = 'disconnected';
-        if (this.currentUser.role === 'admin') {
+        if (this.getChatRole() === 'admin') {
           name = this.activeChatWorker || '';
           const worker = this.workers.find(item => (item.fullName || item.username) === name);
           if (!worker) { header.innerHTML = ''; return; }
@@ -3086,7 +3086,7 @@
       renderChatTypingIndicators() {
         document.querySelectorAll('.chat-inline-typing-indicator').forEach(indicator => indicator.remove());
         const targets = [];
-        const activeThread = this.currentUser?.role === 'admin' ? this.activeChatWorker : this.getCurrentDisplayName();
+        const activeThread = this.getChatRole() === 'admin' ? this.activeChatWorker : this.getCurrentDisplayName();
         const mainMessages = document.getElementById('chat-messages-container');
         const mainHost = document.getElementById('chat-conversation-area');
         if (mainMessages && mainHost && activeThread) targets.push({ host: mainHost, scroller: mainMessages, threadId: activeThread });
@@ -3099,7 +3099,7 @@
           const wasNearBottom = scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop < 80;
           let name = threadId;
           let photo = '';
-          if (this.currentUser?.role === 'admin') {
+          if (this.getChatRole() === 'admin') {
             const worker = this.workers.find(item => (item.fullName || item.username) === threadId);
             photo = worker?.photo || '';
           } else {
@@ -3111,7 +3111,7 @@
           const indicator = document.createElement('div');
           indicator.className = 'chat-inline-typing-indicator chat-typing-overlay';
           indicator.innerHTML = `${photo ? `<span class="chat-inline-typing-avatar seasonal-worker-avatar"><img src="${this.escapeHtml(photo)}" alt="Foto de ${safeName}"></span>` : `<span class="chat-inline-typing-avatar seasonal-worker-avatar">${this.escapeHtml(String(name).charAt(0).toUpperCase())}</span>`}<span class="chat-inline-typing-copy"><span>Escribiendo</span><span class="chat-typing-dots" aria-label="Escribiendo"><i></i><i></i><i></i></span></span>`;
-          const composer = host.querySelector(this.currentUser?.role === 'admin' && host !== mainHost ? '.messenger-window-form' : 'form[onsubmit*="handleSendMessage"]');
+          const composer = host.querySelector(this.getChatRole() === 'admin' && host !== mainHost ? '.messenger-window-form' : 'form[onsubmit*="handleSendMessage"]');
           if (composer) host.insertBefore(indicator, composer);
           else host.appendChild(indicator);
           if (wasNearBottom) scroller.scrollTop = scroller.scrollHeight;
@@ -3119,7 +3119,7 @@
       }
       renderChatTabs() {
         const tray = document.getElementById('chat-open-tabs');
-        if (!tray || this.currentUser?.role !== 'admin') return;
+        if (!tray || this.getChatRole() !== 'admin') return;
         const tabs = Array.isArray(this.openChatTabs) ? this.openChatTabs : [];
         tray.innerHTML = tabs.map(name => {
           const worker = this.workers.find(item => (item.fullName || item.username) === name);
@@ -3134,7 +3134,7 @@
         const dockRoot = document.getElementById('chat-desktop-windows');
         const minimizedDock = document.getElementById('chat-minimized-windows');
         if (!dock || !dockRoot) return;
-        if (window.innerWidth < 640 || this.currentUser?.role !== 'admin') {
+        if (window.innerWidth < 640 || this.getChatRole() !== 'admin') {
           dock.innerHTML = '';
           if (minimizedDock) { minimizedDock.innerHTML = ''; minimizedDock.classList.add('hidden'); }
           this.renderChatTypingIndicators();
@@ -3257,7 +3257,7 @@ updateMessengerWindowTyping(workerName) {
       toggleMessengerWindow(workerName) {
         const restoring = Boolean(this.minimizedChatWindows[workerName]);
         this.minimizedChatWindows[workerName] = !restoring;
-        if (restoring && this.currentUser?.role === 'admin' && window.innerWidth >= 640) {
+        if (restoring && this.getChatRole() === 'admin' && window.innerWidth >= 640) {
           this.chatDockUnreadByWorker?.delete(workerName);
           const summary = this.chatThreadSummaries[workerName];
           if (summary) summary.unreadCount = 0;
@@ -3287,7 +3287,7 @@ updateMessengerWindowTyping(workerName) {
       }
 
       closeChatTab(workerName) {
-        if (this.currentUser?.role !== 'admin') return;
+        if (this.getChatRole() !== 'admin') return;
         const contactsPanel = document.getElementById('chat-window-modal');
         const contactsPanelWasOpen = Boolean(contactsPanel && !contactsPanel.classList.contains('hidden'));
         this.openChatTabs = (this.openChatTabs || []).filter(name => name !== workerName);
@@ -3325,7 +3325,7 @@ updateMessengerWindowTyping(workerName) {
         const opening = chatModal.classList.contains('hidden');
         chatModal.classList.toggle('hidden', !opening);
         document.getElementById('chat-launcher-button')?.setAttribute('aria-expanded', String(opening));
-        const isDesktopAdminContacts = this.currentUser?.role === 'admin' && window.innerWidth >= 640;
+        const isDesktopAdminContacts = this.getChatRole() === 'admin' && window.innerWidth >= 640;
         if (opening) {
           this.scrollToChatBottom();
           if (isDesktopAdminContacts) {
@@ -3344,7 +3344,7 @@ updateMessengerWindowTyping(workerName) {
       }
 
       async archiveCurrentConversation() {
-        if (this.currentUser?.role !== 'admin') return;
+        if (this.getChatRole() !== 'admin') return;
         const threadId = this.getChatThreadId();
         this.toggleChatOptionsMenu();
 
@@ -3355,7 +3355,7 @@ updateMessengerWindowTyping(workerName) {
       }
 
       async clearCurrentConversation() {
-        if (this.currentUser?.role !== 'admin') return;
+        if (this.getChatRole() !== 'admin') return;
         this.toggleChatOptionsMenu();
         if (!(await this.showSystemConfirm("¿Deseas vaciar todos los mensajes de esta conversación?", { title: "Vaciar conversación", confirmText: "Vaciar", icon: "trash" }))) return;
 
@@ -3369,7 +3369,7 @@ updateMessengerWindowTyping(workerName) {
       }
 
       async deleteCurrentConversation() {
-        if (this.currentUser?.role !== 'admin') return;
+        if (this.getChatRole() !== 'admin') return;
         this.toggleChatOptionsMenu();
         if (!(await this.showSystemConfirm("¿Deseas eliminar completamente esta conversación y su historial?", { title: "Eliminar conversación", confirmText: "Eliminar", icon: "trash" }))) return;
 
@@ -3517,7 +3517,7 @@ updateMessengerWindowTyping(workerName) {
           const isMine = this.getChatRole() === 'admin' ? this.getChatRole(m.senderRole) === 'admin' : m.senderName === myName;
           let messageText = m.text || '';
           if (m.type === 'call') {
-            const isCaller = this.currentUser.role === 'admin' ? m.callerRole === 'admin' : m.callerName === myName && m.callerRole === this.currentUser.role;
+            const isCaller = this.getChatRole() === 'admin' ? m.callerRole === 'admin' : m.callerName === myName && m.callerRole === this.currentUser.role;
             const title = m.callOutcome === 'missed' ? '📞 Llamada perdida' : m.callOutcome === 'failed' ? '📞 Llamada sin conexión' : (isCaller ? '📞 Llamada saliente' : '📞 Llamada recibida');
             const seconds = Math.max(0, Number(m.durationSeconds || 0));
             const duration = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
@@ -3614,7 +3614,7 @@ updateMessengerWindowTyping(workerName) {
       }
 
       async markChatConversationAsRead(workerName) {
-        if (!window.db || this.currentUser?.role !== 'admin' || !workerName) return;
+        if (!window.db || this.getChatRole() !== 'admin' || !workerName) return;
         try {
           const threadRef = db.collection('chats_internos').doc(workerName);
           const snapshot = await threadRef.collection('mensajes')
