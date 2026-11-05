@@ -433,7 +433,17 @@
           if (preview) preview.textContent = event.target.value.trim() || 'Pendiente de registrar.';
         });
 
-        this.init();
+        this.init().catch(error => {
+          console.error('[INICIO] No se pudo restaurar la sesión de forma automática:', error);
+          try { this.showLoginView(); }
+          catch (recoveryError) {
+            console.error('[INICIO] Se muestra la pantalla de acceso de respaldo:', recoveryError);
+            document.documentElement.classList.remove('auth-session-pending');
+            document.getElementById('view-login')?.classList.remove('hidden');
+            document.getElementById('view-dashboard')?.classList.add('hidden');
+          }
+          this.showToast?.('No fue posible restaurar la sesión. Inicia sesión nuevamente.', 'info');
+        });
       }
 
       loadPreferences() {
@@ -830,7 +840,16 @@
         if (savedSession) {
           try {
             const user = JSON.parse(savedSession);
-            if (await this.validateStoredSession(user)) {
+            const timeoutMarker = {};
+            const validation = await Promise.race([
+              this.validateStoredSession(user).then(valid => ({ valid })),
+              new Promise(resolve => setTimeout(() => resolve({ timeout: timeoutMarker }), 12000))
+            ]);
+            if (validation.timeout === timeoutMarker) {
+              SafeStorage.removeItem('portonpro_session_v4');
+              this.showLoginView();
+              this.showToast('La sesión tardó demasiado en validarse. Inicia sesión nuevamente.', 'info');
+            } else if (validation.valid) {
               await this.loginSuccess(user, false);
             } else {
               this.clearRememberedCredentials();
