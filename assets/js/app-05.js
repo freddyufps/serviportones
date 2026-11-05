@@ -408,6 +408,8 @@
         this.lastObservedTaskStatuses = null;
         this.isTasksInitialLoad = true;
         this.isNotifsInitialLoad = true;
+        this.sessionRestoreToken = 0;
+        this.manualLoginStarted = false;
 
         this.seasonalTheme = this.readSeasonalTheme();
         this.sharedSeasonalTheme = null;
@@ -435,6 +437,7 @@
 
         this.init().catch(error => {
           console.error('[INICIO] No se pudo restaurar la sesión de forma automática:', error);
+          if (this.manualLoginStarted) return;
           try { this.showLoginView(); }
           catch (recoveryError) {
             console.error('[INICIO] Se muestra la pantalla de acceso de respaldo:', recoveryError);
@@ -840,11 +843,13 @@
         if (savedSession) {
           try {
             const user = JSON.parse(savedSession);
+            const restoreToken = ++this.sessionRestoreToken;
             const timeoutMarker = {};
             const validation = await Promise.race([
               this.validateStoredSession(user).then(valid => ({ valid })),
               new Promise(resolve => setTimeout(() => resolve({ timeout: timeoutMarker }), 12000))
             ]);
+            if (restoreToken !== this.sessionRestoreToken) return;
             if (validation.timeout === timeoutMarker) {
               SafeStorage.removeItem('portonpro_session_v4');
               this.showLoginView();
@@ -1020,6 +1025,9 @@
 
       async handleLogin(e) {
         e.preventDefault();
+        this.manualLoginStarted = true;
+        this.sessionRestoreToken += 1;
+        SafeStorage.removeItem('portonpro_session_v4');
         const rawUser = document.getElementById('login-username').value;
         const rawPass = document.getElementById('login-password').value;
         const rememberChecked = document.getElementById('login-remember').checked;
