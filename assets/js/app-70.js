@@ -697,16 +697,21 @@
     if (typeof originalOpenClients === 'function' && !originalOpenClients.__refreshClientsDirectory70) {
       const wrappedOpenClients = function (...args) {
         const requestId = ++clientsNavigationRequest;
+        this.clientDirectoryLoading = true;
+        this.clientDirectoryServerLoaded = false;
         const result = originalOpenClients.apply(this, args);
         if (this.currentUser?.role === 'admin') {
           this.startClientDirectorySync?.();
           // Refresh on explicit entry while preserving the existing live Firestore listener.
           const clientDb = window.db;
-          if (clientDb?.collection) clientDb.collection('clientes').get().then(snapshot => {
+          if (clientDb?.collection) clientDb.collection('clientes').get({ source: 'server' }).then(snapshot => {
             if (requestId !== clientsNavigationRequest || !this.clientsDirectoryOpen) return;
             this.clientDirectory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            this.clientDirectoryServerLoaded = true;
+            this.clientDirectoryServerCount = snapshot.size;
+            this.clientDirectoryLoading = false;
             this.renderClientsDirectory?.();
-          }).catch(error => console.warn('[CLIENTES] No se pudo actualizar el directorio al abrirlo.', error));
+          }).catch(error => { this.clientDirectoryLoading = false; console.warn('[CLIENTES] No se pudo actualizar el directorio al abrirlo.', error); this.renderClientsDirectory?.(); });
         }
         return result;
       };
@@ -722,6 +727,8 @@
       const stableOpenClients = function (...args) {
         if (this.currentUser?.role !== 'admin') return;
         const requestId = ++clientsNavigationRequest;
+        this.clientDirectoryLoading = true;
+        this.clientDirectoryServerLoaded = false;
         reportsNavigationRequest += 1;
         this.technicalReportsArchiveOpen = false;
         this.showDocumentControl = false;
@@ -752,12 +759,15 @@
         this.renderClientsDirectory?.();
         this.syncTechnicalReportsNavigation?.();
         const clientDb = window.db;
-        if (clientDb?.collection) clientDb.collection('clientes').get().then(snapshot => {
+        if (clientDb?.collection) clientDb.collection('clientes').get({ source: 'server' }).then(snapshot => {
           if (requestId !== clientsNavigationRequest || !this.clientsDirectoryOpen || this.showDocumentControl || this.quoteArchiveInlineOpen || this.showArchivedTasks) return;
           this.clientDirectory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          this.clientDirectoryServerLoaded = true;
+          this.clientDirectoryServerCount = snapshot.size;
+          this.clientDirectoryLoading = false;
           mergeExistingClientSources(this);
           this.renderClientsDirectory?.();
-        }).catch(error => console.warn('[CLIENTES] No se pudo actualizar el directorio al abrirlo.', error));
+        }).catch(error => { this.clientDirectoryLoading = false; console.warn('[CLIENTES] No se pudo actualizar el directorio al abrirlo.', error); this.renderClientsDirectory?.(); });
         return result;
       };
       stableOpenClients.__stableClientsRoute70 = true;
