@@ -208,6 +208,54 @@
     const proto = app?.constructor?.prototype;
     if (!app || !proto || app.__technicalReports70) return false;
     app.__technicalReports70 = true;
+    const clientKey = value => String(value ?? '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es');
+    const mergeExistingClientSources = instance => {
+      const records = Array.isArray(instance.clientDirectory) ? instance.clientDirectory.slice() : [];
+      const localRecords = (() => { try { const value = JSON.parse(localStorage.getItem('spem_clients_v1') || '[]'); return Array.isArray(value) ? value : []; } catch { return []; } })();
+      const add = (candidate, fallbackId) => {
+        if (!candidate || typeof candidate !== 'object') return;
+        const name = String(candidate.name || candidate.client || candidate.clientName || '').trim();
+        const condo = String(candidate.condo || candidate.condominium || '').trim();
+        if (!name && !condo) return;
+        const normalizedName = clientKey(name), normalizedCondo = clientKey(condo);
+        const existing = records.find(item => (normalizedName && clientKey(item.name || item.client) === normalizedName) || (normalizedCondo && clientKey(item.condo || item.condominium) === normalizedCondo));
+        const normalized = {
+          ...candidate,
+          id: String(candidate.id || existing?.id || fallbackId || `legacy-client-${encodeURIComponent(normalizedName || normalizedCondo)}`),
+          name: name || String(existing?.name || ''),
+          condo: condo || String(existing?.condo || ''),
+          documentNumber: String(candidate.documentNumber || candidate.document || existing?.documentNumber || ''),
+          address: String(candidate.address || existing?.address || ''),
+          phone: String(candidate.phone || existing?.phone || ''),
+          email: String(candidate.email || existing?.email || ''),
+          administrator: String(candidate.administrator || candidate.contact || existing?.administrator || '')
+        };
+        if (existing) {
+          Object.assign(existing, Object.fromEntries(Object.entries(normalized).filter(([key, value]) => value !== '' || key === 'id')));
+        } else records.push(normalized);
+      };
+      records.slice().forEach((item, index) => add(item, `directory-client-${index}`));
+      localRecords.forEach((item, index) => add(item, `local-client-${index}`));
+      (Array.isArray(instance.tasks) ? instance.tasks : []).forEach((task, index) => add({
+        name: task?.client || task?.clientName,
+        condo: task?.condo,
+        address: task?.address,
+        phone: task?.phone,
+        administrator: task?.administrator || task?.contact
+      }, `order-client-${index}`));
+      (Array.isArray(instance.quotes) ? instance.quotes : []).forEach((quote, index) => add({
+        name: quote?.client || quote?.clientName,
+        condo: quote?.condo,
+        address: quote?.address,
+        phone: quote?.phone,
+        email: quote?.email,
+        documentNumber: quote?.documentNumber,
+        administrator: quote?.contact || quote?.administrator
+      }, `quote-client-${index}`));
+      instance.clientDirectory = records;
+      return records;
+    };
+    app.mergeExistingClientSources = function () { return mergeExistingClientSources(this); };
     app.technicalReports = localRead();
     app.technicalReportsArchiveOpen = false;
     app.technicalReportsDirectoryHandle = null;
@@ -672,6 +720,7 @@
         this.quoteConsolidationOpen = false;
         this.showArchivedTasks = false;
         this.clientsDirectoryOpen = true;
+        mergeExistingClientSources(this);
         document.getElementById('quotes-shell')?.classList.add('hidden');
         document.body.classList.remove('quotes-open');
         document.getElementById('archived-documents-panel')?.classList.add('hidden');
@@ -689,6 +738,7 @@
         this.quoteConsolidationOpen = false;
         this.showArchivedTasks = false;
         this.clientsDirectoryOpen = true;
+        mergeExistingClientSources(this);
         this.startClientDirectorySync?.();
         this.renderClientsDirectory?.();
         this.syncTechnicalReportsNavigation?.();
@@ -696,12 +746,56 @@
         if (clientDb?.collection) clientDb.collection('clientes').get().then(snapshot => {
           if (requestId !== clientsNavigationRequest || !this.clientsDirectoryOpen || this.showDocumentControl || this.quoteArchiveInlineOpen || this.showArchivedTasks) return;
           this.clientDirectory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          mergeExistingClientSources(this);
           this.renderClientsDirectory?.();
         }).catch(error => console.warn('[CLIENTES] No se pudo actualizar el directorio al abrirlo.', error));
         return result;
       };
       stableOpenClients.__stableClientsRoute70 = true;
       app.openClientsDirectory = stableOpenClients;
+    }
+    // The security module installs renderTasks directly on the app instance.
+    // A prototype-only guard cannot intercept Firestore callbacks in that case.
+    const instanceRenderTasks = app.renderTasks;
+    if (typeof instanceRenderTasks === 'function' && !instanceRenderTasks.__stableClientsRoute70) {
+      const stableRenderTasks = function (...args) {
+        const clientsActive = this.currentUser?.role === 'admin' && this.clientsDirectoryOpen && !this.showDocumentControl && !this.quoteArchiveInlineOpen && !this.quoteConsolidationOpen && !this.showArchivedTasks && !this.technicalReportsArchiveOpen;
+        if (clientsActive) {
+          this.showDocumentControl = false;
+          this.quoteArchiveInlineOpen = false;
+          this.quoteConsolidationOpen = false;
+          this.showArchivedTasks = false;
+          mergeExistingClientSources(this);
+          const host = document.getElementById('tasks-container');
+          host?.classList.remove('hidden');
+          host?.style.removeProperty('display');
+          host?.style.removeProperty('width');
+          host?.style.removeProperty('grid-template-columns');
+          document.getElementById('quotes-shell')?.classList.add('hidden');
+          document.body.classList.remove('quotes-open');
+          document.getElementById('archived-documents-panel')?.classList.add('hidden');
+          document.getElementById('empty-state')?.classList.add('hidden');
+          this.ensureClientsNav?.();
+          this.renderClientsDirectory?.();
+          const title = document.getElementById('orders-view-title');
+          if (title) title.textContent = 'Clientes';
+          document.getElementById('section-admin-audit-log')?.classList.add('hidden');
+          this.syncTechnicalReportsNavigation?.();
+          return;
+        }
+        return instanceRenderTasks.apply(this, args);
+      };
+      stableRenderTasks.__stableClientsRoute70 = true;
+      app.renderTasks = stableRenderTasks;
+    }
+    const instanceRefreshClients = app.refreshClientDirectoryUI;
+    if (typeof instanceRefreshClients === 'function' && !instanceRefreshClients.__mergeExistingClients70) {
+      const refreshClients = function (...args) {
+        mergeExistingClientSources(this);
+        return instanceRefreshClients.apply(this, args);
+      };
+      refreshClients.__mergeExistingClients70 = true;
+      app.refreshClientDirectoryUI = refreshClients;
     }
     const originalRenderTasks = proto.renderTasks;
     if (typeof originalRenderTasks === 'function' && !originalRenderTasks.__renderTechnicalReports70) {
