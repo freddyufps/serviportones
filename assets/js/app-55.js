@@ -71,15 +71,9 @@
     app.quoteConsolidationOpen = false;
     keepQuoteArchiveOnRenders(app);
     selectQuotesView();
-    const openArchive = typeof app.openQuotesArchive === 'function' ? app.openQuotesArchive : app.constructor?.prototype?.openQuotesArchive;
-    if (typeof openArchive === 'function') {
-      try {
-        openArchive.call(app);
-        const inline = document.getElementById('tasks-container')?.querySelector('.quotes-archive');
-        const title = String(document.getElementById('orders-view-title')?.textContent || '').trim().toLocaleLowerCase();
-        if (inline && app.quoteArchiveInlineOpen && title === 'cotizaciones archivadas') { selectQuotesView(); return true; }
-      } catch (error) { console.warn('[COTIZACIONES] Se activa la ruta de respaldo.', error); }
-    }
+    // Render the inline route directly. Calling app.openQuotesArchive here can
+    // hit the legacy own-property method from app-43.js, which opens the modal
+    // on top of the already-rendered archive and creates the duplicate bubble.
     document.getElementById('quotes-shell')?.classList.add('hidden');
     document.body.classList.remove('quotes-open');
     document.getElementById('clients-directory')?.remove();

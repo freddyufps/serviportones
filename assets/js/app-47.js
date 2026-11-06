@@ -112,20 +112,16 @@ body.theme-dark #clients-directory,body.theme-halloween #clients-directory{backg
     async acceptClientDirectoryServerSnapshot(records){
       const version=++this.clientDirectorySnapshotVersion;
       const knownCount=Math.max(Number(this.clientDirectoryServerCount)||0,Array.isArray(this.clientDirectory)?this.clientDirectory.length:0);
-      if(records.length||!knownCount){this.applyClientDirectoryServerRecords(records,version);return}
-      // A single empty listener event must not erase a previously confirmed
-      // directory. Confirm it with a fresh server read before replacing it.
+      if(records.length>=knownCount||!knownCount){this.applyClientDirectoryServerRecords(records,version);return}
+      // A listener snapshot that suddenly contains fewer documents can be a
+      // partial/stale response. Confirm any shrink from Firestore before it is
+      // allowed to replace the last complete server-confirmed directory.
       try{
         const confirmed=await window.db.collection('clientes').get({source:'server'});
         if(version!==this.clientDirectorySnapshotVersion)return;
         const verified=confirmed.docs.map(d=>({id:d.id,...d.data()}));
-        if(!verified.length&&knownCount){
-          this.clientDirectoryLoading=false;
-          this.clientDirectoryLoadError='La lectura del directorio llegó vacía; se conserva la última lista confirmada.';
-          console.warn('[CLIENTES] Se conservó el directorio confirmado tras una segunda lectura vacía.',{previous:knownCount});
-          if(this.clientsDirectoryOpen)this.renderClientsDirectory?.();
-          return;
-        }
+        // The explicit server read is authoritative: it distinguishes an
+        // actual deletion from a short listener delivery. Use its full result.
         this.applyClientDirectoryServerRecords(verified,version);
       }catch(error){
         if(version!==this.clientDirectorySnapshotVersion)return;

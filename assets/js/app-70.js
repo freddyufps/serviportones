@@ -208,58 +208,9 @@
     const proto = app?.constructor?.prototype;
     if (!app || !proto || app.__technicalReports70) return false;
     app.__technicalReports70 = true;
-    // Firestore is the only source shown in the directory. Do not synthesize
-    // records from browser cache, orders, or quotes in the rendering layer.
-    const mergeExistingClientSources = instance => Array.isArray(instance.clientDirectory) ? instance.clientDirectory : [];
-    // Read the complete authoritative Firestore collection in explicit pages.
-    // This avoids any per-query/list-page cap and keeps the directory count
-    // tied to current Firestore documents only.
-    const fetchAllClientsFromServer = async clientDb => {
-      // Prefer one complete, uncapped server snapshot; paginate only if the SDK rejects it.
-      try {
-        const snapshot = await clientDb.collection('clientes').get({ source: 'server' });
-        console.info('[CLIENTES] Lectura completa del servidor', { documents: snapshot.size });
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      } catch (directError) {
-        console.warn('[CLIENTES] Falló la lectura directa; se intentará paginar desde el servidor.', directError);
-        const pageSize = 200;
-        const documentId = window.firebase?.firestore?.FieldPath?.documentId;
-        let query = clientDb.collection('clientes');
-        if (typeof documentId === 'function') query = query.orderBy(documentId());
-        const allDocs = [];
-        let pageCount = 0;
-        while (query) {
-          const pageQuery = query.limit(pageSize);
-          const snapshot = await pageQuery.get({ source: 'server' });
-          pageCount += 1;
-          allDocs.push(...snapshot.docs);
-          if (snapshot.size < pageSize) break;
-          query = pageQuery.startAfter(snapshot.docs[snapshot.docs.length - 1]);
-        }
-        console.info('[CLIENTES] Lectura paginada completa del servidor', { documents: allDocs.length, pages: pageCount });
-        return allDocs.map(doc => ({ id: doc.id, ...doc.data() }));
-      }
-    };
-    const applyCompleteClientDirectory = (instance, records) => {
-      const current = Array.isArray(instance.clientDirectory) ? instance.clientDirectory : [];
-      if (!records.length && instance.clientDirectoryServerLoaded && current.length) {
-        // A transient empty response must never replace a previously confirmed
-        // Firestore directory. Keep the last server-confirmed list visible.
-        instance.clientDirectoryLoading = false;
-        instance.clientDirectoryLoadError = 'La lectura del directorio llegó vacía; se conserva la última lista confirmada.';
-        console.warn('[CLIENTES] Se conservó el directorio confirmado ante una respuesta vacía inesperada.', { previous: current.length });
-        return false;
-      }
-      instance.clientDirectorySnapshotVersion = (Number(instance.clientDirectorySnapshotVersion) || 0) + 1;
-      instance.clientDirectory = records;
-      instance.clientDirectoryServerLoaded = true;
-      instance.clientDirectoryServerCount = records.length;
-      instance.clientDirectorySourceProject = window.firebase?.apps?.[0]?.options?.projectId || '';
-      instance.clientDirectoryLoading = false;
-      instance.clientDirectoryLoadError = '';
-      return true;
-    };
-    app.mergeExistingClientSources = function () { return mergeExistingClientSources(this); };
+    // The client module owns one authoritative Firestore onSnapshot stream.
+    // Avoid creating a second full collection read from this module: it used
+    // to race the listener and overwrite the same in-memory directory.
     app.technicalReports = localRead();
     app.technicalReportsArchiveOpen = false;
     app.technicalReportsDirectoryHandle = null;
@@ -729,18 +680,10 @@
     const originalOpenClients = proto.openClientsDirectory;
     if (typeof originalOpenClients === 'function' && !originalOpenClients.__refreshClientsDirectory70) {
       const wrappedOpenClients = function (...args) {
-        const requestId = ++clientsNavigationRequest;
         this.clientDirectoryLoading = !this.clientDirectoryServerLoaded;
         const result = originalOpenClients.apply(this, args);
         if (this.currentUser?.role === 'admin') {
           this.startClientDirectorySync?.();
-          // Refresh on explicit entry while preserving the existing live Firestore listener.
-          const clientDb = window.db;
-          if (clientDb?.collection) fetchAllClientsFromServer(clientDb).then(records => {
-            if (requestId !== clientsNavigationRequest || !this.clientsDirectoryOpen) return;
-            applyCompleteClientDirectory(this, records);
-            this.renderClientsDirectory?.();
-          }).catch(error => { this.clientDirectoryLoading = false; this.clientDirectoryLoadError = 'No se pudo conectar con el directorio de clientes. Revisa la conexión e inténtalo nuevamente.'; console.warn('[CLIENTES] No se pudo actualizar el directorio al abrirlo.', error); this.renderClientsDirectory?.(); });
         }
         return result;
       };
@@ -755,7 +698,7 @@
     if (typeof instanceOpenClients === 'function' && !instanceOpenClients.__stableClientsRoute70) {
       const stableOpenClients = function (...args) {
         if (this.currentUser?.role !== 'admin') return;
-        const requestId = ++clientsNavigationRequest;
+        ++clientsNavigationRequest;
         this.clientDirectoryLoading = !this.clientDirectoryServerLoaded;
         reportsNavigationRequest += 1;
         this.technicalReportsArchiveOpen = false;
@@ -784,12 +727,6 @@
         this.startClientDirectorySync?.();
         this.renderClientsDirectory?.();
         this.syncTechnicalReportsNavigation?.();
-        const clientDb = window.db;
-        if (clientDb?.collection) fetchAllClientsFromServer(clientDb).then(records => {
-          if (requestId !== clientsNavigationRequest || !this.clientsDirectoryOpen || this.showDocumentControl || this.quoteArchiveInlineOpen || this.showArchivedTasks) return;
-          applyCompleteClientDirectory(this, records);
-          this.renderClientsDirectory?.();
-        }).catch(error => { this.clientDirectoryLoading = false; this.clientDirectoryLoadError = 'No se pudo conectar con el directorio de clientes. Revisa la conexión e inténtalo nuevamente.'; console.warn('[CLIENTES] No se pudo actualizar el directorio al abrirlo.', error); this.renderClientsDirectory?.(); });
         return result;
       };
       stableOpenClients.__stableClientsRoute70 = true;
