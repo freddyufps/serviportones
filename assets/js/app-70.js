@@ -241,6 +241,15 @@
       }
     };
     const applyCompleteClientDirectory = (instance, records) => {
+      const current = Array.isArray(instance.clientDirectory) ? instance.clientDirectory : [];
+      if (!records.length && instance.clientDirectoryServerLoaded && current.length) {
+        // A transient empty response must never replace a previously confirmed
+        // Firestore directory. Keep the last server-confirmed list visible.
+        instance.clientDirectoryLoading = false;
+        instance.clientDirectoryLoadError = 'La lectura del directorio llegó vacía; se conserva la última lista confirmada.';
+        console.warn('[CLIENTES] Se conservó el directorio confirmado ante una respuesta vacía inesperada.', { previous: current.length });
+        return false;
+      }
       instance.clientDirectorySnapshotVersion = (Number(instance.clientDirectorySnapshotVersion) || 0) + 1;
       instance.clientDirectory = records;
       instance.clientDirectoryServerLoaded = true;
@@ -248,6 +257,7 @@
       instance.clientDirectorySourceProject = window.firebase?.apps?.[0]?.options?.projectId || '';
       instance.clientDirectoryLoading = false;
       instance.clientDirectoryLoadError = '';
+      return true;
     };
     app.mergeExistingClientSources = function () { return mergeExistingClientSources(this); };
     app.technicalReports = localRead();
@@ -491,37 +501,6 @@
       return host;
     };
 
-    const bindTechnicalReportsSearch = () => {
-      if (window.__technicalReportsSearchStable70) return;
-      window.__technicalReportsSearchStable70 = true;
-      const searchInput = event => {
-        const input = event.target;
-        if (!(input instanceof HTMLInputElement) || input.id !== 'technical-reports-search') return;
-        if (typeof window.__spemGenericSearchDispatch === 'function' && window.__spemGenericSearchDispatch(event)) return;
-        // Este buscador solo filtra su propia lista. El listener de captura evita
-        // que delegaciones globales de otros módulos intercepten la escritura.
-        event.stopImmediatePropagation();
-        const host = input.closest('#tasks-container');
-        if (!host || !reportsViewIsCurrent(app)) return;
-        const value = input.value.trim().toLocaleLowerCase('es');
-        const reports = [...(app.technicalReports || [])].sort(byCreated);
-        const filtered = reports.filter(report => `${report.number} ${report.client} ${report.technician} ${report.inspectionDate}`.toLocaleLowerCase('es').includes(value));
-        const list = host.querySelector('.technical-reports-list');
-        if (list) list.innerHTML = reportRowsMarkup(filtered, reports.length);
-        const count = host.querySelector('[data-reports-result-count]');
-        if (count) count.textContent = `${filtered.length} de ${reports.length} informes`;
-        bindReportRowActions(app, host);
-        if (window.lucide && list) lucide.createIcons({ root: list });
-      };
-      window.addEventListener('input', searchInput, true);
-      ['keydown', 'keyup', 'change', 'search'].forEach(type => window.addEventListener(type, event => {
-        if (event.target instanceof HTMLInputElement && event.target.id === 'technical-reports-search') {
-          if (type === 'search' && typeof window.__spemGenericSearchDispatch === 'function' && window.__spemGenericSearchDispatch(event)) return;
-          event.stopImmediatePropagation();
-        }
-      }, true));
-    };
-
     proto.renderTechnicalReportsArchive = function () {
       if (!reportsViewIsCurrent(this)) return;
       const host = this.ensureTechnicalReportsArchive();
@@ -535,13 +514,12 @@
       const filtered = reports.filter(report => `${report.number} ${report.client} ${report.technician} ${report.inspectionDate}`.toLocaleLowerCase('es').includes(query));
       host.classList.remove('hidden'); host.style.display = 'block'; host.style.width = '100%'; host.style.gridTemplateColumns = 'minmax(0,1fr)';
       host.innerHTML = `<section class="technical-reports-archive"><header class="technical-reports-archive-heading"><div><span>ARCHIVO TÉCNICO</span><h3>Informes realizados</h3><p>Consulta, edita o exporta los informes técnicos guardados.</p></div><button type="button" class="technical-report-primary" data-create-report><i data-lucide="plus"></i><span>Realizar informe</span></button></header>
-        <div class="technical-reports-tools"><label><i data-lucide="search"></i><input id="technical-reports-search" name="technical-report-search-query" type="search" role="searchbox" aria-autocomplete="none" inputmode="search" autocomplete="new-password" autocorrect="off" autocapitalize="none" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" placeholder="Buscar número, cliente o fecha" value="${escapeHtml(query)}"></label><span data-reports-result-count>${filtered.length} de ${reports.length} informes</span></div>
+        <div class="technical-reports-tools"><label><i data-lucide="search"></i><input id="technical-reports-search" name="technical-report-search-query" type="search" role="searchbox" aria-autocomplete="none" inputmode="search" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" placeholder="Buscar número, cliente o fecha" value="${escapeHtml(query)}"></label><span data-reports-result-count>${filtered.length} de ${reports.length} informes</span></div>
         <div class="technical-reports-list">${reportRowsMarkup(reports, reports.length)}</div></section>`;
       host.querySelector('[data-create-report]')?.addEventListener('click', () => this.openTechnicalReportForm());
-      bindTechnicalReportsSearch();
       bindReportRowActions(this, host);
       const searchForRestore = host.querySelector('#technical-reports-search');
-      if (searchForRestore?.value) searchForRestore.dispatchEvent(new Event('input', { bubbles: true }));
+      if (searchForRestore?.value) window.__spemGenericSearchApply?.(searchForRestore, this);
       if (restoreSearchFocus) {
         const nextSearch = host.querySelector('#technical-reports-search');
         nextSearch?.focus({ preventScroll: true });
@@ -752,8 +730,7 @@
     if (typeof originalOpenClients === 'function' && !originalOpenClients.__refreshClientsDirectory70) {
       const wrappedOpenClients = function (...args) {
         const requestId = ++clientsNavigationRequest;
-        this.clientDirectoryLoading = true;
-        this.clientDirectoryServerLoaded = false;
+        this.clientDirectoryLoading = !this.clientDirectoryServerLoaded;
         const result = originalOpenClients.apply(this, args);
         if (this.currentUser?.role === 'admin') {
           this.startClientDirectorySync?.();
@@ -779,8 +756,7 @@
       const stableOpenClients = function (...args) {
         if (this.currentUser?.role !== 'admin') return;
         const requestId = ++clientsNavigationRequest;
-        this.clientDirectoryLoading = true;
-        this.clientDirectoryServerLoaded = false;
+        this.clientDirectoryLoading = !this.clientDirectoryServerLoaded;
         reportsNavigationRequest += 1;
         this.technicalReportsArchiveOpen = false;
         this.showDocumentControl = false;
