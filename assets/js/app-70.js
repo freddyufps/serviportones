@@ -128,7 +128,9 @@
         pdf.addImage(canvas.toDataURL('image/jpeg', 0.98), 'JPEG', x, y, imageWidthMm, imageHeightMm, 'quote-preview-page', 'FAST');
         return pdf.output('blob');
       }
-      const sourcePageHeight = Math.max(1, Math.floor(canvas.width * contentHeightMm / contentWidthMm));
+      // Redondear evita que un desbordamiento subpíxel de html2canvas cree
+      // una página adicional casi vacía en documentos que caben en una hoja.
+      const sourcePageHeight = Math.max(1, Math.round(canvas.width * contentHeightMm / contentWidthMm));
       const pageCount = Math.max(1, Math.ceil(canvas.height / sourcePageHeight));
       for (let page = 0; page < pageCount; page += 1) {
         if (page) pdf.addPage('a4', 'portrait');
@@ -590,12 +592,39 @@
       const filename = safeReportFilename(report), originalText = button?.innerHTML;
       if (button) { button.disabled = true; button.innerHTML = '<i data-lucide="loader-circle"></i><span>Preparando PDF…</span>'; if (window.lucide) lucide.createIcons({ root: button }); }
       try {
-        if (typeof window.printPreviewPdf !== 'function') throw new Error('No está disponible la impresión de la vista previa.');
-        await window.printPreviewPdf(documentNode, filename);
-        this.showToast?.('En el diálogo de impresión, selecciona “Guardar como PDF” y elige el nombre y la carpeta.', 'info');
+        // Abrir el selector durante el clic del usuario: evita pasar por imprimir
+        // (que añade URL/fecha/paginación del navegador) y permite elegir destino.
+        let fileHandle = null;
+        if (window.isSecureContext && typeof window.showSaveFilePicker === 'function') {
+          try {
+            fileHandle = await window.showSaveFilePicker({
+              suggestedName: filename,
+              types: [{ description: 'Documento PDF', accept: { 'application/pdf': ['.pdf'] } }]
+            });
+          } catch (error) {
+            if (error?.name === 'AbortError') return;
+            console.warn('[INFORMES] No se pudo abrir el selector de destino; se usará la descarga del navegador.', error);
+          }
+        }
+        if (typeof window.spemCreatePreviewPdfBlob !== 'function') throw new Error('No está disponible la generación del PDF.');
+        // El informe ya está maquetado a 210 mm. Capturarlo a ancho A4 completo
+        // conserva su escala; el generador añade páginas solo si supera una hoja.
+        const blob = await window.spemCreatePreviewPdfBlob(documentNode, { format: 'a4', marginMm: 0 });
+        if (!blob?.size) throw new Error('El PDF generado está vacío.');
+        if (fileHandle) {
+          const writable = await fileHandle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          this.showToast?.('Informe guardado como PDF.', 'success');
+        } else {
+          downloadReportBlob(blob, filename);
+          this.showToast?.('PDF del informe descargado.', 'success');
+        }
       } catch (error) {
-        console.error('[INFORMES] No se pudo abrir la impresión del informe.', error);
-        this.showToast?.('No se pudo abrir la impresión del informe. Inténtalo nuevamente.', 'error');
+        if (error?.name !== 'AbortError') {
+          console.error('[INFORMES] No se pudo generar el PDF del informe.', error);
+          this.showToast?.('No se pudo generar el PDF del informe. Inténtalo nuevamente.', 'error');
+        }
       } finally {
         if (button) { button.disabled = false; button.innerHTML = originalText || '<i data-lucide="download"></i><span>Descargar PDF</span>'; if (window.lucide) lucide.createIcons({ root: button }); }
       }
