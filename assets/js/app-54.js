@@ -23,12 +23,14 @@
   const decorate = () => {
     const nav = document.getElementById('orders-view-navigation'); if (!nav) return;
     addArtwork(nav.querySelector('[data-order-view="active"]'), ...artworks.active);
-    addArtwork(nav.querySelector('[data-order-view="archived"]'), ...artworks.archived, '#orders-nav-archive-count');
+    addArtwork(nav.querySelector('[data-order-view="reports"], [data-order-view="archived"]'), ...artworks.archived, '#orders-nav-archive-count');
     addArtwork(nav.querySelector('#btn-archived-quotes'), ...artworks.quotes, '.quote-archive-count');
     addArtwork(nav.querySelector('[data-order-view="invoices"]'), ...artworks.invoices);
     addArtwork(nav.querySelector('[data-order-view="clients"]'), ...artworks.clients);
     const app = window.app;
-    const current = app?.showDocumentControl ? 'invoices' : app?.clientsDirectoryOpen ? 'clients' : app?.quoteArchiveInlineOpen ? 'quotes' : app?.showArchivedTasks ? 'archived' : 'active';
+    const reportsHost = document.getElementById('reports-view-container');
+    const reportsVisible = Boolean(app?.technicalReportsArchiveOpen && reportsHost && !reportsHost.classList.contains('hidden') && getComputedStyle(reportsHost).display !== 'none');
+    const current = reportsVisible ? 'reports' : app?.showDocumentControl ? 'invoices' : app?.clientsDirectoryOpen ? 'clients' : app?.quoteArchiveInlineOpen ? 'quotes' : app?.showArchivedTasks ? 'archived' : 'active';
     nav.querySelectorAll('[data-order-view], #btn-archived-quotes').forEach(button => {
       const key = button.dataset.orderView || (button.id === 'btn-archived-quotes' ? 'quotes' : '');
       const selected = key === current;
