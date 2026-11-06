@@ -682,7 +682,9 @@
             const workerPhotosChanged = list.some(user => this.getChatRole(user.role) === 'worker' && previousUsersById.has(String(user.id)) && (previousUsersById.get(String(user.id))?.photo || '') !== (user.photo || ''));
             this.users = list;
             this.workers = list.filter(u => this.getChatRole(u.role) === 'worker');
-            if (this.currentUser && !this.validateCurrentSessionRecord(list)) {
+            // A cached snapshot may be empty or carry an old sessionVersion.
+            // Only a server-confirmed snapshot can invalidate an active session.
+            if (this.currentUser && snapshot.metadata?.fromCache !== true && !this.validateCurrentSessionRecord(list)) {
               this.expireActiveSession('Tu sesión venció porque la cuenta o su contraseña cambió. Inicia sesión nuevamente.');
               return;
             }
@@ -872,24 +874,18 @@
           try {
             const user = JSON.parse(savedSession);
             const restoreToken = ++this.sessionRestoreToken;
-            const timeoutMarker = {};
-            const validation = await Promise.race([
-              this.validateStoredSession(user).then(valid => ({ valid })),
-              new Promise(resolve => setTimeout(() => resolve({ timeout: timeoutMarker }), 12000))
-            ]);
-            if (restoreToken !== this.sessionRestoreToken) return;
-            if (validation.timeout === timeoutMarker) {
-              SafeStorage.removeItem('portonpro_session_v4');
-              this.showLoginView();
-              this.showToast('La sesión tardó demasiado en validarse. Inicia sesión nuevamente.', 'info');
-            } else if (validation.valid) {
-              await this.loginSuccess(user, false);
-            } else {
-              this.clearRememberedCredentials();
-              SafeStorage.removeItem('portonpro_session_v4');
-              this.showLoginView();
-              this.showToast('Tu sesión venció porque la cuenta o su contraseña cambió. Inicia sesión nuevamente.', 'info');
-            }
+            if (!user?.id || !Number.isSafeInteger(Number(user.sessionVersion)) || Number(user.sessionVersion) < 1) throw new Error('INVALID_SAVED_SESSION');
+            // Restore the workspace immediately from the saved identity. A
+            // slow/offline Firestore request must not freeze the app or erase
+            // a valid local session. Revoke it only after the server confirms
+            // that the account/version is no longer valid.
+            await this.loginSuccess(user, false);
+            this.validateStoredSession(user).then(valid => {
+              if (restoreToken !== this.sessionRestoreToken || String(this.currentUser?.id) !== String(user.id)) return;
+              if (!valid) this.expireActiveSession('Tu sesión venció porque la cuenta o su contraseña cambió. Inicia sesión nuevamente.');
+            }).catch(error => {
+              console.warn('[SESSION] No fue posible validar la sesión con el servidor; se conservará mientras se restablece la conexión.', error?.message || error);
+            });
           } catch(e) {
             this.clearRememberedCredentials();
             SafeStorage.removeItem('portonpro_session_v4');
@@ -914,7 +910,7 @@
 
       async validateStoredSession(user) {
         if (!user?.id || !window.db) return false;
-        const snapshot = await window.db.collection('users').doc(String(user.id)).get();
+        const snapshot = await window.db.collection('users').doc(String(user.id)).get({ source: 'server' });
         if (!snapshot.exists) return false;
         const record = snapshot.data() || {};
         const storedVersion = Number(user.sessionVersion);
@@ -1128,7 +1124,8 @@
 
         if (window.db) {
           try {
-            const lookup = await settleBeforeTimeout(db.collection('users').get(), 15000);
+            // Never report stale/empty offline cache as an incorrect password.
+            const lookup = await settleBeforeTimeout(db.collection('users').get({ source: 'server' }), 15000);
             if (lookup.timeout) {
               const timeoutError = new Error('LOGIN_LOOKUP_TIMEOUT');
               timeoutError.loginTimeout = true;

@@ -216,8 +216,6 @@
     app.technicalReportsDirectoryHandle = null;
     let reportsNavButton = null;
     let reportsNavigationRequest = 0;
-    let reportsClickAuthorization = 0;
-    let reportsPointerAuthorization = null;
     const hasCompetingAdminView = instance => Boolean(instance && (
       instance.showDocumentControl || instance.clientsDirectoryOpen || instance.quoteArchiveInlineOpen ||
       instance.quoteConsolidationOpen || instance.showArchivedTasks
@@ -524,17 +522,9 @@
       });
     };
 
-    proto.openTechnicalReportsArchive = async function (clickAuthorization) {
+    proto.openTechnicalReportsArchive = async function () {
 
       if (this.currentUser?.role !== 'admin') return this.showToast?.('Esta sección está disponible para el administrador.', 'error');
-      // Reports reuses the old Archived Orders slot. Require the token issued
-      // by a direct pointer press and matching click on that exact button.
-      if (!clickAuthorization || clickAuthorization !== reportsClickAuthorization || !reportsPointerAuthorization || reportsPointerAuthorization.expiresAt < Date.now()) {
-
-        return;
-      }
-      reportsClickAuthorization = 0;
-      reportsPointerAuthorization = null;
       const requestId = ++reportsNavigationRequest;
       this.showDocumentControl = false;
       this.clientsDirectoryOpen = false;
@@ -654,36 +644,22 @@
       const button = document.getElementById('btn-create-report');
       if (button) button.classList.toggle('hidden', window.app?.currentUser?.role !== 'admin');
     };
-    document.addEventListener('pointerdown', event => {
-      const button = event.target instanceof Element ? event.target.closest('#orders-view-navigation [data-order-view="reports"]') : null;
-      reportsPointerAuthorization = event.isTrusted && event.button === 0 && button
-        ? { button, expiresAt: Date.now() + 1500 }
-        : null;
-    }, true);
     document.addEventListener('click', event => {
       const viewButton = event.target.closest('#orders-view-navigation [data-order-view]');
       const quotesButton = event.target.closest('#orders-view-navigation #btn-archived-quotes');
       if (quotesButton) {
         reportsNavigationRequest += 1;
-        reportsClickAuthorization = 0;
         if (window.app) window.app.technicalReportsArchiveOpen = false;
         return;
       }
       if (!viewButton) return;
       if (viewButton.dataset.orderView === 'reports') {
         event.preventDefault(); event.stopImmediatePropagation();
-        // Keyboard activation, synthetic events, search side effects and stale
-        // clicks are rejected; only a direct click on the report tile may route.
-        const pointerAuthorization = reportsPointerAuthorization;
-        if (!event.isTrusted || event.button !== 0 || !pointerAuthorization || pointerAuthorization.button !== viewButton || pointerAuthorization.expiresAt < Date.now()) {
-          reportsPointerAuthorization = null;
-          reportsClickAuthorization = 0;
-          return;
-        }
-        const authorization = ++reportsNavigationRequest;
-        reportsClickAuthorization = authorization;
-
-        window.app?.openTechnicalReportsArchive(authorization);
+        // The old archived-orders inline handler is intercepted here. A real
+        // click is sufficient; the former pointerdown token could go stale
+        // across DOM updates and silently leave the Orders view in place.
+        if (!event.isTrusted || event.button !== 0) return;
+        window.app?.openTechnicalReportsArchive();
         return;
       }
       // Invalida cualquier carga asíncrona de informes antes de ejecutar la navegación destino.

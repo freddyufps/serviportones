@@ -160,6 +160,10 @@
       setHostVisibility('quotes-view-container', view === 'quotes');
       setHostVisibility('reports-view-container', view === 'reports');
       setHostVisibility('archived-documents-panel', view === 'invoices');
+      // #empty-state is a sibling of #tasks-container, not part of an order
+      // view host. renderTasks() can unhide it during a background snapshot;
+      // keep the generic Orders empty state out of every independent module.
+      if (!['active', 'archived'].includes(view)) document.getElementById('empty-state')?.classList.add('hidden');
       const title = document.getElementById('orders-view-title');
       if (title) title.textContent = ({ active: 'Órdenes de trabajo', archived: 'Órdenes archivadas', clients: 'Clientes', quotes: 'Cotizaciones archivadas', reports: 'Informes realizados', invoices: 'Consolidado' })[view];
       const count = document.getElementById('filtered-count');
