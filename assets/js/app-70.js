@@ -557,6 +557,11 @@
       }
       document.getElementById('quotes-shell')?.classList.add('hidden');
       document.body.classList.remove('quotes-open');
+      // Render the independent reports screen from its current local snapshot
+      // before waiting on Firestore. A slow or unavailable read must never leave
+      // the generic archived-orders empty state visible as if it were Reports.
+      this.renderTechnicalReportsArchive();
+      this.syncTechnicalReportsNavigation();
       await this.loadTechnicalReports();
       // La carga puede terminar después de que el usuario ya navegó a Clientes u otra vista.
       // Descarta esta respuesta obsoleta para que no reemplace el módulo que está activo.
