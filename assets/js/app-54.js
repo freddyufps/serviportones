@@ -35,7 +35,13 @@
       button.classList.toggle('is-current', selected);
       button.setAttribute('aria-current', selected ? 'page' : 'false');
       button.setAttribute('aria-pressed', String(selected));
-      if (key === 'quotes') { button.classList.remove('hidden'); button.removeAttribute('aria-hidden'); button.tabIndex = 0; }
+      if (key === 'quotes') {
+        const canAccessQuotes = app?.currentUser?.role === 'admin';
+        button.classList.toggle('hidden', !canAccessQuotes);
+        button.style.setProperty('display', canAccessQuotes ? '' : 'none', 'important');
+        if (canAccessQuotes) { button.removeAttribute('aria-hidden'); button.tabIndex = 0; }
+        else { button.setAttribute('aria-hidden', 'true'); button.tabIndex = -1; }
+      }
     });
   };
   const install = () => {

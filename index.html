@@ -14,6 +14,8 @@
   <link rel="preload" as="image" href="assets/img/nav/realizar-informe-transparent.png?v=20261105-report-action-icon-1" fetchpriority="high">
   <title>ServiPortones Eléctricos Martínez - Gestión Operativa y Control de Personal</title>
   <link rel="icon" type="image/svg+xml" href="assets/media/spem-chat-icon.svg?v=1" sizes="any">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/img/pwa/spem-icon-192.png?v=20261106-pwa-brand-icon-1">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/img/pwa/spem-icon-180.png?v=20261106-pwa-brand-icon-1">
   <style id="session-restore-critical-style">
     /* Reglas críticas en línea para que la pantalla de restauración aparezca en el primer pintado. */
     #session-restore-splash{display:none}
@@ -33,7 +35,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ServiPortones">
-  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22ServiPortones%20Mart%C3%ADnez%22%2C%22short_name%22%3A%22ServiPortones%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23111827%22%2C%22theme_color%22%3A%22%23111827%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fcdn-icons-png.flaticon.com%2F512%2F1048%2F1048953.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
+  <link rel="manifest" href="manifest.webmanifest?v=20261106-pwa-brand-icon-1">
 
   <!-- Tailwind CSS generado localmente para evitar que el diseño dependa del CDN runtime. -->
   <link rel="stylesheet" href="assets/css/tailwind-utilities.css?v=20261102-tailwind-local-1">
@@ -43,7 +45,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link rel="stylesheet" href="assets/css/app-02.css">
-  <link rel="stylesheet" href="assets/css/app-71.css?v=20261106-chat-disabled-1" id="chat-disabled-style">
+  <link rel="stylesheet" href="assets/css/app-71.css?v=20261106-chat-disabled-presence-fix-1" id="chat-disabled-style">
 
   <!-- SDKs de Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -1093,7 +1095,7 @@
 <script id="payment-document-control" src="assets/js/app-14.js?v=20261106-consolidated-edit-order-1"></script>
 <link rel="stylesheet" href="assets/css/app-33.css?v=20261028-presence-archive-details-2">
 <script id="announcement-mobile-chat-status-fix" src="assets/js/app-33.js?v=20261028-announcement-mobile-chat-status-1"></script>
-<script id="archived-order-address-disclosure" src="assets/js/app-36.js?v=20261105-quotes-tooltip-label-1"></script>
+<script id="archived-order-address-disclosure" src="assets/js/app-36.js?v=20261106-admin-presence-mobile-visible-1"></script>
 <script id="order-access-route-icons-fix" src="assets/js/app-37.js?v=20261104-user-messages-1"></script>
 <script id="worker-order-report-permissions" src="assets/js/app-38.js?v=20261028-worker-order-report-2"></script>
 <link rel="stylesheet" href="assets/css/app-34.css?v=20261028-admin-mobile-chat-profile-2" id="admin-mobile-chat-profile-fix">
@@ -1107,7 +1109,7 @@
 <link rel="stylesheet" href="assets/css/app-42.css?v=20261029-chat-mobile-keyboard-clean-1" id="chat-mobile-keyboard-clean-style">
 <script id="chat-mobile-keyboard-clean" src="assets/js/app-42.js?v=20261029-chat-mobile-keyboard-clean-1"></script>
 <link rel="stylesheet" href="assets/css/app-43.css?v=20261105-quote-report-style-header-local-1" id="professional-quotes-module-style">
-<script id="professional-quotes-module" src="assets/js/app-43.js?v=20261105-native-save-dialog-1"></script>
+<script id="professional-quotes-module" src="assets/js/app-43.js?v=20261106-quotes-admin-cloud-guard-1"></script>
 <script id="professional-quotes-followup" src="assets/js/app-44.js?v=20261105-remove-download-routes-1"></script>
 <link rel="stylesheet" href="assets/css/app-45.css?v=local-chat-stability-1" id="chat-reaction-overlay-fix">
 <script id="local-chat-quote-interaction-fix" src="assets/js/app-45.js?v=20261105-independent-chat-windows-2"></script>
@@ -1120,10 +1122,10 @@
 <script id="client-search-stable" src="assets/js/app-52.js?v=20261030-client-search-stable-2"></script>
 <script id="clean-invoice-navigation" src="assets/js/app-53.js?v=20261031-invoice-tab-visible-fix-1"></script>
 <link rel="stylesheet" href="assets/css/app-54.css?v=20261031-nav-uniform-5" id="orders-nav-artwork-style">
-<script id="orders-nav-artwork" src="assets/js/app-54.js?v=20261105-menu-icons-consolidado-2"></script>
+<script id="orders-nav-artwork" src="assets/js/app-54.js?v=20261106-quotes-role-visibility-2"></script>
 <link rel="stylesheet" href="assets/css/app-61.css?v=20261105-preview-pdf-layout-2" id="orders-quote-professional-style">
 <script id="quote-pdf-logo-embed" src="assets/js/app-61.js?v=20261106-quote-a4-preview-capture-1"></script>
-<script id="orders-quote-admin-visibility" src="assets/js/app-62.js?v=20261031-quote-permissions-1"></script>
+<script id="orders-quote-admin-visibility" src="assets/js/app-62.js?v=20261106-quotes-admin-access-3"></script>
 <link rel="stylesheet" href="assets/css/app-59.css?v=20261102-mobile-nav-balanced-1">
 <link rel="stylesheet" href="assets/css/app-60.css?v=20261031-nav-hover-active-restored-3">
 <link rel="stylesheet" href="assets/css/app-55.css?v=20261031-all-accesses-same-size-7" id="quote-tile-uniform-style">
