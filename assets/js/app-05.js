@@ -4713,7 +4713,7 @@ updateMessengerWindowTyping(workerName) {
       updateStats() {
         const isAdmin = this.currentUser.role === 'admin';
         const myName = this.getCurrentDisplayName();
-        const relevantTasks = (isAdmin ? this.tasks : this.tasks.filter(t => !this.isTaskHiddenFromWorkers(t) && (this.isTaskFree(t) || t.assignedTo === myName))).filter(t => !t.archivedAt);
+        const relevantTasks = (isAdmin ? this.tasks : this.tasks.filter(t => !this.isTaskHiddenFromWorkers(t) && (this.isTaskFree(t) || t.assignedTo === myName))).filter(t => !t.archivedAt && t.invoiceInConsolidated !== true);
         document.getElementById('stat-total').textContent = relevantTasks.length;
         document.getElementById('stat-pending').textContent = relevantTasks.filter(t => t.status === 'PENDIENTE' || t.status === 'EN_PROCESO').length;
         document.getElementById('stat-done').textContent = relevantTasks.filter(t => t.status === 'REALIZADA').length;
@@ -4738,13 +4738,13 @@ updateMessengerWindowTyping(workerName) {
         let label = '';
 
         if (category === 'REALIZADA') {
-          targets = this.tasks.filter(t => t.status === 'REALIZADA' && !t.archivedAt);
+          targets = this.tasks.filter(t => t.status === 'REALIZADA' && !t.archivedAt && t.invoiceInConsolidated !== true);
           label = 'REALIZADAS';
         } else if (category === 'NO_REALIZADA') {
-          targets = this.tasks.filter(t => t.status === 'NO_REALIZADA' && !t.archivedAt);
+          targets = this.tasks.filter(t => t.status === 'NO_REALIZADA' && !t.archivedAt && t.invoiceInConsolidated !== true);
           label = 'PENDIENTES';
         } else if (category === 'PENDIENTE_GRUPO') {
-          targets = this.tasks.filter(t => t.status === 'EN_PROCESO' && !t.archivedAt);
+          targets = this.tasks.filter(t => t.status === 'EN_PROCESO' && !t.archivedAt && t.invoiceInConsolidated !== true);
           label = 'EN PROCESO';
         }
 
@@ -4840,7 +4840,7 @@ updateMessengerWindowTyping(workerName) {
         documentsPanel?.classList.add('hidden');
 
         let filtered = this.tasks.filter(t => {
-          if (this.showArchivedTasks ? (!isAdmin || !t.archivedAt) : !!t.archivedAt) return false;
+          if (this.showArchivedTasks ? (!isAdmin || !t.archivedAt) : (!!t.archivedAt || t.invoiceInConsolidated === true)) return false;
           if (!isAdmin && (this.isTaskHiddenFromWorkers(t) || (!this.isTaskFree(t) && t.assignedTo !== myName))) return false;
 
           const matchText = !search ||

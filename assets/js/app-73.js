@@ -207,7 +207,7 @@
       if (!area) return result;
       area.querySelectorAll('.payment-table tbody tr').forEach(row => {
         const view = row.querySelector('[data-payment-view]');
-        const id = view?.dataset.paymentView || row.querySelector('[data-payment-unarchive]')?.dataset.paymentUnarchive;
+        const id = view?.dataset.paymentView;
         if (!id) return;
         const note = noteFor(this, id);
         const orderLabel = row.cells?.[1]?.querySelector('small');
@@ -217,7 +217,7 @@
       });
       area.querySelectorAll('.payment-mobile-card').forEach(card => {
         const view = card.querySelector('[data-payment-view]');
-        const id = view?.dataset.paymentView || card.querySelector('[data-payment-unarchive]')?.dataset.paymentUnarchive;
+        const id = view?.dataset.paymentView;
         if (!id) return;
         const note = noteFor(this, id);
         const top = card.querySelector('.payment-mobile-top');

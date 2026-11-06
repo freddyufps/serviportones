@@ -38,7 +38,8 @@
 .payment-internal-note-action.is-pending{border-color:#f2d58b;background:#fff6d8;color:#a97405}
 .payment-internal-note-action.is-completed{border-color:#b8ddb0;background:#eaf6e7;color:#4d8938}
 .payment-table .payment-order-actions{gap:4px}
-.payment-table th:last-child,.payment-table td:last-child{width:160px}
+.payment-edit-order-button{min-width:72px}
+.payment-table th:last-child,.payment-table td:last-child{width:240px}
 @media(max-width:700px){.payment-internal-note-dialog{padding:10px}.payment-internal-note-card{width:min(520px,calc(100vw - 20px));padding:15px}.payment-order-actions-mobile .payment-internal-note-action{grid-column:1/-1;width:100%;min-height:34px}.payment-internal-note-action{font-size:10px}}
 body.theme-dark .payment-internal-note-card,body.theme-halloween .payment-internal-note-card{border-color:#40536b;background:#172438;color:#dbe5ef}
 body.theme-dark .payment-internal-note-card h3,body.theme-halloween .payment-internal-note-card h3{color:#e7edf5}
