@@ -46,9 +46,10 @@
         }
         await this.embedQuoteLogo?.(doc);
         if(typeof window.spemCreatePreviewPdfBlob!=="function")throw new Error("No está disponible la captura PDF de la vista previa.");
-        // Captura el mismo DOM de la vista previa, escalado proporcionalmente al área A4.
-        // Así se evita la impresión del navegador (URL, fecha y cabeceras automáticas).
-        const blob=await window.spemCreatePreviewPdfBlob(doc,{format:"a4",fitSinglePage:true,marginMm:2});
+        // Conserva exactamente el tamaño y la proporción del documento visible.
+        // Al usar el tamaño de captura (en vez de encajarla en A4) se evita
+        // reducirla y dejar márgenes vacíos. Este cambio afecta solo cotizaciones.
+        const blob=await window.spemCreatePreviewPdfBlob(doc);
         if(!blob?.size)throw new Error("El PDF generado está vacío.");
         if(fileHandle){const writable=await fileHandle.createWritable();await writable.write(blob);await writable.close();this.showToast("Cotización guardada en la ubicación elegida.","success");}
         else{await saveQuotePdfBlob(blob,filename);this.showToast("PDF de cotización descargado.","success");}
