@@ -488,9 +488,15 @@
       if (label) label.textContent = 'Informes Realizados';
       button.querySelector('#orders-nav-archive-count')?.remove();
       const group = nav.querySelector(':scope > .orders-main-access-group') || nav;
+      const activeButton = group.querySelector('[data-order-view="active"]');
+      const quotesButton = group.querySelector('#btn-archived-quotes');
       const invoicesButton = group.querySelector('[data-order-view="invoices"]');
-      if (invoicesButton && invoicesButton !== button) group.insertBefore(button, invoicesButton);
-      else if (button.parentElement !== group) group.appendChild(button);
+      // Reafirma el mismo orden tras navegación/render: Órdenes, Cotizaciones,
+      // Informes realizados y Consolidado. Mover nodos existentes conserva sus listeners.
+      const canonicalOrder = [activeButton, quotesButton, button, invoicesButton].filter(Boolean);
+      if (canonicalOrder.some((item, index) => group.children[index] !== item)) {
+        group.replaceChildren(...canonicalOrder);
+      }
       nav.dataset.currentView = this.technicalReportsArchiveOpen ? 'reports' : (this.showDocumentControl ? 'invoices' : this.clientsDirectoryOpen ? 'clients' : this.quoteArchiveInlineOpen ? 'quotes' : this.showArchivedTasks ? 'archived' : 'active');
       nav.querySelectorAll('[data-order-view], #btn-archived-quotes').forEach(item => {
         const key = item.dataset.orderView || (item.id === 'btn-archived-quotes' ? 'quotes' : '');

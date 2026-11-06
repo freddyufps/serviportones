@@ -1,0 +1,9 @@
+/* Aumenta el ancho útil del panel en escritorio sin alterar tabletas ni móvil. */
+@media (min-width: 1280px) {
+  #dashboard-header-inner,
+  #view-dashboard > main,
+  #view-dashboard > div.max-w-7xl {
+    width: 94vw !important;
+    max-width: 1920px !important;
+  }
+}

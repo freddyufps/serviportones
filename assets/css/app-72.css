@@ -25,8 +25,8 @@
   }
 
   #orders-view-navigation [data-order-view="active"] { grid-column: 1 / span 2 !important; grid-row: 1 !important; }
-  #orders-view-navigation [data-order-view="clients"] { grid-column: 3 / span 2 !important; grid-row: 1 !important; }
+  #orders-view-navigation #btn-archived-quotes { grid-column: 3 / span 2 !important; grid-row: 1 !important; }
   #orders-view-navigation [data-order-view="reports"] { grid-column: 5 / span 2 !important; grid-row: 1 !important; }
-  #orders-view-navigation #btn-archived-quotes { grid-column: 2 / span 2 !important; grid-row: 2 !important; }
-  #orders-view-navigation [data-order-view="invoices"] { grid-column: 4 / span 2 !important; grid-row: 2 !important; }
+  #orders-view-navigation [data-order-view="invoices"] { grid-column: 3 / span 2 !important; grid-row: 2 !important; }
+  #orders-view-navigation [data-order-view="clients"] { grid-column: 5 / span 2 !important; grid-row: 2 !important; }
 }

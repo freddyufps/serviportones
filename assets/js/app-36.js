@@ -32,7 +32,16 @@
     if (!mainGroup) { mainGroup = document.createElement('div'); mainGroup.className = 'orders-main-access-group'; }
     if (!clientsGroup) { clientsGroup = document.createElement('div'); clientsGroup.className = 'orders-clients-access-group'; }
     nav.querySelectorAll('#nav-assign-order').forEach(button => button.remove());
-    const mainButtons = [nav.querySelector('[data-order-view="active"]'), nav.querySelector('[data-order-view="archived"]'), nav.querySelector('#btn-archived-quotes'), nav.querySelector('[data-order-view="invoices"]')].filter(Boolean);
+    // Orden canónico del menú: Órdenes, Cotizaciones, Informes y Consolidado.
+    // El botón de informes reutiliza el antiguo botón de órdenes archivadas y cambia
+    // su data-order-view a "reports"; reconocer ambas claves evita que se desprenda
+    // del grupo al volver a renderizar las órdenes.
+    const mainButtons = [
+      nav.querySelector('[data-order-view="active"]'),
+      nav.querySelector('#btn-archived-quotes'),
+      nav.querySelector('[data-order-view="reports"], [data-order-view="archived"]'),
+      nav.querySelector('[data-order-view="invoices"]')
+    ].filter(Boolean);
     const clientsButton = nav.querySelector('[data-order-view="clients"]');
     if (mainButtons.some((button, index) => button !== mainGroup.children[index])) mainGroup.replaceChildren(...mainButtons);
     if (clientsButton && clientsGroup.firstElementChild !== clientsButton) clientsGroup.replaceChildren(clientsButton);
