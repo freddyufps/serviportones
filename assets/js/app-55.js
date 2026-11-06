@@ -146,7 +146,8 @@
     const syncNav = instance => {
       const nav = document.getElementById('orders-view-navigation');
       if (!nav) return;
-      const view = instance.showDocumentControl ? 'invoices' : instance.clientsDirectoryOpen ? 'clients' : instance.quoteArchiveInlineOpen ? 'quotes' : instance.showArchivedTasks ? 'archived' : 'active';
+      const reportsOpen = Boolean(instance.technicalReportsArchiveOpen && !instance.showDocumentControl && !instance.clientsDirectoryOpen && !instance.quoteArchiveInlineOpen && !instance.quoteConsolidationOpen && !instance.showArchivedTasks);
+      const view = reportsOpen ? 'reports' : instance.showDocumentControl ? 'invoices' : instance.clientsDirectoryOpen ? 'clients' : instance.quoteArchiveInlineOpen ? 'quotes' : instance.showArchivedTasks ? 'archived' : 'active';
       nav.dataset.currentView = view;
       nav.querySelectorAll('[data-order-view], #btn-archived-quotes').forEach(button => {
         const key = button.dataset.orderView || (button.id === 'btn-archived-quotes' ? 'quotes' : '');
@@ -191,6 +192,12 @@
     const originalRender = proto.renderTasks;
     if (typeof originalRender === 'function' && !originalRender.__exclusiveViews55) {
       const wrappedRender = function (...args) {
+        const reportsOpen = Boolean(this.technicalReportsArchiveOpen && !this.showDocumentControl && !this.clientsDirectoryOpen && !this.quoteArchiveInlineOpen && !this.quoteConsolidationOpen && !this.showArchivedTasks);
+        if (reportsOpen) {
+          this.renderTechnicalReportsArchive?.();
+          syncNav(this);
+          return;
+        }
         if (this.showDocumentControl) setView(this, 'invoices', false);
         else if (this.clientsDirectoryOpen) setView(this, 'clients', false);
         else if (this.quoteArchiveInlineOpen) setView(this, 'quotes', false);

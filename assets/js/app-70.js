@@ -842,7 +842,9 @@
         if (reportsViewIsCurrent(this)) { this.renderTechnicalReportsArchive(); return; }
         if (this.technicalReportsArchiveOpen) {
           this.technicalReportsArchiveOpen = false;
-          this.technicalReports = [];
+          // A competing view can invalidate the active report route, but must
+          // never erase the report data merely because another renderer ran.
+          console.info('[INFORMES TRACE] Se cerró la vista por una ruta competidora; se conserva el arreglo', { reports: (this.technicalReports || []).length, flags: { clients: Boolean(this.clientsDirectoryOpen), quotes: Boolean(this.quoteArchiveInlineOpen), invoices: Boolean(this.showDocumentControl), archived: Boolean(this.showArchivedTasks) }, stack: new Error('[INFORMES TRACE] competing route').stack });
         }
         // Firestore dispara renderTasks por cambios en órdenes/usuarios. Si Clientes está
         // abierto, esos callbacks no deben volver a dibujar las tarjetas de Órdenes encima.

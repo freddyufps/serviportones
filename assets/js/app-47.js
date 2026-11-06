@@ -204,7 +204,15 @@ body.theme-dark #clients-directory,body.theme-halloween #clients-directory{backg
     }
   };
   const install=()=>{
-    const AppClass=window.app?.constructor;if(!window.app||!AppClass?.prototype||window.app.__mobileClientModule47)return false;window.app.__mobileClientModule47=true;Object.assign(AppClass.prototype,patch);Object.assign(window.app,patch);const p=AppClass.prototype;
+    const AppClass=window.app?.constructor;if(!window.app||!AppClass?.prototype||window.app.__mobileClientModule47)return false;window.app.__mobileClientModule47=true;Object.assign(AppClass.prototype,patch);Object.assign(window.app,patch);
+    const directoryDescriptor=Object.getOwnPropertyDescriptor(window.app,'clientDirectory');
+    if(!window.app.__clientDirectoryAssignmentTrace47&&(!directoryDescriptor||directoryDescriptor.configurable)){
+      let directoryValue=Array.isArray(window.app.clientDirectory)?window.app.clientDirectory:[];
+      Object.defineProperty(window.app,'clientDirectory',{configurable:true,enumerable:true,get(){return directoryValue},set(value){const previous=Array.isArray(directoryValue)?directoryValue.length:'no-array',next=Array.isArray(value)?value.length:'non-array';console.info('[CLIENTES TRACE] Asignación a clientDirectory',{before:previous,after:next,at:new Date().toISOString(),stack:new Error('[CLIENTES TRACE] clientDirectory write').stack});directoryValue=value}});
+      window.app.__clientDirectoryAssignmentTrace47=true;
+      console.info('[CLIENTES TRACE] Instrumentación de escrituras instalada',{initial:Array.isArray(directoryValue)?directoryValue.length:'non-array',project:window.firebase?.apps?.[0]?.options?.projectId||''});
+    }
+    const p=AppClass.prototype;
     const keepLauncherVisible=(method,flag)=>{const original=p[method];if(!original||p[flag])return;p[flag]=true;p[method]=function(...args){const result=original.apply(this,args);this.ensureChatLauncherVisible?.();requestAnimationFrame(()=>this.ensureChatLauncherVisible?.());return result}}
     keepLauncherVisible('toggleChatWindow','__persistentChatLauncherToggle');
     keepLauncherVisible('openDirectWorkerChat','__directChatLauncherVisible');
