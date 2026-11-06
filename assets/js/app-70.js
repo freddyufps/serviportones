@@ -241,6 +241,7 @@
       }
     };
     const applyCompleteClientDirectory = (instance, records) => {
+      instance.clientDirectorySnapshotVersion = (Number(instance.clientDirectorySnapshotVersion) || 0) + 1;
       instance.clientDirectory = records;
       instance.clientDirectoryServerLoaded = true;
       instance.clientDirectoryServerCount = records.length;
@@ -700,6 +701,12 @@
       if (!viewButton) return;
       if (viewButton.dataset.orderView === 'reports') {
         event.preventDefault(); event.stopImmediatePropagation();
+        // Programmatic/synthetic clicks must never switch the active module.
+        // This route is opened only by an actual user click on its navigation button.
+        if (!event.isTrusted || event.button !== 0) {
+          reportsClickAuthorization = 0;
+          return;
+        }
         const authorization = ++reportsNavigationRequest;
         reportsClickAuthorization = authorization;
         window.app?.openTechnicalReportsArchive(authorization);

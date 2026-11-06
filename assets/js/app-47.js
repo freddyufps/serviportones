@@ -69,7 +69,7 @@ body.theme-dark #clients-directory,body.theme-halloween #clients-directory{backg
   `;
   document.head.appendChild(clientEditorCompactStyle);
   const patch = {
-    clientDirectory: [], clientDirectoryUnsubscribe: null, clientsDirectoryOpen: false, clientDirectoryLoading: false, clientDirectoryLoadError: '', clientDirectoryServerLoaded: false, clientDirectoryServerCount: 0,
+    clientDirectory: [], clientDirectoryUnsubscribe: null, clientsDirectoryOpen: false, clientDirectoryLoading: false, clientDirectoryLoadError: '', clientDirectoryServerLoaded: false, clientDirectoryServerCount: 0, clientDirectorySnapshotVersion: 0,
     clientRecordId(c){ const identity=clean(c.documentNumber||c.document).replace(/\D/g,'');const s=identity?'document|'+identity:norm(c.name||c.client||c.clientName)+'|'+norm(c.address||c.condo);let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return 'client_'+(h>>>0).toString(36); },
     async migrateLegacyClientsToFirestore(serverRecords=[]){
       if(!window.db?.collection||!navigator.onLine||localStorage.getItem('spem_clients_firestore_migration_v1')==='done')return 0;
@@ -103,12 +103,36 @@ body.theme-dark #clients-directory,body.theme-halloween #clients-directory{backg
         this.upsertClientDirectoryRecord(merged);return true
       }catch(e){console.warn('[CLIENTES] No se pudo guardar el contacto en Firestore.',e);return false}
     },
-    upsertClientDirectoryRecord(client){const list=Array.isArray(this.clientDirectory)?this.clientDirectory:[];const index=list.findIndex(item=>item.id===client.id||norm(item.name)===norm(client.name)&&(!client.address||!item.address||norm(item.address)===norm(client.address)));if(index<0)list.unshift(client);else list[index]={...list[index],...client};this.clientDirectory=list;this.refreshClientDirectoryUI();},
+    upsertClientDirectoryRecord(client){this.clientDirectorySnapshotVersion++;const list=Array.isArray(this.clientDirectory)?this.clientDirectory:[];const index=list.findIndex(item=>item.id===client.id||norm(item.name)===norm(client.name)&&(!client.address||!item.address||norm(item.address)===norm(client.address)));if(index<0)list.unshift(client);else list[index]={...list[index],...client};this.clientDirectory=list;this.refreshClientDirectoryUI();},
     refreshClientDirectoryUI(){this.addClientAutocomplete?.();this.renderSavedTaskClients?.();if(this.clientsDirectoryOpen)this.renderClientsDirectory?.();},
+    applyClientDirectoryServerRecords(records,version=this.clientDirectorySnapshotVersion){
+      if(version!==this.clientDirectorySnapshotVersion)return;
+      this.clientDirectory=records;this.clientDirectoryServerLoaded=true;this.clientDirectoryServerCount=records.length;this.clientDirectoryLoading=false;this.clientDirectoryLoadError='';this.refreshClientDirectoryUI();
+      this.migrateLegacyClientsToFirestore?.(records).catch(e=>console.warn('[CLIENTES] Migración heredada pendiente; se reintentará.',e));
+    },
+    async acceptClientDirectoryServerSnapshot(records){
+      const version=++this.clientDirectorySnapshotVersion;
+      const knownCount=Math.max(Number(this.clientDirectoryServerCount)||0,Array.isArray(this.clientDirectory)?this.clientDirectory.length:0);
+      if(records.length||!knownCount){this.applyClientDirectoryServerRecords(records,version);return}
+      // A single empty listener event must not erase a previously confirmed
+      // directory. Confirm it with a fresh server read before replacing it.
+      try{
+        const confirmed=await window.db.collection('clientes').get({source:'server'});
+        if(version!==this.clientDirectorySnapshotVersion)return;
+        const verified=confirmed.docs.map(d=>({id:d.id,...d.data()}));
+        this.applyClientDirectoryServerRecords(verified,version);
+      }catch(error){
+        if(version!==this.clientDirectorySnapshotVersion)return;
+        this.clientDirectoryLoading=false;this.clientDirectoryLoadError='No se pudo confirmar el directorio en el servidor; se conserva la última lista confirmada.';
+        console.warn('[CLIENTES] Se conservó el último directorio confirmado tras una lectura vacía no verificable.',error);
+        this.showToast?.(this.clientDirectoryLoadError,'info');
+        if(this.clientsDirectoryOpen)this.renderClientsDirectory?.();
+      }
+    },
     startClientDirectorySync(){
       if(this.currentUser?.role!=='admin')return;
       if(!this.clientDirectory)this.clientDirectory=[];
-      if(!this.clientDirectoryUnsubscribe&&window.db?.collection){try{this.clientDirectoryUnsubscribe=window.db.collection('clientes').onSnapshot(s=>{if(s.metadata?.fromCache){this.clientDirectoryLoading=false;this.clientDirectoryLoadError='Esperando conexión para confirmar los clientes guardados en Firestore.';if(this.clientsDirectoryOpen)this.renderClientsDirectory?.();return}const records=s.docs.map(d=>({id:d.id,...d.data()}));this.clientDirectoryServerLoaded=true;this.clientDirectoryServerCount=records.length;this.clientDirectoryLoading=false;this.clientDirectoryLoadError='';this.clientDirectory=records;this.refreshClientDirectoryUI();this.migrateLegacyClientsToFirestore?.(records).catch(e=>console.warn('[CLIENTES] Migración heredada pendiente; se reintentará.',e));},e=>{this.clientDirectoryLoading=false;this.clientDirectoryLoadError='No se pudo conectar con el directorio de clientes. Revisa la conexión e inténtalo nuevamente.';console.warn('[CLIENTES] Directorio no disponible.',e);this.showToast?.(this.clientDirectoryLoadError,'error');if(this.clientsDirectoryOpen)this.renderClientsDirectory?.()})}catch(e){this.clientDirectoryLoading=false;this.clientDirectoryLoadError='No se pudo conectar con el directorio de clientes. Revisa la conexión e inténtalo nuevamente.';console.warn(e)}}
+      if(!this.clientDirectoryUnsubscribe&&window.db?.collection){try{this.clientDirectoryUnsubscribe=window.db.collection('clientes').onSnapshot(s=>{if(s.metadata?.fromCache){this.clientDirectoryLoadError='Esperando confirmación del servidor para actualizar los clientes.';if(this.clientsDirectoryOpen)this.renderClientsDirectory?.();return}const records=s.docs.map(d=>({id:d.id,...d.data()}));this.acceptClientDirectoryServerSnapshot(records)},e=>{this.clientDirectoryLoading=false;this.clientDirectoryLoadError='No se pudo conectar con el directorio de clientes. Revisa la conexión e inténtalo nuevamente.';console.warn('[CLIENTES] Directorio no disponible.',e);this.showToast?.(this.clientDirectoryLoadError,'error');if(this.clientsDirectoryOpen)this.renderClientsDirectory?.()})}catch(e){this.clientDirectoryLoading=false;this.clientDirectoryLoadError='No se pudo conectar con el directorio de clientes. Revisa la conexión e inténtalo nuevamente.';console.warn(e)}}
       else if(!window.db?.collection){this.clientDirectoryLoading=false;this.clientDirectoryServerLoaded=false;this.clientDirectoryLoadError='Firestore no está disponible. El directorio no se cargó desde el servidor.';if(this.clientsDirectoryOpen)this.renderClientsDirectory?.()}
     },
     stopClientDirectorySync(){if(this.clientDirectoryUnsubscribe){this.clientDirectoryUnsubscribe();this.clientDirectoryUnsubscribe=null}this.clientsDirectoryOpen=false},
@@ -151,12 +175,15 @@ body.theme-dark #clients-directory,body.theme-halloween #clients-directory{backg
         const sameClient=(a,b)=>{const adoc=docKey(a),bdoc=docKey(b);if(adoc&&bdoc)return adoc===bdoc;const aname=nameKey(a),bname=nameKey(b);if(!aname||aname!==bname)return false;const alocation=norm(a.address||a.condo),blocation=norm(b.address||b.condo);return !alocation||!blocation||alocation===blocation};
         const fresh=[];
         for(const c of mapped){if(existing.some(item=>sameClient(item,c))||fresh.some(item=>sameClient(item,c)))continue;fresh.push(c)}
-        if(!fresh.length){this.clientDirectory=existing;this.clientDirectoryServerLoaded=true;this.clientDirectoryServerCount=existing.length;this.clientDirectoryLoading=false;this.clientDirectoryLoadError='';if(this.clientsDirectoryOpen)this.renderClientsDirectory();this.showToast('No hay clientes nuevos en el archivo; Firestore ya contiene esos registros.','info');return}
+        if(!fresh.length){this.clientDirectorySnapshotVersion++;this.clientDirectory=existing;this.clientDirectoryServerLoaded=true;this.clientDirectoryServerCount=existing.length;this.clientDirectoryLoading=false;this.clientDirectoryLoadError='';if(this.clientsDirectoryOpen)this.renderClientsDirectory();this.showToast('Firestore confirmó '+existing.length+' clientes; no había registros nuevos para agregar.','info');return}
         for(let offset=0;offset<fresh.length;offset+=400){const batch=window.db.batch();fresh.slice(offset,offset+400).forEach(c=>batch.set(window.db.collection('clientes').doc(this.clientRecordId(c)),{...c,updatedAt:Date.now(),importedAt:Date.now()},{merge:true}));await batch.commit()}
-        const imported=fresh.map(c=>({...c,id:this.clientRecordId(c)}));
-        const merged=[...existing];for(const client of imported){const at=merged.findIndex(item=>sameClient(item,client));if(at<0)merged.push(client);else merged[at]={...merged[at],...client}}
-        this.clientDirectory=merged;this.clientDirectoryServerLoaded=true;this.clientDirectoryServerCount=merged.length;this.clientDirectoryLoading=false;this.clientDirectoryLoadError='';
-        this.startClientDirectorySync();if(this.clientsDirectoryOpen)this.renderClientsDirectory();this.showToast('Importación guardada en Firestore: '+fresh.length+' nuevos; '+(mapped.length-fresh.length)+' omitidos por estar repetidos.','success')
+        const confirmedSnapshot=await window.db.collection('clientes').get({source:'server'});
+        const confirmedRecords=confirmedSnapshot.docs.map(d=>({id:d.id,...d.data()}));
+        const confirmedIds=new Set(confirmedRecords.map(client=>String(client.id)));
+        const missing=fresh.filter(client=>!confirmedIds.has(this.clientRecordId(client)));
+        if(missing.length)throw new Error('Firestore no confirmó '+missing.length+' registros importados.');
+        this.clientDirectorySnapshotVersion++;this.clientDirectory=confirmedRecords;this.clientDirectoryServerLoaded=true;this.clientDirectoryServerCount=confirmedRecords.length;this.clientDirectoryLoading=false;this.clientDirectoryLoadError='';
+        this.startClientDirectorySync();if(this.clientsDirectoryOpen)this.renderClientsDirectory();this.showToast('Firestore confirmó '+confirmedRecords.length+' clientes; se agregaron '+fresh.length+' nuevos y '+(mapped.length-fresh.length)+' repetidos se omitieron.','success')
       }catch(e){console.error('[CLIENTES] Importación fallida.',e);this.showToast('No se pudo importar el archivo. Revisa tu conexión y que el archivo tenga el formato esperado.','error')}
       finally{if(button){button.disabled=false;button.textContent=oldLabel||'Importar Excel'}}
     },    exportClientsDirectory(){const rows=this.clientDirectory||[];if(!rows.length)return this.showToast('No hay clientes para exportar.','info');const cols=['name','condo','documentNumber','address','email','phone','administrator'],csv=[cols.join(','),...rows.map(r=>cols.map(k=>'"'+String(r[k]||'').replace(/"/g,'""')+'"').join(','))].join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));a.download='clientes-serviportones.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000)},
