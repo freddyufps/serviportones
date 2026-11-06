@@ -25,23 +25,9 @@
   const bindQuotesArchiveSearchEnterOnly=()=>{
     if(window.__quotesArchiveSearchEnterOnly44)return;
     window.__quotesArchiveSearchEnterOnly44=true;
-    const isSearch = target => target instanceof Element && target.closest('#quotes-search');
-    window.addEventListener('input', event => { if (isSearch(event.target)) event.stopImmediatePropagation(); }, true);
-    window.addEventListener('keyup', event => { if (isSearch(event.target)) event.stopImmediatePropagation(); }, true);
-    window.addEventListener('change', event => { if (isSearch(event.target)) event.stopImmediatePropagation(); }, true);
-    window.addEventListener('search', event => { if (isSearch(event.target)) event.stopImmediatePropagation(); }, true);
-    window.addEventListener('keydown',event=>{
-      const input=isSearch(event.target);
-      if(!input)return;
-      event.stopImmediatePropagation();
-      if(event.key!=='Enter')return;
-      event.preventDefault();
-      const app=window.app;
-      if(!input.isConnected||!app)return;
-      app.quoteArchiveCommittedSearch=input.value.trim();
-      if(app.quoteArchiveRowsRefreshPending)app.refreshQuoteArchiveRows?.(true);
-      else app.filterQuotes?.();
-    }, true);
+    // The shared search controller (app-75) handles this input like the
+    // Consolidado search: live filtering without recreating the input or
+    // allowing module navigation handlers to consume typing events.
   };
   bindQuotesArchiveSearchEnterOnly();
   const install=()=>{

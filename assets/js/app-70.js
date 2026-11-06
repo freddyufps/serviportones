@@ -186,7 +186,7 @@
       return true;
     } catch (error) { console.warn('[INFORMES] No se pudo guardar el PDF en la carpeta elegida.', error); return false; }
   };
-  const reportRowsMarkup = (filtered, total) => filtered.length ? filtered.map(report => `<article class="technical-report-row"><div class="technical-report-row-main"><span class="technical-report-number">${escapeHtml(report.number)}</span><b>${escapeHtml(report.client || 'Cliente')}</b><small>Inspección: ${escapeHtml(reportDate(report.inspectionDate))} · Técnico: ${escapeHtml(report.technician || 'Polo Martínez')}</small><small>Creado: ${escapeHtml(reportDate(report.createdAt))} · Estado: ${escapeHtml(report.status || 'Realizado')}</small></div><div class="technical-report-row-actions"><button type="button" data-report-view="${escapeHtml(report.id)}" title="Ver informe" aria-label="Ver ${escapeHtml(report.number)}"><i data-lucide="eye"></i><span>Ver</span></button><button type="button" data-report-edit="${escapeHtml(report.id)}" title="Editar informe" aria-label="Editar ${escapeHtml(report.number)}"><i data-lucide="pencil"></i><span>Editar</span></button><button type="button" data-report-delete="${escapeHtml(report.id)}" title="Eliminar informe" aria-label="Eliminar ${escapeHtml(report.number)}"><i data-lucide="trash-2"></i><span>Eliminar</span></button></div></article>`).join('') : `<div class="technical-reports-empty"><i data-lucide="file-search"></i><b>${total ? 'No se encontraron informes.' : 'Aún no hay informes realizados.'}</b><span>${total ? 'Prueba con otro número, cliente o fecha.' : 'Usa “Realizar informe” para crear el primero.'}</span></div>`;
+  const reportRowsMarkup = (filtered, total) => filtered.length ? filtered.map(report => `<article class="technical-report-row" data-report-search="${escapeHtml(`${report.number} ${report.client || ''} ${report.technician || 'Polo Martínez'} ${report.inspectionDate || ''}`)}"><div class="technical-report-row-main"><span class="technical-report-number">${escapeHtml(report.number)}</span><b>${escapeHtml(report.client || 'Cliente')}</b><small>Inspección: ${escapeHtml(reportDate(report.inspectionDate))} · Técnico: ${escapeHtml(report.technician || 'Polo Martínez')}</small><small>Creado: ${escapeHtml(reportDate(report.createdAt))} · Estado: ${escapeHtml(report.status || 'Realizado')}</small></div><div class="technical-report-row-actions"><button type="button" data-report-view="${escapeHtml(report.id)}" title="Ver informe" aria-label="Ver ${escapeHtml(report.number)}"><i data-lucide="eye"></i><span>Ver</span></button><button type="button" data-report-edit="${escapeHtml(report.id)}" title="Editar informe" aria-label="Editar ${escapeHtml(report.number)}"><i data-lucide="pencil"></i><span>Editar</span></button><button type="button" data-report-delete="${escapeHtml(report.id)}" title="Eliminar informe" aria-label="Eliminar ${escapeHtml(report.number)}"><i data-lucide="trash-2"></i><span>Eliminar</span></button></div></article>`).join('') : `<div class="technical-reports-empty"><i data-lucide="file-search"></i><b>${total ? 'No se encontraron informes.' : 'Aún no hay informes realizados.'}</b><span>${total ? 'Prueba con otro número, cliente o fecha.' : 'Usa “Realizar informe” para crear el primero.'}</span></div>`;
   const bindReportRowActions = (app, host) => {
     host.querySelectorAll('[data-report-view]').forEach(button => button.addEventListener('click', () => app.openTechnicalReportPreview(button.dataset.reportView)));
     host.querySelectorAll('[data-report-edit]').forEach(button => button.addEventListener('click', () => app.openTechnicalReportForm(button.dataset.reportEdit)));
@@ -245,6 +245,7 @@
       instance.clientDirectory = records;
       instance.clientDirectoryServerLoaded = true;
       instance.clientDirectoryServerCount = records.length;
+      instance.clientDirectorySourceProject = window.firebase?.apps?.[0]?.options?.projectId || '';
       instance.clientDirectoryLoading = false;
       instance.clientDirectoryLoadError = '';
     };
@@ -255,6 +256,7 @@
     let reportsNavButton = null;
     let reportsNavigationRequest = 0;
     let reportsClickAuthorization = 0;
+    let reportsPointerAuthorization = null;
     let clientsNavigationRequest = 0;
     const hasCompetingAdminView = instance => Boolean(instance && (
       instance.showDocumentControl || instance.clientsDirectoryOpen || instance.quoteArchiveInlineOpen ||
@@ -495,6 +497,7 @@
       const searchInput = event => {
         const input = event.target;
         if (!(input instanceof HTMLInputElement) || input.id !== 'technical-reports-search') return;
+        if (typeof window.__spemGenericSearchDispatch === 'function' && window.__spemGenericSearchDispatch(event)) return;
         // Este buscador solo filtra su propia lista. El listener de captura evita
         // que delegaciones globales de otros módulos intercepten la escritura.
         event.stopImmediatePropagation();
@@ -512,7 +515,10 @@
       };
       window.addEventListener('input', searchInput, true);
       ['keydown', 'keyup', 'change', 'search'].forEach(type => window.addEventListener(type, event => {
-        if (event.target instanceof HTMLInputElement && event.target.id === 'technical-reports-search') event.stopImmediatePropagation();
+        if (event.target instanceof HTMLInputElement && event.target.id === 'technical-reports-search') {
+          if (type === 'search' && typeof window.__spemGenericSearchDispatch === 'function' && window.__spemGenericSearchDispatch(event)) return;
+          event.stopImmediatePropagation();
+        }
       }, true));
     };
 
@@ -530,10 +536,12 @@
       host.classList.remove('hidden'); host.style.display = 'block'; host.style.width = '100%'; host.style.gridTemplateColumns = 'minmax(0,1fr)';
       host.innerHTML = `<section class="technical-reports-archive"><header class="technical-reports-archive-heading"><div><span>ARCHIVO TÉCNICO</span><h3>Informes realizados</h3><p>Consulta, edita o exporta los informes técnicos guardados.</p></div><button type="button" class="technical-report-primary" data-create-report><i data-lucide="plus"></i><span>Realizar informe</span></button></header>
         <div class="technical-reports-tools"><label><i data-lucide="search"></i><input id="technical-reports-search" name="technical-report-search-query" type="search" role="searchbox" aria-autocomplete="none" inputmode="search" autocomplete="new-password" autocorrect="off" autocapitalize="none" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" placeholder="Buscar número, cliente o fecha" value="${escapeHtml(query)}"></label><span data-reports-result-count>${filtered.length} de ${reports.length} informes</span></div>
-        <div class="technical-reports-list">${reportRowsMarkup(filtered, reports.length)}</div></section>`;
+        <div class="technical-reports-list">${reportRowsMarkup(reports, reports.length)}</div></section>`;
       host.querySelector('[data-create-report]')?.addEventListener('click', () => this.openTechnicalReportForm());
       bindTechnicalReportsSearch();
       bindReportRowActions(this, host);
+      const searchForRestore = host.querySelector('#technical-reports-search');
+      if (searchForRestore?.value) searchForRestore.dispatchEvent(new Event('input', { bubbles: true }));
       if (restoreSearchFocus) {
         const nextSearch = host.querySelector('#technical-reports-search');
         nextSearch?.focus({ preventScroll: true });
@@ -584,10 +592,11 @@
 
     proto.openTechnicalReportsArchive = async function (clickAuthorization) {
       if (this.currentUser?.role !== 'admin') return this.showToast?.('Esta sección está disponible para el administrador.', 'error');
-      // Reports reuses the old Archived Orders slot. Only a fresh user click
-      // on that Reports button is allowed to activate the archive.
-      if (!clickAuthorization || clickAuthorization !== reportsClickAuthorization) return;
+      // Reports reuses the old Archived Orders slot. Require the token issued
+      // by a direct pointer press and matching click on that exact button.
+      if (!clickAuthorization || clickAuthorization !== reportsClickAuthorization || !reportsPointerAuthorization || reportsPointerAuthorization.expiresAt < Date.now()) return;
       reportsClickAuthorization = 0;
+      reportsPointerAuthorization = null;
       const requestId = ++reportsNavigationRequest;
       this.showDocumentControl = false;
       this.clientsDirectoryOpen = false;
@@ -689,6 +698,12 @@
       const button = document.getElementById('btn-create-report');
       if (button) button.classList.toggle('hidden', window.app?.currentUser?.role !== 'admin');
     };
+    document.addEventListener('pointerdown', event => {
+      const button = event.target instanceof Element ? event.target.closest('#orders-view-navigation [data-order-view="reports"]') : null;
+      reportsPointerAuthorization = event.isTrusted && event.button === 0 && button
+        ? { button, expiresAt: Date.now() + 1500 }
+        : null;
+    }, true);
     document.addEventListener('click', event => {
       const viewButton = event.target.closest('#orders-view-navigation [data-order-view]');
       const quotesButton = event.target.closest('#orders-view-navigation #btn-archived-quotes');
@@ -701,9 +716,11 @@
       if (!viewButton) return;
       if (viewButton.dataset.orderView === 'reports') {
         event.preventDefault(); event.stopImmediatePropagation();
-        // Programmatic/synthetic clicks must never switch the active module.
-        // This route is opened only by an actual user click on its navigation button.
-        if (!event.isTrusted || event.button !== 0) {
+        // Keyboard activation, synthetic events, search side effects and stale
+        // clicks are rejected; only a direct click on the report tile may route.
+        const pointerAuthorization = reportsPointerAuthorization;
+        if (!event.isTrusted || event.button !== 0 || !pointerAuthorization || pointerAuthorization.button !== viewButton || pointerAuthorization.expiresAt < Date.now()) {
+          reportsPointerAuthorization = null;
           reportsClickAuthorization = 0;
           return;
         }
@@ -829,6 +846,8 @@
         }
         const count = root.querySelector('.clients-count');
         if (count) count.textContent = `${filtered.length} de ${records.length} clientes`;
+        const sourceStatus = root.querySelector('.clients-source-status');
+        if (sourceStatus && this.clientDirectoryServerLoaded) sourceStatus.textContent = `Lectura directa del servidor · ${this.clientDirectorySourceProject || 'proyecto conectado'} · ${records.length} registros confirmados`;
         root.dataset.clientSourceCount = String(records.length);
         root.dataset.clientRenderedCount = String(filtered.length);
         if (root.dataset.clientCountLog !== `${records.length}:${filtered.length}`) {
