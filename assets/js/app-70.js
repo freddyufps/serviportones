@@ -466,7 +466,7 @@
       host.classList.remove('hidden'); host.style.display = 'block'; host.style.width = '100%'; host.style.gridTemplateColumns = 'minmax(0,1fr)';
       host.innerHTML = `<section class="technical-reports-archive"><header class="technical-reports-archive-heading"><div><span>ARCHIVO TÉCNICO</span><h3>Informes realizados</h3><p>Consulta, edita o exporta los informes técnicos guardados.</p></div><button type="button" class="technical-report-primary" data-create-report><i data-lucide="plus"></i><span>Realizar informe</span></button></header>
         <div class="technical-reports-tools"><label><i data-lucide="search"></i><input id="technical-reports-search" name="technical-report-search-query" type="search" role="searchbox" aria-autocomplete="none" inputmode="search" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" placeholder="Buscar número, cliente o fecha" value="${escapeHtml(query)}"></label><span data-reports-result-count>${filtered.length} de ${reports.length} informes</span></div>
-        <div class="technical-reports-list">${reportRowsMarkup(reports, reports.length)}</div></section>`;
+        <div class="technical-reports-list">${reportRowsMarkup(filtered, reports.length)}</div></section>`;
       host.querySelector('[data-create-report]')?.addEventListener('click', () => this.openTechnicalReportForm());
       bindReportRowActions(this, host);
       const searchForRestore = host.querySelector('#technical-reports-search');
@@ -520,10 +520,15 @@
     };
 
     proto.openTechnicalReportsArchive = async function (clickAuthorization) {
+      const trace = { at: new Date().toISOString(), authorization: clickAuthorization || null, quoteArchiveWasOpen: Boolean(this.quoteArchiveInlineOpen), stack: new Error('[NAV TRACE] openTechnicalReportsArchive').stack };
+      console.info('[NAV TRACE] Solicitud de apertura de Informes realizados', trace);
       if (this.currentUser?.role !== 'admin') return this.showToast?.('Esta sección está disponible para el administrador.', 'error');
       // Reports reuses the old Archived Orders slot. Require the token issued
       // by a direct pointer press and matching click on that exact button.
-      if (!clickAuthorization || clickAuthorization !== reportsClickAuthorization || !reportsPointerAuthorization || reportsPointerAuthorization.expiresAt < Date.now()) return;
+      if (!clickAuthorization || clickAuthorization !== reportsClickAuthorization || !reportsPointerAuthorization || reportsPointerAuthorization.expiresAt < Date.now()) {
+        console.warn('[NAV TRACE] Apertura de Informes bloqueada por falta de clic autorizado', { ...trace, pendingAuthorization: reportsClickAuthorization, pointerAuthorization: reportsPointerAuthorization, stack: new Error('[NAV TRACE] blocked call').stack });
+        return;
+      }
       reportsClickAuthorization = 0;
       reportsPointerAuthorization = null;
       const requestId = ++reportsNavigationRequest;
@@ -632,6 +637,7 @@
       reportsPointerAuthorization = event.isTrusted && event.button === 0 && button
         ? { button, expiresAt: Date.now() + 1500 }
         : null;
+      if (button) console.info('[NAV TRACE] Pointer sobre botón Informes realizados', { trusted: event.isTrusted, at: new Date().toISOString(), stack: new Error('[NAV TRACE] reports pointerdown').stack });
     }, true);
     document.addEventListener('click', event => {
       const viewButton = event.target.closest('#orders-view-navigation [data-order-view]');
@@ -655,6 +661,7 @@
         }
         const authorization = ++reportsNavigationRequest;
         reportsClickAuthorization = authorization;
+        console.info('[NAV TRACE] Clic autorizado que navega a Informes realizados', { authorization, trusted: event.isTrusted, at: new Date().toISOString(), stack: new Error('[NAV TRACE] reports click').stack });
         window.app?.openTechnicalReportsArchive(authorization);
         return;
       }
@@ -674,8 +681,21 @@
     ['showActiveOrdersView','showArchivedOrdersView','openQuotesArchive','openDocumentControl','openClientsDirectory','openNewTaskModal'].forEach(method => {
       const original = proto[method];
       if (typeof original !== 'function' || original.__clearReportArchive70) return;
-      const wrapped = function (...args) { reportsNavigationRequest += 1; this.technicalReportsArchiveOpen = false; return original.apply(this, args); };
+      const wrapped = function (...args) {
+        console.info('[NAV TRACE] Método de navegación ejecutado', { method, at: new Date().toISOString(), wasInQuotes: Boolean(this.quoteArchiveInlineOpen), wasInReports: Boolean(this.technicalReportsArchiveOpen), stack: new Error(`[NAV TRACE] ${method}`).stack });
+        reportsNavigationRequest += 1; this.technicalReportsArchiveOpen = false; return original.apply(this, args);
+      };
       wrapped.__clearReportArchive70 = true; proto[method] = wrapped;
+    });
+    ['showSection','switchSection','navigateTo','setActiveSection'].forEach(method => {
+      const owner = Object.prototype.hasOwnProperty.call(app, method) ? app : proto;
+      const original = owner[method];
+      if (typeof original !== 'function' || original.__traceNavigation70) return;
+      const wrapped = function (...args) {
+        console.info('[NAV TRACE] Función general de cambio de vista ejecutada', { method, args, at: new Date().toISOString(), wasInQuotes: Boolean(this.quoteArchiveInlineOpen), wasInReports: Boolean(this.technicalReportsArchiveOpen), stack: new Error(`[NAV TRACE] ${method}`).stack });
+        return original.apply(this, args);
+      };
+      wrapped.__traceNavigation70 = true; owner[method] = wrapped;
     });
     const originalOpenClients = proto.openClientsDirectory;
     if (typeof originalOpenClients === 'function' && !originalOpenClients.__refreshClientsDirectory70) {
@@ -763,9 +783,10 @@
         if (sourceStatus && this.clientDirectoryServerLoaded) sourceStatus.textContent = `Lectura directa del servidor · ${this.clientDirectorySourceProject || 'proyecto conectado'} · ${records.length} registros confirmados`;
         root.dataset.clientSourceCount = String(records.length);
         root.dataset.clientRenderedCount = String(filtered.length);
-        if (root.dataset.clientCountLog !== `${records.length}:${filtered.length}`) {
-          root.dataset.clientCountLog = `${records.length}:${filtered.length}`;
-          console.info('[CLIENTES] Conteo verificado en vista', { firestoreLoaded: records.length, renderedCards: filtered.length, searchActive: Boolean(term) });
+        const domCards = list.querySelectorAll('.client-card[data-client-search]').length;
+        if (root.dataset.clientCountLog !== `${records.length}:${filtered.length}:${domCards}`) {
+          root.dataset.clientCountLog = `${records.length}:${filtered.length}:${domCards}`;
+          console.info('[CLIENTES TRACE] Conteo de render y DOM', { clientDirectory: records.length, renderCandidates: filtered.length, domCards, searchActive: Boolean(term), serverConfirmed: Boolean(this.clientDirectoryServerLoaded), project: this.clientDirectorySourceProject || '' });
         }
         return result;
       };
