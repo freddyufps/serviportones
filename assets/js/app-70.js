@@ -656,6 +656,53 @@
       wrappedOpenClients.__refreshClientsDirectory70 = true;
       proto.openClientsDirectory = wrappedOpenClients;
     }
+    // app-47 copied its original navigation methods directly onto `app`, so
+    // later prototype wrappers do not control the actual button click. Replace
+    // that own method too and normalize every mutually exclusive route before
+    // rendering, preventing a delayed order render from taking over Clients.
+    const instanceOpenClients = app.openClientsDirectory;
+    if (typeof instanceOpenClients === 'function' && !instanceOpenClients.__stableClientsRoute70) {
+      const stableOpenClients = function (...args) {
+        if (this.currentUser?.role !== 'admin') return;
+        const requestId = ++clientsNavigationRequest;
+        reportsNavigationRequest += 1;
+        this.technicalReportsArchiveOpen = false;
+        this.showDocumentControl = false;
+        this.quoteArchiveInlineOpen = false;
+        this.quoteConsolidationOpen = false;
+        this.showArchivedTasks = false;
+        this.clientsDirectoryOpen = true;
+        document.getElementById('quotes-shell')?.classList.add('hidden');
+        document.body.classList.remove('quotes-open');
+        document.getElementById('archived-documents-panel')?.classList.add('hidden');
+        const host = document.getElementById('tasks-container');
+        host?.classList.remove('hidden');
+        host?.style.removeProperty('display');
+        host?.style.removeProperty('width');
+        host?.style.removeProperty('grid-template-columns');
+        const result = instanceOpenClients.apply(this, args);
+        // The legacy instance method calls renderTasks itself. Reassert the
+        // Clients route after it returns, then render the directory explicitly.
+        this.technicalReportsArchiveOpen = false;
+        this.showDocumentControl = false;
+        this.quoteArchiveInlineOpen = false;
+        this.quoteConsolidationOpen = false;
+        this.showArchivedTasks = false;
+        this.clientsDirectoryOpen = true;
+        this.startClientDirectorySync?.();
+        this.renderClientsDirectory?.();
+        this.syncTechnicalReportsNavigation?.();
+        const clientDb = window.db;
+        if (clientDb?.collection) clientDb.collection('clientes').get().then(snapshot => {
+          if (requestId !== clientsNavigationRequest || !this.clientsDirectoryOpen || this.showDocumentControl || this.quoteArchiveInlineOpen || this.showArchivedTasks) return;
+          this.clientDirectory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          this.renderClientsDirectory?.();
+        }).catch(error => console.warn('[CLIENTES] No se pudo actualizar el directorio al abrirlo.', error));
+        return result;
+      };
+      stableOpenClients.__stableClientsRoute70 = true;
+      app.openClientsDirectory = stableOpenClients;
+    }
     const originalRenderTasks = proto.renderTasks;
     if (typeof originalRenderTasks === 'function' && !originalRenderTasks.__renderTechnicalReports70) {
       const wrapped = function (...args) {
