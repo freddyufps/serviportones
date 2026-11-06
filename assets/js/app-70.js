@@ -270,20 +270,35 @@
     const fetchAllClientsFromServer = async clientDb => {
       const pageSize = 200;
       const documentId = window.firebase?.firestore?.FieldPath?.documentId;
-      let query = clientDb.collection('clientes');
-      if (typeof documentId === 'function') query = query.orderBy(documentId());
-      const allDocs = [];
-      let pageCount = 0;
-      while (query) {
-        const pageQuery = query.limit(pageSize);
-        const snapshot = await pageQuery.get({ source: 'server' });
-        pageCount += 1;
-        allDocs.push(...snapshot.docs);
-        if (snapshot.size < pageSize) break;
-        query = pageQuery.startAfter(snapshot.docs[snapshot.docs.length - 1]);
+      try {
+        let query = clientDb.collection('clientes');
+        if (typeof documentId === 'function') query = query.orderBy(documentId());
+        const allDocs = [];
+        let pageCount = 0;
+        while (query) {
+          const pageQuery = query.limit(pageSize);
+          const snapshot = await pageQuery.get({ source: 'server' });
+          pageCount += 1;
+          allDocs.push(...snapshot.docs);
+          if (snapshot.size < pageSize) break;
+          query = pageQuery.startAfter(snapshot.docs[snapshot.docs.length - 1]);
+        }
+        console.info('[CLIENTES] Lectura completa del servidor', { documents: allDocs.length, pages: pageCount });
+        return allDocs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } catch (pagedError) {
+        console.warn('[CLIENTES] Falló la lectura paginada; se intentará la lectura completa directa.', pagedError);
+        const snapshot = await clientDb.collection('clientes').get({ source: 'server' });
+        console.info('[CLIENTES] Lectura directa completa del servidor', { documents: snapshot.size });
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       }
-      console.info('[CLIENTES] Lectura completa del servidor', { documents: allDocs.length, pages: pageCount });
-      return allDocs.map(doc => ({ id: doc.id, ...doc.data() }));
+    };
+    const applyCompleteClientDirectory = (instance, records) => {
+      const currentCount = Math.max(Number(instance.clientDirectoryServerCount) || 0, Array.isArray(instance.clientDirectory) ? instance.clientDirectory.length : 0);
+      if (records.length === 0 && currentCount > 0) throw new Error('La lectura nueva devolvió cero registros aunque ya había clientes cargados. Se conserva el directorio existente.');
+      instance.clientDirectory = records;
+      instance.clientDirectoryServerLoaded = true;
+      instance.clientDirectoryServerCount = records.length;
+      instance.clientDirectoryLoading = false;
     };
     app.mergeExistingClientSources = function () { return mergeExistingClientSources(this); };
     app.technicalReports = localRead();
@@ -522,7 +537,7 @@
       const filtered = reports.filter(report => `${report.number} ${report.client} ${report.technician} ${report.inspectionDate}`.toLocaleLowerCase('es').includes(query));
       host.classList.remove('hidden'); host.style.display = 'block'; host.style.width = '100%'; host.style.gridTemplateColumns = 'minmax(0,1fr)';
       host.innerHTML = `<section class="technical-reports-archive"><header class="technical-reports-archive-heading"><div><span>ARCHIVO TÉCNICO</span><h3>Informes realizados</h3><p>Consulta, edita o exporta los informes técnicos guardados.</p></div><button type="button" class="technical-report-primary" data-create-report><i data-lucide="plus"></i><span>Realizar informe</span></button></header>
-        <div class="technical-reports-tools"><label><i data-lucide="search"></i><input id="technical-reports-search" name="reportsQuery" type="search" inputmode="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" placeholder="Buscar número, cliente o fecha" value="${escapeHtml(query)}"></label><span data-reports-result-count>${filtered.length} de ${reports.length} informes</span></div>
+        <div class="technical-reports-tools"><label><i data-lucide="search"></i><input id="technical-reports-search" name="technicalReportSearchText" type="text" role="searchbox" aria-autocomplete="none" inputmode="search" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" placeholder="Buscar número, cliente o fecha" value="${escapeHtml(query)}"></label><span data-reports-result-count>${filtered.length} de ${reports.length} informes</span></div>
         <div class="technical-reports-list">${reportRowsMarkup(filtered, reports.length)}</div></section>`;
       host.querySelector('[data-create-report]')?.addEventListener('click', () => this.openTechnicalReportForm());
       host.querySelector('#technical-reports-search')?.addEventListener('input', event => {
@@ -727,10 +742,7 @@
           const clientDb = window.db;
           if (clientDb?.collection) fetchAllClientsFromServer(clientDb).then(records => {
             if (requestId !== clientsNavigationRequest || !this.clientsDirectoryOpen) return;
-            this.clientDirectory = records;
-            this.clientDirectoryServerLoaded = true;
-            this.clientDirectoryServerCount = records.length;
-            this.clientDirectoryLoading = false;
+            applyCompleteClientDirectory(this, records);
             this.renderClientsDirectory?.();
           }).catch(error => { this.clientDirectoryLoading = false; console.warn('[CLIENTES] No se pudo actualizar el directorio al abrirlo.', error); this.renderClientsDirectory?.(); });
         }
@@ -780,10 +792,7 @@
         const clientDb = window.db;
         if (clientDb?.collection) fetchAllClientsFromServer(clientDb).then(records => {
           if (requestId !== clientsNavigationRequest || !this.clientsDirectoryOpen || this.showDocumentControl || this.quoteArchiveInlineOpen || this.showArchivedTasks) return;
-          this.clientDirectory = records;
-          this.clientDirectoryServerLoaded = true;
-          this.clientDirectoryServerCount = records.length;
-          this.clientDirectoryLoading = false;
+          applyCompleteClientDirectory(this, records);
           this.renderClientsDirectory?.();
         }).catch(error => { this.clientDirectoryLoading = false; console.warn('[CLIENTES] No se pudo actualizar el directorio al abrirlo.', error); this.renderClientsDirectory?.(); });
         return result;
@@ -833,6 +842,16 @@
     const instanceRenderTasks = app.renderTasks;
     if (typeof instanceRenderTasks === 'function' && !instanceRenderTasks.__stableClientsRoute70) {
       const stableRenderTasks = function (...args) {
+        const reportsActive = this.currentUser?.role === 'admin' && this.technicalReportsArchiveOpen;
+        if (reportsActive) {
+          this.showDocumentControl = false;
+          this.clientsDirectoryOpen = false;
+          this.quoteArchiveInlineOpen = false;
+          this.quoteConsolidationOpen = false;
+          this.showArchivedTasks = false;
+          this.renderTechnicalReportsArchive?.();
+          return;
+        }
         const clientsActive = this.currentUser?.role === 'admin' && this.clientsDirectoryOpen && !this.showDocumentControl && !this.quoteArchiveInlineOpen && !this.quoteConsolidationOpen && !this.showArchivedTasks && !this.technicalReportsArchiveOpen;
         if (clientsActive) {
           this.showDocumentControl = false;
