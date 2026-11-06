@@ -126,6 +126,10 @@
       document.body.classList.remove('quotes-open');
     };
     const setView = (instance, view, closeLegacyQuotes = true) => {
+      // The reports module shares the legacy archived-orders navigation slot.
+      // Every non-reports route must explicitly clear its active flag so late
+      // Firestore/order renders cannot restore Reports over the selected view.
+      if (view !== 'reports') instance.technicalReportsArchiveOpen = false;
       instance.showDocumentControl = view === 'invoices';
       instance.quoteArchiveInlineOpen = view === 'quotes';
       instance.clientsDirectoryOpen = view === 'clients';

@@ -309,6 +309,13 @@
     let reportsNavButton = null;
     let reportsNavigationRequest = 0;
     let clientsNavigationRequest = 0;
+    const hasCompetingAdminView = instance => Boolean(instance && (
+      instance.showDocumentControl || instance.clientsDirectoryOpen || instance.quoteArchiveInlineOpen ||
+      instance.quoteConsolidationOpen || instance.showArchivedTasks
+    ));
+    const reportsViewIsCurrent = instance => Boolean(
+      instance?.currentUser?.role === 'admin' && instance.technicalReportsArchiveOpen && !hasCompetingAdminView(instance)
+    );
     restoreReportFolder().then(handle => {
       if (!handle || window.app !== app) return;
       app.technicalReportsDirectoryHandle = handle;
@@ -326,7 +333,7 @@
       local.forEach(item => { const key = String(item.id); if (deleted.has(key)) return; const saved = merged.get(key); if (!saved || Number(item.updatedAt || 0) > Number(saved.updatedAt || 0)) merged.set(key, item); });
       this.technicalReports = [...merged.values()].sort(byCreated);
       persist.call(this);
-      if (this.technicalReportsArchiveOpen) this.renderTechnicalReportsArchive();
+      if (reportsViewIsCurrent(this)) this.renderTechnicalReportsArchive();
     };
 
     proto.loadTechnicalReports = async function () {
@@ -349,7 +356,7 @@
           if (pendingDeletes.length) localStorage.removeItem(DELETED_KEY);
         } catch (error) { console.warn('[INFORMES] Se usarán los informes guardados en este dispositivo.', error); }
       }
-      if (this.technicalReportsArchiveOpen) this.renderTechnicalReportsArchive();
+      if (reportsViewIsCurrent(this)) this.renderTechnicalReportsArchive();
       return this.technicalReports;
     };
 
@@ -517,6 +524,11 @@
         catch (error) { console.warn('[INFORMES] Se conservaron los cambios locales; no se sincronizaron.', error); this.showToast?.('Informe guardado en este dispositivo; la sincronización quedó pendiente.', 'info'); }
       }
       this.technicalReportsArchiveOpen = true;
+      this.showDocumentControl = false;
+      this.clientsDirectoryOpen = false;
+      this.quoteArchiveInlineOpen = false;
+      this.quoteConsolidationOpen = false;
+      this.showArchivedTasks = false;
       this.renderTechnicalReportsArchive();
     };
 
@@ -536,7 +548,7 @@
         // que delegaciones globales de otros módulos intercepten la escritura.
         event.stopImmediatePropagation();
         const host = input.closest('#tasks-container');
-        if (!host || !app.technicalReportsArchiveOpen) return;
+        if (!host || !reportsViewIsCurrent(app)) return;
         const value = input.value.trim().toLocaleLowerCase('es');
         const reports = [...(app.technicalReports || [])].sort(byCreated);
         const filtered = reports.filter(report => `${report.number} ${report.client} ${report.technician} ${report.inspectionDate}`.toLocaleLowerCase('es').includes(value));
@@ -554,7 +566,7 @@
     };
 
     proto.renderTechnicalReportsArchive = function () {
-      if (this.currentUser?.role !== 'admin' || !this.technicalReportsArchiveOpen) return;
+      if (!reportsViewIsCurrent(this)) return;
       const host = this.ensureTechnicalReportsArchive();
       if (!host) return;
       const previousSearch = host.querySelector('#technical-reports-search');
@@ -609,10 +621,10 @@
       if (canonicalOrder.some((item, index) => group.children[index] !== item)) {
         group.replaceChildren(...canonicalOrder);
       }
-      nav.dataset.currentView = this.technicalReportsArchiveOpen ? 'reports' : (this.showDocumentControl ? 'invoices' : this.clientsDirectoryOpen ? 'clients' : this.quoteArchiveInlineOpen ? 'quotes' : this.showArchivedTasks ? 'archived' : 'active');
+      nav.dataset.currentView = hasCompetingAdminView(this) ? (this.showDocumentControl ? 'invoices' : this.clientsDirectoryOpen ? 'clients' : this.quoteArchiveInlineOpen ? 'quotes' : this.showArchivedTasks ? 'archived' : 'active') : this.technicalReportsArchiveOpen ? 'reports' : 'active';
       nav.querySelectorAll('[data-order-view], #btn-archived-quotes').forEach(item => {
         const key = item.dataset.orderView || (item.id === 'btn-archived-quotes' ? 'quotes' : '');
-        const selected = this.technicalReportsArchiveOpen ? key === 'reports' : key === nav.dataset.currentView;
+        const selected = reportsViewIsCurrent(this) ? key === 'reports' : key === nav.dataset.currentView;
         item.classList.toggle('is-current', selected);
         item.setAttribute('aria-current', selected ? 'page' : 'false');
         item.setAttribute('aria-pressed', String(selected));
@@ -633,7 +645,7 @@
       await this.loadTechnicalReports();
       // La carga puede terminar después de que el usuario ya navegó a Clientes u otra vista.
       // Descarta esta respuesta obsoleta para que no reemplace el módulo que está activo.
-      if (requestId !== reportsNavigationRequest || !this.technicalReportsArchiveOpen) return;
+      if (requestId !== reportsNavigationRequest || !reportsViewIsCurrent(this)) return;
       this.subscribeTechnicalReports();
       this.renderTechnicalReportsArchive();
     };
@@ -862,7 +874,7 @@
     const instanceRenderTasks = app.renderTasks;
     if (typeof instanceRenderTasks === 'function' && !instanceRenderTasks.__stableClientsRoute70) {
       const stableRenderTasks = function (...args) {
-        const reportsActive = this.currentUser?.role === 'admin' && this.technicalReportsArchiveOpen;
+        const reportsActive = reportsViewIsCurrent(this);
         if (reportsActive) {
           this.showDocumentControl = false;
           this.clientsDirectoryOpen = false;
@@ -872,7 +884,7 @@
           this.renderTechnicalReportsArchive?.();
           return;
         }
-        const clientsActive = this.currentUser?.role === 'admin' && this.clientsDirectoryOpen && !this.showDocumentControl && !this.quoteArchiveInlineOpen && !this.quoteConsolidationOpen && !this.showArchivedTasks && !this.technicalReportsArchiveOpen;
+        const clientsActive = this.currentUser?.role === 'admin' && this.clientsDirectoryOpen && !this.showDocumentControl && !this.quoteArchiveInlineOpen && !this.quoteConsolidationOpen && !this.showArchivedTasks && !reportsViewIsCurrent(this);
         if (clientsActive) {
           this.showDocumentControl = false;
           this.quoteArchiveInlineOpen = false;
@@ -903,7 +915,7 @@
     const originalRenderTasks = proto.renderTasks;
     if (typeof originalRenderTasks === 'function' && !originalRenderTasks.__renderTechnicalReports70) {
       const wrapped = function (...args) {
-        if (this.technicalReportsArchiveOpen && this.currentUser?.role === 'admin') { this.renderTechnicalReportsArchive(); return; }
+        if (reportsViewIsCurrent(this)) { this.renderTechnicalReportsArchive(); return; }
         if (this.technicalReportsArchiveOpen) {
           this.technicalReportsArchiveOpen = false;
           this.technicalReports = [];
