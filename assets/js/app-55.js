@@ -16,7 +16,7 @@
     return typeof render === 'function' ? render.call(app) : '';
   };
   const renderQuoteArchiveMain = app => {
-    const host = document.getElementById('tasks-container');
+    const host = document.getElementById('quotes-view-container');
     if (!host || !app) return false;
     const markup = getQuoteArchiveMarkup(app);
     if (!markup) return false;
@@ -35,26 +35,6 @@
     if (window.lucide) window.lucide.createIcons();
     return true;
   };
-  const keepQuoteArchiveOnRenders = app => {
-    if (!app || app.__quoteArchiveRenderGuard55 || typeof app.renderTasks !== 'function') return;
-    const original = app.renderTasks;
-    app.__quoteArchiveRenderGuard55 = true;
-    app.renderTasks = function (...args) {
-      const quoteView = this.quoteArchiveInlineOpen && !this.showDocumentControl && !this.showArchivedTasks && !this.clientsDirectoryOpen && !this.quoteConsolidationOpen;
-      const result = original.apply(this, args);
-      if (!quoteView) return result;
-      const root = document.getElementById('tasks-container')?.querySelector('.quotes-archive');
-      const title = String(document.getElementById('orders-view-title')?.textContent || '').trim().toLocaleLowerCase();
-      if (!root || title !== 'cotizaciones archivadas') {
-        try { this.renderQuoteArchiveInline?.(); } catch (error) { console.warn('[COTIZACIONES] Se repara el render de archivo.', error); }
-        const currentRoot = document.getElementById('tasks-container')?.querySelector('.quotes-archive');
-        const currentTitle = String(document.getElementById('orders-view-title')?.textContent || '').trim().toLocaleLowerCase();
-        if (!currentRoot || currentTitle !== 'cotizaciones archivadas') renderQuoteArchiveMain(this);
-      }
-      selectQuotesView();
-      return result;
-    };
-  };
   const openQuotesArchive = app => {
     if (!app || app.currentUser?.role !== 'admin') return false;
     app.closeQuotesArchiveInline?.();
@@ -69,14 +49,16 @@
     app.showArchivedTasks = false;
     app.showDocumentControl = false;
     app.quoteConsolidationOpen = false;
-    keepQuoteArchiveOnRenders(app);
+    document.getElementById('tasks-container')?.classList.add('hidden');
+    document.getElementById('clients-view-container')?.classList.add('hidden');
+    document.getElementById('reports-view-container')?.classList.add('hidden');
+    document.getElementById('quotes-view-container')?.classList.remove('hidden');
     selectQuotesView();
     // Render the inline route directly. Calling app.openQuotesArchive here can
     // hit the legacy own-property method from app-43.js, which opens the modal
     // on top of the already-rendered archive and creates the duplicate bubble.
     document.getElementById('quotes-shell')?.classList.add('hidden');
     document.body.classList.remove('quotes-open');
-    document.getElementById('clients-directory')?.remove();
     return renderQuoteArchiveMain(app);
   };
   const bindQuotesArchive = () => {
@@ -130,18 +112,15 @@
       instance.showArchivedTasks = view === 'archived';
       instance.quoteConsolidationOpen = false;
       if (closeLegacyQuotes) clearLegacyQuotesWindow();
-      const host = document.getElementById('tasks-container');
-      if (host) {
-        host.style.removeProperty('display');
-        host.style.removeProperty('width');
-        host.style.removeProperty('grid-template-columns');
-        // The inline quote archive has a :has(.quotes-archive) display rule.
-        // Hiding its container for invoices is therefore insufficient: remove
-        // the temporary view before a different destination is rendered.
-        if (view !== 'quotes' && host.querySelector('.quotes-archive')) host.replaceChildren();
-      }
+      const taskHost = document.getElementById('tasks-container');
+      const clientsHost = document.getElementById('clients-view-container');
+      const quotesHost = document.getElementById('quotes-view-container');
+      const reportsHost = document.getElementById('reports-view-container');
+      taskHost?.classList.toggle('hidden', !['active', 'archived'].includes(view));
+      clientsHost?.classList.toggle('hidden', view !== 'clients');
+      quotesHost?.classList.toggle('hidden', view !== 'quotes');
+      reportsHost?.classList.toggle('hidden', view !== 'reports');
       if (view !== 'invoices') document.getElementById('archived-documents-panel')?.classList.add('hidden');
-      if (view !== 'clients') document.getElementById('clients-directory')?.remove();
     };
     const syncNav = instance => {
       const nav = document.getElementById('orders-view-navigation');
@@ -176,7 +155,12 @@
     wrapView('showArchivedOrdersView', 'archived');
     wrapView('openQuotesArchive', 'quotes');
     wrapView('openDocumentControl', 'invoices');
-    wrapView('openClientsDirectory', 'clients');    // Keep the Clients destination independent from archived and invoice views.
+    app.openQuotesArchive = () => openQuotesArchive(app);
+    // app-47 copied its methods onto the app instance. Remove that stale copy
+    // so every navigation path uses this single prototype implementation.
+    delete app.openClientsDirectory;
+    delete app.renderClientsDirectory;
+    delete app.filterClientDirectory;
     proto.openClientsDirectory = function () {
       if (this.currentUser?.role !== 'admin') return;
       setView(this, 'clients');
@@ -185,31 +169,10 @@
       this.quoteArchiveInlineOpen = false;
       this.showArchivedTasks = false;
       document.getElementById('archived-documents-panel')?.classList.add('hidden');
-      this.renderTasks();
+      this.startClientDirectorySync?.();
       this.renderClientsDirectory();
       syncNav(this);
     };
-    const originalRender = proto.renderTasks;
-    if (typeof originalRender === 'function' && !originalRender.__exclusiveViews55) {
-      const wrappedRender = function (...args) {
-        const reportsOpen = Boolean(this.technicalReportsArchiveOpen && !this.showDocumentControl && !this.clientsDirectoryOpen && !this.quoteArchiveInlineOpen && !this.quoteConsolidationOpen && !this.showArchivedTasks);
-        if (reportsOpen) {
-          this.renderTechnicalReportsArchive?.();
-          syncNav(this);
-          return;
-        }
-        if (this.showDocumentControl) setView(this, 'invoices', false);
-        else if (this.clientsDirectoryOpen) setView(this, 'clients', false);
-        else if (this.quoteArchiveInlineOpen) setView(this, 'quotes', false);
-        else if (this.showArchivedTasks) setView(this, 'archived', false);
-        else setView(this, 'active', false);
-        const result = originalRender.apply(this, args);
-        syncNav(this);
-        return result;
-      };
-      wrappedRender.__exclusiveViews55 = true;
-      proto.renderTasks = wrappedRender;
-    }
     syncNav(app);
     return true;
   };

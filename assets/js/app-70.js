@@ -218,7 +218,6 @@
     let reportsNavigationRequest = 0;
     let reportsClickAuthorization = 0;
     let reportsPointerAuthorization = null;
-    let clientsNavigationRequest = 0;
     const hasCompetingAdminView = instance => Boolean(instance && (
       instance.showDocumentControl || instance.clientsDirectoryOpen || instance.quoteArchiveInlineOpen ||
       instance.quoteConsolidationOpen || instance.showArchivedTasks
@@ -447,7 +446,7 @@
     };
 
     proto.ensureTechnicalReportsArchive = function () {
-      let host = document.getElementById('tasks-container');
+      let host = document.getElementById('reports-view-container');
       if (!host) return null;
       return host;
     };
@@ -456,6 +455,7 @@
       if (!reportsViewIsCurrent(this)) return;
       const host = this.ensureTechnicalReportsArchive();
       if (!host) return;
+      host.classList.remove('hidden');
       const previousSearch = host.querySelector('#technical-reports-search');
       const restoreSearchFocus = previousSearch && document.activeElement === previousSearch;
       const selectionStart = restoreSearchFocus ? previousSearch.selectionStart : null;
@@ -480,7 +480,7 @@
       const count = document.getElementById('filtered-count'); if (count) count.classList.add('hidden');
       document.getElementById('empty-state')?.classList.add('hidden');
       document.getElementById('archived-documents-panel')?.classList.add('hidden');
-      document.getElementById('clients-directory')?.remove();
+      document.getElementById('clients-view-container')?.classList.add('hidden');
       document.getElementById('section-admin-audit-log')?.classList.add('hidden');
       this.syncTechnicalReportsNavigation();
       if (window.lucide) lucide.createIcons();
@@ -504,10 +504,15 @@
       const quotesButton = group.querySelector('#btn-archived-quotes');
       const invoicesButton = group.querySelector('[data-order-view="invoices"]');
       // Reafirma el mismo orden tras navegación/render: Órdenes, Cotizaciones,
-      // Informes realizados y Consolidado. Mover nodos existentes conserva sus listeners.
+      // Informes realizados y Consolidado. Mover solo esos nodos conserva el
+      // resto de accesos del menú y sus listeners.
       const canonicalOrder = [activeButton, quotesButton, button, invoicesButton].filter(Boolean);
-      if (canonicalOrder.some((item, index) => group.children[index] !== item)) {
-        group.replaceChildren(...canonicalOrder);
+      if (canonicalOrder.length > 1) {
+        let previous = canonicalOrder[0];
+        for (const item of canonicalOrder.slice(1)) {
+          if (previous.nextElementSibling !== item) previous.insertAdjacentElement('afterend', item);
+          previous = item;
+        }
       }
       nav.dataset.currentView = hasCompetingAdminView(this) ? (this.showDocumentControl ? 'invoices' : this.clientsDirectoryOpen ? 'clients' : this.quoteArchiveInlineOpen ? 'quotes' : this.showArchivedTasks ? 'archived' : 'active') : this.technicalReportsArchiveOpen ? 'reports' : 'active';
       nav.querySelectorAll('[data-order-view], #btn-archived-quotes').forEach(item => {
@@ -520,13 +525,12 @@
     };
 
     proto.openTechnicalReportsArchive = async function (clickAuthorization) {
-      const trace = { at: new Date().toISOString(), authorization: clickAuthorization || null, quoteArchiveWasOpen: Boolean(this.quoteArchiveInlineOpen), stack: new Error('[NAV TRACE] openTechnicalReportsArchive').stack };
-      console.info('[NAV TRACE] Solicitud de apertura de Informes realizados', trace);
+
       if (this.currentUser?.role !== 'admin') return this.showToast?.('Esta sección está disponible para el administrador.', 'error');
       // Reports reuses the old Archived Orders slot. Require the token issued
       // by a direct pointer press and matching click on that exact button.
       if (!clickAuthorization || clickAuthorization !== reportsClickAuthorization || !reportsPointerAuthorization || reportsPointerAuthorization.expiresAt < Date.now()) {
-        console.warn('[NAV TRACE] Apertura de Informes bloqueada por falta de clic autorizado', { ...trace, pendingAuthorization: reportsClickAuthorization, pointerAuthorization: reportsPointerAuthorization, stack: new Error('[NAV TRACE] blocked call').stack });
+
         return;
       }
       reportsClickAuthorization = 0;
@@ -538,6 +542,10 @@
       this.quoteConsolidationOpen = false;
       this.showArchivedTasks = false;
       this.technicalReportsArchiveOpen = true;
+      document.getElementById('tasks-container')?.classList.add('hidden');
+      document.getElementById('clients-view-container')?.classList.add('hidden');
+      document.getElementById('quotes-view-container')?.classList.add('hidden');
+      document.getElementById('reports-view-container')?.classList.remove('hidden');
       document.getElementById('quotes-shell')?.classList.add('hidden');
       document.body.classList.remove('quotes-open');
       await this.loadTechnicalReports();
@@ -637,7 +645,6 @@
       reportsPointerAuthorization = event.isTrusted && event.button === 0 && button
         ? { button, expiresAt: Date.now() + 1500 }
         : null;
-      if (button) console.info('[NAV TRACE] Pointer sobre botón Informes realizados', { trusted: event.isTrusted, at: new Date().toISOString(), stack: new Error('[NAV TRACE] reports pointerdown').stack });
     }, true);
     document.addEventListener('click', event => {
       const viewButton = event.target.closest('#orders-view-navigation [data-order-view]');
@@ -661,11 +668,10 @@
         }
         const authorization = ++reportsNavigationRequest;
         reportsClickAuthorization = authorization;
-        console.info('[NAV TRACE] Clic autorizado que navega a Informes realizados', { authorization, trusted: event.isTrusted, at: new Date().toISOString(), stack: new Error('[NAV TRACE] reports click').stack });
+
         window.app?.openTechnicalReportsArchive(authorization);
         return;
       }
-      if (viewButton.dataset.orderView !== 'clients') clientsNavigationRequest += 1;
       // Invalida cualquier carga asíncrona de informes antes de ejecutar la navegación destino.
       reportsNavigationRequest += 1;
       if (window.app) window.app.technicalReportsArchiveOpen = false;
@@ -682,199 +688,11 @@
       const original = proto[method];
       if (typeof original !== 'function' || original.__clearReportArchive70) return;
       const wrapped = function (...args) {
-        console.info('[NAV TRACE] Método de navegación ejecutado', { method, at: new Date().toISOString(), wasInQuotes: Boolean(this.quoteArchiveInlineOpen), wasInReports: Boolean(this.technicalReportsArchiveOpen), stack: new Error(`[NAV TRACE] ${method}`).stack });
+
         reportsNavigationRequest += 1; this.technicalReportsArchiveOpen = false; return original.apply(this, args);
       };
       wrapped.__clearReportArchive70 = true; proto[method] = wrapped;
     });
-    ['showSection','switchSection','navigateTo','setActiveSection'].forEach(method => {
-      const owner = Object.prototype.hasOwnProperty.call(app, method) ? app : proto;
-      const original = owner[method];
-      if (typeof original !== 'function' || original.__traceNavigation70) return;
-      const wrapped = function (...args) {
-        console.info('[NAV TRACE] Función general de cambio de vista ejecutada', { method, args, at: new Date().toISOString(), wasInQuotes: Boolean(this.quoteArchiveInlineOpen), wasInReports: Boolean(this.technicalReportsArchiveOpen), stack: new Error(`[NAV TRACE] ${method}`).stack });
-        return original.apply(this, args);
-      };
-      wrapped.__traceNavigation70 = true; owner[method] = wrapped;
-    });
-    const originalOpenClients = proto.openClientsDirectory;
-    if (typeof originalOpenClients === 'function' && !originalOpenClients.__refreshClientsDirectory70) {
-      const wrappedOpenClients = function (...args) {
-        this.clientDirectoryLoading = !this.clientDirectoryServerLoaded;
-        const result = originalOpenClients.apply(this, args);
-        if (this.currentUser?.role === 'admin') {
-          this.startClientDirectorySync?.();
-        }
-        return result;
-      };
-      wrappedOpenClients.__refreshClientsDirectory70 = true;
-      proto.openClientsDirectory = wrappedOpenClients;
-    }
-    // app-47 copied its original navigation methods directly onto `app`, so
-    // later prototype wrappers do not control the actual button click. Replace
-    // that own method too and normalize every mutually exclusive route before
-    // rendering, preventing a delayed order render from taking over Clients.
-    const instanceOpenClients = app.openClientsDirectory;
-    if (typeof instanceOpenClients === 'function' && !instanceOpenClients.__stableClientsRoute70) {
-      const stableOpenClients = function (...args) {
-        if (this.currentUser?.role !== 'admin') return;
-        ++clientsNavigationRequest;
-        this.clientDirectoryLoading = !this.clientDirectoryServerLoaded;
-        reportsNavigationRequest += 1;
-        this.technicalReportsArchiveOpen = false;
-        this.showDocumentControl = false;
-        this.quoteArchiveInlineOpen = false;
-        this.quoteConsolidationOpen = false;
-        this.showArchivedTasks = false;
-        this.clientsDirectoryOpen = true;
-        document.getElementById('quotes-shell')?.classList.add('hidden');
-        document.body.classList.remove('quotes-open');
-        document.getElementById('archived-documents-panel')?.classList.add('hidden');
-        const host = document.getElementById('tasks-container');
-        host?.classList.remove('hidden');
-        host?.style.removeProperty('display');
-        host?.style.removeProperty('width');
-        host?.style.removeProperty('grid-template-columns');
-        const result = instanceOpenClients.apply(this, args);
-        // The legacy instance method calls renderTasks itself. Reassert the
-        // Clients route after it returns, then render the directory explicitly.
-        this.technicalReportsArchiveOpen = false;
-        this.showDocumentControl = false;
-        this.quoteArchiveInlineOpen = false;
-        this.quoteConsolidationOpen = false;
-        this.showArchivedTasks = false;
-        this.clientsDirectoryOpen = true;
-        this.startClientDirectorySync?.();
-        this.renderClientsDirectory?.();
-        this.syncTechnicalReportsNavigation?.();
-        return result;
-      };
-      stableOpenClients.__stableClientsRoute70 = true;
-      app.openClientsDirectory = stableOpenClients;
-    }
-    // Final render guard for the directory: compare the active array with actual
-    // cards in the DOM. If another view/render layer left a partial card list,
-    // rebuild it from every loaded client without applying pagination or a cap.
-    const originalClientDirectoryRender = app.renderClientsDirectory;
-    if (typeof originalClientDirectoryRender === 'function' && !originalClientDirectoryRender.__completeClientRender70) {
-      const completeClientRender = function (...args) {
-        const result = originalClientDirectoryRender.apply(this, args);
-        if (!this.clientsDirectoryOpen || (this.clientDirectoryLoading && !this.clientDirectoryServerLoaded)) return result;
-        if (!this.clientDirectoryServerLoaded && this.clientDirectoryLoadError && !(this.clientDirectory || []).length) return result;
-        const root = document.getElementById('clients-directory');
-        const list = root?.querySelector('.clients-list');
-        if (!root || !list) return result;
-        const records = Array.isArray(this.clientDirectory) ? this.clientDirectory : [];
-        const normalize = value => String(value ?? '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es');
-        const input = root.querySelector('#clients-search');
-        const term = normalize(input?.value ?? this.clientDirectorySearchValue ?? '');
-        const filtered = records.filter(client => !term || [client.name, client.condo, client.documentNumber, client.address, client.email, client.phone, client.administrator].some(value => normalize(value).includes(term)));
-        const actual = list.querySelectorAll('.client-card[data-client-search]').length;
-        if (actual !== filtered.length) {
-          list.innerHTML = filtered.map((client, index) => {
-            const id = JSON.stringify(String(client.id || ''));
-            const searchable = [client.name, client.condo, client.documentNumber, client.address, client.email, client.phone, client.administrator].filter(Boolean).join(' ');
-            return `<article class="client-card" data-client-search="${escapeHtml(searchable)}"><small class="client-index">Cliente ${index + 1}</small><b>${escapeHtml(client.name || client.condo || 'Cliente')}</b>${client.condo ? `<span>Condominio: ${escapeHtml(client.condo)}</span>` : ''}${client.documentNumber ? `<span>Documento: ${escapeHtml(client.documentNumber)}</span>` : ''}${client.address ? `<span>Dirección: ${escapeHtml(client.address)}</span>` : ''}${client.phone ? `<span>Teléfono: ${escapeHtml(client.phone)}</span>` : ''}${client.email ? `<span>Correo: ${escapeHtml(client.email)}</span>` : ''}<button type="button" onclick="app.showClientEditor(${id})">Editar</button></article>`;
-          }).join('') || '<div class="clients-empty">No hay clientes con esos datos. Agrega un contacto o importa el Excel.</div>';
-        }
-        const count = root.querySelector('.clients-count');
-        if (count) count.textContent = `${filtered.length} de ${records.length} clientes`;
-        const sourceStatus = root.querySelector('.clients-source-status');
-        if (sourceStatus && this.clientDirectoryServerLoaded) sourceStatus.textContent = `Lectura directa del servidor · ${this.clientDirectorySourceProject || 'proyecto conectado'} · ${records.length} registros confirmados`;
-        root.dataset.clientSourceCount = String(records.length);
-        root.dataset.clientRenderedCount = String(filtered.length);
-        const domCards = list.querySelectorAll('.client-card[data-client-search]').length;
-        if (root.dataset.clientCountLog !== `${records.length}:${filtered.length}:${domCards}`) {
-          root.dataset.clientCountLog = `${records.length}:${filtered.length}:${domCards}`;
-          console.info('[CLIENTES TRACE] Conteo de render y DOM', { clientDirectory: records.length, renderCandidates: filtered.length, domCards, searchActive: Boolean(term), serverConfirmed: Boolean(this.clientDirectoryServerLoaded), project: this.clientDirectorySourceProject || '' });
-        }
-        return result;
-      };
-      completeClientRender.__completeClientRender70 = true;
-      app.renderClientsDirectory = completeClientRender;
-    }
-    // The security module installs renderTasks directly on the app instance.
-    // A prototype-only guard cannot intercept Firestore callbacks in that case.
-    const instanceRenderTasks = app.renderTasks;
-    if (typeof instanceRenderTasks === 'function' && !instanceRenderTasks.__stableClientsRoute70) {
-      const stableRenderTasks = function (...args) {
-        const reportsActive = reportsViewIsCurrent(this);
-        if (reportsActive) {
-          this.showDocumentControl = false;
-          this.clientsDirectoryOpen = false;
-          this.quoteArchiveInlineOpen = false;
-          this.quoteConsolidationOpen = false;
-          this.showArchivedTasks = false;
-          this.renderTechnicalReportsArchive?.();
-          return;
-        }
-        const clientsActive = this.currentUser?.role === 'admin' && this.clientsDirectoryOpen && !this.showDocumentControl && !this.quoteArchiveInlineOpen && !this.quoteConsolidationOpen && !this.showArchivedTasks && !reportsViewIsCurrent(this);
-        if (clientsActive) {
-          this.showDocumentControl = false;
-          this.quoteArchiveInlineOpen = false;
-          this.quoteConsolidationOpen = false;
-          this.showArchivedTasks = false;
-          const host = document.getElementById('tasks-container');
-          host?.classList.remove('hidden');
-          host?.style.removeProperty('display');
-          host?.style.removeProperty('width');
-          host?.style.removeProperty('grid-template-columns');
-          document.getElementById('quotes-shell')?.classList.add('hidden');
-          document.body.classList.remove('quotes-open');
-          document.getElementById('archived-documents-panel')?.classList.add('hidden');
-          document.getElementById('empty-state')?.classList.add('hidden');
-          this.ensureClientsNav?.();
-          this.renderClientsDirectory?.();
-          const title = document.getElementById('orders-view-title');
-          if (title) title.textContent = 'Clientes';
-          document.getElementById('section-admin-audit-log')?.classList.add('hidden');
-          this.syncTechnicalReportsNavigation?.();
-          return;
-        }
-        return instanceRenderTasks.apply(this, args);
-      };
-      stableRenderTasks.__stableClientsRoute70 = true;
-      app.renderTasks = stableRenderTasks;
-    }
-    const originalRenderTasks = proto.renderTasks;
-    if (typeof originalRenderTasks === 'function' && !originalRenderTasks.__renderTechnicalReports70) {
-      const wrapped = function (...args) {
-        if (reportsViewIsCurrent(this)) { this.renderTechnicalReportsArchive(); return; }
-        if (this.technicalReportsArchiveOpen) {
-          this.technicalReportsArchiveOpen = false;
-          // A competing view can invalidate the active report route, but must
-          // never erase the report data merely because another renderer ran.
-          console.info('[INFORMES TRACE] Se cerró la vista por una ruta competidora; se conserva el arreglo', { reports: (this.technicalReports || []).length, flags: { clients: Boolean(this.clientsDirectoryOpen), quotes: Boolean(this.quoteArchiveInlineOpen), invoices: Boolean(this.showDocumentControl), archived: Boolean(this.showArchivedTasks) }, stack: new Error('[INFORMES TRACE] competing route').stack });
-        }
-        // Firestore dispara renderTasks por cambios en órdenes/usuarios. Si Clientes está
-        // abierto, esos callbacks no deben volver a dibujar las tarjetas de Órdenes encima.
-        if (this.clientsDirectoryOpen && this.currentUser?.role === 'admin') {
-          this.showDocumentControl = false;
-          this.quoteArchiveInlineOpen = false;
-          this.quoteConsolidationOpen = false;
-          this.showArchivedTasks = false;
-          this.startClientDirectorySync?.();
-          const host = document.getElementById('tasks-container');
-          host?.classList.remove('hidden');
-          host?.style.removeProperty('display');
-          host?.style.removeProperty('width');
-          host?.style.removeProperty('grid-template-columns');
-          this.ensureClientsNav?.();
-          this.renderClientsDirectory?.();
-          const title = document.getElementById('orders-view-title');
-          if (title) title.textContent = 'Clientes';
-          document.getElementById('section-admin-audit-log')?.classList.add('hidden');
-          this.syncTechnicalReportsNavigation?.();
-          return;
-        }
-        const result = originalRenderTasks.apply(this, args);
-        ensureReportAction();
-        this.syncTechnicalReportsNavigation();
-        syncActionVisibility();
-        return result;
-      };
-      wrapped.__renderTechnicalReports70 = true; proto.renderTasks = wrapped;
-    }
     const initialize = () => { ensureReportAction(); syncActionVisibility(); app.syncTechnicalReportsNavigation(); };
     initialize();
     return true;

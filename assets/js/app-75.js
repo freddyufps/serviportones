@@ -5,8 +5,8 @@
   // Filtering is always in place: it never renders a view or changes navigation.
   const SEARCH_ROOTS = {
     'payment-search': '#archived-documents-panel .payment-console',
-    'quotes-search': '#tasks-container .quotes-archive',
-    'technical-reports-search': '#tasks-container .technical-reports-archive',
+    'quotes-search': '#quotes-view-container .quotes-archive',
+    'technical-reports-search': '#reports-view-container .technical-reports-archive',
     'clients-search': '#clients-directory'
   };
   const normalize = value => String(value ?? '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es');
@@ -120,7 +120,7 @@
     if (app.__unifiedQuoteFilter75) return true;
     app.__unifiedQuoteFilter75 = true;
     app.filterQuotes = function () {
-      const root = document.querySelector('#tasks-container .quotes-archive');
+      const root = document.querySelector('#quotes-view-container .quotes-archive');
       const input = root?.querySelector('#quotes-search');
       if (root && input) filterQuotes(this, root, input);
     };

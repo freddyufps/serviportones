@@ -22,8 +22,11 @@
       const wrapped = function (...args) {
         this.clientsDirectoryOpen = false;
         this.quoteArchiveInlineOpen = false;
+        this.technicalReportsArchiveOpen = false;
+        document.getElementById('clients-view-container')?.classList.add('hidden');
+        document.getElementById('quotes-view-container')?.classList.add('hidden');
+        document.getElementById('reports-view-container')?.classList.add('hidden');
         const host = document.getElementById('tasks-container');
-        document.getElementById('clients-directory')?.remove();
         if (host) {
           host.style.removeProperty('display');
           host.style.removeProperty('width');
@@ -43,7 +46,10 @@
         if (this.showDocumentControl) {
           this.clientsDirectoryOpen = false;
           this.quoteArchiveInlineOpen = false;
-          document.getElementById('clients-directory')?.remove();
+          this.technicalReportsArchiveOpen = false;
+          document.getElementById('clients-view-container')?.classList.add('hidden');
+          document.getElementById('quotes-view-container')?.classList.add('hidden');
+          document.getElementById('reports-view-container')?.classList.add('hidden');
           const host = document.getElementById('tasks-container');
           if (host) {
             host.style.removeProperty('display');

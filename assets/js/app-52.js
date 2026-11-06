@@ -43,7 +43,7 @@
     const originalRenderClients = proto.renderClientsDirectory;
     proto.renderClientsDirectory = function () {
       if (!this.clientsDirectoryOpen) return;
-      const host = document.getElementById('tasks-container');
+      const host = document.getElementById('clients-view-container');
       if (!host) return;
       let root = document.getElementById('clients-directory');
       if (!root) {
@@ -81,19 +81,6 @@
       applySearch.call(this, root);
     };
 
-    const originalRenderTasks = proto.renderTasks;
-    if (originalRenderTasks) proto.renderTasks = function (...args) {
-      const clientsView = this.clientsDirectoryOpen && !this.showDocumentControl && !this.quoteArchiveInlineOpen && !this.showArchivedTasks;
-      if (clientsView && document.getElementById('clients-directory')) {
-        this.ensureClientsNav?.();
-        this.addClientAutocomplete?.();
-        this.renderClientsDirectory();
-        return;
-      }
-      const result = originalRenderTasks.apply(this,args);
-      if (clientsView) this.renderClientsDirectory();
-      return result;
-    };
   }, 40);
 })();
 
