@@ -300,6 +300,7 @@
       instance.clientDirectoryServerLoaded = true;
       instance.clientDirectoryServerCount = records.length;
       instance.clientDirectoryLoading = false;
+      instance.clientDirectoryLoadError = '';
     };
     app.mergeExistingClientSources = function () { return mergeExistingClientSources(this); };
     app.technicalReports = localRead();
@@ -525,6 +526,33 @@
       return host;
     };
 
+    const bindTechnicalReportsSearch = () => {
+      if (window.__technicalReportsSearchStable70) return;
+      window.__technicalReportsSearchStable70 = true;
+      const searchInput = event => {
+        const input = event.target;
+        if (!(input instanceof HTMLInputElement) || input.id !== 'technical-reports-search') return;
+        // Este buscador solo filtra su propia lista. El listener de captura evita
+        // que delegaciones globales de otros módulos intercepten la escritura.
+        event.stopImmediatePropagation();
+        const host = input.closest('#tasks-container');
+        if (!host || !app.technicalReportsArchiveOpen) return;
+        const value = input.value.trim().toLocaleLowerCase('es');
+        const reports = [...(app.technicalReports || [])].sort(byCreated);
+        const filtered = reports.filter(report => `${report.number} ${report.client} ${report.technician} ${report.inspectionDate}`.toLocaleLowerCase('es').includes(value));
+        const list = host.querySelector('.technical-reports-list');
+        if (list) list.innerHTML = reportRowsMarkup(filtered, reports.length);
+        const count = host.querySelector('[data-reports-result-count]');
+        if (count) count.textContent = `${filtered.length} de ${reports.length} informes`;
+        bindReportRowActions(app, host);
+        if (window.lucide && list) lucide.createIcons({ root: list });
+      };
+      window.addEventListener('input', searchInput, true);
+      ['keydown', 'keyup', 'change', 'search'].forEach(type => window.addEventListener(type, event => {
+        if (event.target instanceof HTMLInputElement && event.target.id === 'technical-reports-search') event.stopImmediatePropagation();
+      }, true));
+    };
+
     proto.renderTechnicalReportsArchive = function () {
       if (this.currentUser?.role !== 'admin' || !this.technicalReportsArchiveOpen) return;
       const host = this.ensureTechnicalReportsArchive();
@@ -538,20 +566,10 @@
       const filtered = reports.filter(report => `${report.number} ${report.client} ${report.technician} ${report.inspectionDate}`.toLocaleLowerCase('es').includes(query));
       host.classList.remove('hidden'); host.style.display = 'block'; host.style.width = '100%'; host.style.gridTemplateColumns = 'minmax(0,1fr)';
       host.innerHTML = `<section class="technical-reports-archive"><header class="technical-reports-archive-heading"><div><span>ARCHIVO TÉCNICO</span><h3>Informes realizados</h3><p>Consulta, edita o exporta los informes técnicos guardados.</p></div><button type="button" class="technical-report-primary" data-create-report><i data-lucide="plus"></i><span>Realizar informe</span></button></header>
-        <div class="technical-reports-tools"><label><i data-lucide="search"></i><input id="technical-reports-search" type="search" role="searchbox" aria-autocomplete="none" inputmode="search" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" placeholder="Buscar número, cliente o fecha" value="${escapeHtml(query)}"></label><span data-reports-result-count>${filtered.length} de ${reports.length} informes</span></div>
+        <div class="technical-reports-tools"><label><i data-lucide="search"></i><input id="technical-reports-search" name="technical-report-search-query" type="search" role="searchbox" aria-autocomplete="none" inputmode="search" autocomplete="new-password" autocorrect="off" autocapitalize="none" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" placeholder="Buscar número, cliente o fecha" value="${escapeHtml(query)}"></label><span data-reports-result-count>${filtered.length} de ${reports.length} informes</span></div>
         <div class="technical-reports-list">${reportRowsMarkup(filtered, reports.length)}</div></section>`;
       host.querySelector('[data-create-report]')?.addEventListener('click', () => this.openTechnicalReportForm());
-      host.querySelector('#technical-reports-search')?.addEventListener('input', event => {
-        const value = event.currentTarget.value.trim().toLocaleLowerCase('es');
-        const currentReports = [...(this.technicalReports || [])].sort(byCreated);
-        const currentFiltered = currentReports.filter(report => `${report.number} ${report.client} ${report.technician} ${report.inspectionDate}`.toLocaleLowerCase('es').includes(value));
-        const list = host.querySelector('.technical-reports-list');
-        if (list) list.innerHTML = reportRowsMarkup(currentFiltered, currentReports.length);
-        const resultCount = host.querySelector('[data-reports-result-count]');
-        if (resultCount) resultCount.textContent = `${currentFiltered.length} de ${currentReports.length} informes`;
-        bindReportRowActions(this, host);
-        if (window.lucide && list) lucide.createIcons({ root: list });
-      });
+      bindTechnicalReportsSearch();
       bindReportRowActions(this, host);
       if (restoreSearchFocus) {
         const nextSearch = host.querySelector('#technical-reports-search');
@@ -745,7 +763,7 @@
             if (requestId !== clientsNavigationRequest || !this.clientsDirectoryOpen) return;
             applyCompleteClientDirectory(this, records);
             this.renderClientsDirectory?.();
-          }).catch(error => { this.clientDirectoryLoading = false; console.warn('[CLIENTES] No se pudo actualizar el directorio al abrirlo.', error); this.renderClientsDirectory?.(); });
+          }).catch(error => { this.clientDirectoryLoading = false; this.clientDirectoryLoadError = 'No se pudo conectar con el directorio de clientes. Revisa la conexión e inténtalo nuevamente.'; console.warn('[CLIENTES] No se pudo actualizar el directorio al abrirlo.', error); this.renderClientsDirectory?.(); });
         }
         return result;
       };
@@ -795,7 +813,7 @@
           if (requestId !== clientsNavigationRequest || !this.clientsDirectoryOpen || this.showDocumentControl || this.quoteArchiveInlineOpen || this.showArchivedTasks) return;
           applyCompleteClientDirectory(this, records);
           this.renderClientsDirectory?.();
-        }).catch(error => { this.clientDirectoryLoading = false; console.warn('[CLIENTES] No se pudo actualizar el directorio al abrirlo.', error); this.renderClientsDirectory?.(); });
+        }).catch(error => { this.clientDirectoryLoading = false; this.clientDirectoryLoadError = 'No se pudo conectar con el directorio de clientes. Revisa la conexión e inténtalo nuevamente.'; console.warn('[CLIENTES] No se pudo actualizar el directorio al abrirlo.', error); this.renderClientsDirectory?.(); });
         return result;
       };
       stableOpenClients.__stableClientsRoute70 = true;
@@ -809,6 +827,7 @@
       const completeClientRender = function (...args) {
         const result = originalClientDirectoryRender.apply(this, args);
         if (!this.clientsDirectoryOpen || (this.clientDirectoryLoading && !this.clientDirectoryServerLoaded)) return result;
+        if (!this.clientDirectoryServerLoaded && this.clientDirectoryLoadError && !(this.clientDirectory || []).length) return result;
         const root = document.getElementById('clients-directory');
         const list = root?.querySelector('.clients-list');
         if (!root || !list) return result;
