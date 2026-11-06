@@ -208,62 +208,9 @@
     const proto = app?.constructor?.prototype;
     if (!app || !proto || app.__technicalReports70) return false;
     app.__technicalReports70 = true;
-    const clientKey = value => String(value ?? '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es');
-    const mergeExistingClientSources = instance => {
-      const records = Array.isArray(instance.clientDirectory) ? instance.clientDirectory.slice() : [];
-      const localRecords = (() => { try { const value = JSON.parse(localStorage.getItem('spem_clients_v1') || '[]'); return Array.isArray(value) ? value : []; } catch { return []; } })();
-      const add = (candidate, fallbackId) => {
-        if (!candidate || typeof candidate !== 'object') return;
-        const name = String(candidate.name || candidate.client || candidate.clientName || '').trim();
-        const condo = String(candidate.condo || candidate.condominium || '').trim();
-        if (!name && !condo) return;
-        const normalizedName = clientKey(name), normalizedCondo = clientKey(condo);
-        const normalizedAddress = clientKey(candidate.address || '');
-        const candidateDocument = clientKey(candidate.documentNumber || candidate.document || '');
-        const existing = records.find(item => {
-          const itemDocument = clientKey(item.documentNumber || item.document || '');
-          if (candidateDocument && itemDocument) return candidateDocument === itemDocument;
-          const itemName = clientKey(item.name || item.client);
-          if (!normalizedName || itemName !== normalizedName) return false;
-          const itemAddress = clientKey(item.address || '');
-          return !(normalizedAddress && itemAddress && normalizedAddress !== itemAddress);
-        });
-        const normalized = {
-          ...candidate,
-          id: String(candidate.id || existing?.id || fallbackId || `legacy-client-${encodeURIComponent(normalizedName || normalizedCondo)}`),
-          name: name || String(existing?.name || ''),
-          condo: condo || String(existing?.condo || ''),
-          documentNumber: String(candidate.documentNumber || candidate.document || existing?.documentNumber || ''),
-          address: String(candidate.address || existing?.address || ''),
-          phone: String(candidate.phone || existing?.phone || ''),
-          email: String(candidate.email || existing?.email || ''),
-          administrator: String(candidate.administrator || candidate.contact || existing?.administrator || '')
-        };
-        if (existing) {
-          Object.assign(existing, Object.fromEntries(Object.entries(normalized).filter(([key, value]) => value !== '' || key === 'id')));
-        } else records.push(normalized);
-      };
-      records.slice().forEach((item, index) => add(item, `directory-client-${index}`));
-      localRecords.forEach((item, index) => add(item, `local-client-${index}`));
-      (Array.isArray(instance.tasks) ? instance.tasks : []).forEach((task, index) => add({
-        name: task?.client || task?.clientName,
-        condo: task?.condo,
-        address: task?.address,
-        phone: task?.phone,
-        administrator: task?.administrator || task?.contact
-      }, `order-client-${index}`));
-      (Array.isArray(instance.quotes) ? instance.quotes : []).forEach((quote, index) => add({
-        name: quote?.client || quote?.clientName,
-        condo: quote?.condo,
-        address: quote?.address,
-        phone: quote?.phone,
-        email: quote?.email,
-        documentNumber: quote?.documentNumber,
-        administrator: quote?.contact || quote?.administrator
-      }, `quote-client-${index}`));
-      instance.clientDirectory = records;
-      return records;
-    };
+    // Firestore is the only source shown in the directory. Do not synthesize
+    // records from browser cache, orders, or quotes in the rendering layer.
+    const mergeExistingClientSources = instance => Array.isArray(instance.clientDirectory) ? instance.clientDirectory : [];
     // Read the complete authoritative Firestore collection in explicit pages.
     // This avoids any per-query/list-page cap and keeps the directory count
     // tied to current Firestore documents only.
@@ -294,8 +241,6 @@
       }
     };
     const applyCompleteClientDirectory = (instance, records) => {
-      const currentCount = Math.max(Number(instance.clientDirectoryServerCount) || 0, Array.isArray(instance.clientDirectory) ? instance.clientDirectory.length : 0);
-      if (records.length === 0 && currentCount > 0) throw new Error('La lectura nueva devolvió cero registros aunque ya había clientes cargados. Se conserva el directorio existente.');
       instance.clientDirectory = records;
       instance.clientDirectoryServerLoaded = true;
       instance.clientDirectoryServerCount = records.length;
@@ -308,6 +253,7 @@
     app.technicalReportsDirectoryHandle = null;
     let reportsNavButton = null;
     let reportsNavigationRequest = 0;
+    let reportsClickAuthorization = 0;
     let clientsNavigationRequest = 0;
     const hasCompetingAdminView = instance => Boolean(instance && (
       instance.showDocumentControl || instance.clientsDirectoryOpen || instance.quoteArchiveInlineOpen ||
@@ -523,6 +469,10 @@
         try { await db.collection(COLLECTION).doc(report.id).set(report, { merge: true }); }
         catch (error) { console.warn('[INFORMES] Se conservaron los cambios locales; no se sincronizaron.', error); this.showToast?.('Informe guardado en este dispositivo; la sincronización quedó pendiente.', 'info'); }
       }
+      if (report.client && typeof this.saveClientRecord === 'function') {
+        const savedClient = await this.saveClientRecord({ name: report.client });
+        if (!savedClient) this.showToast?.('El informe se guardó, pero no se pudo sincronizar el cliente con el directorio.', 'info');
+      }
       this.technicalReportsArchiveOpen = true;
       this.showDocumentControl = false;
       this.clientsDirectoryOpen = false;
@@ -631,8 +581,12 @@
       });
     };
 
-    proto.openTechnicalReportsArchive = async function () {
+    proto.openTechnicalReportsArchive = async function (clickAuthorization) {
       if (this.currentUser?.role !== 'admin') return this.showToast?.('Esta sección está disponible para el administrador.', 'error');
+      // Reports reuses the old Archived Orders slot. Only a fresh user click
+      // on that Reports button is allowed to activate the archive.
+      if (!clickAuthorization || clickAuthorization !== reportsClickAuthorization) return;
+      reportsClickAuthorization = 0;
       const requestId = ++reportsNavigationRequest;
       this.showDocumentControl = false;
       this.clientsDirectoryOpen = false;
@@ -736,9 +690,19 @@
     };
     document.addEventListener('click', event => {
       const viewButton = event.target.closest('#orders-view-navigation [data-order-view]');
+      const quotesButton = event.target.closest('#orders-view-navigation #btn-archived-quotes');
+      if (quotesButton) {
+        reportsNavigationRequest += 1;
+        reportsClickAuthorization = 0;
+        if (window.app) window.app.technicalReportsArchiveOpen = false;
+        return;
+      }
       if (!viewButton) return;
-      if (viewButton.dataset.orderView === 'archived' || viewButton.dataset.orderView === 'reports') {
-        event.preventDefault(); event.stopImmediatePropagation(); window.app?.openTechnicalReportsArchive();
+      if (viewButton.dataset.orderView === 'reports') {
+        event.preventDefault(); event.stopImmediatePropagation();
+        const authorization = ++reportsNavigationRequest;
+        reportsClickAuthorization = authorization;
+        window.app?.openTechnicalReportsArchive(authorization);
         return;
       }
       if (viewButton.dataset.orderView !== 'clients') clientsNavigationRequest += 1;
