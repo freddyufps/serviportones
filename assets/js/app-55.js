@@ -1,5 +1,18 @@
 (() => {
   'use strict';
+  const setHostVisibility = (id, visible, display = 'block') => {
+    const host = document.getElementById(id);
+    if (!host) return;
+    host.classList.toggle('hidden', !visible);
+    if (visible && display === null) host.style.removeProperty('display');
+    else host.style.setProperty('display', visible ? display : 'none', 'important');
+  };
+  if (!document.getElementById('exclusive-module-host-visibility-55')) {
+    const style = document.createElement('style');
+    style.id = 'exclusive-module-host-visibility-55';
+    style.textContent = '#tasks-container.hidden,#clients-view-container.hidden,#quotes-view-container.hidden,#reports-view-container.hidden,#archived-documents-panel.hidden{display:none!important}';
+    document.head.appendChild(style);
+  }
   const selectQuotesView = () => {
     const nav = document.getElementById('orders-view-navigation');
     if (!nav) return;
@@ -22,7 +35,7 @@
     if (!markup) return false;
     host.innerHTML = markup;
     host.classList.remove('hidden');
-    host.style.display = 'block';
+    host.style.setProperty('display', 'block', 'important');
     host.style.width = '100%';
     document.getElementById('empty-state')?.classList.add('hidden');
     document.getElementById('archived-documents-panel')?.classList.add('hidden');
@@ -49,10 +62,11 @@
     app.showArchivedTasks = false;
     app.showDocumentControl = false;
     app.quoteConsolidationOpen = false;
-    document.getElementById('tasks-container')?.classList.add('hidden');
-    document.getElementById('clients-view-container')?.classList.add('hidden');
-    document.getElementById('reports-view-container')?.classList.add('hidden');
-    document.getElementById('quotes-view-container')?.classList.remove('hidden');
+    setHostVisibility('tasks-container', false);
+    setHostVisibility('clients-view-container', false);
+    setHostVisibility('reports-view-container', false);
+    setHostVisibility('archived-documents-panel', false);
+    setHostVisibility('quotes-view-container', true);
     selectQuotesView();
     // Render the inline route directly. Calling app.openQuotesArchive here can
     // hit the legacy own-property method from app-43.js, which opens the modal
@@ -112,15 +126,11 @@
       instance.showArchivedTasks = view === 'archived';
       instance.quoteConsolidationOpen = false;
       if (closeLegacyQuotes) clearLegacyQuotesWindow();
-      const taskHost = document.getElementById('tasks-container');
-      const clientsHost = document.getElementById('clients-view-container');
-      const quotesHost = document.getElementById('quotes-view-container');
-      const reportsHost = document.getElementById('reports-view-container');
-      taskHost?.classList.toggle('hidden', !['active', 'archived'].includes(view));
-      clientsHost?.classList.toggle('hidden', view !== 'clients');
-      quotesHost?.classList.toggle('hidden', view !== 'quotes');
-      reportsHost?.classList.toggle('hidden', view !== 'reports');
-      if (view !== 'invoices') document.getElementById('archived-documents-panel')?.classList.add('hidden');
+      setHostVisibility('tasks-container', ['active', 'archived'].includes(view), null);
+      setHostVisibility('clients-view-container', view === 'clients');
+      setHostVisibility('quotes-view-container', view === 'quotes');
+      setHostVisibility('reports-view-container', view === 'reports');
+      setHostVisibility('archived-documents-panel', view === 'invoices');
     };
     const syncNav = instance => {
       const nav = document.getElementById('orders-view-navigation');
@@ -137,6 +147,24 @@
       });
       const quotes = nav.querySelector('#btn-archived-quotes');
       if (quotes) { quotes.classList.remove('hidden'); quotes.removeAttribute('aria-hidden'); quotes.tabIndex = 0; }
+    };
+    const restoreActiveView = instance => {
+      const reports = Boolean(instance.technicalReportsArchiveOpen && !instance.showDocumentControl && !instance.clientsDirectoryOpen && !instance.quoteArchiveInlineOpen && !instance.quoteConsolidationOpen && !instance.showArchivedTasks);
+      const view = instance.showDocumentControl ? 'invoices'
+        : reports ? 'reports'
+        : instance.clientsDirectoryOpen ? 'clients'
+        : instance.quoteArchiveInlineOpen ? 'quotes'
+        : instance.showArchivedTasks ? 'archived' : 'active';
+      setHostVisibility('tasks-container', ['active', 'archived'].includes(view), null);
+      setHostVisibility('clients-view-container', view === 'clients');
+      setHostVisibility('quotes-view-container', view === 'quotes');
+      setHostVisibility('reports-view-container', view === 'reports');
+      setHostVisibility('archived-documents-panel', view === 'invoices');
+      const title = document.getElementById('orders-view-title');
+      if (title) title.textContent = ({ active: 'Órdenes de trabajo', archived: 'Órdenes archivadas', clients: 'Clientes', quotes: 'Cotizaciones archivadas', reports: 'Informes realizados', invoices: 'Consolidado' })[view];
+      const count = document.getElementById('filtered-count');
+      count?.classList.toggle('hidden', ['clients', 'quotes', 'reports', 'invoices'].includes(view));
+      syncNav(instance);
     };
     const wrapView = (method, view) => {
       const original = proto[method];
@@ -173,7 +201,21 @@
       this.renderClientsDirectory();
       syncNav(this);
     };
+    // Background order snapshots still invoke renderTasks(). Its legacy body
+    // unhides #tasks-container, so restore only the already-active module after
+    // that render; never navigate or rerender another module here.
+    if (typeof app.renderTasks === 'function' && !app.renderTasks.__isolatedModuleHosts55) {
+      const renderTasks = app.renderTasks;
+      const wrappedRenderTasks = function (...args) {
+        const result = renderTasks.apply(this, args);
+        restoreActiveView(this);
+        return result;
+      };
+      wrappedRenderTasks.__isolatedModuleHosts55 = true;
+      app.renderTasks = wrappedRenderTasks;
+    }
     syncNav(app);
+    restoreActiveView(app);
     return true;
   };
   if (!install()) {

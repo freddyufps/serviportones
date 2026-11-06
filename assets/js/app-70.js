@@ -463,7 +463,7 @@
       const reports = [...(this.technicalReports || [])].sort(byCreated);
       const query = String(document.getElementById('technical-reports-search')?.value || '').trim().toLocaleLowerCase('es');
       const filtered = reports.filter(report => `${report.number} ${report.client} ${report.technician} ${report.inspectionDate}`.toLocaleLowerCase('es').includes(query));
-      host.classList.remove('hidden'); host.style.display = 'block'; host.style.width = '100%'; host.style.gridTemplateColumns = 'minmax(0,1fr)';
+      host.classList.remove('hidden'); host.style.setProperty('display', 'block', 'important'); host.style.width = '100%'; host.style.gridTemplateColumns = 'minmax(0,1fr)';
       host.innerHTML = `<section class="technical-reports-archive"><header class="technical-reports-archive-heading"><div><span>ARCHIVO TÉCNICO</span><h3>Informes realizados</h3><p>Consulta, edita o exporta los informes técnicos guardados.</p></div><button type="button" class="technical-report-primary" data-create-report><i data-lucide="plus"></i><span>Realizar informe</span></button></header>
         <div class="technical-reports-tools"><label><i data-lucide="search"></i><input id="technical-reports-search" name="technical-report-search-query" type="search" role="searchbox" aria-autocomplete="none" inputmode="search" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" placeholder="Buscar número, cliente o fecha" value="${escapeHtml(query)}"></label><span data-reports-result-count>${filtered.length} de ${reports.length} informes</span></div>
         <div class="technical-reports-list">${reportRowsMarkup(filtered, reports.length)}</div></section>`;
@@ -542,10 +542,19 @@
       this.quoteConsolidationOpen = false;
       this.showArchivedTasks = false;
       this.technicalReportsArchiveOpen = true;
-      document.getElementById('tasks-container')?.classList.add('hidden');
-      document.getElementById('clients-view-container')?.classList.add('hidden');
-      document.getElementById('quotes-view-container')?.classList.add('hidden');
-      document.getElementById('reports-view-container')?.classList.remove('hidden');
+      const tasksHost = document.getElementById('tasks-container');
+      const clientsHost = document.getElementById('clients-view-container');
+      const quotesHost = document.getElementById('quotes-view-container');
+      const reportsHost = document.getElementById('reports-view-container');
+      [tasksHost, clientsHost, quotesHost, document.getElementById('archived-documents-panel')].forEach(host => {
+        if (!host) return;
+        host.classList.add('hidden');
+        host.style.setProperty('display', 'none', 'important');
+      });
+      if (reportsHost) {
+        reportsHost.classList.remove('hidden');
+        reportsHost.style.setProperty('display', 'block', 'important');
+      }
       document.getElementById('quotes-shell')?.classList.add('hidden');
       document.body.classList.remove('quotes-open');
       await this.loadTechnicalReports();
