@@ -114,9 +114,9 @@ body.theme-dark #clients-directory,body.theme-halloween #clients-directory{backg
       if(button){button.disabled=true;button.textContent='Importando…'}
       try{
         if(!window.XLSX){await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';s.onload=resolve;s.onerror=()=>reject(new Error('No se pudo cargar el lector Excel. Revisa tu conexión e inténtalo otra vez.'));document.head.appendChild(s)})}
-        const data=await file.arrayBuffer(),book=XLSX.read(data,{type:'array'}),sheet=book.Sheets[book.SheetNames[0]],rows=XLSX.utils.sheet_to_json(sheet,{defval:'',raw:false});
+        const data=await file.arrayBuffer(),book=XLSX.read(data,{type:'array'}),rows=book.SheetNames.flatMap(name=>XLSX.utils.sheet_to_json(book.Sheets[name],{defval:'',raw:false}));
         const key=x=>norm(x).replace(/[^a-z0-9]/g,'');
-        const mapped=rows.map(r=>{const o={};Object.entries(r).forEach(([k,v])=>{const n=key(k);if(n.includes('razonsocial')||n==='nombre')o.name=clean(v);else if(n.includes('documento')||n.includes('nit'))o.documentNumber=clean(v);else if(n.includes('direccion'))o.address=clean(v);else if(n.includes('correo')||n.includes('email'))o.email=clean(v);else if(n.includes('telefono')||n.includes('celular'))o.phone=clean(v)});return o}).filter(x=>x.name);
+        const mapped=rows.map(r=>{const o={};Object.entries(r).forEach(([k,v])=>{const n=key(k);if(n.includes('condominio')||n.includes('conjunto')||n.includes('edificio')||n.includes('proyecto'))o.condo=clean(v);else if(n.includes('contacto')||n.includes('administrador'))o.administrator=clean(v);else if(n.includes('razonsocial')||n==='nombre'||n==='cliente'||n.includes('nombrecliente')||n.includes('empresa'))o.name=clean(v);else if(n.includes('documento')||n.includes('nit')||n==='cc'||n.includes('identificacion'))o.documentNumber=clean(v);else if(n.includes('direccion'))o.address=clean(v);else if(n.includes('correo')||n.includes('email'))o.email=clean(v);else if(n.includes('telefono')||n.includes('celular'))o.phone=clean(v)});return o}).filter(x=>x.name||x.condo);
         if(!mapped.length){this.showToast('El archivo no contiene una columna reconocible de nombre/razón social.','error');return}
         if(!(await this.showSystemConfirm('Se encontraron '+mapped.length+' filas con clientes. Los contactos que ya existan se omitirán y solo se agregarán los nuevos. ¿Continuar?',{title:'Importar clientes',confirmText:'Importar',icon:'warning'})))return;
         const docKey=c=>clean(c.documentNumber).replace(/\D/g,'');
@@ -124,12 +124,10 @@ body.theme-dark #clients-directory,body.theme-halloween #clients-directory{backg
         let existing=[];
         if(window.db){const snap=await db.collection('clientes').get();existing=snap.docs.map(d=>({id:d.id,...d.data()}))}
         else{try{existing=JSON.parse(localStorage.getItem('spem_clients_v1')||'[]')}catch{existing=[]}}
-        const knownDocs=new Set(),knownLocations=new Set(),incompleteNames=new Set();
-        const indexClient=c=>{const doc=docKey(c),name=nameKey(c),location=norm(c.address||c.condo);if(doc)knownDocs.add(doc);if(name&&location)knownLocations.add(name+'|'+location);if(name&&(!doc||!location))incompleteNames.add(name)};
-        existing.forEach(indexClient);
+        const sameClient=(a,b)=>{const adoc=docKey(a),bdoc=docKey(b);if(adoc&&bdoc)return adoc===bdoc;const aname=nameKey(a),bname=nameKey(b);if(!aname||aname!==bname)return false;const alocation=norm(a.address||a.condo),blocation=norm(b.address||b.condo);return alocation===blocation};
         const fresh=[];
-        for(const c of mapped){const doc=docKey(c),name=nameKey(c),location=norm(c.address||c.condo);if((doc&&knownDocs.has(doc))||(name&&location&&knownLocations.has(name+'|'+location))||(name&&incompleteNames.has(name)))continue;fresh.push(c);indexClient(c)}
-        if(!fresh.length){this.showToast('No se agregaron clientes: todos ya estaban registrados o repetidos en el archivo.','info');return}
+        for(const c of mapped){if(existing.some(item=>sameClient(item,c))||fresh.some(item=>sameClient(item,c)))continue;fresh.push(c)}
+        if(!fresh.length){this.clientDirectory=existing;this.mergeExistingClientSources?.();this.startClientDirectorySync();if(this.clientsDirectoryOpen)this.renderClientsDirectory();this.showToast('No hay clientes nuevos en el archivo; se actualizó el directorio con los registros disponibles.','info');return}
         if(window.db){for(let offset=0;offset<fresh.length;offset+=400){const batch=db.batch();fresh.slice(offset,offset+400).forEach(c=>batch.set(db.collection('clientes').doc(this.clientRecordId(c)),{...c,updatedAt:Date.now(),importedAt:Date.now()},{merge:true}));await batch.commit()}}
         else{const merged=[...fresh.map(c=>({...c,id:this.clientRecordId(c),updatedAt:Date.now(),importedAt:Date.now()})),...existing];localStorage.setItem('spem_clients_v1',JSON.stringify(merged));this.clientDirectory=merged}
         this.startClientDirectorySync();if(this.clientsDirectoryOpen)this.renderClientsDirectory();this.showToast('Importación lista: '+fresh.length+' nuevos; '+(mapped.length-fresh.length)+' omitidos por estar repetidos.','success')

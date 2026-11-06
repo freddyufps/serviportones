@@ -218,7 +218,16 @@
         const condo = String(candidate.condo || candidate.condominium || '').trim();
         if (!name && !condo) return;
         const normalizedName = clientKey(name), normalizedCondo = clientKey(condo);
-        const existing = records.find(item => (normalizedName && clientKey(item.name || item.client) === normalizedName) || (normalizedCondo && clientKey(item.condo || item.condominium) === normalizedCondo));
+        const normalizedAddress = clientKey(candidate.address || '');
+        const candidateDocument = clientKey(candidate.documentNumber || candidate.document || '');
+        const existing = records.find(item => {
+          const itemDocument = clientKey(item.documentNumber || item.document || '');
+          if (candidateDocument && itemDocument) return candidateDocument === itemDocument;
+          const itemName = clientKey(item.name || item.client);
+          if (!normalizedName || itemName !== normalizedName) return false;
+          const itemAddress = clientKey(item.address || '');
+          return !(normalizedAddress && itemAddress && normalizedAddress !== itemAddress);
+        });
         const normalized = {
           ...candidate,
           id: String(candidate.id || existing?.id || fallbackId || `legacy-client-${encodeURIComponent(normalizedName || normalizedCondo)}`),
