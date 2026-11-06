@@ -1,0 +1,45 @@
+.payment-internal-note-dialog{position:fixed;inset:0;z-index:10120;display:grid;place-items:center;padding:16px;background:rgba(15,26,42,.5);backdrop-filter:blur(4px)}
+.payment-internal-note-dialog.hidden{display:none!important}
+.payment-internal-note-card{display:grid;gap:9px;width:min(520px,calc(100vw - 30px));max-height:calc(100dvh - 32px);overflow:auto;padding:18px;border:1px solid #dfe8ef;border-radius:18px;background:#fff;color:#1c3048;box-shadow:0 24px 70px #10223838}
+.payment-internal-note-card>header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}
+.payment-internal-note-card>header>div{display:flex;align-items:center;gap:10px;min-width:0}
+.payment-internal-note-icon{display:grid;place-items:center;width:40px;height:40px;flex:none;border-radius:12px;background:#eff7e7;color:#659b2d}
+.payment-internal-note-icon svg{width:20px;height:20px}
+.payment-internal-note-card h3{margin:0;color:#1b3049;font-size:15px;font-weight:900}
+.payment-internal-note-card header p{margin:3px 0 0;color:#73849a;font-size:11px}
+.payment-internal-note-card header>button{width:32px;height:32px;border:1px solid #e2e8ef;border-radius:10px;background:#fff;color:#718198;font-size:22px;line-height:1;cursor:pointer}
+.payment-internal-note-card>label{display:block;margin:4px 0 -4px;color:#52677d;font-size:11px;font-weight:800}
+.payment-internal-note-card>label small{font-weight:500;color:#8390a0}
+.payment-internal-note-card>input,.payment-internal-note-card>textarea,.payment-internal-note-card>select{box-sizing:border-box;width:100%;border:1px solid #dce5ee;border-radius:10px;outline:0;background:#fbfcfe;color:#253c55;font:inherit;font-size:12px;padding:10px 11px}
+.payment-internal-note-card>input,.payment-internal-note-card>select{min-height:41px}
+.payment-internal-note-card>textarea{min-height:112px;resize:vertical;line-height:1.5}
+.payment-internal-note-card>input:focus,.payment-internal-note-card>textarea:focus,.payment-internal-note-card>select:focus{border-color:#8db75c;box-shadow:0 0 0 3px #8db75c22}
+.payment-internal-note-history{display:grid;gap:7px;margin-top:4px;padding:11px;border:1px solid #e6ecf2;border-radius:11px;background:#f8fafc}
+.payment-internal-note-history>b{color:#52677d;font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+.payment-internal-note-history>div{display:grid;gap:7px;max-height:150px;overflow:auto}
+.payment-internal-note-history article{display:grid;gap:2px;padding:7px 8px;border-radius:8px;background:#fff;color:#50647b;font-size:10px}
+.payment-internal-note-history article>div{display:flex;justify-content:space-between;gap:8px}
+.payment-internal-note-history article b{color:#324b65}
+.payment-internal-note-history article time,.payment-internal-note-history article small,.payment-internal-note-history-empty{color:#7a8ba0;font-size:9px}
+.payment-internal-note-history article p{margin:2px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.payment-internal-note-card>footer{display:flex;align-items:center;gap:8px;margin-top:4px;padding-top:12px;border-top:1px solid #edf1f5}
+.payment-internal-note-card>footer>span{flex:1}
+.payment-internal-note-delete,.payment-internal-note-cancel,.payment-internal-note-save{min-height:36px;padding:0 12px;border:1px solid #d7e1eb;border-radius:9px;background:#fff;color:#52667c;font-size:10px;font-weight:800;cursor:pointer}
+.payment-internal-note-delete{border-color:#f0cccc;color:#b54747}
+.payment-internal-note-delete[hidden]{display:none}
+.payment-internal-note-save{border-color:#d7e6c5;background:#f1f8e9;color:#507d25}
+.payment-internal-note-save:disabled,.payment-internal-note-delete:disabled{opacity:.6;cursor:wait}
+.payment-internal-note-indicator{display:inline-grid;place-items:center;width:21px;height:21px;margin-left:5px;vertical-align:middle;border:1px solid #dbe2e9;border-radius:50%;background:#f1f4f7;color:#8793a1;cursor:pointer}
+.payment-internal-note-indicator svg{width:12px;height:12px}
+.payment-internal-note-indicator.is-pending{border-color:#f2d58b;background:#fff6d8;color:#bf870d}
+.payment-internal-note-indicator.is-completed{border-color:#b8ddb0;background:#eaf6e7;color:#4d963b}
+.payment-internal-note-action{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:29px;height:32px;padding:0 6px;border:1px solid #dbe2e9;border-radius:8px;background:#f1f4f7;color:#8793a1;font:inherit;font-size:9px;font-weight:800;white-space:nowrap;cursor:pointer}
+.payment-internal-note-action svg{width:13px;height:13px}
+.payment-internal-note-action.is-pending{border-color:#f2d58b;background:#fff6d8;color:#a97405}
+.payment-internal-note-action.is-completed{border-color:#b8ddb0;background:#eaf6e7;color:#4d8938}
+.payment-table .payment-order-actions{gap:4px}
+.payment-table th:last-child,.payment-table td:last-child{width:160px}
+@media(max-width:700px){.payment-internal-note-dialog{padding:10px}.payment-internal-note-card{width:min(520px,calc(100vw - 20px));padding:15px}.payment-order-actions-mobile .payment-internal-note-action{grid-column:1/-1;width:100%;min-height:34px}.payment-internal-note-action{font-size:10px}}
+body.theme-dark .payment-internal-note-card,body.theme-halloween .payment-internal-note-card{border-color:#40536b;background:#172438;color:#dbe5ef}
+body.theme-dark .payment-internal-note-card h3,body.theme-halloween .payment-internal-note-card h3{color:#e7edf5}
+body.theme-dark .payment-internal-note-card>input,body.theme-dark .payment-internal-note-card>textarea,body.theme-dark .payment-internal-note-card>select,body.theme-halloween .payment-internal-note-card>input,body.theme-halloween .payment-internal-note-card>textarea,body.theme-halloween .payment-internal-note-card>select{border-color:#40536b;background:#111b2a;color:#e7edf5}
