@@ -534,24 +534,23 @@
       const selectionStart = restoreSearchFocus ? previousSearch.selectionStart : null;
       const selectionEnd = restoreSearchFocus ? previousSearch.selectionEnd : null;
       const reports = [...(this.technicalReports || [])].sort(byCreated);
-      const searchInputValue = String(previousSearch?.value ?? this.technicalReportsSearchDraft ?? '');
-      const query = String(this.technicalReportsCommittedSearch ?? '').trim().toLocaleLowerCase('es');
+      const query = String(document.getElementById('technical-reports-search')?.value || '').trim().toLocaleLowerCase('es');
       const filtered = reports.filter(report => `${report.number} ${report.client} ${report.technician} ${report.inspectionDate}`.toLocaleLowerCase('es').includes(query));
       host.classList.remove('hidden'); host.style.display = 'block'; host.style.width = '100%'; host.style.gridTemplateColumns = 'minmax(0,1fr)';
       host.innerHTML = `<section class="technical-reports-archive"><header class="technical-reports-archive-heading"><div><span>ARCHIVO TÉCNICO</span><h3>Informes realizados</h3><p>Consulta, edita o exporta los informes técnicos guardados.</p></div><button type="button" class="technical-report-primary" data-create-report><i data-lucide="plus"></i><span>Realizar informe</span></button></header>
-        <div class="technical-reports-tools"><label><i data-lucide="search"></i><input id="technical-reports-search" type="search" role="searchbox" aria-autocomplete="none" inputmode="search" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" placeholder="Buscar número, cliente o fecha" value="${escapeHtml(searchInputValue)}"></label><span data-reports-result-count>${filtered.length} de ${reports.length} informes</span></div>
+        <div class="technical-reports-tools"><label><i data-lucide="search"></i><input id="technical-reports-search" type="search" role="searchbox" aria-autocomplete="none" inputmode="search" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" placeholder="Buscar número, cliente o fecha" value="${escapeHtml(query)}"></label><span data-reports-result-count>${filtered.length} de ${reports.length} informes</span></div>
         <div class="technical-reports-list">${reportRowsMarkup(filtered, reports.length)}</div></section>`;
       host.querySelector('[data-create-report]')?.addEventListener('click', () => this.openTechnicalReportForm());
       host.querySelector('#technical-reports-search')?.addEventListener('input', event => {
-        this.technicalReportsSearchDraft = event.currentTarget.value;
-      });
-      host.querySelector('#technical-reports-search')?.addEventListener('keydown', event => {
-        if (event.key !== 'Enter') return;
-        event.preventDefault();
-        event.stopPropagation();
-        this.technicalReportsCommittedSearch = event.currentTarget.value;
-        this.technicalReportsSearchDraft = event.currentTarget.value;
-        this.renderTechnicalReportsArchive();
+        const value = event.currentTarget.value.trim().toLocaleLowerCase('es');
+        const currentReports = [...(this.technicalReports || [])].sort(byCreated);
+        const currentFiltered = currentReports.filter(report => `${report.number} ${report.client} ${report.technician} ${report.inspectionDate}`.toLocaleLowerCase('es').includes(value));
+        const list = host.querySelector('.technical-reports-list');
+        if (list) list.innerHTML = reportRowsMarkup(currentFiltered, currentReports.length);
+        const resultCount = host.querySelector('[data-reports-result-count]');
+        if (resultCount) resultCount.textContent = `${currentFiltered.length} de ${currentReports.length} informes`;
+        bindReportRowActions(this, host);
+        if (window.lucide && list) lucide.createIcons({ root: list });
       });
       bindReportRowActions(this, host);
       if (restoreSearchFocus) {
