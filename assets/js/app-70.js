@@ -264,6 +264,27 @@
       instance.clientDirectory = records;
       return records;
     };
+    // Read the complete authoritative Firestore collection in explicit pages.
+    // This avoids any per-query/list-page cap and keeps the directory count
+    // tied to current Firestore documents only.
+    const fetchAllClientsFromServer = async clientDb => {
+      const pageSize = 200;
+      const documentId = window.firebase?.firestore?.FieldPath?.documentId;
+      let query = clientDb.collection('clientes');
+      if (typeof documentId === 'function') query = query.orderBy(documentId());
+      const allDocs = [];
+      let pageCount = 0;
+      while (query) {
+        const pageQuery = query.limit(pageSize);
+        const snapshot = await pageQuery.get({ source: 'server' });
+        pageCount += 1;
+        allDocs.push(...snapshot.docs);
+        if (snapshot.size < pageSize) break;
+        query = pageQuery.startAfter(snapshot.docs[snapshot.docs.length - 1]);
+      }
+      console.info('[CLIENTES] Lectura completa del servidor', { documents: allDocs.length, pages: pageCount });
+      return allDocs.map(doc => ({ id: doc.id, ...doc.data() }));
+    };
     app.mergeExistingClientSources = function () { return mergeExistingClientSources(this); };
     app.technicalReports = localRead();
     app.technicalReportsArchiveOpen = false;
@@ -704,11 +725,11 @@
           this.startClientDirectorySync?.();
           // Refresh on explicit entry while preserving the existing live Firestore listener.
           const clientDb = window.db;
-          if (clientDb?.collection) clientDb.collection('clientes').get({ source: 'server' }).then(snapshot => {
+          if (clientDb?.collection) fetchAllClientsFromServer(clientDb).then(records => {
             if (requestId !== clientsNavigationRequest || !this.clientsDirectoryOpen) return;
-            this.clientDirectory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            this.clientDirectory = records;
             this.clientDirectoryServerLoaded = true;
-            this.clientDirectoryServerCount = snapshot.size;
+            this.clientDirectoryServerCount = records.length;
             this.clientDirectoryLoading = false;
             this.renderClientsDirectory?.();
           }).catch(error => { this.clientDirectoryLoading = false; console.warn('[CLIENTES] No se pudo actualizar el directorio al abrirlo.', error); this.renderClientsDirectory?.(); });
@@ -736,7 +757,6 @@
         this.quoteConsolidationOpen = false;
         this.showArchivedTasks = false;
         this.clientsDirectoryOpen = true;
-        mergeExistingClientSources(this);
         document.getElementById('quotes-shell')?.classList.add('hidden');
         document.body.classList.remove('quotes-open');
         document.getElementById('archived-documents-panel')?.classList.add('hidden');
@@ -754,24 +774,59 @@
         this.quoteConsolidationOpen = false;
         this.showArchivedTasks = false;
         this.clientsDirectoryOpen = true;
-        mergeExistingClientSources(this);
         this.startClientDirectorySync?.();
         this.renderClientsDirectory?.();
         this.syncTechnicalReportsNavigation?.();
         const clientDb = window.db;
-        if (clientDb?.collection) clientDb.collection('clientes').get({ source: 'server' }).then(snapshot => {
+        if (clientDb?.collection) fetchAllClientsFromServer(clientDb).then(records => {
           if (requestId !== clientsNavigationRequest || !this.clientsDirectoryOpen || this.showDocumentControl || this.quoteArchiveInlineOpen || this.showArchivedTasks) return;
-          this.clientDirectory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          this.clientDirectory = records;
           this.clientDirectoryServerLoaded = true;
-          this.clientDirectoryServerCount = snapshot.size;
+          this.clientDirectoryServerCount = records.length;
           this.clientDirectoryLoading = false;
-          mergeExistingClientSources(this);
           this.renderClientsDirectory?.();
         }).catch(error => { this.clientDirectoryLoading = false; console.warn('[CLIENTES] No se pudo actualizar el directorio al abrirlo.', error); this.renderClientsDirectory?.(); });
         return result;
       };
       stableOpenClients.__stableClientsRoute70 = true;
       app.openClientsDirectory = stableOpenClients;
+    }
+    // Final render guard for the directory: compare the active array with actual
+    // cards in the DOM. If another view/render layer left a partial card list,
+    // rebuild it from every loaded client without applying pagination or a cap.
+    const originalClientDirectoryRender = app.renderClientsDirectory;
+    if (typeof originalClientDirectoryRender === 'function' && !originalClientDirectoryRender.__completeClientRender70) {
+      const completeClientRender = function (...args) {
+        const result = originalClientDirectoryRender.apply(this, args);
+        if (!this.clientsDirectoryOpen || (this.clientDirectoryLoading && !this.clientDirectoryServerLoaded)) return result;
+        const root = document.getElementById('clients-directory');
+        const list = root?.querySelector('.clients-list');
+        if (!root || !list) return result;
+        const records = Array.isArray(this.clientDirectory) ? this.clientDirectory : [];
+        const normalize = value => String(value ?? '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es');
+        const input = root.querySelector('#clients-search');
+        const term = normalize(input?.value ?? this.clientDirectorySearchValue ?? '');
+        const filtered = records.filter(client => !term || [client.name, client.condo, client.documentNumber, client.address, client.email, client.phone, client.administrator].some(value => normalize(value).includes(term)));
+        const actual = list.querySelectorAll('.client-card[data-client-search]').length;
+        if (actual !== filtered.length) {
+          list.innerHTML = filtered.map((client, index) => {
+            const id = JSON.stringify(String(client.id || ''));
+            const searchable = [client.name, client.condo, client.documentNumber, client.address, client.email, client.phone, client.administrator].filter(Boolean).join(' ');
+            return `<article class="client-card" data-client-search="${escapeHtml(searchable)}"><small class="client-index">Cliente ${index + 1}</small><b>${escapeHtml(client.name || client.condo || 'Cliente')}</b>${client.condo ? `<span>Condominio: ${escapeHtml(client.condo)}</span>` : ''}${client.documentNumber ? `<span>Documento: ${escapeHtml(client.documentNumber)}</span>` : ''}${client.address ? `<span>Dirección: ${escapeHtml(client.address)}</span>` : ''}${client.phone ? `<span>Teléfono: ${escapeHtml(client.phone)}</span>` : ''}${client.email ? `<span>Correo: ${escapeHtml(client.email)}</span>` : ''}<button type="button" onclick="app.showClientEditor(${id})">Editar</button></article>`;
+          }).join('') || '<div class="clients-empty">No hay clientes con esos datos. Agrega un contacto o importa el Excel.</div>';
+        }
+        const count = root.querySelector('.clients-count');
+        if (count) count.textContent = `${filtered.length} de ${records.length} clientes`;
+        root.dataset.clientSourceCount = String(records.length);
+        root.dataset.clientRenderedCount = String(filtered.length);
+        if (root.dataset.clientCountLog !== `${records.length}:${filtered.length}`) {
+          root.dataset.clientCountLog = `${records.length}:${filtered.length}`;
+          console.info('[CLIENTES] Conteo verificado en vista', { firestoreLoaded: records.length, renderedCards: filtered.length, searchActive: Boolean(term) });
+        }
+        return result;
+      };
+      completeClientRender.__completeClientRender70 = true;
+      app.renderClientsDirectory = completeClientRender;
     }
     // The security module installs renderTasks directly on the app instance.
     // A prototype-only guard cannot intercept Firestore callbacks in that case.
@@ -784,7 +839,6 @@
           this.quoteArchiveInlineOpen = false;
           this.quoteConsolidationOpen = false;
           this.showArchivedTasks = false;
-          mergeExistingClientSources(this);
           const host = document.getElementById('tasks-container');
           host?.classList.remove('hidden');
           host?.style.removeProperty('display');
@@ -806,15 +860,6 @@
       };
       stableRenderTasks.__stableClientsRoute70 = true;
       app.renderTasks = stableRenderTasks;
-    }
-    const instanceRefreshClients = app.refreshClientDirectoryUI;
-    if (typeof instanceRefreshClients === 'function' && !instanceRefreshClients.__mergeExistingClients70) {
-      const refreshClients = function (...args) {
-        mergeExistingClientSources(this);
-        return instanceRefreshClients.apply(this, args);
-      };
-      refreshClients.__mergeExistingClients70 = true;
-      app.refreshClientDirectoryUI = refreshClients;
     }
     const originalRenderTasks = proto.renderTasks;
     if (typeof originalRenderTasks === 'function' && !originalRenderTasks.__renderTechnicalReports70) {
