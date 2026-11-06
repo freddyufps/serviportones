@@ -268,9 +268,15 @@
     // This avoids any per-query/list-page cap and keeps the directory count
     // tied to current Firestore documents only.
     const fetchAllClientsFromServer = async clientDb => {
-      const pageSize = 200;
-      const documentId = window.firebase?.firestore?.FieldPath?.documentId;
+      // Prefer one complete, uncapped server snapshot; paginate only if the SDK rejects it.
       try {
+        const snapshot = await clientDb.collection('clientes').get({ source: 'server' });
+        console.info('[CLIENTES] Lectura completa del servidor', { documents: snapshot.size });
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } catch (directError) {
+        console.warn('[CLIENTES] Falló la lectura directa; se intentará paginar desde el servidor.', directError);
+        const pageSize = 200;
+        const documentId = window.firebase?.firestore?.FieldPath?.documentId;
         let query = clientDb.collection('clientes');
         if (typeof documentId === 'function') query = query.orderBy(documentId());
         const allDocs = [];
@@ -283,13 +289,8 @@
           if (snapshot.size < pageSize) break;
           query = pageQuery.startAfter(snapshot.docs[snapshot.docs.length - 1]);
         }
-        console.info('[CLIENTES] Lectura completa del servidor', { documents: allDocs.length, pages: pageCount });
+        console.info('[CLIENTES] Lectura paginada completa del servidor', { documents: allDocs.length, pages: pageCount });
         return allDocs.map(doc => ({ id: doc.id, ...doc.data() }));
-      } catch (pagedError) {
-        console.warn('[CLIENTES] Falló la lectura paginada; se intentará la lectura completa directa.', pagedError);
-        const snapshot = await clientDb.collection('clientes').get({ source: 'server' });
-        console.info('[CLIENTES] Lectura directa completa del servidor', { documents: snapshot.size });
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       }
     };
     const applyCompleteClientDirectory = (instance, records) => {
@@ -533,23 +534,24 @@
       const selectionStart = restoreSearchFocus ? previousSearch.selectionStart : null;
       const selectionEnd = restoreSearchFocus ? previousSearch.selectionEnd : null;
       const reports = [...(this.technicalReports || [])].sort(byCreated);
-      const query = String(document.getElementById('technical-reports-search')?.value || '').trim().toLocaleLowerCase('es');
+      const searchInputValue = String(previousSearch?.value ?? this.technicalReportsSearchDraft ?? '');
+      const query = String(this.technicalReportsCommittedSearch ?? '').trim().toLocaleLowerCase('es');
       const filtered = reports.filter(report => `${report.number} ${report.client} ${report.technician} ${report.inspectionDate}`.toLocaleLowerCase('es').includes(query));
       host.classList.remove('hidden'); host.style.display = 'block'; host.style.width = '100%'; host.style.gridTemplateColumns = 'minmax(0,1fr)';
       host.innerHTML = `<section class="technical-reports-archive"><header class="technical-reports-archive-heading"><div><span>ARCHIVO TÉCNICO</span><h3>Informes realizados</h3><p>Consulta, edita o exporta los informes técnicos guardados.</p></div><button type="button" class="technical-report-primary" data-create-report><i data-lucide="plus"></i><span>Realizar informe</span></button></header>
-        <div class="technical-reports-tools"><label><i data-lucide="search"></i><input id="technical-reports-search" name="technicalReportSearchText" type="text" role="searchbox" aria-autocomplete="none" inputmode="search" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" placeholder="Buscar número, cliente o fecha" value="${escapeHtml(query)}"></label><span data-reports-result-count>${filtered.length} de ${reports.length} informes</span></div>
+        <div class="technical-reports-tools"><label><i data-lucide="search"></i><input id="technical-reports-search" type="search" role="searchbox" aria-autocomplete="none" inputmode="search" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" placeholder="Buscar número, cliente o fecha" value="${escapeHtml(searchInputValue)}"></label><span data-reports-result-count>${filtered.length} de ${reports.length} informes</span></div>
         <div class="technical-reports-list">${reportRowsMarkup(filtered, reports.length)}</div></section>`;
       host.querySelector('[data-create-report]')?.addEventListener('click', () => this.openTechnicalReportForm());
       host.querySelector('#technical-reports-search')?.addEventListener('input', event => {
-        const value = event.currentTarget.value.trim().toLocaleLowerCase('es');
-        const currentReports = [...(this.technicalReports || [])].sort(byCreated);
-        const currentFiltered = currentReports.filter(report => `${report.number} ${report.client} ${report.technician} ${report.inspectionDate}`.toLocaleLowerCase('es').includes(value));
-        const list = host.querySelector('.technical-reports-list');
-        if (list) list.innerHTML = reportRowsMarkup(currentFiltered, currentReports.length);
-        const resultCount = host.querySelector('[data-reports-result-count]');
-        if (resultCount) resultCount.textContent = `${currentFiltered.length} de ${currentReports.length} informes`;
-        bindReportRowActions(this, host);
-        if (window.lucide && list) lucide.createIcons({ root: list });
+        this.technicalReportsSearchDraft = event.currentTarget.value;
+      });
+      host.querySelector('#technical-reports-search')?.addEventListener('keydown', event => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        event.stopPropagation();
+        this.technicalReportsCommittedSearch = event.currentTarget.value;
+        this.technicalReportsSearchDraft = event.currentTarget.value;
+        this.renderTechnicalReportsArchive();
       });
       bindReportRowActions(this, host);
       if (restoreSearchFocus) {
