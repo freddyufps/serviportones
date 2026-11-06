@@ -17,6 +17,13 @@
     return true;
   };
   window.printPreviewPdf=window.printPreviewPdf||printPreviewPdf;
+  const saveQuotePdfBlob=async(blob,filename)=>{
+    const url=URL.createObjectURL(blob),anchor=document.createElement("a");
+    anchor.href=url;anchor.download=filename;anchor.style.display="none";
+    document.body.appendChild(anchor);anchor.click();anchor.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+    return "download";
+  };
   const install=()=>{
     if(!window.app||!app.__quoteModule||app.__quotePdfLogoFix61)return false;
     app.__quotePdfLogoFix61=true;
@@ -27,16 +34,51 @@
       if(auto){this.showQuotePreview(q);return this.showToast("La cotización quedó guardada. Desde su vista previa puedes seleccionar Guardar PDF.","info")}
       let doc=document.querySelector("#quote-preview-content .quote-document");
       if(!doc||this.quotePreviewQuote?.id!==q.id){this.showQuotePreview(q);await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));doc=document.querySelector("#quote-preview-content .quote-document");}
-      if(!doc)return this.showToast("No se encontró la vista previa para imprimir el PDF. Abre la vista previa e inténtalo de nuevo.","error");
+      if(!doc)return this.showToast("No se encontró la vista previa para preparar el PDF. Ábrela e inténtalo de nuevo.","error");
       try{
-        await this.embedQuoteLogo?.(doc);
         const name=(q.client||"CLIENTE").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"").toUpperCase();
         const filename=q.date+"_"+q.number+"_"+name+".pdf";
-        await window.printPreviewPdf(doc,filename);
-        if(!auto)this.showToast("En el diálogo de impresión, selecciona “Guardar como PDF”.","info");
-      }catch(error){console.error("[COTIZACIONES]",error);this.showToast("No se pudo generar el PDF. Abre la vista previa para imprimir.","error")}
+        // Abrir el selector desde el clic del usuario para permitir elegir carpeta y nombre.
+        let fileHandle=null;
+        if(window.isSecureContext&&typeof window.showSaveFilePicker==="function"){
+          try{fileHandle=await window.showSaveFilePicker({suggestedName:filename,types:[{description:"Documento PDF",accept:{"application/pdf":[".pdf"]}}]})}
+          catch(error){if(error?.name==="AbortError")return;console.warn("[COTIZACIONES] No se pudo abrir el selector de destino; se descargará mediante el navegador.",error)}
+        }
+        await this.embedQuoteLogo?.(doc);
+        if(typeof window.spemCreatePreviewPdfBlob!=="function")throw new Error("No está disponible la captura PDF de la vista previa.");
+        // Captura el mismo DOM de la vista previa, escalado proporcionalmente al área A4.
+        // Así se evita la impresión del navegador (URL, fecha y cabeceras automáticas).
+        const blob=await window.spemCreatePreviewPdfBlob(doc,{format:"a4",fitSinglePage:true,marginMm:2});
+        if(!blob?.size)throw new Error("El PDF generado está vacío.");
+        if(fileHandle){const writable=await fileHandle.createWritable();await writable.write(blob);await writable.close();this.showToast("Cotización guardada en la ubicación elegida.","success");}
+        else{await saveQuotePdfBlob(blob,filename);this.showToast("PDF de cotización descargado.","success");}
+      }catch(error){
+        if(error?.name==="AbortError")return;
+        console.error("[COTIZACIONES]",error);
+        this.showToast("No se pudo guardar la cotización en PDF. Inténtalo nuevamente.","error");
+      }
     };
     app.exportQuotePdf=exportQuotePdf;
+    // El botón Guardar PDF y cualquier llamada antigua de cotizaciones usan
+    // siempre la captura de la vista previa; nunca abren la impresión del navegador.
+    app.downloadQuotePdf=async function(){
+      let q=this.quotePreviewQuote?.id===this.quoteCurrentId?this.quotePreviewQuote:(this.quotes||[]).find(item=>item.id===this.quoteCurrentId);
+      if(!q){const form=document.getElementById("quote-form");if(form)q=this.collectQuote(form)}
+      if(q)return exportQuotePdf.call(this,q,false);
+    };
+    const nativePreviewPrint=window.printPreviewPdf;
+    if(typeof nativePreviewPrint==="function"&&!nativePreviewPrint.__quoteCapture61){
+      const previewPrint=async function(node,filename){
+        if(node?.matches?.(".quote-document")){
+          const quote=app.quotePreviewQuote||(app.quotes||[]).find(item=>item.id===app.quoteCurrentId);
+          if(!quote)throw new Error("No se encontró la cotización para exportar.");
+          return exportQuotePdf.call(app,quote,false);
+        }
+        return nativePreviewPrint(node,filename);
+      };
+      previewPrint.__quoteCapture61=true;
+      window.printPreviewPdf=previewPrint;
+    }
     if(typeof app.quoteRow==="function"&&!app.__quotePdfLogoRows61){
       app.__quotePdfLogoRows61=true;
       const makeRow=app.quoteRow;

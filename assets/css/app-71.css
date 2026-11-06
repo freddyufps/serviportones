@@ -1,0 +1,28 @@
+/* Interruptor visual reversible del módulo de chat. */
+html.chat-feature-disabled #chat-floating-button-container,
+html.chat-feature-disabled #chat-launcher-button,
+html.chat-feature-disabled #chat-unread-badge,
+html.chat-feature-disabled #chat-window-modal,
+html.chat-feature-disabled #chat-desktop-windows,
+html.chat-feature-disabled #chat-minimized-windows,
+html.chat-feature-disabled #modal-voice-call,
+html.chat-feature-disabled #admin-presence-control,
+html.chat-feature-disabled #section-technicians-monitor,
+html.chat-feature-disabled #dashboard-chat-caption,
+html.chat-feature-disabled #settings-chat-badge-preference,
+html.chat-feature-disabled .messenger-chat-window,
+html.chat-feature-disabled .chat-reaction-picker,
+html.chat-feature-disabled .chat-unread-pill,
+html.chat-feature-disabled .messenger-window-unread-badge,
+html.chat-feature-disabled #toast-notification-stack [data-notification-type="chat"],
+html.chat-feature-disabled #toast-notification-stack [data-notification-type="call"],
+html.chat-feature-disabled body #chat-floating-button-container:not(.hidden),
+html.chat-feature-disabled body #chat-window-modal:not(.hidden),
+html.chat-feature-disabled body #chat-desktop-windows:not(.hidden),
+html.chat-feature-disabled body #chat-minimized-windows:not(.hidden),
+html.chat-feature-disabled body #modal-voice-call:not(.hidden) {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

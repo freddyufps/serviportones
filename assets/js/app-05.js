@@ -1,4 +1,8 @@
 
+    // El indicador global de index.html es el interruptor reversible del módulo.
+    const CHAT_FEATURE_ENABLED = window.SPEM_CHAT_ENABLED !== false;
+    window.SPEM_CHAT_ENABLED = CHAT_FEATURE_ENABLED;
+
     const SafeStorage = {
       memStore: {},
       setItem(key, value) {
@@ -503,6 +507,7 @@
       }
 
       showPopupNotification({ title, subtitle, details, type, icon, onClick, force = false }) {
+        if (!CHAT_FEATURE_ENABLED && (type === 'chat' || type === 'call')) return;
         if (!force && !this.prefs.popup) return;
 
         let stack = document.getElementById('toast-notification-stack');
@@ -534,6 +539,7 @@
         const toastLifetime = isMobileViewport ? 4500 : type === 'chat' ? 15000 : 6500;
         const card = document.createElement('div');
         card.id = toastId;
+        card.dataset.notificationType = type || 'general';
         card.setAttribute('role', 'status');
         card.className = "pointer-events-auto bg-slate-900/95 text-white border border-slate-700/80 rounded-2xl shadow-2xl p-3.5 popup-slide-in backdrop-blur-md flex items-start gap-3 relative overflow-hidden transition cursor-pointer hover:border-brand-lime";
         card.style.setProperty('width', '100%');
@@ -688,14 +694,16 @@
 
             if (this.currentUser && this.currentUser.role === 'admin') {
               this.renderTechniciansMonitor();
-              this.renderConversationsSidebar();
+              if (CHAT_FEATURE_ENABLED) this.renderConversationsSidebar();
               this.renderTasks();
-              if (workerPhotosChanged) {
+              if (CHAT_FEATURE_ENABLED && workerPhotosChanged) {
                 this.renderActiveChatHeader?.();
                 this.renderChatMessages?.();
               }
-              this.setupMultiWorkerChatListeners();
-              this.listenIncomingVoiceCalls();
+              if (CHAT_FEATURE_ENABLED) {
+                this.setupMultiWorkerChatListeners();
+                this.listenIncomingVoiceCalls();
+              }
             } else if (this.currentUser && this.getChatRole(this.currentUser.role) === 'worker') {
               const currentIdentity = new Set([this.currentUser.id, this.currentUser.username].map(value => String(value || '').trim().toLocaleLowerCase()).filter(Boolean));
               const myUpdated = list.find(u => [u.id, u.username].some(value => currentIdentity.has(String(value || '').trim().toLocaleLowerCase())))
@@ -804,7 +812,7 @@
                 this.applyWorkerProfileUpdate({ ...data, username: data.username || this.currentUser.username });
               }
               const becameAvailable = this.getPresenceStatus(presenceUser) === 'available';
-              if (this.presenceSnapshotInitialized && this.currentUser?.role === 'admin' && isWorkerPresence && previousStatus !== 'available' && becameAvailable && this.prefs?.sound !== false) {
+              if (CHAT_FEATURE_ENABLED && this.presenceSnapshotInitialized && this.currentUser?.role === 'admin' && isWorkerPresence && previousStatus !== 'available' && becameAvailable && this.prefs?.sound !== false) {
                 console.info('[PRESENCE] Transición de trabajador a disponible', { username: presenceId });
                 SoundEngine.playWorkerConnectedSound();
               }
@@ -1282,8 +1290,12 @@
         this.updateSeasonalEffects(this.seasonalTheme);
         document.documentElement.classList.remove('auth-session-pending');
         this.applyDarkMode();
-        document.getElementById('chat-floating-button-container').classList.remove('hidden');
-        document.getElementById('chat-desktop-windows')?.classList.remove('hidden');
+        if (CHAT_FEATURE_ENABLED) {
+          document.getElementById('chat-floating-button-container')?.classList.remove('hidden');
+          document.getElementById('chat-desktop-windows')?.classList.remove('hidden');
+        } else {
+          this.disableChatRuntime();
+        }
 
         this.sendHeartbeat();
         this.subscribeOwnPresenceProfile();
@@ -1308,8 +1320,10 @@
           this.renderAdminAuditLog();
         }
 
-        this.initChatModule();
-        this.listenIncomingVoiceCalls();
+        if (CHAT_FEATURE_ENABLED) {
+          this.initChatModule();
+          this.listenIncomingVoiceCalls();
+        }
 
       }
 
@@ -1449,7 +1463,7 @@
           banner.innerHTML = `
             <div>
               <h3 class="font-extrabold text-xs sm:text-sm text-white">Panel Central de Operaciones</h3>
-              <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5">Asigna órdenes, supervisa técnicos en mapa GPS y comunícate por chat y voz.</p>
+              <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5">Asigna órdenes, supervisa técnicos en mapa GPS <span id="dashboard-chat-caption">y comunícate por chat y voz.</span></p>
             </div>
             <div class="mt-2 sm:mt-0 flex items-center justify-center sm:justify-end gap-2 self-center sm:self-auto">
               <button type="button" aria-label="Ver mapa GPS" title="Ver mapa GPS" onclick="app.openAdminGpsModal()" class="group shrink-0 cursor-pointer rounded-2xl border-0 bg-transparent p-0 shadow-none transition-transform hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400">
@@ -2162,6 +2176,7 @@
       }
 
       async startVoiceCall() {
+        if (!CHAT_FEATURE_ENABLED) return;
         const targetWorker = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
         const callSessionId = window.crypto?.randomUUID?.() || `call-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
         console.info('[CALL] Iniciando llamada', { sessionId: callSessionId, role: this.currentUser.role, caller: this.getCurrentDisplayName(), documentId: targetWorker });
@@ -2282,6 +2297,7 @@
       }
 
       listenIncomingVoiceCalls() {
+        if (!CHAT_FEATURE_ENABLED) return;
         if (!window.db) return;
         if (this.callUnsubscribe) { this.callUnsubscribe(); this.callUnsubscribe = null; }
         const myName = this.getCurrentDisplayName();
@@ -2348,6 +2364,7 @@
       }
 
       triggerIncomingCallAlert(callerName) {
+        if (!CHAT_FEATURE_ENABLED) return;
         this.openVoiceCallModal({
           name: callerName,
           status: 'Llamada Entrante...',
@@ -2364,6 +2381,7 @@
       }
 
       async acceptIncomingCall() {
+        if (!CHAT_FEATURE_ENABLED) return;
         if (!this.currentCallData) return;
         console.info('[CALL] Sesión de llamada', { sessionId: this.currentCallData.sessionId, role: this.currentUser.role, side: 'callee' });
         this.stopIncomingCallRingtone();
@@ -2611,6 +2629,7 @@
       }
 
       openVoiceCallModal({ name, status, isIncoming }) {
+        if (!CHAT_FEATURE_ENABLED) return;
         document.getElementById('call-user-name').textContent = name;
         document.getElementById('call-status-label').textContent = status;
         document.getElementById('modal-voice-call').classList.remove('hidden');
@@ -2727,6 +2746,7 @@
       }
 
       initChatModule() {
+        if (!CHAT_FEATURE_ENABLED) return;
         const isAdmin = this.getChatRole() === 'admin';
         const sidebar = document.getElementById('chat-sidebar');
         const backBar = document.getElementById('chat-mobile-back-bar');
@@ -2757,6 +2777,7 @@
       }
 
       setupMultiWorkerChatListeners() {
+        if (!CHAT_FEATURE_ENABLED) return;
         if (!window.db || !this.currentUser) return;
         const isAdmin = this.getChatRole() === 'admin';
         const names = isAdmin ? this.workers.map(w => this.getChatThreadId(w)).filter(Boolean) : [this.getChatThreadId()].filter(Boolean);
@@ -2892,6 +2913,7 @@
       }
 
       ensureIncomingWorkerWindow(wName) {
+        if (!CHAT_FEATURE_ENABLED) return;
         if (this.getChatRole() !== 'admin' || window.innerWidth < 640) return;
         if (!Array.isArray(this.openChatTabs)) this.openChatTabs = [];
         const alreadyOpen = this.openChatTabs.includes(wName);
@@ -2917,6 +2939,7 @@
       }
 
       showBrowserChatNotification(wName, data = {}, msgId = '') {
+        if (!CHAT_FEATURE_ENABLED) return;
         const desktopAdmin = this.getChatRole() === 'admin' && window.innerWidth >= 640;
         if ((!document.hidden && !desktopAdmin) || !('Notification' in window)) return;
         if (Notification.permission !== 'granted') {
@@ -2940,6 +2963,7 @@
       }
 
       notifyIncomingChatMessage(wName, msgId, data, { receivedAsNew = false } = {}) {
+        if (!CHAT_FEATURE_ENABLED) return;
         const uniqueId = `${wName}:${msgId}`;
         // El listener filtra los mensajes históricos antes de llegar aquí. En un mensaje
         // recién agregado, el campo compartido `status` puede cambiar a "read" por otra
@@ -3019,6 +3043,7 @@
       }
 
       reportChatSyncError(context, error) {
+        if (!CHAT_FEATURE_ENABLED) return;
         console.error(`[CHAT] Falló la sincronización (${context}):`, error);
         if (this.chatSyncErrorShown) return;
         this.chatSyncErrorShown = true;
@@ -3034,7 +3059,33 @@
         this.dedicatedWorkerRetryTimers = {};
       }
 
+      disableChatRuntime() {
+        // Desconecta solo suscripciones de chat/llamadas; no borra mensajes,
+        // conversaciones ni altera la presencia general de la aplicación.
+        ['chatUnsubscribe', 'chatThreadUnsubscribe', 'chatThreadsUnsubscribe', 'callUnsubscribe'].forEach(key => {
+          try { this[key]?.(); } catch (error) { console.warn('[CHAT] No se pudo cerrar una suscripción:', error); }
+          this[key] = null;
+        });
+        try { this.clearDedicatedWorkerChatListeners?.(); } catch (_) {}
+        try { this.callSignalingUnsubscribes?.forEach(unsubscribe => unsubscribe()); } catch (_) {}
+        this.callSignalingUnsubscribes = [];
+        try { this.endVoiceCall?.(false); } catch (_) {}
+        try { this.stopIncomingCallRingtone?.(); } catch (_) {}
+        ['chat-floating-button-container', 'chat-window-modal', 'chat-desktop-windows', 'chat-minimized-windows', 'modal-voice-call']
+          .forEach(id => document.getElementById(id)?.classList.add('hidden'));
+        document.querySelectorAll('.chat-reaction-picker, #toast-notification-stack [data-notification-type="chat"], #toast-notification-stack [data-notification-type="call"]')
+          .forEach(element => element.remove());
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations?.().then(registrations => registrations.forEach(registration => {
+            registration.getNotifications?.().then(notifications => notifications.forEach(notification => {
+              if (String(notification.tag || '').startsWith('portonpro-chat-')) notification.close();
+            }));
+          })).catch(() => {});
+        }
+      }
+
       subscribeAllChatThreads() {
+        if (!CHAT_FEATURE_ENABLED) return;
         if (!window.db || this.chatThreadsUnsubscribe) return;
 
         this.chatThreadsUnsubscribe = db.collection('chats_internos')
@@ -3075,6 +3126,7 @@
       }
 
       updateChatLauncherUnread(count) {
+        if (!CHAT_FEATURE_ENABLED) return;
         const visibleCount = this.prefs.chatBadge ? Math.max(0, Number(count) || 0) : 0;
         const badge = document.getElementById('chat-unread-badge');
         const launcher = document.getElementById('chat-floating-button-container');
@@ -3086,6 +3138,7 @@
       }
 
       renderConversationsSidebar() {
+        if (!CHAT_FEATURE_ENABLED) return;
         const listElem = document.getElementById('chat-conversations-list');
         if (!listElem) return;
 
@@ -3160,6 +3213,7 @@
       }
 
       selectChatConversation(wName) {
+        if (!CHAT_FEATURE_ENABLED) return;
         wName = this.getChatThreadId(wName);
         const previousWorker = this.activeChatWorker;
         const previousMessages = document.getElementById('chat-messages-container');
@@ -3458,6 +3512,7 @@ updateMessengerWindowTyping(workerName) {
       }
 
       openDirectWorkerChat(workerName) {
+        if (!CHAT_FEATURE_ENABLED) return;
         this.activeChatWorker = workerName;
         const chatModal = document.getElementById('chat-window-modal');
         chatModal.classList.remove('hidden');
@@ -3465,6 +3520,7 @@ updateMessengerWindowTyping(workerName) {
       }
 
       toggleChatWindow() {
+        if (!CHAT_FEATURE_ENABLED) return;
         const chatModal = document.getElementById('chat-window-modal');
         if (!chatModal) return;
         const opening = chatModal.classList.contains('hidden');
@@ -3484,6 +3540,7 @@ updateMessengerWindowTyping(workerName) {
       }
 
       toggleChatOptionsMenu() {
+        if (!CHAT_FEATURE_ENABLED) return;
         const menu = document.getElementById('chat-conversation-options-dropdown');
         if (menu) menu.classList.toggle('hidden');
       }
@@ -3544,6 +3601,7 @@ updateMessengerWindowTyping(workerName) {
       }
 
       handleTypingInput() {
+        if (!CHAT_FEATURE_ENABLED) return;
         const threadId = this.getChatThreadId();
         const myRole = this.getChatRole();
 
@@ -3562,6 +3620,7 @@ updateMessengerWindowTyping(workerName) {
       }
 
       subscribeChatMessages() {
+        if (!CHAT_FEATURE_ENABLED) return;
         if (!window.db) return;
         this.chatMessageInitialRenderDone = false;
         if (this.chatUnsubscribe) { this.chatUnsubscribe(); }
@@ -3632,6 +3691,7 @@ updateMessengerWindowTyping(workerName) {
       }
 
       renderChatMessages() {
+        if (!CHAT_FEATURE_ENABLED) return;
         const container = document.getElementById('chat-messages-container');
         if (!container) return;
         const wasNearBottom = this.chatMessageInitialRenderDone && container.scrollHeight - container.clientHeight - container.scrollTop < 80;

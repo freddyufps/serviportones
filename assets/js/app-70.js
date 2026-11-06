@@ -78,16 +78,113 @@
     document.body.appendChild(anchor); anchor.click(); anchor.remove();
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   };
+  let reportPdfLibrariesPromise;
+  const loadReportPdfScript = src => new Promise(resolve => {
+    const script = document.createElement('script');
+    script.src = src; script.async = true;
+    script.addEventListener('load', () => resolve(true), { once: true });
+    script.addEventListener('error', () => resolve(false), { once: true });
+    document.head.appendChild(script);
+  });
+  const ensureReportPdfLibraries = () => {
+    if (window.html2canvas && window.jspdf?.jsPDF) return Promise.resolve(true);
+    if (reportPdfLibrariesPromise) return reportPdfLibrariesPromise;
+    reportPdfLibrariesPromise = (async () => {
+      if (!window.html2canvas && !await loadReportPdfScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js')) return false;
+      if (!window.jspdf?.jsPDF && !await loadReportPdfScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.0.0/jspdf.umd.min.js')) return false;
+      return Boolean(window.html2canvas && window.jspdf?.jsPDF);
+    })();
+    return reportPdfLibrariesPromise;
+  };
+  // Reutilizable por las cotizaciones cuando se guardan en una carpeta elegida.
+  // Captura el nodo actualmente visible y usa sus dimensiones CSS como tamaño de página.
+  window.spemCreatePreviewPdfBlob = async (node, options = {}) => {
+    if (!node || !await ensureReportPdfLibraries()) throw new Error('No está disponible la captura de PDF.');
+    await document.fonts?.ready;
+    await Promise.all([...node.querySelectorAll('img')].map(image => image.decode?.().catch(() => undefined)));
+    const rect = node.getBoundingClientRect();
+    const widthPx = Math.ceil(rect.width || node.scrollWidth);
+    const heightPx = Math.ceil(Math.max(rect.height, node.scrollHeight));
+    if (!widthPx || !heightPx) throw new Error('La vista previa no tiene dimensiones para exportar.');
+    const canvas = await window.html2canvas(node, {
+      scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', logging: false,
+      scrollX: 0, scrollY: 0, width: widthPx, height: heightPx,
+      windowWidth: Math.max(document.documentElement.clientWidth, widthPx),
+      windowHeight: Math.max(document.documentElement.clientHeight, heightPx)
+    });
+    if (!canvas?.width || !canvas?.height) throw new Error('No se pudo capturar la vista previa.');
+    const JsPDF = window.jspdf.jsPDF;
+    if (options.format === 'a4') {
+      const pdf = new JsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+      const pageWidthMm = pdf.internal.pageSize.getWidth(), pageHeightMm = pdf.internal.pageSize.getHeight();
+      const marginMm = Math.max(0, Number(options.marginMm) || 0);
+      const contentWidthMm = pageWidthMm - marginMm * 2, contentHeightMm = pageHeightMm - marginMm * 2;
+      // Cotizaciones: colocar la captura completa en una hoja A4, conservando
+      // proporciones y usando el área disponible sin los encabezados de imprimir del navegador.
+      if (options.fitSinglePage) {
+        const scale = Math.min(contentWidthMm / canvas.width, contentHeightMm / canvas.height);
+        const imageWidthMm = canvas.width * scale, imageHeightMm = canvas.height * scale;
+        const x = (pageWidthMm - imageWidthMm) / 2, y = (pageHeightMm - imageHeightMm) / 2;
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.98), 'JPEG', x, y, imageWidthMm, imageHeightMm, 'quote-preview-page', 'FAST');
+        return pdf.output('blob');
+      }
+      const sourcePageHeight = Math.max(1, Math.floor(canvas.width * contentHeightMm / contentWidthMm));
+      const pageCount = Math.max(1, Math.ceil(canvas.height / sourcePageHeight));
+      for (let page = 0; page < pageCount; page += 1) {
+        if (page) pdf.addPage('a4', 'portrait');
+        const sourceY = page * sourcePageHeight, sourceHeight = Math.min(sourcePageHeight, canvas.height - sourceY);
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width; pageCanvas.height = sourceHeight;
+        const context = pageCanvas.getContext('2d');
+        if (!context) throw new Error('No fue posible preparar la página de la cotización.');
+        context.drawImage(canvas, 0, sourceY, canvas.width, sourceHeight, 0, 0, canvas.width, sourceHeight);
+        const imageHeightMm = sourceHeight * contentWidthMm / canvas.width;
+        pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.98), 'JPEG', marginMm, marginMm, contentWidthMm, imageHeightMm, `quote-preview-${page + 1}`, 'FAST');
+      }
+      return pdf.output('blob');
+    }
+    const pageWidthMm = widthPx * 25.4 / 96;
+    const pageHeightMm = heightPx * 25.4 / 96;
+    const pdf = new JsPDF({ unit: 'mm', format: [pageWidthMm, pageHeightMm], orientation: 'portrait', compress: true });
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.98), 'JPEG', 0, 0, pageWidthMm, pageHeightMm, 'preview-capture', 'FAST');
+    return pdf.output('blob');
+  };
+  const requestReportFolderWritePermission = async handle => {
+    if (!handle) return false;
+    try {
+      // Llamar primero a requestPermission mientras el clic del usuario sigue activo.
+      let permission = await handle.requestPermission?.({ mode: 'readwrite' });
+      if (permission !== 'granted') permission = await handle.queryPermission?.({ mode: 'readwrite' });
+      return permission === 'granted';
+    } catch { return false; }
+  };
+  const drawReportBanner = root => {
+    const shape = root?.querySelector?.('.technical-report-black-banner-shape');
+    const rect = shape?.getBoundingClientRect();
+    if (!shape || !rect?.width || !rect?.height) return;
+    const ratio = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+    shape.width = Math.round(rect.width * ratio);
+    shape.height = Math.round(rect.height * ratio);
+    const context = shape.getContext('2d');
+    if (!context) return;
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    context.clearRect(0, 0, rect.width, rect.height);
+    context.fillStyle = '#050505';
+    context.beginPath();
+    context.moveTo(0, 0);
+    context.lineTo(rect.width, 0);
+    context.lineTo(rect.width, rect.height);
+    context.lineTo(rect.width * 0.17, rect.height);
+    context.closePath();
+    context.fill();
+  };
   const writeReportToFolder = async (handle, blob, filename) => {
     if (!handle) return false;
     try {
-      let permission = await handle.queryPermission?.({ mode: 'readwrite' });
-      if (permission !== 'granted') permission = await handle.requestPermission?.({ mode: 'readwrite' });
-      if (permission !== 'granted') return false;
       const file = await handle.getFileHandle(filename, { create: true });
       const writable = await file.createWritable(); await writable.write(blob); await writable.close();
       return true;
-    } catch (error) { console.warn('[INFORMES] Se descargó el PDF, pero no se pudo guardar una copia en la carpeta elegida.', error); return false; }
+    } catch (error) { console.warn('[INFORMES] No se pudo guardar el PDF en la carpeta elegida.', error); return false; }
   };
   const reportRowsMarkup = (filtered, total) => filtered.length ? filtered.map(report => `<article class="technical-report-row"><div class="technical-report-row-main"><span class="technical-report-number">${escapeHtml(report.number)}</span><b>${escapeHtml(report.client || 'Cliente')}</b><small>Inspección: ${escapeHtml(reportDate(report.inspectionDate))} · Técnico: ${escapeHtml(report.technician || 'Polo Martínez')}</small><small>Creado: ${escapeHtml(reportDate(report.createdAt))} · Estado: ${escapeHtml(report.status || 'Realizado')}</small></div><div class="technical-report-row-actions"><button type="button" data-report-view="${escapeHtml(report.id)}" title="Ver informe" aria-label="Ver ${escapeHtml(report.number)}"><i data-lucide="eye"></i><span>Ver</span></button><button type="button" data-report-edit="${escapeHtml(report.id)}" title="Editar informe" aria-label="Editar ${escapeHtml(report.number)}"><i data-lucide="pencil"></i><span>Editar</span></button><button type="button" data-report-delete="${escapeHtml(report.id)}" title="Eliminar informe" aria-label="Eliminar ${escapeHtml(report.number)}"><i data-lucide="trash-2"></i><span>Eliminar</span></button></div></article>`).join('') : `<div class="technical-reports-empty"><i data-lucide="file-search"></i><b>${total ? 'No se encontraron informes.' : 'Aún no hay informes realizados.'}</b><span>${total ? 'Prueba con otro número, cliente o fecha.' : 'Usa “Realizar informe” para crear el primero.'}</span></div>`;
   const bindReportRowActions = (app, host) => {
@@ -424,60 +521,9 @@
     };
 
     proto.ensureTechnicalReportDownloadSettings = function () {
-      if (this.currentUser?.role !== 'admin') return;
-      const nav = document.querySelector('#settings-workspace .settings-category-nav');
-      const content = document.getElementById('settings-category-content');
-      if (!nav || !content) return;
-      let navButton = nav.querySelector('[data-settings-category="technical-report-downloads"]');
-      if (!navButton) {
-        navButton = document.createElement('button'); navButton.type = 'button';
-        navButton.className = 'settings-category-button'; navButton.dataset.settingsCategory = 'technical-report-downloads'; navButton.dataset.adminOnly = 'true';
-        navButton.innerHTML = '<i data-lucide="file-down"></i><span><b>Ruta de Descargas de Informes</b><small>Carpeta para los PDF técnicos.</small></span>';
-        const quoteRoute = nav.querySelector('[data-settings-category="quote-route"]');
-        if (quoteRoute?.nextSibling) nav.insertBefore(navButton, quoteRoute.nextSibling); else nav.appendChild(navButton);
-      }
-      let panel = document.getElementById('settings-category-technical-report-downloads');
-      if (!panel) {
-        panel = document.createElement('section'); panel.id = 'settings-category-technical-report-downloads'; panel.className = 'settings-category-panel hidden';
-        panel.innerHTML = '<div class="settings-category-title"><div><h4>Ruta de Descargas de Informes</h4><p>Configura dónde guardar los PDF de Informes Realizados.</p></div></div><div class="spem-docs-settings"><div id="technical-report-download-settings" class="spem-docs-location"><b>Carpeta actual de informes</b><span id="technical-report-directory-label">Descargas del navegador</span><div><button type="button" data-report-folder-choose>Seleccionar carpeta</button><button type="button" data-report-folder-reset>Restablecer</button></div><small>En Chrome y Edge sobre una conexión segura puedes elegir una carpeta local. Si el navegador no permite acceso a carpetas, el informe se descargará en Descargas.</small></div></div>';
-        content.appendChild(panel);
-      }
-      if (panel.dataset.technicalReportFolderBound !== '1') {
-        panel.dataset.technicalReportFolderBound = '1';
-        panel.addEventListener('click', event => {
-          if (event.target.closest('[data-report-folder-choose]')) this.chooseTechnicalReportDirectory();
-          if (event.target.closest('[data-report-folder-reset]')) this.resetTechnicalReportDirectory();
-        });
-      }
-      const label = panel.querySelector('#technical-report-directory-label');
-      if (label) label.textContent = this.technicalReportsDirectoryHandle?.name || 'Descargas del navegador';
-      if (window.lucide) lucide.createIcons({ root: navButton });
-    };
-
-    proto.chooseTechnicalReportDirectory = async function () {
-      if (this.currentUser?.role !== 'admin') return this.showToast?.('Solo el administrador puede configurar esta carpeta.', 'error');
-      if (!window.isSecureContext || !window.showDirectoryPicker) return this.showToast?.('Este navegador no permite seleccionar carpetas. Los PDF se descargarán en Descargas.', 'info');
-      try {
-        const handle = await window.showDirectoryPicker({ id: 'serviportones-technical-reports', mode: 'readwrite' });
-        this.technicalReportsDirectoryHandle = handle;
-        await persistReportFolder(handle);
-        const label = document.getElementById('technical-report-directory-label');
-        if (label) label.textContent = handle.name || 'Carpeta seleccionada';
-        this.showToast?.('La carpeta quedó configurada para descargar informes.', 'success');
-      } catch (error) {
-        if (error?.name !== 'AbortError') this.showToast?.('No se pudo guardar la carpeta elegida. Revisa los permisos del navegador.', 'error');
-      }
-    };
-
-    proto.resetTechnicalReportDirectory = async function () {
-      if (this.currentUser?.role !== 'admin') return this.showToast?.('Solo el administrador puede configurar esta carpeta.', 'error');
-      try {
-        await persistReportFolder(null);
-        this.technicalReportsDirectoryHandle = null;
-        const label = document.getElementById('technical-report-directory-label');
-        if (label) label.textContent = 'Descargas del navegador';
-        this.showToast?.('Los informes volverán a descargarse en Descargas.', 'success');
-      } catch (error) { this.showToast?.('No se pudo restablecer la carpeta de informes.', 'error'); }
+      // Retirar las antiguas rutas de descarga; ubicación y nombre se eligen
+      // en el diálogo Guardar como PDF del navegador.
+      document.querySelectorAll('[data-settings-category="technical-report-downloads"], #settings-category-technical-report-downloads, [data-settings-category="quote-route"], #settings-category-quote-route').forEach(element => element.remove());
     };
 
     const originalShowSettingsCategory = proto.showSettingsCategory;
@@ -505,11 +551,10 @@
       if (button) { button.disabled = true; button.innerHTML = '<i data-lucide="loader-circle"></i><span>Preparando PDF…</span>'; if (window.lucide) lucide.createIcons({ root: button }); }
       try {
         if (typeof window.printPreviewPdf !== 'function') throw new Error('No está disponible la impresión de la vista previa.');
-        // Imprime el mismo nodo abierto, usando el motor del navegador para conservar clip-path y vectores.
         await window.printPreviewPdf(documentNode, filename);
-        this.showToast?.('En el diálogo de impresión, selecciona “Guardar como PDF”.', 'info');
+        this.showToast?.('En el diálogo de impresión, selecciona “Guardar como PDF” y elige el nombre y la carpeta.', 'info');
       } catch (error) {
-        console.error('[INFORMES] No se pudo imprimir la vista previa.', error);
+        console.error('[INFORMES] No se pudo abrir la impresión del informe.', error);
         this.showToast?.('No se pudo abrir la impresión del informe. Inténtalo nuevamente.', 'error');
       } finally {
         if (button) { button.disabled = false; button.innerHTML = originalText || '<i data-lucide="download"></i><span>Descargar PDF</span>'; if (window.lucide) lucide.createIcons({ root: button }); }
@@ -523,8 +568,9 @@
       let modal = document.getElementById('technical-report-preview-modal');
       if (!modal) { modal = document.createElement('div'); modal.id = 'technical-report-preview-modal'; modal.className = 'technical-report-preview-modal hidden'; document.body.appendChild(modal); }
       const contactFooter = `<footer class="technical-report-document-footer"><svg class="technical-report-footer-accent" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,0 920,0 1000,100 0,100" fill="#8cc63e"></polygon></svg><span>${escapeHtml(FOOTER.email)}</span><span>${escapeHtml(FOOTER.address)}</span><span>${escapeHtml(FOOTER.phones)}</span></footer>`;
-      modal.innerHTML = `<section class="technical-report-preview-shell" role="dialog" aria-modal="true" aria-label="Vista previa del informe"><header class="technical-report-preview-controls"><b>${escapeHtml(report.number)} · Vista previa</b><div><button type="button" data-report-download><i data-lucide="printer"></i><span>Imprimir / Guardar PDF</span></button><button type="button" data-report-preview-close aria-label="Cerrar">×</button></div></header><div class="technical-report-print-root"><article class="technical-report-document"><header class="technical-report-document-header"><div class="technical-report-green-bar"></div><div class="technical-report-black-banner"><b>INFORME TÉCNICO</b><span>${escapeHtml(report.number)}</span></div><img src="assets/media/invoice-pdf-company-logo.png" alt="ServiPortones Eléctricos Martínez"></header><main class="technical-report-document-body"><section class="technical-report-general"><h2>Datos Generales</h2><p>Cliente: <b>${escapeHtml(report.client)}</b></p><p>Fecha de inspección: ${escapeHtml(reportDate(report.inspectionDate))}</p><p>Técnico responsable: ${escapeHtml(report.technician || 'Polo Martínez')}</p></section><div class="technical-report-document-text">${escapeHtml(report.body).replace(/\r?\n/g, '<br>')}</div><section class="technical-report-signature-block"><img src="${escapeHtml(report.signature || signatureSource())}" alt="Firma digital"><b>POLO MARTÍNEZ VALENCIA</b><b>13390420</b><b>Representante legal</b></section></main>${contactFooter}</article></div></section>`;
+      modal.innerHTML = `<section class="technical-report-preview-shell" role="dialog" aria-modal="true" aria-label="Vista previa del informe"><header class="technical-report-preview-controls"><b>${escapeHtml(report.number)} · Vista previa</b><div><button type="button" data-report-download><i data-lucide="download"></i><span>Descargar PDF</span></button><button type="button" data-report-preview-close aria-label="Cerrar">×</button></div></header><div class="technical-report-print-root"><article class="technical-report-document"><header class="technical-report-document-header"><div class="technical-report-green-bar"></div><div class="technical-report-black-banner"><canvas class="technical-report-black-banner-shape" aria-hidden="true"></canvas><b>INFORME TÉCNICO</b><span>${escapeHtml(report.number)}</span></div><img src="assets/media/invoice-pdf-company-logo.png" alt="ServiPortones Eléctricos Martínez"></header><main class="technical-report-document-body"><section class="technical-report-general"><h2>Datos Generales</h2><p>Cliente: <b>${escapeHtml(report.client)}</b></p><p>Fecha de inspección: ${escapeHtml(reportDate(report.inspectionDate))}</p><p>Técnico responsable: ${escapeHtml(report.technician || 'Polo Martínez')}</p></section><div class="technical-report-document-text">${escapeHtml(report.body).replace(/\r?\n/g, '<br>')}</div><section class="technical-report-signature-block"><img src="${escapeHtml(report.signature || signatureSource())}" alt="Firma digital"><b>POLO MARTÍNEZ VALENCIA</b><b>13390420</b><b>Representante legal</b></section></main>${contactFooter}</article></div></section>`;
       modal.classList.remove('hidden');
+      drawReportBanner(modal);
       modal.querySelector('[data-report-preview-close]').addEventListener('click', () => modal.classList.add('hidden'));
       modal.querySelector('[data-report-download]').addEventListener('click', event => this.downloadTechnicalReportPdf(report, modal.querySelector('.technical-report-document'), event.currentTarget));
       if (window.lucide) lucide.createIcons();

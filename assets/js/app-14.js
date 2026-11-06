@@ -146,7 +146,7 @@
     set('payment-pending', pending.length);
     set('payment-paid', paid.length);
     set('payment-value-total', currencyLabel(completed.reduce((sum, task) => sum + (Number(task.workValue) || 0), 0)));
-    set('payment-deposit-total', currencyLabel((this.tasks || []).reduce((sum, task) => sum + depositOf(task), 0)));
+    set('payment-deposit-total', currencyLabel(completed.reduce((sum, task) => sum + depositOf(task), 0)));
     set('payment-overdue-count', overdue.length);
     const alerts = panel.querySelector('#payment-alerts');
     alerts.innerHTML = overdue.length

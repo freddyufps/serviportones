@@ -1,0 +1,32 @@
+/* Compacta solamente los accesos de navegación del panel en móvil.
+   Conserva el tamaño de cada botón e imagen definido en app-55.css. */
+@media (max-width: 540px) {
+  #orders-view-navigation {
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    grid-auto-flow: row;
+    align-items: center;
+    justify-content: center;
+    gap: 4px !important;
+    width: min(100%, 236px) !important;
+    margin-right: auto !important;
+    margin-left: auto !important;
+    padding: 0 !important;
+  }
+
+  #orders-view-navigation > .orders-main-access-group,
+  #orders-view-navigation > .orders-clients-access-group {
+    display: contents !important;
+  }
+
+  #orders-view-navigation .orders-action-tile {
+    justify-self: center !important;
+    align-self: center !important;
+  }
+
+  #orders-view-navigation [data-order-view="active"] { grid-column: 1 / span 2 !important; grid-row: 1 !important; }
+  #orders-view-navigation [data-order-view="clients"] { grid-column: 3 / span 2 !important; grid-row: 1 !important; }
+  #orders-view-navigation [data-order-view="reports"] { grid-column: 5 / span 2 !important; grid-row: 1 !important; }
+  #orders-view-navigation #btn-archived-quotes { grid-column: 2 / span 2 !important; grid-row: 2 !important; }
+  #orders-view-navigation [data-order-view="invoices"] { grid-column: 4 / span 2 !important; grid-row: 2 !important; }
+}
