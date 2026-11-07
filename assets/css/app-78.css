@@ -1,0 +1,250 @@
+/* Vista previa fija A4 para cotizaciones. Solo afecta al documento dentro de su modal. */
+#quote-preview-shell .quote-preview-content {
+  box-sizing: border-box;
+  display: block !important;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  padding: 18px !important;
+}
+
+#quote-preview-shell .quote-a4-frame {
+  position: relative;
+  flex: none;
+  margin: 0 auto;
+  background: #fff;
+}
+
+#quote-preview-shell .quote-a4-frame > .quote-document {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  box-sizing: border-box !important;
+  width: 794px !important;
+  max-width: none !important;
+  min-height: 1123px !important;
+  margin: 0 !important;
+  padding: 34px 40px 24px !important;
+  font-size: 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  transform-origin: top left !important;
+  box-shadow: 0 8px 28px rgba(20, 38, 62, .14) !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-topline {
+  height: 6px !important;
+  margin: -34px -40px 25px !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-header {
+  align-items: center !important;
+  gap: 20px !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-brand {
+  gap: 12px !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-brand img {
+  width: 184px !important;
+  height: 78px !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-number b {
+  font-size: 19px !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-header.quote-doc-report-header {
+  display: block !important;
+  height: 210px !important;
+  margin: -34px -40px 0 !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-report-header .quote-report-green-band {
+  top: 49px !important;
+  left: 0 !important;
+  width: 52% !important;
+  height: 34px !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-report-header .quote-report-black-banner {
+  top: 49px !important;
+  right: 0 !important;
+  width: 58% !important;
+  height: 101px !important;
+  overflow: hidden !important;
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
+  background: transparent !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-report-header .quote-report-black-banner-shape {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-report-header .quote-doc-logo {
+  top: 105px !important;
+  left: 40px !important;
+  width: 245px !important;
+  height: 101px !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-report-header .quote-report-meta {
+  top: 67px !important;
+  right: 38px !important;
+  width: 39% !important;
+  gap: 4px !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-report-header .quote-report-meta > span:first-child {
+  font-size: 10px !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-report-header .quote-report-meta > b {
+  font-size: 20px !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-report-header .quote-report-meta > small {
+  font-size: 10px !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-company-line {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 14px !important;
+  margin: 0 0 18px !important;
+  padding: 9px 0 !important;
+  font-size: 9px !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-client {
+  grid-template-columns: 1.2fr 1fr !important;
+  padding: 15px !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-products {
+  overflow: hidden !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-products table {
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: fixed !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-products th:first-child,
+#quote-preview-shell .quote-a4-frame .quote-doc-products td:first-child {
+  width: 72px !important;
+  min-width: 72px !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-products th:nth-child(2),
+#quote-preview-shell .quote-a4-frame .quote-doc-products td:nth-child(2) {
+  width: auto !important;
+  min-width: 0 !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-products th:nth-child(3),
+#quote-preview-shell .quote-a4-frame .quote-doc-products td:nth-child(3) {
+  width: 58px !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-products th:nth-child(4),
+#quote-preview-shell .quote-a4-frame .quote-doc-products td:nth-child(4) {
+  width: 96px !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-products th:nth-child(5),
+#quote-preview-shell .quote-a4-frame .quote-doc-products td:nth-child(5) {
+  width: 82px !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-two {
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-thanks {
+  margin: auto 0 6px !important;
+  padding-top: 18px !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-doc-footer {
+  padding: 10px 0 0 !important;
+  border-top: 2px solid #648525 !important;
+  border-bottom: 0 !important;
+}
+
+@media print {
+  @page quote-a4-preview {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  body > *:not(#quote-preview-shell) {
+    display: none !important;
+  }
+
+  #quote-preview-shell {
+    position: static !important;
+    inset: auto !important;
+    display: block !important;
+    width: 794px !important;
+    height: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+    page: quote-a4-preview;
+  }
+
+  #quote-preview-shell .quotes-scrim,
+  #quote-preview-shell .quote-preview-toolbar {
+    display: none !important;
+  }
+
+  #quote-preview-shell .quote-preview-window,
+  #quote-preview-shell .quote-preview-content {
+    position: static !important;
+    display: block !important;
+    width: 794px !important;
+    height: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+
+  #quote-preview-shell .quote-a4-frame {
+    width: 794px !important;
+    height: auto !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    page: quote-a4-preview;
+  }
+
+  #quote-preview-shell .quote-a4-frame > .quote-document {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    width: 794px !important;
+    min-height: 1123px !important;
+    margin: 0 !important;
+    transform: none !important;
+    box-shadow: none !important;
+    page: quote-a4-preview;
+  }
+}
