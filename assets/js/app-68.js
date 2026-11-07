@@ -5,6 +5,15 @@
     if (!Number.isFinite(date.getTime())) return null;
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   };
+  const resolveOrderDeposit = (rawValue, task, inputPresent) => {
+    const raw = text(rawValue);
+    const current = Math.max(0, Number(task?.depositAmount) || 0);
+    // Blank/missing means "leave the existing deposit alone" while editing.
+    // Entering 0 is the explicit action to clear it.
+    const preserve = Boolean(task) && (!inputPresent || raw === '');
+    const amount = preserve ? current : raw === '' ? 0 : Number(raw);
+    return { amount, preserveDate: preserve || Boolean(task && amount === current) };
+  };
 
   function coordinates(value) {
     const source = text(value);
@@ -199,7 +208,8 @@
         }
         const depositField = form?.querySelector('#task-deposit-amount');
         const rawDeposit = String(depositField?.value ?? '').trim();
-        const depositAmount = rawDeposit === '' ? 0 : Number(rawDeposit);
+        const depositState = resolveOrderDeposit(rawDeposit, editingTask, Boolean(depositField));
+        const depositAmount = depositState.amount;
         if (rawDeposit !== '' && (!Number.isFinite(depositAmount) || depositAmount < 0)) {
           this.showToast?.('Escribe un valor de abono válido, igual o mayor que cero.', 'error');
           depositField?.focus();
@@ -225,7 +235,9 @@
                 : new Date(Number(scheduledDate[1]), Number(scheduledDate[2]) - 1, Number(scheduledDate[3]), 12).getTime();
             }
             target.depositAmount = depositAmount;
-            target.depositDate = depositAmount > 0 ? localDateStamp(target.createdAtMs) : null;
+            target.depositDate = depositAmount > 0
+              ? depositState.preserveDate ? (editingTask?.depositDate ?? null) : localDateStamp(Date.now())
+              : null;
           }
           return originalSaveTasks.apply(this, saveArgs);
         };
