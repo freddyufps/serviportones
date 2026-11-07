@@ -53,7 +53,7 @@
         try{
           doc.style.transform="none";
           await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-          blob=await window.spemCreatePreviewPdfBlob(doc,{format:"a4",marginMm:0});
+          blob=await window.spemCreatePreviewPdfBlob(doc,{format:"a4",marginMm:0,repeatChrome:{headerEndSelector:".quote-doc-client",footerStartSelectors:[".quote-doc-thanks",".quote-doc-footer"]}});
         }finally{doc.style.transform=previewScale}
         if(!blob?.size)throw new Error("El PDF generado está vacío.");
         if(fileHandle){const writable=await fileHandle.createWritable();await writable.write(blob);await writable.close();this.showToast("Cotización guardada en la ubicación elegida.","success");}

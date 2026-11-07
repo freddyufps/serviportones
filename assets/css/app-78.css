@@ -131,6 +131,17 @@
   overflow: hidden !important;
 }
 
+#quote-preview-shell .quote-a4-frame .quote-doc-tax-note {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  align-self: stretch !important;
+  border: 1px solid #e1e6dc !important;
+  border-radius: 13px !important;
+  padding-right: 15px !important;
+  padding-left: 15px !important;
+}
+
 #quote-preview-shell .quote-a4-frame .quote-doc-products table {
   width: 100% !important;
   min-width: 0 !important;

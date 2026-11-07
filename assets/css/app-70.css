@@ -65,6 +65,7 @@
 .technical-report-black-banner b,.technical-report-black-banner span{position:relative;z-index:1}
 .technical-report-black-banner b{font-size:14px;letter-spacing:.04em}
 .technical-report-black-banner span{font-size:10px;letter-spacing:.1em}
+.technical-report-black-banner small{position:relative;z-index:1;color:#e5e7eb;font-size:10px;font-weight:500;letter-spacing:normal}
 .technical-report-document-header>img{position:absolute;top:31mm;left:12mm;width:60mm;height:24mm;object-fit:contain;object-position:left center}
 .technical-report-document-body{position:relative;z-index:1;display:flow-root;box-sizing:border-box;min-height:203mm;padding-bottom:0;font-size:11.5pt;line-height:1.55}
 .technical-report-general{margin:5mm 0 13mm}

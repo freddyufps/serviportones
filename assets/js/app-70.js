@@ -144,6 +144,58 @@
       // Redondear evita que un desbordamiento subpíxel de html2canvas cree
       // una página adicional casi vacía en documentos que caben en una hoja.
       const sourcePageHeight = Math.max(1, Math.round(canvas.width * contentHeightMm / contentWidthMm));
+      const repeatedChrome = options.repeatChrome;
+      if (repeatedChrome?.headerEndSelector && repeatedChrome?.footerStartSelectors?.length) {
+        const nodeRect = node.getBoundingClientRect();
+        const rasterScale = canvas.width / widthPx;
+        const headerAnchor = node.querySelector(repeatedChrome.headerEndSelector);
+        const footerAnchors = repeatedChrome.footerStartSelectors
+          .map(selector => node.querySelector(selector))
+          .filter(Boolean);
+        if (headerAnchor && footerAnchors.length) {
+          const headerHeight = Math.max(0, Math.round((headerAnchor.getBoundingClientRect().top - nodeRect.top) * rasterScale));
+          const footerStart = Math.max(headerHeight, Math.min(canvas.height, Math.round((Math.min(...footerAnchors.map(element => element.getBoundingClientRect().top)) - nodeRect.top) * rasterScale)));
+          const footerHeight = canvas.height - footerStart;
+          const bodyHeight = footerStart - headerHeight;
+          const pageBodyHeight = sourcePageHeight - headerHeight - footerHeight;
+          const repeatedPageCount = pageBodyHeight > 0 ? Math.max(1, Math.ceil(bodyHeight / pageBodyHeight)) : 0;
+
+          // Solo las piezas largas usan marco repetido. Los documentos de una
+          // página conservan exactamente la captura que ya tenían.
+          if (repeatedPageCount > 1) {
+            for (let page = 0; page < repeatedPageCount; page += 1) {
+              if (page) pdf.addPage('a4', 'portrait');
+              const pageCanvas = document.createElement('canvas');
+              pageCanvas.width = canvas.width;
+              pageCanvas.height = sourcePageHeight;
+              const context = pageCanvas.getContext('2d');
+              if (!context) throw new Error('No fue posible preparar la página del documento.');
+              context.fillStyle = '#ffffff';
+              context.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+              context.drawImage(canvas, 0, 0, canvas.width, headerHeight, 0, 0, canvas.width, headerHeight);
+              const sourceY = headerHeight + page * pageBodyHeight;
+              const bodySliceHeight = Math.max(0, Math.min(pageBodyHeight, footerStart - sourceY));
+              if (bodySliceHeight) {
+                context.drawImage(canvas, 0, sourceY, canvas.width, bodySliceHeight, 0, headerHeight, canvas.width, bodySliceHeight);
+              }
+              if (footerHeight) {
+                context.drawImage(canvas, 0, footerStart, canvas.width, footerHeight, 0, sourcePageHeight - footerHeight, canvas.width, footerHeight);
+              }
+              if (repeatedChrome.headerDivider) {
+                const inset = 18 * 96 / 25.4 * rasterScale;
+                context.strokeStyle = '#dbe4ee';
+                context.lineWidth = Math.max(1, rasterScale);
+                context.beginPath();
+                context.moveTo(inset, headerHeight - context.lineWidth / 2);
+                context.lineTo(canvas.width - inset, headerHeight - context.lineWidth / 2);
+                context.stroke();
+              }
+              pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.98), 'JPEG', marginMm, marginMm, contentWidthMm, contentHeightMm, `document-page-${page + 1}`, 'FAST');
+            }
+            return pdf.output('blob');
+          }
+        }
+      }
       const pageCount = Math.max(1, Math.ceil(canvas.height / sourcePageHeight));
       for (let page = 0; page < pageCount; page += 1) {
         if (page) pdf.addPage('a4', 'portrait');
@@ -662,7 +714,7 @@
         if (typeof window.spemCreatePreviewPdfBlob !== 'function') throw new Error('No está disponible la generación del PDF.');
         // El informe ya está maquetado a 210 mm. Capturarlo a ancho A4 completo
         // conserva su escala; el generador añade páginas solo si supera una hoja.
-        const blob = await window.spemCreatePreviewPdfBlob(documentNode, { format: 'a4', marginMm: 0 });
+        const blob = await window.spemCreatePreviewPdfBlob(documentNode, { format: 'a4', marginMm: 0, repeatChrome: { headerEndSelector: '.technical-report-document-body', footerStartSelectors: ['.technical-report-document-footer'], headerDivider: true } });
         if (!blob?.size) throw new Error('El PDF generado está vacío.');
         if (fileHandle) {
           const writable = await fileHandle.createWritable();
@@ -690,7 +742,7 @@
       let modal = document.getElementById('technical-report-preview-modal');
       if (!modal) { modal = document.createElement('div'); modal.id = 'technical-report-preview-modal'; modal.className = 'technical-report-preview-modal hidden'; document.body.appendChild(modal); }
       const contactFooter = `<footer class="technical-report-document-footer"><svg class="technical-report-footer-accent" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,0 920,0 1000,100 0,100" fill="#8cc63e"></polygon></svg><span>${escapeHtml(FOOTER.email)}</span><span>${escapeHtml(FOOTER.address)}</span><span>${escapeHtml(FOOTER.phones)}</span></footer>`;
-      modal.innerHTML = `<section class="technical-report-preview-shell" role="dialog" aria-modal="true" aria-label="Vista previa del informe"><header class="technical-report-preview-controls"><b>${escapeHtml(report.number)} · Vista previa</b><div><button type="button" data-report-download><i data-lucide="download"></i><span>Descargar PDF</span></button><button type="button" data-report-preview-close aria-label="Cerrar">×</button></div></header><div class="technical-report-print-root"><article class="technical-report-document"><header class="technical-report-document-header"><div class="technical-report-green-bar"></div><div class="technical-report-black-banner"><canvas class="technical-report-black-banner-shape" aria-hidden="true"></canvas><b>INFORME TÉCNICO</b><span>${escapeHtml(report.number)}</span></div><img src="assets/media/invoice-pdf-company-logo.png" alt="ServiPortones Eléctricos Martínez"></header><main class="technical-report-document-body"><section class="technical-report-general"><h2>Datos Generales</h2><p>Cliente: <b>${escapeHtml(report.client)}</b></p><p>Fecha de inspección: ${escapeHtml(reportDate(report.inspectionDate))}</p><p>Técnico responsable: ${escapeHtml(report.technician || 'Polo Martínez')}</p></section><div class="technical-report-document-text">${escapeHtml(formatReportBody(report.body)).replace(/\r?\n/g, '<br>')}</div><section class="technical-report-signature-block"><img src="${escapeHtml(report.signature || signatureSource())}" alt="Firma digital"><b>POLO MARTÍNEZ VALENCIA</b><b>13390420</b><b>Representante legal</b></section></main>${contactFooter}</article></div></section>`;
+      modal.innerHTML = `<section class="technical-report-preview-shell" role="dialog" aria-modal="true" aria-label="Vista previa del informe"><header class="technical-report-preview-controls"><b>${escapeHtml(report.number)} · Vista previa</b><div><button type="button" data-report-download><i data-lucide="download"></i><span>Descargar PDF</span></button><button type="button" data-report-preview-close aria-label="Cerrar">×</button></div></header><div class="technical-report-print-root"><article class="technical-report-document"><header class="technical-report-document-header"><div class="technical-report-green-bar"></div><div class="technical-report-black-banner"><canvas class="technical-report-black-banner-shape" aria-hidden="true"></canvas><b>INFORME TÉCNICO</b><span>${escapeHtml(report.number)}</span><small>${escapeHtml(reportDate(report.inspectionDate))}</small></div><img src="assets/media/invoice-pdf-company-logo.png" alt="ServiPortones Eléctricos Martínez"></header><main class="technical-report-document-body"><section class="technical-report-general"><h2>Datos Generales</h2><p>Cliente: <b>${escapeHtml(report.client)}</b></p><p>Fecha de inspección: ${escapeHtml(reportDate(report.inspectionDate))}</p><p>Técnico responsable: ${escapeHtml(report.technician || 'Polo Martínez')}</p></section><div class="technical-report-document-text">${escapeHtml(formatReportBody(report.body)).replace(/\r?\n/g, '<br>')}</div><section class="technical-report-signature-block"><img src="${escapeHtml(report.signature || signatureSource())}" alt="Firma digital"><b>POLO MARTÍNEZ VALENCIA</b><b>13390420</b><b>Representante legal</b></section></main>${contactFooter}</article></div></section>`;
       modal.classList.remove('hidden');
       drawReportBanner(modal);
       modal.querySelector('[data-report-preview-close]').addEventListener('click', () => modal.classList.add('hidden'));
