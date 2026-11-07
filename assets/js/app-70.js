@@ -225,6 +225,46 @@
     const reportsViewIsCurrent = instance => Boolean(
       instance?.currentUser?.role === 'admin' && instance.technicalReportsArchiveOpen && !hasCompetingAdminView(instance)
     );
+    const keepEmployeeAuditOutOfReports = instance => {
+      const section = document.getElementById('section-admin-audit-log');
+      if (!section) return;
+      if (reportsViewIsCurrent(instance)) {
+        section.dataset.reportsForcedHidden = '1';
+        section.classList.add('hidden');
+        section.style.setProperty('display', 'none', 'important');
+      } else if (section.dataset.reportsForcedHidden === '1') {
+        delete section.dataset.reportsForcedHidden;
+        section.style.removeProperty('display');
+        const ordersDashboardIsCurrent = instance?.currentUser?.role === 'admin' && !(
+          instance.showDocumentControl || instance.clientsDirectoryOpen || instance.quoteArchiveInlineOpen || instance.quoteConsolidationOpen
+        );
+        section.classList.toggle('hidden', !ordersDashboardIsCurrent);
+      }
+    };
+    // The employee audit log is an Orders dashboard sibling. Keep it out of
+    // the independent Technical Reports view even during order snapshots.
+    const renderTasksBeforeReports = proto.renderTasks;
+    if (typeof renderTasksBeforeReports === 'function' && !renderTasksBeforeReports.__reportAuditIsolation70) {
+      const wrapped = function (...args) {
+        keepEmployeeAuditOutOfReports(this);
+        return renderTasksBeforeReports.apply(this, args);
+      };
+      wrapped.__reportAuditIsolation70 = true;
+      proto.renderTasks = wrapped;
+    }
+    const renderAuditBeforeReports = proto.renderAdminAuditLog;
+    if (typeof renderAuditBeforeReports === 'function' && !renderAuditBeforeReports.__reportAuditIsolation70) {
+      const wrapped = function (...args) {
+        if (reportsViewIsCurrent(this)) {
+          keepEmployeeAuditOutOfReports(this);
+          return;
+        }
+        keepEmployeeAuditOutOfReports(this);
+        return renderAuditBeforeReports.apply(this, args);
+      };
+      wrapped.__reportAuditIsolation70 = true;
+      proto.renderAdminAuditLog = wrapped;
+    }
     restoreReportFolder().then(handle => {
       if (!handle || window.app !== app) return;
       app.technicalReportsDirectoryHandle = handle;
@@ -481,7 +521,7 @@
       document.getElementById('empty-state')?.classList.add('hidden');
       document.getElementById('archived-documents-panel')?.classList.add('hidden');
       document.getElementById('clients-view-container')?.classList.add('hidden');
-      document.getElementById('section-admin-audit-log')?.classList.add('hidden');
+      keepEmployeeAuditOutOfReports(this);
       this.syncTechnicalReportsNavigation();
       if (window.lucide) lucide.createIcons();
     };
