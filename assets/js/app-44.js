@@ -19,7 +19,53 @@
     openQuotesArchive(){if(this.currentUser?.role!=='admin')return;this.technicalReportsArchiveOpen=false;if(!this.quoteArchiveInlineOpen){this.quoteArchiveCommittedSearch='';this.quoteArchiveRowsRefreshPending=false}this.quoteArchiveInlineOpen=true;this.clientsDirectoryOpen=false;this.showArchivedTasks=false;this.showDocumentControl=false;this.quoteConsolidationOpen=false;document.getElementById('tasks-container')?.classList.add('hidden');document.getElementById('clients-view-container')?.classList.add('hidden');document.getElementById('reports-view-container')?.classList.add('hidden');document.getElementById('quotes-view-container')?.classList.remove('hidden');document.getElementById('quotes-shell')?.classList.add('hidden');document.body.classList.remove('quotes-open');this.renderQuoteArchiveInline()},
     closeQuotesArchiveInline(){this.quoteArchiveInlineOpen=false;document.getElementById('quotes-view-container')?.classList.add('hidden');const host=document.getElementById('quotes-view-container');if(host){host.style.display='';host.style.width='';host.style.gridTemplateColumns=''}},
     filterQuotes(){const root=document.querySelector('#quotes-shell:not(.hidden) .quotes-archive, #quotes-view-container .quotes-archive');if(!root)return;const v=id=>root.querySelector('#'+id)?.value||'',norm=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es'),term=norm(this.quoteArchiveCommittedSearch||''),month=v('quotes-month'),client=v('quotes-client'),condo=v('quotes-condo'),advisor=v('quotes-advisor'),byId=new Map((this.quotes||[]).map(q=>[String(q.id),q]));let shown=0;root.querySelectorAll('.quote-archive-row').forEach(row=>{const q=byId.get(row.dataset.quoteId)||{},match=(!term||norm([q.number,q.client,q.condo,q.address].join(' ')).includes(term))&&(!month||String(q.date||'').startsWith(month))&&(!client||q.client===client)&&(!condo||q.condo===condo)&&(!advisor||q.advisor===advisor);row.classList.toggle('hidden',!match);if(match)shown++});const total=(this.quotes||[]).length,noResults=root.querySelector('#quotes-no-results'),empty=root.querySelector('#quotes-empty-state');if(noResults)noResults.classList.toggle('hidden',shown>0||!total);if(empty)empty.classList.toggle('hidden',Boolean(total));const count=root.querySelector('#quotes-visible-count');if(count)count.textContent=shown+' de '+total+' cotizaciones';if(this.quoteArchiveInlineOpen){const top=document.getElementById('filtered-count');if(top)top.textContent=String(shown)} },
-    decorateQuoteOrderCards(){ document.querySelectorAll('#tasks-container [data-task-id]').forEach(c=>{const id=String(c.dataset.taskId),qs=(this.quotes||[]).filter(q=>String(q.orderId)===id);let w=c.querySelector('.order-quotes-actions');if(!qs.length){w?.remove();return}if(!w){w=document.createElement('div');w.className='order-quotes-actions';c.appendChild(w)}w.replaceChildren();qs.forEach(q=>{const b=document.createElement('button');b.type='button';b.className='order-quotes-link';b.textContent='✦ '+q.number+' · Abrir';b.addEventListener('click',()=>this.showQuotePreview(q));w.appendChild(b)})})}
+    decorateQuoteOrderCards(){
+      const quotes=Array.isArray(this.quotes)?this.quotes:[];
+      const tasks=Array.isArray(this.tasks)?this.tasks:[];
+      document.querySelectorAll('#tasks-container [data-task-id]').forEach(card=>{
+        const taskId=String(card.dataset.taskId||'');
+        const task=tasks.find(item=>String(item?.id||'')===taskId);
+        let quoteId='',quote=null;
+
+        // Orders created through "Asignar Orden" carry the exact source id.
+        // It wins over legacy reverse links, which can point to another order
+        // when a quote has been used more than once.
+        if(task&&String(task.sourceQuoteId||'').trim()){
+          quoteId=String(task.sourceQuoteId).trim();
+          quote=quotes.find(item=>String(item?.id||'')===quoteId)||null;
+        }else if(task){
+          // Older orders may not have sourceQuoteId. Use legacy relationships
+          // only when they identify one quote unambiguously; never show a
+          // guessed or cross-linked quote.
+          const candidates=new Set();
+          const taskQuoteIds=Array.isArray(task.quoteIds)?task.quoteIds.map(String):[];
+          taskQuoteIds.forEach(id=>{if(quotes.some(item=>String(item?.id||'')===id))candidates.add(id)});
+          quotes.forEach(item=>{
+            const hasOrderArray=Array.isArray(item?.orderIds)&&item.orderIds.map(String).includes(taskId);
+            const hasLegacyOrder=String(item?.orderId||'')===taskId;
+            if(hasOrderArray||hasLegacyOrder)candidates.add(String(item.id));
+          });
+          if(candidates.size===1){quoteId=[...candidates][0];quote=quotes.find(item=>String(item?.id||'')===quoteId)||null;}
+        }
+
+        let wrapper=card.querySelector('.order-quotes-actions');
+        const quoteNumber=String(quote?.number||task?.sourceQuoteNumber||'').trim();
+        if(!quoteId||!quoteNumber){wrapper?.remove();return;}
+        if(!wrapper){wrapper=document.createElement('div');wrapper.className='order-quotes-actions';card.appendChild(wrapper);}
+        wrapper.replaceChildren();
+        const button=document.createElement('button');
+        button.type='button';
+        button.className='order-quotes-link';
+        button.dataset.quoteId=quoteId;
+        button.textContent='✦ '+quoteNumber+' · Abrir';
+        button.addEventListener('click',()=>{
+          const exactQuote=(this.quotes||[]).find(item=>String(item?.id||'')===button.dataset.quoteId);
+          if(exactQuote)this.showQuotePreview(exactQuote);
+          else this.showToast?.('No se encontró la cotización de origen de esta orden.','error');
+        });
+        wrapper.appendChild(button);
+      });
+    }
   };
   const archiveStyle=document.createElement('style');archiveStyle.textContent="\n#quotes-view-container:not(.hidden):has(.quotes-archive){display:block!important;width:100%!important;grid-template-columns:minmax(0,1fr)!important}.quotes-archive{box-sizing:border-box;width:100%;padding:clamp(12px,2vw,22px);border:1px solid #dbe5ef;border-radius:18px;background:linear-gradient(145deg,#fff,#f7f9fc);box-shadow:0 8px 26px rgba(22,43,67,.06)}.quotes-archive-heading{margin-bottom:12px}.quotes-archive-heading h3{font-size:18px!important}.quotes-filters{grid-template-columns:minmax(220px,1fr) repeat(4,minmax(115px,160px));gap:8px;padding:9px}.quote-archive-row{margin-top:8px;padding:10px 12px;border-radius:12px}.quote-archive-main{gap:3px}.quote-archive-actions{gap:5px}.quote-archive-actions button{padding:6px 8px}.quotes-archive .quote-archive-row.hidden,.quotes-archive .quotes-empty.hidden{display:none!important}.quotes-archive .quotes-visible-count{display:block!important;margin:8px 2px;color:#64748b;font-size:12px}@media(max-width:900px){.quotes-filters{grid-template-columns:repeat(3,minmax(0,1fr))}.quotes-filters input:first-child{grid-column:span 2}}@media(max-width:600px){.quotes-archive{padding:12px;border-radius:14px}.quotes-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.quotes-filters input:first-child{grid-column:1/-1}.quotes-archive-heading{align-items:center}.quotes-archive-heading h3{font-size:16px!important}.quotes-archive-heading>button{padding:8px 9px;font-size:10px}}\n";document.head.appendChild(archiveStyle);
   const install=()=>{

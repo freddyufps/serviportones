@@ -143,14 +143,21 @@
     const releaseAction=()=>{this.quoteOrderCreationInProgress=false;if(button){button.disabled=false;button.textContent=button.dataset.originalText||"📋 Asignar Orden";delete button.dataset.originalText;}};
     const localQuote=(this.quotes||[]).find(item=>String(item.id)===String(quoteId));
     if(!localQuote){releaseAction();return this.showToast("No se encontró esta cotización. Actualiza el listado e inténtalo de nuevo.","error");}
-    let quote=localQuote;
+    // The quote id passed by the selected archive row is authoritative. Do not
+    // let a stale/malformed embedded `id` field redirect this order to another
+    // quote when reading local or Firestore data.
+    const sourceQuoteId=String(quoteId);
+    let quote={...localQuote,id:sourceQuoteId};
     if(window.db&&navigator.onLine){
-      try{const snapshot=await db.collection("cotizaciones").doc(String(quoteId)).get();if(!snapshot.exists){releaseAction();return this.showToast("Esta cotización ya no está disponible.","error");}quote={id:snapshot.id,...snapshot.data()};}
+      try{const snapshot=await db.collection("cotizaciones").doc(sourceQuoteId).get();if(!snapshot.exists){releaseAction();return this.showToast("Esta cotización ya no está disponible.","error");}quote={...snapshot.data(),id:snapshot.id};}
       catch(error){console.error("[COTIZACIONES] No se pudo verificar la cotización antes de crear la orden.",error);releaseAction();return this.showToast("No se pudo verificar la cotización. Revisa tu conexión e inténtalo nuevamente.","error");}
     }
-    const relatedOrders=(this.tasks||[]).filter(task=>String(task.sourceQuoteId||"")===String(quote.id)||(Array.isArray(task.quoteIds)&&task.quoteIds.some(id=>String(id)===String(quote.id))));
     const linkedIds=new Set([quote.orderId,...(Array.isArray(quote.orderIds)?quote.orderIds:[])].filter(Boolean).map(String));
-    const existingOrder=relatedOrders.find(task=>linkedIds.has(String(task.id)))||relatedOrders[0]||(this.tasks||[]).find(task=>linkedIds.has(String(task.id)));
+    const relatedOrders=(this.tasks||[]).filter(task=>String(task.sourceQuoteId||"")===sourceQuoteId);
+    const legacyRelatedOrder=(this.tasks||[]).find(task=>!String(task.sourceQuoteId||"")&&(
+      (Array.isArray(task.quoteIds)&&task.quoteIds.some(id=>String(id)===sourceQuoteId))||linkedIds.has(String(task.id))
+    ));
+    const existingOrder=relatedOrders[0]||legacyRelatedOrder;
     if(existingOrder&&!await this.showSystemConfirm("Esta cotización ya tiene una orden asociada ("+existingOrder.id+"). ¿Desea crear otra?",{title:"Cotización con orden asociada",confirmText:"Crear otra orden",icon:"clipboard-plus"})){releaseAction();return;}
 
     const previousTasks=Array.isArray(this.tasks)?this.tasks.slice():[],previousSequence=this.orderSequenceNext;
@@ -188,7 +195,7 @@
         serviceType:String(items[0]?.description||"Trabajo aprobado desde cotización "+quoteLabel),equipment:"Según cotización",assignedTo:"LIBRE",assignedWorkerId:"",
         priority:"MEDIA",date:workDate,depositAmount:Math.max(0,Number(quote.depositAmount??quote.deposit)||0),depositDate:quote.depositDate||null,createdAtMs:now.getTime(),instructions,fieldFindings:[],status:"PENDIENTE",observations:"",evidence,completedAt:null,
         quoteItems:items.map(({imageData,...item})=>item),quoteTotal:Number(quote.total)||items.reduce((sum,item)=>sum+(Number(item.quantity)||0)*(Number(item.unit)||0),0),
-        sourceQuoteId:String(quote.id),sourceQuoteNumber:quoteLabel,quoteIds:[String(quote.id)],createdAt:new Date().toISOString()
+        sourceQuoteId:sourceQuoteId,sourceQuoteNumber:quoteLabel,quoteIds:[sourceQuoteId],createdAt:new Date().toISOString()
       };
       this.tasks.unshift(task);
       this.orderSequenceNext=this.getNextAvailableOrderNumber(number+1,this.tasks);
@@ -218,7 +225,7 @@
   async deleteQuote(id){if(!(await this.showSystemConfirm("¿Está seguro de eliminar esta cotización?",{title:"Confirmar eliminación",confirmText:"Eliminar",icon:"trash"})))return;this.quotes=this.quotes.filter(q=>q.id!==id);localStorage.setItem(K,JSON.stringify(this.quotes));try{if(window.db)await db.collection("cotizaciones").doc(id).delete()}catch(e){}this.renderQuotesCount();this.openQuotesArchive()},
   sendQuoteWhatsApp(id){let q=this.quotes.find(x=>x.id===id);if(q)window.open("https://wa.me/"+String(q.phone||"").replace(/\D/g,"")+"?text="+encodeURIComponent("Hola "+q.client+", te compartimos la cotización "+q.number+" por "+money(q.total)+"."),"_blank","noopener")},
   sendQuoteEmail(id){let q=this.quotes.find(x=>x.id===id);if(q)location.href="mailto:"+encodeURIComponent(q.email||"")+"?subject="+encodeURIComponent("Cotización "+q.number+" · ServiPortones")+"&body="+encodeURIComponent("Hola "+q.client+", compartimos la cotización "+q.number+" por "+money(q.total)+".")},
-  async syncQuotesFromCloud(){if(this.currentUser?.role!=="admin"||!window.db||this.quotesUnsubscribe)return;try{this.quotesUnsubscribe=db.collection("cotizaciones").onSnapshot(s=>{this.quotes=s.docs.map(d=>Object.assign({id:d.id},d.data()));localStorage.setItem(K,JSON.stringify(this.quotes));this.renderQuotesCount();this.decorateQuoteOrderCards();if(document.getElementById("quotes-shell")&&!document.getElementById("quotes-shell").classList.contains("hidden")&&document.getElementById("quotes-window-heading").textContent.includes("archivadas"))this.openQuotesArchive()})}catch(e){console.warn(e)}},
+  async syncQuotesFromCloud(){if(this.currentUser?.role!=="admin"||!window.db||this.quotesUnsubscribe)return;try{this.quotesUnsubscribe=db.collection("cotizaciones").onSnapshot(s=>{this.quotes=s.docs.map(d=>({...d.data(),id:d.id}));localStorage.setItem(K,JSON.stringify(this.quotes));this.renderQuotesCount();this.decorateQuoteOrderCards();if(document.getElementById("quotes-shell")&&!document.getElementById("quotes-shell").classList.contains("hidden")&&document.getElementById("quotes-window-heading").textContent.includes("archivadas"))this.openQuotesArchive()})}catch(e){console.warn(e)}},
   observeQuoteOrderCards(){let t=document.getElementById("tasks-container");if(t&&!this.quoteObserver){this.quoteObserver=new MutationObserver(()=>this.decorateQuoteOrderCards());this.quoteObserver.observe(t,{childList:true});this.decorateQuoteOrderCards()}},
   decorateQuoteOrderCards(){document.querySelectorAll("#tasks-container [data-task-id]").forEach(c=>{let qs=this.quotes.filter(q=>q.orderId===c.dataset.taskId),b=c.querySelector(".order-quotes-link");if(!qs.length){b?.remove();return}if(!b){b=document.createElement("button");b.className="order-quotes-link";c.appendChild(b)}b.textContent="✦ "+qs.length+" cotización asociada · Abrir";b.onclick=()=>this.openQuotesArchive()})},
   installQuoteSettingsRoute(){document.querySelectorAll('[data-settings-category="quote-route"], #settings-category-quote-route').forEach(element=>element.remove())},
