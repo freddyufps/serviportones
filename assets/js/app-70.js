@@ -15,6 +15,19 @@
     phones: '3133885836 - 3157716656'
   };
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
+  const formatReportBody = value => {
+    const lines = String(value ?? '').replace(/\r\n?/g, '\n').split('\n');
+    const output = [];
+    for (let index = 0; index < lines.length; index++) {
+      const marker = lines[index].match(/^\s*([•·●○▪◦‣⁃*]|[-–—])\s*$/);
+      if (!marker) { output.push(lines[index]); continue; }
+      let next = index + 1;
+      while (next < lines.length && !lines[next].trim()) next++;
+      if (next < lines.length) { output.push(marker[1] + ' ' + lines[next].trimStart()); index = next; }
+      else output.push(lines[index]);
+    }
+    return output.join('\n');
+  };
   const localRead = () => {
     try { const value = JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); return Array.isArray(value) ? value : []; }
     catch { return []; }
@@ -455,7 +468,7 @@
         client: modal.querySelector('#technical-report-client').value.trim(),
         inspectionDate: modal.querySelector('#technical-report-inspection-date').value,
         technician: 'Polo Martínez',
-        body: modal.querySelector('#technical-report-body').value.trim(),
+        body: formatReportBody(modal.querySelector('#technical-report-body').value).trim(),
         signature: old?.signature || signatureSource(),
         createdAt: old?.createdAt || timestamp,
         updatedAt: timestamp,
@@ -677,7 +690,7 @@
       let modal = document.getElementById('technical-report-preview-modal');
       if (!modal) { modal = document.createElement('div'); modal.id = 'technical-report-preview-modal'; modal.className = 'technical-report-preview-modal hidden'; document.body.appendChild(modal); }
       const contactFooter = `<footer class="technical-report-document-footer"><svg class="technical-report-footer-accent" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,0 920,0 1000,100 0,100" fill="#8cc63e"></polygon></svg><span>${escapeHtml(FOOTER.email)}</span><span>${escapeHtml(FOOTER.address)}</span><span>${escapeHtml(FOOTER.phones)}</span></footer>`;
-      modal.innerHTML = `<section class="technical-report-preview-shell" role="dialog" aria-modal="true" aria-label="Vista previa del informe"><header class="technical-report-preview-controls"><b>${escapeHtml(report.number)} · Vista previa</b><div><button type="button" data-report-download><i data-lucide="download"></i><span>Descargar PDF</span></button><button type="button" data-report-preview-close aria-label="Cerrar">×</button></div></header><div class="technical-report-print-root"><article class="technical-report-document"><header class="technical-report-document-header"><div class="technical-report-green-bar"></div><div class="technical-report-black-banner"><canvas class="technical-report-black-banner-shape" aria-hidden="true"></canvas><b>INFORME TÉCNICO</b><span>${escapeHtml(report.number)}</span></div><img src="assets/media/invoice-pdf-company-logo.png" alt="ServiPortones Eléctricos Martínez"></header><main class="technical-report-document-body"><section class="technical-report-general"><h2>Datos Generales</h2><p>Cliente: <b>${escapeHtml(report.client)}</b></p><p>Fecha de inspección: ${escapeHtml(reportDate(report.inspectionDate))}</p><p>Técnico responsable: ${escapeHtml(report.technician || 'Polo Martínez')}</p></section><div class="technical-report-document-text">${escapeHtml(report.body).replace(/\r?\n/g, '<br>')}</div><section class="technical-report-signature-block"><img src="${escapeHtml(report.signature || signatureSource())}" alt="Firma digital"><b>POLO MARTÍNEZ VALENCIA</b><b>13390420</b><b>Representante legal</b></section></main>${contactFooter}</article></div></section>`;
+      modal.innerHTML = `<section class="technical-report-preview-shell" role="dialog" aria-modal="true" aria-label="Vista previa del informe"><header class="technical-report-preview-controls"><b>${escapeHtml(report.number)} · Vista previa</b><div><button type="button" data-report-download><i data-lucide="download"></i><span>Descargar PDF</span></button><button type="button" data-report-preview-close aria-label="Cerrar">×</button></div></header><div class="technical-report-print-root"><article class="technical-report-document"><header class="technical-report-document-header"><div class="technical-report-green-bar"></div><div class="technical-report-black-banner"><canvas class="technical-report-black-banner-shape" aria-hidden="true"></canvas><b>INFORME TÉCNICO</b><span>${escapeHtml(report.number)}</span></div><img src="assets/media/invoice-pdf-company-logo.png" alt="ServiPortones Eléctricos Martínez"></header><main class="technical-report-document-body"><section class="technical-report-general"><h2>Datos Generales</h2><p>Cliente: <b>${escapeHtml(report.client)}</b></p><p>Fecha de inspección: ${escapeHtml(reportDate(report.inspectionDate))}</p><p>Técnico responsable: ${escapeHtml(report.technician || 'Polo Martínez')}</p></section><div class="technical-report-document-text">${escapeHtml(formatReportBody(report.body)).replace(/\r?\n/g, '<br>')}</div><section class="technical-report-signature-block"><img src="${escapeHtml(report.signature || signatureSource())}" alt="Firma digital"><b>POLO MARTÍNEZ VALENCIA</b><b>13390420</b><b>Representante legal</b></section></main>${contactFooter}</article></div></section>`;
       modal.classList.remove('hidden');
       drawReportBanner(modal);
       modal.querySelector('[data-report-preview-close]').addEventListener('click', () => modal.classList.add('hidden'));
