@@ -3868,9 +3868,9 @@ updateMessengerWindowTyping(workerName) {
 
         const workerSources = [
           ...(Array.isArray(this.workers) ? this.workers : []),
-          ...(Array.isArray(this.users) ? this.users.filter(user => ['worker', 'trabajador'].includes(String(user.role || '').toLowerCase().trim())) : [])
+          ...(Array.isArray(this.users) ? this.users.filter(user => ['worker', 'trabajador', 'tecnico', 'técnico'].includes(String(user.role || '').toLowerCase().trim())) : [])
         ];
-        const workerById = new Map(workerSources.map(user => [String(user.id || user.username || user.fullName || '').toLowerCase(), user]));
+        const workerById = new Map(workerSources.map(user => [String(user.username || user.id || user.fullName || '').trim().toLowerCase(), user]));
         const currentStatuses = new Map([...workerById].map(([id, user]) => [id, this.getPresenceStatus(user)]));
         const hadMonitorOrder = Array.isArray(this.techniciansMonitorOrder) && this.techniciansMonitorOrder.length > 0;
         let monitorOrder = hadMonitorOrder ? this.techniciansMonitorOrder.filter(id => workerById.has(id)) : [];
@@ -4883,6 +4883,9 @@ updateMessengerWindowTyping(workerName) {
 
           const taskIsFree = this.isTaskFree(t);
           const taskIsHiddenFromWorkers = this.isTaskHiddenFromWorkers(t);
+          const orderStatusVisualClass = t.status === 'EN_PROCESO'
+            ? 'order-status-in-progress'
+            : t.status === 'REALIZADA' ? 'order-status-completed' : '';
           const rawWorkDate = String(t.date || '');
           const workDate = /^\d{4}-\d{2}-\d{2}$/.test(rawWorkDate) ? rawWorkDate.split('-').reverse().join('/') : rawWorkDate;
           const adminLine = t.administrator ? `<p class="order-administrator mt-1 text-xs text-slate-600"><span class="font-semibold">Administrador / contacto:</span> ${this.escapeHtml(t.administrator)}</p>` : '';
@@ -4902,7 +4905,7 @@ updateMessengerWindowTyping(workerName) {
           ].filter(Boolean);
 
           return `
-            <div data-task-id="${this.escapeHtml(t.id)}" class="order-card ${isAdmin ? 'admin-order-card-compact' : ''} bg-white rounded-2xl p-3.5 sm:p-4 border ${borderClass} shadow-sm flex flex-col justify-between min-w-0 overflow-hidden transition-all duration-200 hover:shadow-md ${isAdmin && t.status === 'REALIZADA' && !t.archivedAt ? 'completed-order-alert' : ''}">
+            <div data-task-id="${this.escapeHtml(t.id)}" class="order-card ${orderStatusVisualClass} ${isAdmin ? 'admin-order-card-compact' : ''} bg-white rounded-2xl p-3.5 sm:p-4 border ${borderClass} shadow-sm flex flex-col justify-between min-w-0 overflow-hidden transition-all duration-200 hover:shadow-md ${isAdmin && t.status === 'REALIZADA' && !t.archivedAt ? 'completed-order-alert' : ''}">
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <span class="text-xs font-mono font-black text-slate-500">${t.id}</span>

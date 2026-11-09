@@ -1,0 +1,30 @@
+/* Diferenciación visual de estados en tarjetas de órdenes. */
+#tasks-container .order-card.order-status-in-progress {
+  background-color: #fff8e8;
+}
+
+#tasks-container .order-card.order-status-completed {
+  background-color: #f0faf2;
+}
+
+/* Mantiene el pulso y el resplandor existentes, con el fondo verde en todo el ciclo. */
+@keyframes completedOrderGlow {
+  0%, 100% {
+    border-color: #bbf7d0;
+    box-shadow: 0 1px 4px rgba(22, 101, 52, 0.08);
+    background-color: #f0faf2;
+  }
+  50% {
+    border-color: #16a34a;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2), 0 0 22px rgba(34, 197, 94, 0.32);
+    background-color: #e5f6e9;
+  }
+}
+
+body.theme-dark #tasks-container .order-card.order-status-in-progress {
+  background-color: #403410 !important;
+}
+
+body.theme-dark #tasks-container .order-card.order-status-completed {
+  background-color: #19382b !important;
+}
