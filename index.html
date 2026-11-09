@@ -934,6 +934,10 @@
               <span>⚙️ En Proceso</span>
             </button>
           </div>
+          <label id="report-urgent-control" class="hidden mt-2.5 cursor-pointer select-none items-center gap-2.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-bold text-rose-800">
+            <input id="report-urgent-checkbox" type="checkbox" class="h-4 w-4 accent-rose-600" onchange="app.setReportUrgent(this.checked)">
+            <span>🚨 URGENTE <span class="ml-1 font-medium text-rose-700">Prioridad máxima para el trabajador</span></span>
+          </label>
         </div>
 
 
@@ -1062,7 +1066,7 @@
   </div>
 
   <!-- JAVASCRIPT: LÓGICA DE LA APLICACIÓN -->
-<script src="assets/js/app-05.js?v=20261109-worker-order-cards-3"></script>
+<script src="assets/js/app-05.js?v=20261109-report-button-order-unified-1"></script>
 <script src="assets/js/app-06.js?v=20261104-user-messages-1"></script>
 <link rel="stylesheet" href="assets/css/app-05.css" id="chat-hidden-overlay-fix">
 <link rel="stylesheet" href="assets/css/app-06.css" id="chat-hide-custom-emojis-mobile">
@@ -1160,7 +1164,7 @@
 <script id="mobile-contact-suggestions" src="assets/js/app-77.js?v=20261107-mobile-contact-suggestions-1"></script>
 <link rel="stylesheet" href="assets/css/app-78.css?v=20261107-quote-a4-preview-12" id="quote-fixed-a4-preview-style">
 <script id="quote-fixed-a4-preview" src="assets/js/app-78.js?v=20261107-quote-a4-preview-2"></script>
-<link rel="stylesheet" href="assets/css/app-79.css?v=20261109-order-status-card-tints-1" id="order-status-card-tints-style">
+<link rel="stylesheet" href="assets/css/app-79.css?v=20261109-urgent-order-priority-2" id="order-status-card-tints-style">
 </body>
 </html>
 

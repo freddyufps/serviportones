@@ -346,6 +346,7 @@
         this.notifications = [];
         this.selectedTask = null;
         this.activeReportStatus = null;
+        this.activeReportUrgent = false;
         this.heartbeatTimer = null;
         this.presenceRecords = {};
         this.presenceRefreshTimer = null;
@@ -4857,7 +4858,16 @@ updateMessengerWindowTyping(workerName) {
         });
 
         const statusPriority = { REALIZADA: 0, EN_PROCESO: 1, PENDIENTE: 2, NO_REALIZADA: 3 };
-        filtered.sort((a, b) => (statusPriority[a.status] ?? 4) - (statusPriority[b.status] ?? 4));
+        const currentOrder = new Map(filtered.map((task, index) => [String(task.id), index]));
+        filtered.sort((a, b) => {
+          const urgency = Number(b.urgent === true) - Number(a.urgent === true);
+          if (urgency) return urgency;
+          if (a.urgent === true && b.urgent === true) return currentOrder.get(String(a.id)) - currentOrder.get(String(b.id));
+          const freeOrder = Number(this.isTaskFree(a)) - Number(this.isTaskFree(b));
+          if (freeOrder) return freeOrder;
+          if (this.isTaskFree(a) && this.isTaskFree(b)) return currentOrder.get(String(a.id)) - currentOrder.get(String(b.id));
+          return (statusPriority[a.status] ?? 4) - (statusPriority[b.status] ?? 4);
+        });
 
         countTag.textContent = filtered.length;
 
@@ -4889,7 +4899,9 @@ updateMessengerWindowTyping(workerName) {
           const workerClaimIsMine = t.claimedByWorkerId
             ? String(t.claimedByWorkerId) === myWorkerId
             : String(t.claimedByWorkerName || '').trim().toLocaleLowerCase() === String(myName || '').trim().toLocaleLowerCase();
-          const orderStatusVisualClass = t.status === 'EN_PROCESO'
+          const orderStatusVisualClass = t.urgent === true
+            ? 'order-status-urgent'
+            : t.status === 'EN_PROCESO'
             ? 'order-status-in-progress'
             : t.status === 'REALIZADA' ? 'order-status-completed' : '';
           const rawWorkDate = String(t.date || '');
@@ -4911,11 +4923,11 @@ updateMessengerWindowTyping(workerName) {
           ].filter(Boolean);
 
           return `
-            <div data-task-id="${this.escapeHtml(t.id)}" class="order-card ${orderStatusVisualClass} ${isAdmin ? 'admin-order-card-compact' : ''} ${isWorker ? 'worker-order-card-compact' : ''} bg-white rounded-2xl p-3.5 sm:p-4 border ${borderClass} shadow-sm flex flex-col justify-between min-w-0 overflow-hidden transition-all duration-200 hover:shadow-md ${isAdmin && t.status === 'REALIZADA' && !t.archivedAt ? 'completed-order-alert' : ''}">
+            <div data-task-id="${this.escapeHtml(t.id)}" class="order-card ${orderStatusVisualClass} ${isAdmin ? 'admin-order-card-compact' : ''} ${isWorker ? 'worker-order-card-compact' : ''} bg-white rounded-2xl p-3.5 sm:p-4 border ${borderClass} shadow-sm flex flex-col justify-between min-w-0 overflow-hidden transition-all duration-200 hover:shadow-md ${isAdmin && t.status === 'REALIZADA' && !t.archivedAt && t.urgent !== true ? 'completed-order-alert' : ''}">
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <span class="text-xs font-mono font-black text-slate-500">${t.id}</span>
-                  <div>${statusBadge}</div>
+                  <div class="flex flex-wrap items-center justify-end gap-1">${t.urgent === true ? '<span class="order-urgent-badge" aria-label="Orden urgente">🚨 URGENTE</span>' : ''}${statusBadge}</div>
                 </div>
 
                 <h3 class="font-extrabold text-slate-900 text-sm sm:text-base leading-snug break-words">${this.escapeHtml(t.client || 'Cliente')}</h3>
@@ -4960,13 +4972,7 @@ updateMessengerWindowTyping(workerName) {
                   ${isWorker ? `<button type="button" class="worker-order-expand" onclick="event.stopPropagation(); app.toggleWorkerOrderCard(this)" aria-expanded="false"><i data-lucide="chevron-down" aria-hidden="true"></i><span>Ver detalles</span></button>` : ''}
                   ${!isAdmin && isWorker && taskIsFree
                     ? `<button type="button" onclick="app.takeFreeOrder('${t.id}')" class="text-xs font-black py-1.5 px-3 rounded-xl shadow-sm transition active:scale-95 bg-orange-500 hover:bg-orange-600 text-white">✅ Tomar Orden</button>`
-                    : `<button onclick="app.openReportModal('${t.id}')" class="text-xs font-bold py-1 px-2.5 rounded-xl shadow-sm transition active:scale-95 ${
-                      t.status === 'REALIZADA'
-                        ? 'bg-brand-lime hover:bg-brand-limeHover text-white'
-                        : t.status === 'NO_REALIZADA'
-                        ? 'bg-rose-600 hover:bg-rose-500 text-white'
-                        : 'bg-brand-dark hover:bg-black text-white'
-                    }">${t.status === 'REALIZADA' || t.status === 'NO_REALIZADA' ? 'Editar Informe' : 'Registrar Informe'}</button>`}
+                    : `<button onclick="app.openReportModal('${t.id}')" class="text-xs font-bold py-1 px-2.5 rounded-xl shadow-sm transition active:scale-95 bg-brand-dark hover:bg-black text-white">Registrar Informe</button>`}
                   ${!isAdmin && isWorker && !taskIsFree && t.claimedFromFree === true && workerClaimIsMine
                     ? `<button type="button" onclick="app.releaseFreeOrder('${this.escapeHtml(t.id)}')" class="text-xs font-bold py-1.5 px-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 transition active:scale-95">Liberar orden</button>` : ''}
 
@@ -5687,6 +5693,19 @@ updateMessengerWindowTyping(workerName) {
         this.renderReportChecklist();
         this.renderFieldFindings();
         this.setReportStatus(null);
+        this.activeReportUrgent = this.currentUser?.role === 'admin' && t.urgent === true;
+        const urgentControl = document.getElementById('report-urgent-control');
+        const urgentCheckbox = document.getElementById('report-urgent-checkbox');
+        if (urgentControl) {
+          if (this.currentUser?.role === 'admin') {
+            urgentControl.classList.remove('hidden');
+            urgentControl.style.display = 'flex';
+          } else {
+            urgentControl.classList.add('hidden');
+            urgentControl.style.removeProperty('display');
+          }
+        }
+        if (urgentCheckbox) urgentCheckbox.checked = this.activeReportUrgent;
         document.getElementById('modal-report').classList.remove('hidden');
       }
 
@@ -5707,6 +5726,15 @@ updateMessengerWindowTyping(workerName) {
         btnDone.setAttribute('aria-pressed', String(this.activeReportStatus === 'REALIZADA'));
         btnFailed.setAttribute('aria-pressed', String(this.activeReportStatus === 'NO_REALIZADA'));
         btnProgress.setAttribute('aria-pressed', String(this.activeReportStatus === 'EN_PROCESO'));
+      }
+
+      setReportUrgent(enabled) {
+        if (this.currentUser?.role !== 'admin' || !this.selectedTask) {
+          const checkbox = document.getElementById('report-urgent-checkbox');
+          if (checkbox) checkbox.checked = this.selectedTask?.urgent === true;
+          return this.showToast('Solo el administrador puede cambiar la prioridad urgente.', 'error');
+        }
+        this.activeReportUrgent = Boolean(enabled);
       }
 
       async waitForEvidenceReads() {
@@ -5791,38 +5819,64 @@ updateMessengerWindowTyping(workerName) {
 
       async submitReport() {
         if (!this.selectedTask) return;
-        if (!this.activeReportStatus) return this.showToast('Selecciona Realizada, Pendiente o En Proceso antes de guardar', 'error');
+        const isAdmin = this.currentUser?.role === 'admin';
         const taskId = this.selectedTask.id;
-        if (!await this.waitForEvidenceReads() || this.selectedTask?.id !== taskId || !await this.persistLegacyEvidence(taskId)) return;
+        let taskIndex = this.tasks.findIndex(t => t.id === taskId);
+        if (taskIndex < 0) return this.showToast('La orden ya no está disponible para guardar.', 'error');
+        let previousUrgent = this.tasks[taskIndex].urgent === true;
+        let urgencyChanged = isAdmin && this.activeReportUrgent !== previousUrgent;
+        if (!this.activeReportStatus && !urgencyChanged) return this.showToast('Selecciona Realizada, Pendiente o En Proceso antes de guardar', 'error');
+        if (this.activeReportStatus && (!await this.waitForEvidenceReads() || this.selectedTask?.id !== taskId || !await this.persistLegacyEvidence(taskId))) return;
+        taskIndex = this.tasks.findIndex(t => t.id === taskId);
+        if (taskIndex < 0) return this.showToast('La orden ya no está disponible para guardar.', 'error');
+        previousUrgent = this.tasks[taskIndex].urgent === true;
+        urgencyChanged = isAdmin && this.activeReportUrgent !== previousUrgent;
+        if (!this.activeReportStatus && !urgencyChanged) return this.showToast('La prioridad de la orden ya cambió. Vuelve a abrirla para confirmar el estado actual.', 'info');
         const observations = document.getElementById('rep-observations').value.trim();
 
-        const taskIndex = this.tasks.findIndex(t => t.id === this.selectedTask.id);
         if (taskIndex !== -1) {
           const wasCompleted = this.tasks[taskIndex].status === 'REALIZADA';
-          this.tasks[taskIndex].status = this.activeReportStatus;
-          this.tasks[taskIndex].observations = observations;
-          this.tasks[taskIndex].evidence = this.currentReportEvidence;
-          this.tasks[taskIndex].completedAt = this.formatFullDateTime(new Date());
-          if (this.activeReportStatus === 'REALIZADA') {
-            if (!wasCompleted || !this.tasks[taskIndex].completedAtMs) this.tasks[taskIndex].completedAtMs = Date.now();
-            this.tasks[taskIndex].paymentDueAt = this.tasks[taskIndex].completedAtMs + 30 * 86400000;
-          } else if (wasCompleted) {
-            this.tasks[taskIndex].completedAtMs = null;
-            this.tasks[taskIndex].paymentDueAt = null;
+          const nextStatus = this.activeReportStatus || this.tasks[taskIndex].status;
+          if (this.activeReportStatus) {
+            this.tasks[taskIndex].status = nextStatus;
+            this.tasks[taskIndex].observations = observations;
+            this.tasks[taskIndex].evidence = this.currentReportEvidence;
+          }
+          if (isAdmin) {
+            if (this.activeReportUrgent) this.tasks[taskIndex].urgent = true;
+            else delete this.tasks[taskIndex].urgent;
+          }
+          if (this.activeReportStatus) {
+            this.tasks[taskIndex].completedAt = this.formatFullDateTime(new Date());
+            if (nextStatus === 'REALIZADA') {
+              if (!wasCompleted || !this.tasks[taskIndex].completedAtMs) this.tasks[taskIndex].completedAtMs = Date.now();
+              this.tasks[taskIndex].paymentDueAt = this.tasks[taskIndex].completedAtMs + 30 * 86400000;
+            } else if (wasCompleted) {
+              this.tasks[taskIndex].completedAtMs = null;
+              this.tasks[taskIndex].paymentDueAt = null;
+            }
           }
 
-          const myName = this.getCurrentDisplayName();
-          this.addActivityNotification(myName, this.selectedTask.id, this.activeReportStatus, observations, 'order');
+          if (this.activeReportStatus) {
+            const myName = this.getCurrentDisplayName();
+            this.addActivityNotification(myName, this.selectedTask.id, this.activeReportStatus, observations, 'order');
+          }
 
           console.info('[ORDER] URL guardada: enviando a Firestore', { taskId, cantidad: this.currentReportEvidence.length, urls: this.currentReportEvidence.map(item => item?.url || item?.src || null) });
           const saved = await this.saveTasks(true);
-          if (!saved?.ok) return;
+          if (!saved?.ok) {
+            if (this.currentUser?.role === 'admin') {
+              if (previousUrgent) this.tasks[taskIndex].urgent = true;
+              else delete this.tasks[taskIndex].urgent;
+            }
+            return;
+          }
           console.info('[ORDER] URL guardada en Firestore', { taskId, cantidad: this.tasks[taskIndex].evidence?.length || 0, urls: (this.tasks[taskIndex].evidence || []).map(item => item?.url || item?.src || null), persistencia: saved.localOnly ? 'solo-local' : 'Firestore' });
           await this.deleteRemovedEvidenceFiles();
           this.updateStats();
           this.renderTasks();
           this.closeReportModal();
-          this.showToast(`Informe guardado con éxito`, 'success');
+          this.showToast(this.activeReportStatus ? 'Informe guardado con éxito' : 'Prioridad urgente actualizada.', 'success');
         }
       }
 
