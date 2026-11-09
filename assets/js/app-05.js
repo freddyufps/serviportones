@@ -4814,6 +4814,7 @@ updateMessengerWindowTyping(workerName) {
         const emptyState = document.getElementById('empty-state');
         const countTag = document.getElementById('filtered-count');
         const isAdmin = this.currentUser.role === 'admin';
+        const isWorker = this.currentUser.role === 'worker';
         const archiveButton = document.getElementById('btn-toggle-archived-orders');
         const archivedDocumentsButton = document.getElementById('btn-archived-document-control');
         if (archivedDocumentsButton) { archivedDocumentsButton.classList.toggle('hidden', !isAdmin || !this.showArchivedTasks); archivedDocumentsButton.classList.toggle('inline-flex', isAdmin && this.showArchivedTasks); }
@@ -4824,6 +4825,7 @@ updateMessengerWindowTyping(workerName) {
         if (archiveLabel) archiveLabel.textContent = this.showArchivedTasks ? '↩ Volver a órdenes' : '📦 Órdenes Archivadas';
         if (archiveCount) archiveCount.textContent = String(archivedCount);
         const myName = this.getCurrentDisplayName();
+        const myWorkerId = String(this.currentUser.id || this.users?.find(user => (user.fullName || user.username) === myName)?.id || '');
         this.ensurePaymentNotificationScheduler?.();
         const documentsPanel = document.getElementById('archived-documents-panel');
         if (this.showDocumentControl && isAdmin) {
@@ -4839,6 +4841,7 @@ updateMessengerWindowTyping(workerName) {
         let filtered = this.tasks.filter(t => {
           if (this.showArchivedTasks ? (!isAdmin || !t.archivedAt) : (!!t.archivedAt || t.invoiceInConsolidated === true)) return false;
           if (!isAdmin && (this.isTaskHiddenFromWorkers(t) || (!this.isTaskFree(t) && t.assignedTo !== myName))) return false;
+          if (isWorker && t.status === 'REALIZADA') return false;
 
           const matchText = !search ||
             t.client.toLowerCase().includes(search) ||
@@ -4883,13 +4886,16 @@ updateMessengerWindowTyping(workerName) {
 
           const taskIsFree = this.isTaskFree(t);
           const taskIsHiddenFromWorkers = this.isTaskHiddenFromWorkers(t);
+          const workerClaimIsMine = t.claimedByWorkerId
+            ? String(t.claimedByWorkerId) === myWorkerId
+            : String(t.claimedByWorkerName || '').trim().toLocaleLowerCase() === String(myName || '').trim().toLocaleLowerCase();
           const orderStatusVisualClass = t.status === 'EN_PROCESO'
             ? 'order-status-in-progress'
             : t.status === 'REALIZADA' ? 'order-status-completed' : '';
           const rawWorkDate = String(t.date || '');
           const workDate = /^\d{4}-\d{2}-\d{2}$/.test(rawWorkDate) ? rawWorkDate.split('-').reverse().join('/') : rawWorkDate;
-          const adminLine = t.administrator ? `<p class="order-administrator mt-1 text-xs text-slate-600"><span class="font-semibold">Administrador / contacto:</span> ${this.escapeHtml(t.administrator)}</p>` : '';
-          const phoneLine = t.phone ? `<p class="order-phone mt-0.5 text-xs text-slate-600"><span class="font-semibold">Teléfono:</span> ${this.escapeHtml(t.phone)}</p>` : '';
+          const adminLine = t.administrator ? `<p class="order-administrator worker-order-extra mt-1 text-xs text-slate-600"><span class="font-semibold">Administrador / contacto:</span> ${this.escapeHtml(t.administrator)}</p>` : '';
+          const phoneLine = t.phone ? `<p class="order-phone worker-order-extra mt-0.5 text-xs text-slate-600"><span class="font-semibold">Teléfono:</span> ${this.escapeHtml(t.phone)}</p>` : '';
           const workValueLine = isAdmin && t.workValue !== null && t.workValue !== undefined && t.workValue !== '' ? `<p class="order-work-value mt-1 text-xs font-bold text-emerald-800"><span class="font-semibold">Valor del trabajo:</span> ${new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Number(t.workValue) || 0)}</p>` : '';
           const orderInstructions = String(t.instructions || '').trim();
           const orderObservations = String(t.observations || '').trim();
@@ -4905,7 +4911,7 @@ updateMessengerWindowTyping(workerName) {
           ].filter(Boolean);
 
           return `
-            <div data-task-id="${this.escapeHtml(t.id)}" class="order-card ${orderStatusVisualClass} ${isAdmin ? 'admin-order-card-compact' : ''} bg-white rounded-2xl p-3.5 sm:p-4 border ${borderClass} shadow-sm flex flex-col justify-between min-w-0 overflow-hidden transition-all duration-200 hover:shadow-md ${isAdmin && t.status === 'REALIZADA' && !t.archivedAt ? 'completed-order-alert' : ''}">
+            <div data-task-id="${this.escapeHtml(t.id)}" class="order-card ${orderStatusVisualClass} ${isAdmin ? 'admin-order-card-compact' : ''} ${isWorker ? 'worker-order-card-compact' : ''} bg-white rounded-2xl p-3.5 sm:p-4 border ${borderClass} shadow-sm flex flex-col justify-between min-w-0 overflow-hidden transition-all duration-200 hover:shadow-md ${isAdmin && t.status === 'REALIZADA' && !t.archivedAt ? 'completed-order-alert' : ''}">
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <span class="text-xs font-mono font-black text-slate-500">${t.id}</span>
@@ -4919,7 +4925,7 @@ updateMessengerWindowTyping(workerName) {
                 ${phoneLine}
                 ${workValueLine}
 
-                <div class="order-client-panel mt-2.5 rounded-xl border border-slate-100 bg-slate-50/80 p-2.5 space-y-1.5 text-xs min-w-0">
+                <div class="order-client-panel worker-order-extra mt-2.5 rounded-xl border border-slate-100 bg-slate-50/80 p-2.5 space-y-1.5 text-xs min-w-0">
                   <p class="text-slate-600 flex items-start gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5"></i><span class="line-clamp-2 break-words">${this.escapeHtml(t.address || "Sin dirección")}</span></p>
                   <div class="mt-2 pt-2 border-t border-slate-200/80 flex items-center justify-between gap-2">
                     <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Abrir ruta</span>
@@ -4927,15 +4933,15 @@ updateMessengerWindowTyping(workerName) {
                   </div>
                 </div>
 
-                <div class="order-observations order-instructions mt-2 p-2 rounded-xl text-xs bg-slate-50 border text-slate-700 text-[11px]">
+                <div class="order-observations order-instructions worker-order-extra mt-2 p-2 rounded-xl text-xs bg-slate-50 border text-slate-700 text-[11px]">
                   <span class="block mb-0.5 font-bold not-italic">Por hacer</span><span class="line-clamp-3 whitespace-pre-line">${this.escapeHtml(orderInstructions || 'Sin instrucciones registradas.')}</span>
                 </div>
                 ${this.showArchivedTasks ? '<details class="archived-order-extra mt-2"><summary><span>Ver informe y técnico</span><i data-lucide="chevron-down"></i></summary><div class="archived-order-extra-content">' : ''}
-                <div class="order-observations order-completed-notes mt-1.5 p-2 rounded-xl text-xs bg-emerald-50 border border-emerald-100 text-slate-700 text-[11px]">
+                <div class="order-observations order-completed-notes worker-order-extra mt-1.5 p-2 rounded-xl text-xs bg-emerald-50 border border-emerald-100 text-slate-700 text-[11px]">
                   <span class="block mb-0.5 font-bold not-italic text-emerald-800">Realizado</span><span class="order-observations-text line-clamp-3 whitespace-pre-line">${this.escapeHtml(orderObservations || 'Pendiente de registrar.')}</span>
                 </div>
 
-                <div class="order-tech-section mt-2.5 pt-2 border-t text-xs">
+                <div class="order-tech-section worker-order-extra mt-2.5 pt-2 border-t text-xs">
                   <span class="text-slate-500 text-[11px] block mb-1.5">Técnico:</span>
                   ${taskIsHiddenFromWorkers
                     ? '<span class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-700">🔒 No visible para trabajadores</span>'
@@ -4951,7 +4957,8 @@ updateMessengerWindowTyping(workerName) {
                 <button type="button" onclick="app.viewOrderDetails('${this.escapeHtml(t.id)}')" class="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-brand-dark hover:border-brand-lime flex items-center justify-center" title="Ver orden" aria-label="Ver orden"><i data-lucide="eye" class="w-4 h-4"></i></button>
 
                 <div class="flex items-center gap-1">
-                  ${!isAdmin && this.currentUser.role === 'worker' && taskIsFree
+                  ${isWorker ? `<button type="button" class="worker-order-expand" onclick="event.stopPropagation(); app.toggleWorkerOrderCard(this)" aria-expanded="false"><i data-lucide="chevron-down" aria-hidden="true"></i><span>Ver detalles</span></button>` : ''}
+                  ${!isAdmin && isWorker && taskIsFree
                     ? `<button type="button" onclick="app.takeFreeOrder('${t.id}')" class="text-xs font-black py-1.5 px-3 rounded-xl shadow-sm transition active:scale-95 bg-orange-500 hover:bg-orange-600 text-white">✅ Tomar Orden</button>`
                     : `<button onclick="app.openReportModal('${t.id}')" class="text-xs font-bold py-1 px-2.5 rounded-xl shadow-sm transition active:scale-95 ${
                       t.status === 'REALIZADA'
@@ -4960,6 +4967,8 @@ updateMessengerWindowTyping(workerName) {
                         ? 'bg-rose-600 hover:bg-rose-500 text-white'
                         : 'bg-brand-dark hover:bg-black text-white'
                     }">${t.status === 'REALIZADA' || t.status === 'NO_REALIZADA' ? 'Editar Informe' : 'Registrar Informe'}</button>`}
+                  ${!isAdmin && isWorker && !taskIsFree && t.claimedFromFree === true && workerClaimIsMine
+                    ? `<button type="button" onclick="app.releaseFreeOrder('${this.escapeHtml(t.id)}')" class="text-xs font-bold py-1.5 px-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 transition active:scale-95">Liberar orden</button>` : ''}
 
                   ${isAdmin ? `
                     ${isAdmin && t.status === 'REALIZADA' ? `<button type="button" class="order-invoice-shortcut" onclick="app.openOrderInvoiceNumber('${t.id}')" title="Gestionar factura FE y valor"><i data-lucide="receipt-text" class="w-3.5 h-3.5"></i><span>Gestión FE</span></button>` : ''}
@@ -5461,9 +5470,16 @@ updateMessengerWindowTyping(workerName) {
             this.tasks[index].administrator = document.getElementById('task-administrator').value.trim();
             this.tasks[index].serviceType = document.getElementById('task-service-type').value;
             this.tasks[index].equipment = document.getElementById('task-equipment').value;
+            const previousAssignee = String(this.tasks[index].assignedTo || '').trim();
             this.tasks[index].assignedTo = document.getElementById('task-assigned-to').value;
             this.tasks[index].hiddenFromWorkers = this.tasks[index].assignedTo === 'NO_VISIBLE_WORKERS';
             this.tasks[index].assignedWorkerId = this.getTaskTechnician({ assignedTo: this.tasks[index].assignedTo })?.id || '';
+            if (previousAssignee !== String(this.tasks[index].assignedTo || '').trim()) {
+              delete this.tasks[index].claimedFromFree;
+              delete this.tasks[index].claimedByWorkerId;
+              delete this.tasks[index].claimedByWorkerName;
+              delete this.tasks[index].assignedAt;
+            }
             this.tasks[index].priority = document.getElementById('task-priority').value;
             this.tasks[index].date = document.getElementById('task-date').value;
             this.tasks[index].instructions = document.getElementById('task-instructions').value;

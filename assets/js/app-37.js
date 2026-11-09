@@ -74,6 +74,7 @@
       const assignee = String(task?.assignedTo || '').trim();
       return !assignee || normalize(assignee) === 'libre';
     };
+    const workerId = String(user?.id || this.users?.find(item => normalize(item?.fullName || item?.username) === normalize(displayName))?.id || '');
     const claimInSnapshot = (documentData, storedTasks) => {
       const task = storedTasks.find(item => String(item?.id) === claimKey);
       if (!task) return { state: 'missing' };
@@ -82,7 +83,7 @@
         return { state: normalize(task.assignedTo) === normalize(displayName) ? 'already-mine' : 'already-assigned' };
       }
       const claimedTasks = storedTasks.map(item => String(item?.id) === claimKey
-        ? { ...item, assignedTo: displayName, assignedAt: new Date().toISOString() }
+        ? { ...item, assignedTo: displayName, assignedWorkerId: workerId, assignedAt: new Date().toISOString(), claimedFromFree: true, claimedByWorkerId: workerId, claimedByWorkerName: displayName }
         : item);
       return { state: 'claimed', tasks: claimedTasks };
     };

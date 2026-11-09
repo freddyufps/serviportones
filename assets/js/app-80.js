@@ -22,6 +22,116 @@
   })).filter(entry => entry.name);
   const lineTotal = item => (Number(item.quantity) || 0) * (Number(item.unitCost) || 0);
 
+  proto.toggleWorkerOrderCard = function (button) {
+    const card = button?.closest('.worker-order-card-compact');
+    const taskId = String(card?.dataset.taskId || '');
+    if (!card || !taskId) return;
+    if (!(this._expandedWorkerOrderIds instanceof Set)) this._expandedWorkerOrderIds = new Set();
+    const expanded = button.getAttribute('aria-expanded') !== 'true';
+    if (expanded) this._expandedWorkerOrderIds.add(taskId);
+    else this._expandedWorkerOrderIds.delete(taskId);
+    card.classList.toggle('is-expanded', expanded);
+    button.setAttribute('aria-expanded', String(expanded));
+    button.innerHTML = expanded ? '<i data-lucide="chevron-up" aria-hidden="true"></i><span>Ocultar detalles</span>' : '<i data-lucide="chevron-down" aria-hidden="true"></i><span>Ver detalles</span>';
+    if (window.lucide) lucide.createIcons();
+  };
+
+  function restoreExpandedWorkerCards(instance) {
+    if (!isWorker(instance) || !(instance._expandedWorkerOrderIds instanceof Set)) return;
+    document.querySelectorAll('#tasks-container .worker-order-card-compact[data-task-id]').forEach(card => {
+      const expanded = instance._expandedWorkerOrderIds.has(String(card.dataset.taskId));
+      card.classList.toggle('is-expanded', expanded);
+      const button = card.querySelector('.worker-order-expand');
+      if (!button) return;
+      button.setAttribute('aria-expanded', String(expanded));
+      button.innerHTML = expanded
+        ? '<i data-lucide="chevron-up" aria-hidden="true"></i><span>Ocultar detalles</span>'
+        : '<i data-lucide="chevron-down" aria-hidden="true"></i><span>Ver detalles</span>';
+    });
+    if (window.lucide) lucide.createIcons();
+  }
+
+  function wrapRenderTasks(target) {
+    if (!target || typeof target.renderTasks !== 'function' || target.renderTasks.__workerExpansionState80) return;
+    const render = target.renderTasks;
+    const wrapped = function (...args) {
+      const result = render.apply(this, args);
+      restoreExpandedWorkerCards(this);
+      return result;
+    };
+    wrapped.__workerExpansionState80 = true;
+    target.renderTasks = wrapped;
+  }
+
+  // The navigation module wraps renderTasks on the app instance, so preserve
+  // expansion there as well as on the prototype used by other app instances.
+  wrapRenderTasks(proto);
+  if (window.app) wrapRenderTasks(window.app);
+
+  proto.releaseFreeOrder = async function (id) {
+    if (!isWorker(this)) return this.showToast?.('Solo un trabajador puede liberar una orden tomada voluntariamente.', 'error');
+    const user = this.currentUser || {};
+    const workerName = String(this.getCurrentDisplayName?.() || user.fullName || user.name || user.username || '').trim();
+    const workerId = String(user.id || this.users?.find(item => normalize(item?.fullName || item?.username) === normalize(workerName))?.id || '');
+    const dbInstance = window.db;
+    if (!workerName || !dbInstance?.collection || typeof dbInstance.runTransaction !== 'function') {
+      return this.showToast?.('No se pudo conectar para liberar la orden. Inténtalo nuevamente.', 'error');
+    }
+    this.__releasingFreeOrderIds = this.__releasingFreeOrderIds || new Set();
+    const key = String(id);
+    if (this.__releasingFreeOrderIds.has(key)) return;
+    this.__releasingFreeOrderIds.add(key);
+    const orderRef = dbInstance.collection('ordenes').doc('todas');
+    const canRelease = task => {
+      if (task?.claimedFromFree !== true || task.archivedAt || task.archived === true || task.status === 'REALIZADA') return false;
+      if (task.claimedByWorkerId) return !!workerId && String(task.claimedByWorkerId) === workerId;
+      return !!workerName && normalize(task.claimedByWorkerName) === normalize(workerName);
+    };
+    const releaseFrom = tasks => {
+      const task = tasks.find(item => String(item?.id) === key);
+      if (!task) return { state: 'missing' };
+      if (this.isTaskFree?.(task)) return { state: 'already-free', tasks };
+      if (!canRelease(task) || normalize(task.assignedTo) !== normalize(task.claimedByWorkerName || workerName)) return { state: 'not-owner' };
+      const updatedTasks = tasks.map(item => {
+        if (String(item?.id) !== key) return item;
+        const updated = { ...item, assignedTo: 'LIBRE', assignedWorkerId: '' };
+        delete updated.claimedFromFree;
+        delete updated.claimedByWorkerId;
+        delete updated.claimedByWorkerName;
+        delete updated.assignedAt;
+        return updated;
+      });
+      return { state: 'released', tasks: updatedTasks };
+    };
+    try {
+      this.showToast?.('Verificando la orden…', 'info');
+      const result = await dbInstance.runTransaction(async transaction => {
+        const snapshot = await transaction.get(orderRef);
+        if (!snapshot.exists) return { state: 'missing' };
+        const data = snapshot.data() || {};
+        const currentTasks = Array.isArray(data.tasks) ? data.tasks : [];
+        const release = releaseFrom(currentTasks);
+        if (release.state === 'released') transaction.update(orderRef, { tasks: release.tasks });
+        return release;
+      });
+      if (result?.state === 'released') {
+        this.tasks = result.tasks;
+        if (window.SafeStorage?.setItem) SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
+        else { try { localStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks)); } catch (_) {} }
+        this.updateStats?.();
+        this.renderTasks?.();
+        this.showToast?.('Orden liberada y disponible para los demás trabajadores.', 'success');
+      } else if (result?.state === 'not-owner') this.showToast?.('Solo puedes liberar una orden libre que hayas tomado voluntariamente.', 'error');
+      else if (result?.state === 'already-free') this.showToast?.('La orden ya está disponible para los trabajadores.', 'info');
+      else this.showToast?.('No se encontró la orden. Actualiza la lista e intenta otra vez.', 'error');
+    } catch (error) {
+      console.error('[ORDEN] No se pudo liberar la orden:', error);
+      this.showToast?.('No se pudo liberar la orden. Inténtalo nuevamente.', 'error');
+    } finally {
+      this.__releasingFreeOrderIds.delete(key);
+    }
+  };
+
   function appendMaterialRow(container, item = {}) {
     const row = document.createElement('div');
     row.className = 'order-material-row';
