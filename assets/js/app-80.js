@@ -26,7 +26,7 @@
     const row = document.createElement('div');
     row.className = 'order-material-row';
     row.dataset.materialId = String(item.id || `material-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`);
-    row.innerHTML = `<label><span>Material</span><input type="text" data-material-name required maxlength="160" placeholder="Nombre del material" value="${esc(item.name || '')}"></label><label><span>Cantidad</span><input type="number" data-material-quantity min="0.01" step="any" inputmode="decimal" value="${Number(item.quantity) > 0 ? Number(item.quantity) : 1}"></label><label><span>Precio unitario</span><input type="number" data-material-cost min="0" step="1" inputmode="numeric" placeholder="0" value="${item.unitCost == null ? '' : Number(item.unitCost)}"></label><button type="button" data-material-remove aria-label="Eliminar material" title="Eliminar material">×</button>`;
+    row.innerHTML = `<input type="text" data-material-name required maxlength="160" aria-label="Material" placeholder="Nombre del material" value="${esc(item.name || '')}"><input type="number" data-material-quantity min="0.01" step="any" inputmode="decimal" aria-label="Cantidad" placeholder="1" value="${Number(item.quantity) > 0 ? Number(item.quantity) : 1}"><input type="number" data-material-cost min="0" step="1" inputmode="numeric" aria-label="Precio unitario" placeholder="0" value="${item.unitCost == null ? '' : Number(item.unitCost)}"><button type="button" data-material-remove aria-label="Eliminar material" title="Eliminar material">×</button>`;
     container.appendChild(row);
     return row;
   }
@@ -64,7 +64,7 @@
       section = document.createElement('section');
       section.id = 'report-materials-section';
       section.className = 'order-materials-editor';
-      section.innerHTML = `<header><div><h3>Materiales utilizados</h3><p>Registra los materiales empleados en esta orden.</p></div><button type="button" data-material-add>＋ Agregar material</button></header><div id="report-materials-list" class="order-materials-list"></div><footer><span>Total materiales</span><strong id="report-materials-total">$ 0</strong></footer>`;
+      section.innerHTML = `<header><div><h3>Materiales utilizados</h3><p>Registra los materiales empleados en esta orden.</p></div><button type="button" data-material-add>＋ Agregar material</button></header><div class="order-material-columns" aria-hidden="true"><span>Material</span><span>Cantidad</span><span>Precio unitario</span><span></span></div><div id="report-materials-list" class="order-materials-list"></div><footer><span>Total materiales</span><strong id="report-materials-total">$ 0</strong></footer>`;
       observations.closest('div')?.after(section);
     }
     return section;
