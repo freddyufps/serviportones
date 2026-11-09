@@ -4762,49 +4762,133 @@ updateMessengerWindowTyping(workerName) {
         this.showToast(`Órdenes reiniciadas correctamente`, 'success');
       }
 
-      renderAdminAuditLog() {
+      parseAuditLogDate(value) {
+        if (value instanceof Date && Number.isFinite(value.getTime())) return new Date(value.getTime());
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          const numericDate = new Date(value);
+          return Number.isFinite(numericDate.getTime()) ? numericDate : null;
+        }
+        const text = String(value || '').trim();
+        if (!text) return null;
+        const localDate = text.match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(a\.?\s*m\.?|p\.?\s*m\.?)?)?/i);
+        if (localDate) {
+          let hours = Number(localDate[4] || 0);
+          const meridiem = String(localDate[7] || '').toLowerCase().replace(/[.\s]/g, '');
+          if (meridiem.startsWith('p') && hours < 12) hours += 12;
+          if (meridiem.startsWith('a') && hours === 12) hours = 0;
+          const parsed = new Date(Number(localDate[3]), Number(localDate[2]) - 1, Number(localDate[1]), hours, Number(localDate[5] || 0), Number(localDate[6] || 0));
+          return Number.isFinite(parsed.getTime()) ? parsed : null;
+        }
+        const parsed = new Date(text);
+        return Number.isFinite(parsed.getTime()) ? parsed : null;
+      }
+
+      startOfAuditWeek(date) {
+        const monday = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+        return monday;
+      }
+
+      auditWeekKey(date) {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      }
+
+      formatAuditWeekRange(start) {
+        const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+        const format = date => date.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        return `${format(start)} – ${format(end)}`;
+      }
+
+      renderAdminAuditLog(historyWeekKey) {
         const section = document.getElementById('section-admin-audit-log');
         const body = document.getElementById('audit-log-tbody');
         const counter = document.getElementById('audit-log-counter');
-        if (!section || !body || !counter || this.currentUser?.role !== 'admin') return;
+        const currentRange = document.getElementById('audit-log-current-range');
+        const historyDetails = document.getElementById('audit-log-history');
+        const historyCounter = document.getElementById('audit-log-history-counter');
+        const historySelect = document.getElementById('audit-log-history-week');
+        const historyBody = document.getElementById('audit-log-history-tbody');
+        if (!section || !body || !counter || !historySelect || !historyBody || this.currentUser?.role !== 'admin') return;
 
         const reportStatuses = new Set(['REALIZADA', 'NO_REALIZADA', 'EN_PROCESO']);
         const reports = (Array.isArray(this.tasks) ? this.tasks : []).filter(task =>
           task && (task.completedAt || reportStatuses.has(String(task.status || '').toUpperCase()))
         );
-        counter.textContent = `${reports.length} Informes`;
-        body.replaceChildren();
+        const today = new Date();
+        const currentWeekStart = this.startOfAuditWeek(today);
+        const currentWeekKey = this.auditWeekKey(currentWeekStart);
+        if (currentRange) currentRange.textContent = this.formatAuditWeekRange(currentWeekStart);
 
-        if (reports.length === 0) {
-          const row = document.createElement('tr');
-          const cell = document.createElement('td');
-          cell.colSpan = 6;
-          cell.className = 'p-4 text-center text-slate-400';
-          cell.textContent = 'No hay informes registrados.';
-          row.appendChild(cell);
-          body.appendChild(row);
-          return;
-        }
-
-        reports.forEach(task => {
-          const row = document.createElement('tr');
-          const evidenceCount = Array.isArray(task.evidence) ? task.evidence.length : 0;
-          const values = [
-            task.completedAt || task.date || '—',
-            task.assignedTo || '—',
-            task.client || '—',
-            task.status || '—',
-            task.observations || '—',
-            evidenceCount ? `${evidenceCount} archivo(s)` : '—'
-          ];
-          values.forEach(value => {
-            const cell = document.createElement('td');
-            cell.className = 'p-2 align-top';
-            cell.textContent = String(value);
-            row.appendChild(cell);
-          });
-          body.appendChild(row);
+        const datedReports = reports.map(task => {
+          const reportDate = this.parseAuditLogDate(task.completedAt) || this.parseAuditLogDate(task.completedAtMs) || this.parseAuditLogDate(task.date) || today;
+          let weekStart = this.startOfAuditWeek(reportDate);
+          // Legacy orders without a report timestamp remain visible in the current view
+          // until their scheduled date; a future date must not hide a report from both lists.
+          if (weekStart > currentWeekStart) weekStart = currentWeekStart;
+          return { task, reportDate, weekStart, weekKey: this.auditWeekKey(weekStart) };
         });
+        const currentReports = datedReports.filter(record => record.weekKey === currentWeekKey);
+        const historyWeeks = new Map();
+        datedReports.filter(record => record.weekKey < currentWeekKey).forEach(record => {
+          if (!historyWeeks.has(record.weekKey)) historyWeeks.set(record.weekKey, { start: record.weekStart, reports: [] });
+          historyWeeks.get(record.weekKey).reports.push(record);
+        });
+        const orderedWeeks = Array.from(historyWeeks.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+        const wantedWeek = historyWeekKey !== undefined ? String(historyWeekKey || '') : String(this.auditLogSelectedWeek || '');
+        const selectedWeekKey = orderedWeeks.some(([key]) => key === wantedWeek) ? wantedWeek : (orderedWeeks[0]?.[0] || '');
+        this.auditLogSelectedWeek = selectedWeekKey;
+        const historyWasOpen = Boolean(historyDetails?.open);
+
+        counter.textContent = `${currentReports.length} Informes`;
+        body.replaceChildren();
+        historyBody.replaceChildren();
+        historySelect.replaceChildren();
+        orderedWeeks.forEach(([key, week]) => {
+          const option = document.createElement('option');
+          option.value = key;
+          option.textContent = this.formatAuditWeekRange(week.start);
+          historySelect.appendChild(option);
+        });
+        historySelect.disabled = orderedWeeks.length === 0;
+        if (selectedWeekKey) historySelect.value = selectedWeekKey;
+        else {
+          const option = document.createElement('option');
+          option.value = '';
+          option.textContent = 'No hay semanas anteriores';
+          historySelect.appendChild(option);
+          historySelect.value = '';
+        }
+        if (historyCounter) historyCounter.textContent = `${orderedWeeks.length} ${orderedWeeks.length === 1 ? 'semana' : 'semanas'} · ${datedReports.length - currentReports.length} informes`;
+        if (historyDetails) historyDetails.open = historyWasOpen;
+
+        const appendRows = (targetBody, records, emptyMessage) => {
+          if (!records.length) {
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.colSpan = 6;
+            cell.className = 'p-4 text-center text-slate-400';
+            cell.textContent = emptyMessage;
+          row.appendChild(cell);
+            targetBody.appendChild(row);
+            return;
+          }
+          records.forEach(({ task }) => {
+            const row = document.createElement('tr');
+            const evidenceCount = Array.isArray(task.evidence) ? task.evidence.length : 0;
+            const values = [task.completedAt || task.date || '—', task.assignedTo || '—', task.client || '—', task.status || '—', task.observations || '—', evidenceCount ? `${evidenceCount} archivo(s)` : '—'];
+            values.forEach(value => {
+              const cell = document.createElement('td');
+              cell.className = 'p-2 align-top';
+              cell.textContent = String(value);
+              row.appendChild(cell);
+            });
+            targetBody.appendChild(row);
+          });
+        };
+
+        appendRows(body, currentReports, 'No hay informes registrados esta semana.');
+        const selectedWeekReports = historyWeeks.get(selectedWeekKey)?.reports || [];
+        appendRows(historyBody, selectedWeekReports, 'No hay informes en esta semana.');
       }
 
       renderTasks() {

@@ -417,7 +417,7 @@
             </div>
             <div class="min-w-0">
               <h3 class="font-extrabold text-xs sm:text-sm text-slate-900 truncate">Bitácora Operativa: Informes de Empleados</h3>
-              <p class="text-[10px] sm:text-[11px] text-slate-500 truncate">Historial con fecha, hora, lugar, detalles y evidencias.</p>
+              <p class="text-[10px] sm:text-[11px] text-slate-500 truncate">Semana actual: <span id="audit-log-current-range">—</span></p>
             </div>
           </div>
           <span id="audit-log-counter" class="text-xs font-black px-2 py-0.5 bg-slate-100 text-slate-700 rounded-lg shrink-0">0 Informes</span>
@@ -437,6 +437,33 @@
             <tbody id="audit-log-tbody" class="divide-y divide-slate-100"></tbody>
           </table>
         </div>
+        <details id="audit-log-history" class="mt-3 rounded-xl border border-slate-200 bg-slate-50">
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-xs font-bold text-slate-700">
+            <span>Histórico semanal</span>
+            <span id="audit-log-history-counter" class="rounded-lg bg-white px-2 py-1 text-[10px] font-bold text-slate-500">0 semanas</span>
+          </summary>
+          <div class="border-t border-slate-200 p-3">
+            <label for="audit-log-history-week" class="mb-1 block text-[11px] font-semibold text-slate-600">Seleccionar semana anterior</label>
+            <select id="audit-log-history-week" onchange="app.renderAdminAuditLog(this.value)" class="mb-3 w-full max-w-sm rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 disabled:cursor-not-allowed disabled:opacity-60">
+              <option value="">No hay semanas anteriores</option>
+            </select>
+            <div class="overflow-x-auto -mx-1 sm:mx-0">
+              <table class="w-full text-left text-xs min-w-[550px]">
+                <thead class="bg-white text-slate-600 uppercase font-bold border-b border-slate-200">
+                  <tr>
+                    <th class="p-2">Fecha/Hora</th>
+                    <th class="p-2">Técnico</th>
+                    <th class="p-2">Cliente</th>
+                    <th class="p-2">Estado</th>
+                    <th class="p-2">Detalle</th>
+                    <th class="p-2">Evidencias</th>
+                  </tr>
+                </thead>
+                <tbody id="audit-log-history-tbody" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+        </details>
       </section>
     </div>
 
@@ -1066,7 +1093,7 @@
   </div>
 
   <!-- JAVASCRIPT: LÓGICA DE LA APLICACIÓN -->
-<script src="assets/js/app-05.js?v=20261109-report-button-order-unified-1"></script>
+<script src="assets/js/app-05.js?v=20261109-weekly-operational-audit-1"></script>
 <script src="assets/js/app-06.js?v=20261104-user-messages-1"></script>
 <link rel="stylesheet" href="assets/css/app-05.css" id="chat-hidden-overlay-fix">
 <link rel="stylesheet" href="assets/css/app-06.css" id="chat-hide-custom-emojis-mobile">
