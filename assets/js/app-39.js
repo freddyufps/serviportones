@@ -33,8 +33,9 @@
           dialog?.querySelector('.payment-order-preview-payment')?.remove();
           dialog?.querySelectorAll('.payment-order-preview-field').forEach(field => {
             const label = field.querySelector('span')?.textContent?.trim().toLocaleLowerCase();
-            if (label === 'factura' || label === 'valor del trabajo') field.remove();
+            if (label === 'factura' || label === 'valor del trabajo' || label === 'abono' || label === 'fecha del abono') field.remove();
           });
+          dialog?.querySelector('.payment-order-preview-deposit-history')?.remove();
           const status = dialog?.querySelector('.payment-order-preview-status');
           if (status) status.textContent = ({ PENDIENTE:'⏳ Pendiente', EN_PROCESO:'En proceso', REALIZADA:'Realizada', NO_REALIZADA:'⏳ Pendiente' })[task.status] || task.status || 'Pendiente';
         }

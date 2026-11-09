@@ -28,9 +28,37 @@
   };
   const statusOf = task => { const saved = String(task?.paymentStatus || '').toUpperCase(); return saved === 'PAGADA' || saved === 'PENDIENTE' ? saved : hasInvoice(task) ? 'PAGADA' : 'PENDIENTE'; };
   const currencyLabel = value => value === null || value === undefined || value === '' ? '—' : new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Number(value) || 0);
-  const depositOf = task => Math.max(0, Number(task?.depositAmount) || 0);
+  const depositRecordValue = value => {
+    if (value && typeof value === 'object') {
+      for (const key of ['amount', 'value', 'depositAmount', 'abono', 'valor', 'paid']) {
+        if (value[key] !== undefined) return depositRecordValue(value[key]);
+      }
+      return 0;
+    }
+    const direct = Number(value);
+    if (Number.isFinite(direct)) return Math.max(0, direct);
+    const parsed = Number(String(value ?? '').replace(/[^\d-]/g, ''));
+    return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+  };
+  const depositHistoryOf = task => {
+    for (const key of ['depositHistory', 'paymentHistory', 'payments', 'abonos', 'historialAbonos']) {
+      if (Array.isArray(task?.[key]) && task[key].length) return task[key];
+    }
+    return [];
+  };
+  const depositOf = task => {
+    const direct = Math.max(...['depositAmount', 'deposit', 'advanceAmount', 'abono'].map(key => depositRecordValue(task?.[key])));
+    if (direct > 0) return direct;
+    return depositHistoryOf(task).reduce((sum, entry) => sum + depositRecordValue(entry), 0);
+  };
   const depositDateLabel = task => {
-    const value = task?.depositDate || task?.createdAtMs || task?.createdAt || '';
+    const history = depositHistoryOf(task);
+    let historyDate = '';
+    for (let index = history.length - 1; index >= 0 && !historyDate; index--) {
+      const entry = history[index];
+      historyDate = entry && typeof entry === 'object' ? (entry.date || entry.depositDate || entry.paymentDate || entry.fecha || '') : '';
+    }
+    const value = task?.depositDate || task?.abonoDate || task?.advanceDate || historyDate || task?.createdAtMs || task?.createdAt || '';
     let date = null;
     if (value && typeof value.toDate === 'function') date = value.toDate();
     else if (typeof value === 'number' || /^\d+$/.test(String(value))) date = new Date(Number(value));
@@ -216,7 +244,8 @@
     dialog.innerHTML = '<article class="payment-order-preview-card" role="dialog" aria-modal="true" aria-labelledby="payment-order-preview-title">' +
       '<header class="payment-order-preview-header"><div class="payment-order-preview-brand"><img src="assets/media/media-3.jpg" alt="ServiPortones Eléctricos Martínez"><div><span>ORDEN DE SERVICIO</span><h2 id="payment-order-preview-title">' + safe(task.id) + '</h2></div></div><div class="payment-order-preview-header-actions"><span class="payment-order-preview-status">' + safe(statusNames[task.status] || task.status || 'Pendiente') + '</span><button type="button" data-order-preview-close aria-label="Cerrar">×</button></div></header>' +
       '<div class="payment-order-preview-body"><section class="payment-order-preview-client"><div><small>CLIENTE / PREDIO</small><h3>' + safe(task.client || 'Cliente') + '</h3></div><div><small>TELÉFONO CONTACTO</small><h3>' + safe(task.phone || '—') + '</h3></div><span class="payment-order-preview-payment ' + (payStatus === 'PAGADA' ? 'is-paid' : 'is-pending') + '">' + (payStatus === 'PAGADA' ? 'Pagada' : 'Pendiente de pago') + '</span></section>' +
-      '<div class="payment-order-preview-grid">' + line('Fecha programada', task.date) + line('Fecha de realización', task.completedAt || dateLabel(task)) + line('Prioridad', task.priority) + line('Administrador / contacto', adminContact) + (technicianPhoto ? '<div class="payment-order-preview-field payment-order-preview-tech"><span>TÉCNICO RESPONSABLE</span><div><img src="' + safe(technicianPhoto) + '" alt=""><b>' + safe(task.assignedTo) + '</b></div></div>' : line('Técnico responsable', task.assignedTo)) + line('Tipo de servicio', task.serviceType) + line('Equipo / motor', task.equipment) + line('Factura', invoice ? 'FE-' + invoice : 'Sin FE registrada') + line('Valor del trabajo', amount) + '</div>' +
+      '<div class="payment-order-preview-grid">' + line('Fecha programada', task.date) + line('Fecha de realización', task.completedAt || dateLabel(task)) + line('Prioridad', task.priority) + line('Administrador / contacto', adminContact) + (technicianPhoto ? '<div class="payment-order-preview-field payment-order-preview-tech"><span>TÉCNICO RESPONSABLE</span><div><img src="' + safe(technicianPhoto) + '" alt=""><b>' + safe(task.assignedTo) + '</b></div></div>' : line('Técnico responsable', task.assignedTo)) + line('Tipo de servicio', task.serviceType) + line('Equipo / motor', task.equipment) + line('Factura', invoice ? 'FE-' + invoice : 'Sin FE registrada') + line('Valor del trabajo', amount) + line('Abono', depositOf(task) > 0 ? currencyLabel(depositOf(task)) : '—') + line('Fecha del abono', depositOf(task) > 0 ? depositDateLabel(task) : '—') + '</div>' +
+      (depositHistoryOf(task).length ? '<section class="payment-order-preview-section payment-order-preview-deposit-history"><h3>Historial de abonos</h3><ul>' + depositHistoryOf(task).map((entry,index) => { const amountValue=depositRecordValue(entry); const dateValue=entry&&typeof entry==='object'?(entry.date||entry.depositDate||entry.paymentDate||entry.fecha||''):''; return '<li>Abono '+(index+1)+': '+safe(currencyLabel(amountValue))+(dateValue?' · '+safe(dateValue):'')+'</li>'; }).join('') + '</ul></section>' : '') +
       '<section class="payment-order-preview-section payment-order-preview-address"><h3>DIRECCIÓN</h3><p>' + safe(address || '—') + '</p>' + (wazeHref ? '<div class="payment-order-preview-routes"><a class="payment-route-waze" href="' + safe(wazeHref) + '" target="_blank" rel="noopener noreferrer"><img src="assets/media/media-1.png" alt="" aria-hidden="true"> Waze</a><a class="payment-route-maps" href="' + safe(mapHref) + '" target="_blank" rel="noopener noreferrer"><img src="assets/media/media-2.png" alt="" aria-hidden="true"> Maps</a></div>' : '') + '</section>' +
       '<section class="payment-order-preview-section"><h3>Por hacer</h3><p>' + safe(instructions || 'Sin indicaciones registradas.') + '</p></section>' +
       '<section class="payment-order-preview-section is-work-done"><h3>Trabajo realizado</h3><p>' + safe(performed || observations || 'Sin informe registrado.') + '</p>' + (observations && performed ? '<div class="payment-order-preview-observations"><b>Observaciones</b><p>' + safe(observations) + '</p></div>' : '') + '</section>' +

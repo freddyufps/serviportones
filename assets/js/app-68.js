@@ -1,5 +1,42 @@
 (() => {
   const text = value => String(value ?? '').trim();
+  const depositHistoryOf = task => {
+    let empty = [];
+    for (const key of ['depositHistory', 'paymentHistory', 'payments', 'abonos', 'historialAbonos']) {
+      if (Array.isArray(task?.[key])) {
+        if (task[key].length) return task[key];
+        empty = task[key];
+      }
+    }
+    return empty;
+  };
+  const depositRecordAmount = entry => {
+    const value = entry && typeof entry === 'object'
+      ? (entry.amount ?? entry.value ?? entry.depositAmount ?? entry.abono ?? entry.valor ?? entry.paid)
+      : entry;
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return Math.max(0, numeric);
+    const parsed = Number(String(value ?? '').replace(/[^\d-]/g, ''));
+    return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+  };
+  const currentDeposit = task => {
+    const canonical = task?.depositAmount != null && Number.isFinite(Number(task.depositAmount)) ? Math.max(0, Number(task.depositAmount)) : null;
+    if (canonical > 0) return canonical;
+    const legacy = Math.max(depositRecordAmount(task?.deposit), depositRecordAmount(task?.abono));
+    if (legacy > 0) return legacy;
+    const historyTotal = depositHistoryOf(task).reduce((sum, entry) => sum + depositRecordAmount(entry), 0);
+    return historyTotal || canonical || 0;
+  };
+  const latestDepositDate = task => {
+    if (task?.depositDate || task?.abonoDate || task?.advanceDate) return task.depositDate || task.abonoDate || task.advanceDate;
+    const history = depositHistoryOf(task);
+    for (let index = history.length - 1; index >= 0; index--) {
+      const entry = history[index];
+      const date = entry && typeof entry === 'object' ? (entry.date || entry.depositDate || entry.paymentDate || entry.fecha) : '';
+      if (date) return date;
+    }
+    return null;
+  };
   const localDateStamp = value => {
     const date = new Date(Number(value));
     if (!Number.isFinite(date.getTime())) return null;
@@ -7,7 +44,7 @@
   };
   const resolveOrderDeposit = (rawValue, task, inputPresent) => {
     const raw = text(rawValue);
-    const current = Math.max(0, Number(task?.depositAmount) || 0);
+    const current = currentDeposit(task);
     // Blank/missing means "leave the existing deposit alone" while editing.
     // Entering 0 is the explicit action to clear it.
     const preserve = Boolean(task) && (!inputPresent || raw === '');
@@ -183,7 +220,7 @@
         const address = document.getElementById('task-address');
         if (address && task && !text(task.address) && text(task.serviceLocation)) address.value = text(task.serviceLocation);
         const deposit = document.getElementById('task-deposit-amount');
-        if (deposit) deposit.value = task?.depositAmount == null ? '' : String(task.depositAmount);
+        if (deposit) deposit.value = task ? String(currentDeposit(task)) : '';
         return result;
       };
       wrapped.__serviceLocation68 = true;
@@ -236,7 +273,7 @@
             }
             target.depositAmount = depositAmount;
             target.depositDate = depositAmount > 0
-              ? depositState.preserveDate ? (editingTask?.depositDate ?? null) : localDateStamp(Date.now())
+              ? depositState.preserveDate ? (latestDepositDate(editingTask) ?? null) : localDateStamp(Date.now())
               : null;
           }
           return originalSaveTasks.apply(this, saveArgs);
@@ -272,16 +309,31 @@
         const canSeeDeposit = this.currentUser?.role === 'admin' && Boolean(task);
         depositRow?.classList.toggle('hidden', !canSeeDeposit);
         if (canSeeDeposit) {
-          const amount = Number(task.depositAmount) || 0;
+          const amount = currentDeposit(task);
           const depositValue = document.getElementById('view-order-deposit');
           const depositDate = document.getElementById('view-order-deposit-date');
+          const historyRow = document.getElementById('view-order-deposit-history-row');
+          const historyValue = document.getElementById('view-order-deposit-history');
           if (depositValue) depositValue.textContent = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount);
-          const rawDate = amount > 0 ? (task.depositDate || task.createdAtMs || task.createdAt || '') : '';
+          const rawDate = amount > 0 ? (latestDepositDate(task) || task.createdAtMs || task.createdAt || '') : '';
           let date = null;
           if (rawDate && typeof rawDate.toDate === 'function') date = rawDate.toDate();
           else if (typeof rawDate === 'number' || /^\d+$/.test(String(rawDate))) date = new Date(Number(rawDate));
           else if (rawDate) date = new Date(String(rawDate).length === 10 ? `${rawDate}T12:00:00` : rawDate);
           if (depositDate) depositDate.textContent = date && Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date) : '—';
+          const history = depositHistoryOf(task);
+          const lines = history.map((entry, index) => {
+            const entryAmount = depositRecordAmount(entry);
+            const entryDate = entry && typeof entry === 'object' ? (entry.date || entry.depositDate || entry.paymentDate || entry.fecha || '') : '';
+            let formattedDate = '';
+            if (entryDate) {
+              const parsedDate = entryDate && typeof entryDate.toDate === 'function' ? entryDate.toDate() : typeof entryDate === 'number' ? new Date(entryDate) : new Date(String(entryDate).length === 10 ? `${entryDate}T12:00:00` : entryDate);
+              if (Number.isFinite(parsedDate.getTime())) formattedDate = new Intl.DateTimeFormat('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(parsedDate);
+            }
+            return `Abono ${index + 1}: ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(entryAmount)}${formattedDate ? ` · ${formattedDate}` : ''}`;
+          }).filter(Boolean);
+          if (historyValue) historyValue.textContent = lines.join('\n');
+          historyRow?.classList.toggle('hidden', !lines.length);
         }
         bindLocationControls(task, 'view-address', 'view-address-maps', 'view-address-waze');
         return result;

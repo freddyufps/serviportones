@@ -5370,6 +5370,8 @@ updateMessengerWindowTyping(workerName) {
         document.getElementById('task-priority').value = t.priority;
         document.getElementById('task-date').value = t.date;
         document.getElementById('task-instructions').value = t.instructions || '';
+        const depositInput = document.getElementById('task-deposit-amount');
+        if (depositInput) depositInput.value = t.depositAmount == null ? '' : String(t.depositAmount);
         this.activeChecklistDraft = Array.isArray(t.checklist) ? t.checklist.map(entry => typeof entry === 'string' ? { label: entry, done: false } : { ...entry }) : [];
         this.checklistDraftDirty = false;
         this.renderChecklistAdminEditor();
@@ -5436,6 +5438,15 @@ updateMessengerWindowTyping(workerName) {
         const requestedOrderNumber = Number(document.getElementById('task-order-number').value);
         const newOrderId = Number.isSafeInteger(requestedOrderNumber) && requestedOrderNumber > 0 ? `ORD-${requestedOrderNumber}` : '';
         if (!newOrderId) return this.showToast('Escribe un consecutivo de orden válido.', 'error');
+        const depositField = document.getElementById('task-deposit-amount');
+        const depositRaw = String(depositField?.value ?? '').trim();
+        const enteredDeposit = depositRaw === '' ? null : Number(depositRaw);
+        if (depositRaw !== '' && (!Number.isFinite(enteredDeposit) || enteredDeposit < 0)) {
+          this.showToast('Escribe un valor de abono válido, igual o mayor que cero.', 'error');
+          depositField?.focus();
+          return;
+        }
+        const localDate = () => { const date = new Date(); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; };
         if (newOrderId && this.tasks.some(task => task.id !== id && String(task.id).toUpperCase() === newOrderId.toUpperCase())) {
           return this.showToast(`El número ${newOrderId} ya está en uso. Elige otro consecutivo.`, 'error');
         }
@@ -5456,6 +5467,13 @@ updateMessengerWindowTyping(workerName) {
             this.tasks[index].priority = document.getElementById('task-priority').value;
             this.tasks[index].date = document.getElementById('task-date').value;
             this.tasks[index].instructions = document.getElementById('task-instructions').value;
+            if (enteredDeposit !== null) {
+              const previousDeposit = Math.max(0, Number(this.tasks[index].depositAmount) || 0);
+              this.tasks[index].depositAmount = enteredDeposit;
+              this.tasks[index].depositDate = enteredDeposit > 0
+                ? enteredDeposit === previousDeposit ? (this.tasks[index].depositDate || localDate()) : localDate()
+                : null;
+            }
             if (this.checklistDraftDirty) this.tasks[index].checklist = this.activeChecklistDraft.map(item => ({ ...item }));
             if (requestedOrderNumber >= this.orderSequenceNext) this.orderSequenceNext = this.getNextAvailableOrderNumber(requestedOrderNumber + 1, this.tasks);
           }
@@ -5476,6 +5494,8 @@ updateMessengerWindowTyping(workerName) {
             priority: document.getElementById('task-priority').value,
             date: document.getElementById('task-date').value,
             instructions: document.getElementById('task-instructions').value,
+            depositAmount: enteredDeposit ?? 0,
+            depositDate: (enteredDeposit ?? 0) > 0 ? localDate() : null,
             fieldFindings: [],
             status: 'PENDIENTE',
             observations: '',
