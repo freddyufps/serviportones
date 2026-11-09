@@ -124,16 +124,21 @@
     };
   }
 
-  const originalViewOrder = proto.viewOrderDetails;
-  if (typeof originalViewOrder === 'function') {
-    proto.viewOrderDetails = function (id, ...args) {
-      const result = originalViewOrder.call(this, id, ...args);
+  const originalOrderPreview = proto.openPaymentOrderPreview;
+  if (typeof originalOrderPreview === 'function') {
+    proto.openPaymentOrderPreview = function (id, ...args) {
+      const result = originalOrderPreview.call(this, id, ...args);
       const task = (this.tasks || []).find(item => String(item.id) === String(id));
-      const section = document.getElementById('view-order-materials');
-      if (!section || !task) return result;
+      const body = document.querySelector('#payment-order-preview .payment-order-preview-body');
+      if (!body || !task) return result;
+      body.querySelector('.payment-order-materials')?.remove();
       const rows = normalizedMaterials(task.materials);
-      section.classList.toggle('hidden', rows.length === 0);
-      section.innerHTML = rows.length ? `<div class="flex items-center justify-between gap-3 mb-3"><h3 class="text-xs font-black uppercase tracking-wide text-slate-700">Materiales utilizados</h3><strong class="text-sm font-extrabold text-emerald-700">Total: ${money(rows.reduce((sum, item) => sum + lineTotal(item), 0))}</strong></div><div class="space-y-2">${rows.map(item => `<div class="flex items-center justify-between gap-4 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs"><span class="min-w-0"><b>${esc(item.name)}</b><span class="text-slate-500"> · ${item.quantity} × ${money(item.unitCost)}</span></span><strong class="shrink-0 text-slate-700">${money(lineTotal(item))}</strong></div>`).join('')}</div>` : '';
+      if (!rows.length) return result;
+      const section = document.createElement('section');
+      section.className = 'payment-order-preview-section payment-order-materials';
+      section.innerHTML = `<div class="flex items-center justify-between gap-3 mb-3"><h3>Materiales utilizados</h3><strong class="text-sm font-extrabold text-emerald-700">Total: ${money(rows.reduce((sum, item) => sum + lineTotal(item), 0))}</strong></div><div class="space-y-2">${rows.map(item => `<div class="flex items-center justify-between gap-4 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs"><span class="min-w-0"><b>${esc(item.name)}</b><span class="text-slate-500"> · ${item.quantity} × ${money(item.unitCost)}</span></span><strong class="shrink-0 text-slate-700">${money(lineTotal(item))}</strong></div>`).join('')}</div>`;
+      const evidenceSection = body.querySelector('.payment-order-preview-evidence');
+      if (evidenceSection) evidenceSection.before(section); else body.appendChild(section);
       return result;
     };
   }
