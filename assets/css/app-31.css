@@ -314,3 +314,8 @@ button[aria-label="Abrir ruta en Google Maps"] img,
 .payment-mobile-deposit-value{display:flex;align-items:center;justify-content:space-between;gap:5px}.payment-mobile-deposit-value>b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 .payment-table tbody>tr>td,.payment-table tbody>tr>td b,.payment-table tbody>tr>td small,.payment-table tbody>tr>td .payment-invoice-display,.payment-table tbody>tr>td .payment-value-cell{font-weight:600}
+
+/* Saldo cerrado: el importe queda en cero y se marca con el verde de Pagada. */
+.payment-balance-value.is-paid{display:inline-flex;align-items:center;justify-content:center;padding:4px 8px;border:1px solid #acd69c;border-radius:8px;background:#e7f6e8;color:#367a31;font-weight:850;white-space:nowrap}
+body.theme-dark .payment-balance-value.is-paid,body.theme-halloween .payment-balance-value.is-paid{background:#23482c;border-color:#496e46;color:#a8df95}
+@media(max-width:700px){.payment-mobile-financials>span>b.payment-balance-value.is-paid{width:max-content;max-width:100%;padding:4px 8px}}
