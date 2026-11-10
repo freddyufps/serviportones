@@ -4910,6 +4910,7 @@ updateMessengerWindowTyping(workerName) {
         if (archiveLabel) archiveLabel.textContent = this.showArchivedTasks ? '↩ Volver a órdenes' : '📦 Órdenes Archivadas';
         if (archiveCount) archiveCount.textContent = String(archivedCount);
         const myName = this.getCurrentDisplayName();
+        const normalizeWorkerName = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase();
         const myWorkerId = String(this.currentUser.id || this.users?.find(user => (user.fullName || user.username) === myName)?.id || '');
         this.ensurePaymentNotificationScheduler?.();
         const documentsPanel = document.getElementById('archived-documents-panel');
@@ -5011,7 +5012,7 @@ updateMessengerWindowTyping(workerName) {
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <span class="text-xs font-mono font-black text-slate-500">${t.id}</span>
-                  <div class="flex flex-wrap items-center justify-end gap-1">${t.urgent === true ? '<span class="order-urgent-badge" aria-label="Orden urgente">🚨 URGENTE</span>' : ''}${statusBadge}</div>
+                  <div class="flex flex-col items-end justify-center gap-1">${t.urgent === true ? '<span class="order-urgent-badge" aria-label="Orden urgente">🚨 URGENTE</span>' : ''}${statusBadge}${t.status === 'EN_PROCESO' ? '<span class="order-work-started-indicator" role="status">🟡 En Curso</span>' : ''}</div>
                 </div>
 
                 <h3 class="font-extrabold text-slate-900 text-sm sm:text-base leading-snug break-words">${this.escapeHtml(t.client || 'Cliente')}</h3>
@@ -5055,10 +5056,12 @@ updateMessengerWindowTyping(workerName) {
                 <div class="flex items-center gap-1">
                   ${isWorker ? `<button type="button" class="worker-order-expand" onclick="event.stopPropagation(); app.toggleWorkerOrderCard(this)" aria-expanded="false"><i data-lucide="chevron-down" aria-hidden="true"></i><span>Ver detalles</span></button>` : ''}
                   ${!isAdmin && isWorker && taskIsFree
-                    ? `<button type="button" onclick="app.takeFreeOrder('${t.id}')" class="text-xs font-black py-1.5 px-3 rounded-xl shadow-sm transition active:scale-95 bg-orange-500 hover:bg-orange-600 text-white">✅ Tomar Orden</button>`
-                    : `<button onclick="app.openReportModal('${t.id}')" class="text-xs font-bold py-1 px-2.5 rounded-xl shadow-sm transition active:scale-95 bg-brand-dark hover:bg-black text-white">Registrar Informe</button>`}
+                    ? `<button type="button" onclick="app.takeFreeOrder('${t.id}')" class="worker-order-action worker-order-action--take">✅ Tomar Orden</button>`
+                    : `<button type="button" onclick="app.openReportModal('${t.id}')" class="worker-order-action worker-order-action--report">Registrar Informe</button>`}
+                  ${!isAdmin && isWorker && !taskIsFree && normalizeWorkerName(t.assignedTo) === normalizeWorkerName(myName) && (t.status === 'PENDIENTE' || t.status === 'NO_REALIZADA')
+                    ? `<button type="button" onclick="app.startTaskWork('${this.escapeHtml(t.id)}', this)" class="worker-order-action worker-order-action--start">✅ Iniciar</button>` : ''}
                   ${!isAdmin && isWorker && !taskIsFree && t.claimedFromFree === true && workerClaimIsMine
-                    ? `<button type="button" onclick="app.releaseFreeOrder('${this.escapeHtml(t.id)}')" class="text-xs font-bold py-1.5 px-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 transition active:scale-95">Liberar orden</button>` : ''}
+                    ? `<button type="button" onclick="app.releaseFreeOrder('${this.escapeHtml(t.id)}')" class="worker-order-action worker-order-action--release">Liberar Orden</button>` : ''}
 
                   ${isAdmin ? `
                     ${isAdmin && t.status === 'REALIZADA' ? `<button type="button" class="order-invoice-shortcut" onclick="app.openOrderInvoiceNumber('${t.id}')" title="Gestionar factura FE y valor"><i data-lucide="receipt-text" class="w-3.5 h-3.5"></i><span>Gestión FE</span></button>` : ''}
@@ -5966,6 +5969,44 @@ updateMessengerWindowTyping(workerName) {
 
       setTaskInProgress() {
         this.setReportStatus('EN_PROCESO');
+      }
+
+      async startTaskWork(id, buttonElement) {
+        const taskId = String(id || '');
+        const workerName = this.getCurrentDisplayName();
+        const taskIndex = this.tasks.findIndex(task => String(task.id) === String(taskId));
+        const button = buttonElement;
+        const roleLabel = String(this.currentUser?.role || this.currentUser?.rol || this.currentUser?.userType || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase();
+        const isWorker = roleLabel === 'worker' || roleLabel.includes('trabajador') || roleLabel.includes('tecnico') || roleLabel.includes('technician');
+        const normalizeWorkerName = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase();
+        if (!isWorker) {
+          this.showToast('Esta acción está disponible únicamente para trabajadores.', 'error');
+          return false;
+        }
+        if (taskIndex < 0 || this.isTaskFree(this.tasks[taskIndex]) || normalizeWorkerName(this.tasks[taskIndex].assignedTo) !== normalizeWorkerName(workerName)) {
+          this.showToast('Solo puedes iniciar una orden asignada a tu usuario.', 'error');
+          return false;
+        }
+        const task = this.tasks[taskIndex];
+        if (task.status === 'EN_PROCESO') return true;
+        if (task.status !== 'PENDIENTE' && task.status !== 'NO_REALIZADA') {
+          this.showToast('Esta orden no se puede iniciar en su estado actual.', 'error');
+          return false;
+        }
+        const previousStatus = task.status;
+        task.status = 'EN_PROCESO';
+        if (button) { button.disabled = true; button.textContent = 'Guardando…'; }
+        const saved = await this.saveTasks(true);
+        if (!saved?.ok) {
+          task.status = previousStatus;
+          SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
+          if (button) { button.disabled = false; button.textContent = '✅ Iniciar'; }
+          return false;
+        }
+        this.updateStats();
+        this.renderTasks();
+        this.showToast('Orden iniciada. El estado cambió a En Proceso.', 'success');
+        return true;
       }
 
       handleUploadEvidence(e) {
