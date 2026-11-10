@@ -94,11 +94,15 @@
       if (!canRelease(task) || normalize(task.assignedTo) !== normalize(task.claimedByWorkerName || workerName)) return { state: 'not-owner' };
       const updatedTasks = tasks.map(item => {
         if (String(item?.id) !== key) return item;
-        const updated = { ...item, assignedTo: 'LIBRE', assignedWorkerId: '' };
+        const updated = { ...item, assignedTo: 'LIBRE', assignedWorkerId: '', status: 'PENDIENTE' };
         delete updated.claimedFromFree;
         delete updated.claimedByWorkerId;
         delete updated.claimedByWorkerName;
         delete updated.assignedAt;
+        delete updated.workStartedAt;
+        delete updated.workStartedBy;
+        delete updated.startedAt;
+        delete updated.startedBy;
         return updated;
       });
       return { state: 'released', tasks: updatedTasks };
