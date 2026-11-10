@@ -633,6 +633,7 @@
 
       if (this.currentUser?.role !== 'admin') return this.showToast?.('Esta sección está disponible para el administrador.', 'error');
       const requestId = ++reportsNavigationRequest;
+      this.stopPresenceRealtimeListener?.();
       this.showDocumentControl = false;
       this.clientsDirectoryOpen = false;
       this.quoteArchiveInlineOpen = false;

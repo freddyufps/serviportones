@@ -50,6 +50,7 @@
   };
   const openQuotesArchive = app => {
     if (!app || app.currentUser?.role !== 'admin') return false;
+    app.stopPresenceRealtimeListener?.();
     app.closeQuotesArchiveInline?.();
     // The previous implementation also displayed this archive in a legacy modal.
     // app-43's cloud snapshot listener treats that modal as an active route and
@@ -116,6 +117,9 @@
       document.body.classList.remove('quotes-open');
     };
     const setView = (instance, view, closeLegacyQuotes = true) => {
+      const needsTeamPresence = ['active', 'archived'].includes(view);
+      if (needsTeamPresence) instance.startPresenceListenerForCurrentRole?.();
+      else instance.stopPresenceRealtimeListener?.();
       // The reports module shares the legacy archived-orders navigation slot.
       // Every non-reports route must explicitly clear its active flag so late
       // Firestore/order renders cannot restore Reports over the selected view.

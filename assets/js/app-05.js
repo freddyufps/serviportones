@@ -421,6 +421,10 @@
         this.activeReportStatus = null;
         this.activeReportUrgent = false;
         this.heartbeatTimer = null;
+        this.usersUnsubscribe = null;
+        this.ordersUnsubscribe = null;
+        this.presenceUnsubscribe = null;
+        this.presenceListenerTarget = null;
         this.presenceRecords = {};
         this.presenceRefreshTimer = null;
         this.adminIdentityNames = ['Lisbeth', 'Gabriela'];
@@ -717,45 +721,21 @@
         document.getElementById('tech-particles-container')?.remove();
       }
 
-      async init() {
-        const unlockOrderAudio = () => SoundEngine.unlock();
-        window.addEventListener('pointerdown', unlockOrderAudio, { once: true, capture: true });
-        window.addEventListener('touchstart', unlockOrderAudio, { once: true, passive: true, capture: true });
-        window.addEventListener('keydown', unlockOrderAudio, { once: true, capture: true });
-        this.applyDarkMode();
-        this.applySeasonalTheme(this.seasonalTheme);
-        this.renderSeasonalThemeSelector();
-        this.initTechTheme();
-        this.loadPreferences();
-
-        SafeStorage.removeItem('portonpro_admin_v4');
-        SafeStorage.removeItem('portonpro_users_v4');
-
-        const savedTasks = SafeStorage.getItem('portonpro_tasks_v4');
-        if (savedTasks) {
-          try { this.tasks = JSON.parse(savedTasks); } catch(e) { this.tasks = INITIAL_TASKS; }
-        }
-        const savedOrderSequence = Number(SafeStorage.getItem('portonpro_order_sequence_next'));
-        this.orderSequenceNext = Number.isSafeInteger(savedOrderSequence) && savedOrderSequence > 0 ? savedOrderSequence : this.getDefaultNextOrderNumber();
-
-        const remembered = SafeStorage.getItem('portonpro_remembered');
-        if (remembered) {
-          try {
-            const remObj = JSON.parse(remembered);
-            document.getElementById('login-username').value = remObj.u || '';
-            document.getElementById('login-password').value = remObj.p || '';
-            document.getElementById('login-remember').checked = true;
-          } catch(e) {}
-        }
-
+      startCoreFirestoreListeners() {
+        if (!window.db || (this.usersUnsubscribe && this.ordersUnsubscribe)) return;
+        const db = window.db;
+        const sessionId = this.currentUser?.authSessionId;
+        const isActiveSession = () => !!this.currentUser && this.currentUser.authSessionId === sessionId;
         if (window.db) {
-          db.collection('users').onSnapshot((snapshot) => {
+          this.usersUnsubscribe = db.collection('users').onSnapshot((snapshot) => {
+            if (!isActiveSession()) return;
             const list = [];
             snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
             const previousUsersById = new Map((this.users || []).map(user => [String(user.id), user]));
             const workerPhotosChanged = list.some(user => this.getChatRole(user.role) === 'worker' && previousUsersById.has(String(user.id)) && (previousUsersById.get(String(user.id))?.photo || '') !== (user.photo || ''));
             this.users = list;
             this.workers = list.filter(u => this.getChatRole(u.role) === 'worker');
+            this.startPresenceListenerForCurrentRole();
             // A cached snapshot may be empty or carry an old sessionVersion.
             // Only a server-confirmed snapshot can invalidate an active session.
             if (this.currentUser && snapshot.metadata?.fromCache !== true && !this.validateCurrentSessionRecord(list)) {
@@ -788,7 +768,8 @@
             }
           }, err => console.error("Snapshot users error:", err));
 
-          db.collection('ordenes').doc('todas').onSnapshot((doc) => {
+          this.ordersUnsubscribe = db.collection('ordenes').doc('todas').onSnapshot((doc) => {
+            if (!isActiveSession()) return;
             if (doc.exists && Array.isArray(doc.data().tasks)) {
               const orderDocument = doc.data();
               const incomingTasks = orderDocument.tasks;
@@ -864,8 +845,32 @@
             }
           }, e => console.error("Snapshot órdenes:", e));
 
-          db.collection('presencia').onSnapshot((snapshot) => {
-            snapshot.forEach(doc => {
+          this.startPresenceListenerForCurrentRole();
+        }
+
+      }
+
+      startPresenceListenerForCurrentRole() {
+        if (!window.db || !this.currentUser) return;
+        const role = String(this.currentUser.role || '').toLowerCase();
+        const isAdmin = role === 'admin';
+        let reference;
+        if (isAdmin) {
+          if (this.presenceUnsubscribe || this.presenceListenerTarget === 'all') return;
+          reference = window.db.collection('presencia');
+          this.presenceListenerTarget = 'all';
+        } else {
+          const admin = (this.users || []).find(user => String(user.role || '').toLowerCase() === 'admin');
+          const adminUsername = String(admin?.username || '').trim().toLowerCase();
+          if (!adminUsername || (this.presenceListenerTarget === `admin:${adminUsername}` && this.presenceUnsubscribe)) return;
+          this.presenceListenerTarget = `admin:${adminUsername}`;
+          reference = window.db.collection('presencia').doc(adminUsername);
+        }
+        const sessionId = this.currentUser.authSessionId;
+        const isActiveSession = () => !!this.currentUser && this.currentUser.authSessionId === sessionId;
+        const applyPresenceRecords = records => {
+          if (!isActiveSession()) return;
+          records.forEach(doc => {
               const data = doc.data() || {};
               const presenceId = String(doc.id || '').trim().toLowerCase();
               const existingPresenceUser = this.users.find(x => String(x.username || '').trim().toLowerCase() === presenceId) || (Array.isArray(this.workers) ? this.workers.find(x => String(x.username || '').trim().toLowerCase() === presenceId) : null);
@@ -893,7 +898,7 @@
                 console.info('[PRESENCE] Transición de trabajador a disponible', { username: presenceId });
                 SoundEngine.playWorkerConnectedSound();
               }
-            });
+          });
             this.presenceSnapshotInitialized = true;
             this.applySharedSeasonalTheme();
             if (this.currentUser) {
@@ -904,9 +909,67 @@
               this.renderTechniciansMonitor();
               this.renderConversationsSidebar();
             }
-          });
+        };
+        // Workers only need the administrator's status card. Their reference
+        // is one document; only admins subscribe to the full presence feed.
+        this.presenceUnsubscribe = reference.onSnapshot(snapshot => {
+          if (!isActiveSession()) return;
+          const records = Array.isArray(snapshot.docs)
+            ? snapshot.docs
+            : (snapshot.exists ? [snapshot] : []);
+          applyPresenceRecords(records);
+        }, error => console.error('[PRESENCE] Error de escucha:', error));
+      }
 
+      stopCoreFirestoreListeners() {
+        ['usersUnsubscribe', 'ordersUnsubscribe', 'presenceUnsubscribe'].forEach(key => {
+          try { this[key]?.(); } catch (error) { console.warn('[FIRESTORE] No se pudo cerrar un listener:', key, error); }
+          this[key] = null;
+        });
+        this.presenceListenerTarget = null;
+        this.presenceSnapshotInitialized = false;
+        this.presenceRecords = {};
+      }
 
+      stopPresenceRealtimeListener() {
+        // Order views need live presence. Other modules do not, so close either
+        // the administrator's team feed or a worker's single-admin feed there.
+        if (!this.presenceUnsubscribe) return;
+        try { this.presenceUnsubscribe?.(); } catch (error) { console.warn('[PRESENCE] No se pudo cerrar la escucha:', error); }
+        this.presenceUnsubscribe = null;
+        this.presenceListenerTarget = null;
+        this.presenceSnapshotInitialized = false;
+      }
+
+      async init() {
+        const unlockOrderAudio = () => SoundEngine.unlock();
+        window.addEventListener('pointerdown', unlockOrderAudio, { once: true, capture: true });
+        window.addEventListener('touchstart', unlockOrderAudio, { once: true, passive: true, capture: true });
+        window.addEventListener('keydown', unlockOrderAudio, { once: true, capture: true });
+        this.applyDarkMode();
+        this.applySeasonalTheme(this.seasonalTheme);
+        this.renderSeasonalThemeSelector();
+        this.initTechTheme();
+        this.loadPreferences();
+
+        SafeStorage.removeItem('portonpro_admin_v4');
+        SafeStorage.removeItem('portonpro_users_v4');
+
+        const savedTasks = SafeStorage.getItem('portonpro_tasks_v4');
+        if (savedTasks) {
+          try { this.tasks = JSON.parse(savedTasks); } catch(e) { this.tasks = INITIAL_TASKS; }
+        }
+        const savedOrderSequence = Number(SafeStorage.getItem('portonpro_order_sequence_next'));
+        this.orderSequenceNext = Number.isSafeInteger(savedOrderSequence) && savedOrderSequence > 0 ? savedOrderSequence : this.getDefaultNextOrderNumber();
+
+        const remembered = SafeStorage.getItem('portonpro_remembered');
+        if (remembered) {
+          try {
+            const remObj = JSON.parse(remembered);
+            document.getElementById('login-username').value = remObj.u || '';
+            document.getElementById('login-password').value = remObj.p || '';
+            document.getElementById('login-remember').checked = true;
+          } catch(e) {}
         }
 
         document.addEventListener('pointerdown', event => {
@@ -1105,6 +1168,13 @@
       }
 
       showLoginView() {
+        this.stopCoreFirestoreListeners();
+        this.stopClientDirectorySync?.();
+        ['quotesUnsubscribe', 'technicalReportsUnsubscribe'].forEach(key => {
+          try { this[key]?.(); } catch (error) { console.warn('[FIRESTORE] No se pudo cerrar un listener:', key, error); }
+          this[key] = null;
+        });
+        this.stopPaymentInternalNotes?.();
         document.documentElement.classList.remove('auth-session-pending');
         document.body.classList.add('seasonal-login-visible');
         document.getElementById('view-login').classList.remove('hidden');
@@ -1120,12 +1190,15 @@
         document.getElementById('chat-window-modal').classList.add('hidden');
         document.getElementById('chat-desktop-windows')?.classList.add('hidden');
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+        this.heartbeatTimer = null;
+        if (this.presenceRefreshTimer) clearInterval(this.presenceRefreshTimer);
+        this.presenceRefreshTimer = null;
         if (this.ownPresenceUnsubscribe) { this.ownPresenceUnsubscribe(); this.ownPresenceUnsubscribe = null; }
         if (this.chatUnsubscribe) { this.chatUnsubscribe(); this.chatUnsubscribe = null; }
         if (this.chatThreadUnsubscribe) { this.chatThreadUnsubscribe(); this.chatThreadUnsubscribe = null; }
         if (this.chatThreadsUnsubscribe) { this.chatThreadsUnsubscribe(); this.chatThreadsUnsubscribe = null; }
         if (this.callUnsubscribe) { this.callUnsubscribe(); this.callUnsubscribe = null; }
-        if (this.gpsLocationsUnsubscribe) { this.gpsLocationsUnsubscribe(); this.gpsLocationsUnsubscribe = null; }
+        this.closeAdminGpsModal();
         this.clearDedicatedWorkerChatListeners();
         this.stopGpsSharing(true);
         this.endVoiceCall();
@@ -1317,6 +1390,7 @@
         user.sessionVersion = Math.max(1, Number(user.sessionVersion) || 1);
         if (!user.authSessionId) user.authSessionId = `auth_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
         this.currentUser = user;
+        this.startCoreFirestoreListeners();
         const loginAuthSessionId = user.authSessionId;
         this.ownAvailabilityStatus = 'available';
         // Mostrar el espacio de trabajo sin esperar a que Firestore responda.
@@ -1329,10 +1403,6 @@
           if (String(user.role || '').toLowerCase() === 'admin') {
             presence.doc(String(user.username || '').toLowerCase()).get()
               .then(snap => { if (snap.exists) applyIdentity(snap.data() || {}); })
-              .catch(error => console.warn('[IDENTIDAD] Usando identidad local hasta sincronizar:', error?.message || error));
-          } else {
-            presence.get()
-              .then(snap => applyIdentity(snap.docs.map(doc => doc.data() || {}).find(record => String(record.role || '').toLowerCase() === 'admin')))
               .catch(error => console.warn('[IDENTIDAD] Usando identidad local hasta sincronizar:', error?.message || error));
           }
         }
@@ -1381,9 +1451,8 @@
         }
 
         this.sendHeartbeat();
-        this.subscribeOwnPresenceProfile();
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
-        this.heartbeatTimer = setInterval(() => this.sendHeartbeat(), 6000);
+        this.heartbeatTimer = setInterval(() => this.sendHeartbeat(), 30000);
         if (this.presenceRefreshTimer) clearInterval(this.presenceRefreshTimer);
         this.presenceRefreshTimer = setInterval(() => {
           this.renderAdminPresence();
@@ -1462,7 +1531,7 @@
         const sessions = record.sessions && typeof record.sessions === 'object' ? record.sessions : {};
         const now = Date.now();
         const otherLiveSessions = Object.entries(sessions)
-          .filter(([id, session]) => id !== this.presenceSessionId && now - Number(session?.lastHeartbeat || 0) < 20000)
+          .filter(([id, session]) => id !== this.presenceSessionId && now - Number(session?.lastHeartbeat || 0) < 45000)
           .map(([, session]) => session);
         const latestHeartbeat = otherLiveSessions.reduce((latest, session) => Math.max(latest, Number(session.lastHeartbeat || 0)), 0);
         const nextStatus = otherLiveSessions.some(session => session.availabilityStatus === 'available')
@@ -1857,7 +1926,7 @@
           const now = Date.now();
           const liveSessions = Object.values(record.sessions || {}).filter(session => {
             const heartbeat = toHeartbeatMs(session?.lastHeartbeat);
-            return heartbeat > 0 && now - heartbeat >= 0 && now - heartbeat < 20000;
+            return heartbeat > 0 && now - heartbeat >= 0 && now - heartbeat < 45000;
           });
           if (!liveSessions.length) return 'disconnected';
           if (liveSessions.some(session => String(session.availabilityStatus || '').toLowerCase() === 'available')) return 'available';
@@ -1868,7 +1937,7 @@
         const heartbeat = toHeartbeatMs(rawHeartbeat);
         const savedStatus = String(record.availabilityStatus || '').trim().toLowerCase();
         const isAdminUser = this.getChatRole(user.role || record.role) === 'admin';
-        const heartbeatFresh = heartbeat > 0 && Date.now() - heartbeat >= 0 && Date.now() - heartbeat < 20000;
+        const heartbeatFresh = heartbeat > 0 && Date.now() - heartbeat >= 0 && Date.now() - heartbeat < 45000;
         if (isAdminUser) {
           if (heartbeatFresh && savedStatus === 'absent') return 'absent';
           if (heartbeatFresh) return 'available';
@@ -2129,7 +2198,17 @@
       }
 
       closeAdminGpsModal() {
-        document.getElementById('modal-admin-gps').classList.add('hidden');
+        document.getElementById('modal-admin-gps')?.classList.add('hidden');
+        if (this.gpsLocationsUnsubscribe) { this.gpsLocationsUnsubscribe(); this.gpsLocationsUnsubscribe = null; }
+        this.locationsData = {};
+        Object.entries(this.adminMapMarkers || {}).forEach(([name, marker]) => {
+          if (this.adminMap && marker) this.adminMap.removeLayer(marker);
+          delete this.adminMapMarkers[name];
+        });
+        const workersList = document.getElementById('gps-workers-list');
+        if (workersList) workersList.innerHTML = '';
+        const activeCount = document.getElementById('gps-active-count');
+        if (activeCount) activeCount.textContent = '0 Activos';
       }
 
       initAdminMap() {
@@ -2146,7 +2225,7 @@
       }
 
       subscribeGpsLocations() {
-        if (!window.db || this.gpsLocationsUnsubscribe) return;
+        if (!window.db || this.gpsLocationsUnsubscribe || document.getElementById('modal-admin-gps')?.classList.contains('hidden')) return;
 
         this.gpsLocationsUnsubscribe = db.collection('gps_locations').onSnapshot(snap => {
           const locs = {};
