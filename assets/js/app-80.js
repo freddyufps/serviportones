@@ -14,6 +14,50 @@
     return isWorker(app) && !!myName && normalize(task?.assignedTo) === myName && !app.isTaskFree?.(task) && !app.isTaskHiddenFromWorkers?.(task);
   };
   const canEditMaterials = (app, task) => isAdmin(app) || isAssignedWorker(app, task);
+  const resetFreeTaskState = (app, task) => {
+    if (!app.isTaskFree?.(task)) return task;
+    const staleFields = ['assignedWorkerId', 'assignedAt', 'claimedFromFree', 'claimedByWorkerId', 'claimedByWorkerName', 'workStarted', 'workStartedAt', 'workStartedBy', 'workStartedByName', 'startedAt', 'startedBy', 'startedByName'];
+    const needsReset = task.status !== 'PENDIENTE' || staleFields.some(field => Object.prototype.hasOwnProperty.call(task, field) && Boolean(task[field]));
+    if (!needsReset) return task;
+    const reset = { ...task, assignedTo: 'LIBRE', assignedWorkerId: '', status: 'PENDIENTE' };
+    staleFields.forEach(field => { delete reset[field]; });
+    return reset;
+  };
+
+  proto.normalizeReleasedFreeTaskStates = function () {
+    if (!Array.isArray(this.tasks)) return false;
+    let changed = false;
+    this.tasks = this.tasks.map(task => {
+      const reset = resetFreeTaskState(this, task);
+      if (reset !== task) changed = true;
+      return reset;
+    });
+    if (!changed) return false;
+
+    if (window.SafeStorage?.setItem) SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
+    else { try { localStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks)); } catch (_) {} }
+
+    const dbInstance = window.db;
+    if (!dbInstance?.collection || typeof dbInstance.runTransaction !== 'function' || this.__normalizingReleasedFreeTasks) return true;
+    this.__normalizingReleasedFreeTasks = true;
+    const orderRef = dbInstance.collection('ordenes').doc('todas');
+    dbInstance.runTransaction(async transaction => {
+      const snapshot = await transaction.get(orderRef);
+      if (!snapshot.exists) return;
+      const data = snapshot.data() || {};
+      const latestTasks = Array.isArray(data.tasks) ? data.tasks : [];
+      let latestChanged = false;
+      const normalizedTasks = latestTasks.map(task => {
+        const reset = resetFreeTaskState(this, task);
+        if (reset !== task) latestChanged = true;
+        return reset;
+      });
+      if (latestChanged) transaction.update(orderRef, { tasks: normalizedTasks });
+    }).catch(error => {
+      console.warn('[ORDEN] No se pudo sincronizar la normalización de órdenes libres:', error?.code || error?.message || error);
+    }).finally(() => { this.__normalizingReleasedFreeTasks = false; });
+    return true;
+  };
   const normalizedMaterials = list => (Array.isArray(list) ? list : []).map((entry, index) => ({
     id: String(entry?.id || `material-${index + 1}`),
     name: String(entry?.name || entry?.material || '').trim(),
@@ -55,6 +99,7 @@
     if (!target || typeof target.renderTasks !== 'function' || target.renderTasks.__workerExpansionState80) return;
     const render = target.renderTasks;
     const wrapped = function (...args) {
+      this.normalizeReleasedFreeTaskStates?.();
       const result = render.apply(this, args);
       restoreExpandedWorkerCards(this);
       return result;
@@ -90,8 +135,14 @@
     const releaseFrom = tasks => {
       const task = tasks.find(item => String(item?.id) === key);
       if (!task) return { state: 'missing' };
-      if (this.isTaskFree?.(task)) return { state: 'already-free', tasks };
-      if (!canRelease(task) || normalize(task.assignedTo) !== normalize(task.claimedByWorkerName || workerName)) return { state: 'not-owner' };
+      if (task.archivedAt || task.archived === true || task.status === 'REALIZADA') return { state: 'not-owner' };
+      const alreadyFree = this.isTaskFree?.(task);
+      const hasStaleState = task.status !== 'PENDIENTE'
+        || Boolean(task.assignedWorkerId || task.assignedAt || task.claimedFromFree || task.claimedByWorkerId || task.claimedByWorkerName)
+        || ['workStarted', 'workStartedAt', 'workStartedBy', 'workStartedByName', 'startedAt', 'startedBy', 'startedByName']
+          .some(field => Object.prototype.hasOwnProperty.call(task, field));
+      if (alreadyFree && !hasStaleState) return { state: 'already-free', tasks };
+      if (!alreadyFree && (!canRelease(task) || normalize(task.assignedTo) !== normalize(task.claimedByWorkerName || workerName))) return { state: 'not-owner' };
       const updatedTasks = tasks.map(item => {
         if (String(item?.id) !== key) return item;
         const updated = { ...item, assignedTo: 'LIBRE', assignedWorkerId: '', status: 'PENDIENTE' };
@@ -101,8 +152,11 @@
         delete updated.assignedAt;
         delete updated.workStartedAt;
         delete updated.workStartedBy;
+        delete updated.workStartedByName;
+        delete updated.workStarted;
         delete updated.startedAt;
         delete updated.startedBy;
+        delete updated.startedByName;
         return updated;
       });
       return { state: 'released', tasks: updatedTasks };
@@ -129,8 +183,17 @@
       else if (result?.state === 'already-free') this.showToast?.('La orden ya está disponible para los trabajadores.', 'info');
       else this.showToast?.('No se encontró la orden. Actualiza la lista e intenta otra vez.', 'error');
     } catch (error) {
-      console.error('[ORDEN] No se pudo liberar la orden:', error);
-      this.showToast?.('No se pudo liberar la orden. Inténtalo nuevamente.', 'error');
+      console.error('[ORDEN] Falló la liberación de una orden:', {
+        taskId: key,
+        workerId,
+        firebaseCode: String(error?.code || 'unknown'),
+        message: String(error?.message || error || '')
+      }, error);
+      this.showToast?.(error?.code === 'permission-denied'
+        ? 'No tienes permiso para liberar esta orden. Contacta al administrador.'
+        : error?.code === 'unauthenticated'
+          ? 'Tu sesión no está validada. Cierra sesión y vuelve a ingresar.'
+          : 'No se pudo liberar la orden. Revisa la conexión e inténtalo nuevamente.', 'error');
     } finally {
       this.__releasingFreeOrderIds.delete(key);
     }

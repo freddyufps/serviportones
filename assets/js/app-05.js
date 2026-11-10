@@ -336,6 +336,17 @@
         this.ownAvailabilityStatus = 'available';
         window.addEventListener('pagehide', () => this.releasePresenceSession());
         window.addEventListener('pageshow', () => { if (this.currentUser) this.sendHeartbeat(); });
+        window.addEventListener('storage', event => {
+          if (event.key !== 'portonpro_session_v4' || !this.currentUser) return;
+          let sharedSession = null;
+          try { sharedSession = event.newValue ? JSON.parse(event.newValue) : null; } catch (_) {}
+          if (sharedSession?.authSessionId && sharedSession.authSessionId === this.currentUser.authSessionId) return;
+          const previousUser = this.currentUser;
+          this.logout({ preserveSharedSession: true });
+          if (sharedSession && String(sharedSession.id) !== String(previousUser.id)) {
+            this.showToast('La sesión se cambió en otra pestaña. Inicia sesión nuevamente para continuar.', 'info');
+          }
+        });
         this.users = [];
         this.workers = [];
         this.tasks = INITIAL_TASKS;
@@ -780,6 +791,7 @@
               this.tasks = incomingTasks;
               SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
               if (this.currentUser) {
+                this.normalizeReleasedFreeTaskStates?.();
                 this.updateStats();
                 this.renderTasks();
                 if (this.currentUser.role === 'admin') {
@@ -889,7 +901,7 @@
             });
           } catch(e) {
             this.clearRememberedCredentials();
-            SafeStorage.removeItem('portonpro_session_v4');
+            this.clearStoredSessionIfMatches(savedSession);
             this.showLoginView();
           }
         } else {
@@ -907,6 +919,33 @@
         if (username) username.value = '';
         if (password) password.value = '';
         if (remember) remember.checked = false;
+      }
+
+      clearStoredSessionIfMatches(expected) {
+        const key = 'portonpro_session_v4';
+        const storedRaw = SafeStorage.getItem(key);
+        if (!storedRaw) return false;
+        if (typeof expected === 'string') {
+          if (storedRaw !== expected) return false;
+          SafeStorage.removeItem(key);
+          return true;
+        }
+        if (!expected || typeof expected !== 'object') return false;
+        try {
+          const stored = JSON.parse(storedRaw);
+          if (expected.authSessionId) {
+            if (String(stored.authSessionId || '') !== String(expected.authSessionId)) return false;
+          } else {
+            if (stored.authSessionId) return false;
+            if (String(stored.id || '') !== String(expected.id || '')) return false;
+            if (String(stored.username || '').trim().toLowerCase() !== String(expected.username || '').trim().toLowerCase()) return false;
+            if (this.getChatRole(stored.role) !== this.getChatRole(expected.role)) return false;
+          }
+          SafeStorage.removeItem(key);
+          return true;
+        } catch (_) {
+          return false;
+        }
       }
 
       async validateStoredSession(user) {
@@ -1056,7 +1095,6 @@
           if (dashboard && !dashboard.classList.contains('hidden')) return;
 
           this.currentUser = null;
-          SafeStorage.removeItem('portonpro_session_v4');
           try { this.showLoginView(); }
           catch (recoveryError) { console.error('[LOGIN] No se pudo restaurar el formulario:', recoveryError); }
 
@@ -1086,7 +1124,6 @@
         e.preventDefault();
         this.manualLoginStarted = true;
         this.sessionRestoreToken += 1;
-        SafeStorage.removeItem('portonpro_session_v4');
         const rawUser = document.getElementById('login-username').value;
         const rawPass = document.getElementById('login-password').value;
         const rememberChecked = document.getElementById('login-remember').checked;
@@ -1213,7 +1250,7 @@
           } catch (loginError) {
             console.error('[LOGIN] Error al preparar el panel después de validar la cuenta:', loginError);
             this.currentUser = null;
-            SafeStorage.removeItem('portonpro_session_v4');
+            this.clearStoredSessionIfMatches(authenticatedUser);
             try { this.showLoginView(); }
             catch (recoveryError) { console.error('[LOGIN] No se pudo restaurar la pantalla de acceso:', recoveryError); }
             resetLoginButton();
@@ -1234,13 +1271,17 @@
       async loginSuccess(user, notify = true) {
         user.role = this.getChatRole(user.role);
         user.sessionVersion = Math.max(1, Number(user.sessionVersion) || 1);
+        if (!user.authSessionId) user.authSessionId = `auth_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
         this.currentUser = user;
+        const loginAuthSessionId = user.authSessionId;
         this.ownAvailabilityStatus = 'available';
         // Mostrar el espacio de trabajo sin esperar a que Firestore responda.
         // Una conexión lenta no debe dejar el indicador de carga bloqueado.
         if (window.db) {
           const presence = window.db.collection('presencia');
-          const applyIdentity = record => { if (record) this.applyAdminIdentityPresence(record); };
+          const applyIdentity = record => {
+            if (record && this.currentUser?.authSessionId === loginAuthSessionId) this.applyAdminIdentityPresence(record);
+          };
           if (String(user.role || '').toLowerCase() === 'admin') {
             presence.doc(String(user.username || '').toLowerCase()).get()
               .then(snap => { if (snap.exists) applyIdentity(snap.data() || {}); })
@@ -1325,12 +1366,15 @@
 
       }
 
-      logout() {
+      logout(options = {}) {
+        const current = this.currentUser;
+        const preserveSharedSession = options?.preserveSharedSession === true;
         this.releasePresenceSession();
 
         this.currentUser = null;
+        this.sessionRestoreToken += 1;
         this.applyDarkMode();
-        SafeStorage.removeItem('portonpro_session_v4');
+        if (current && !preserveSharedSession) this.clearStoredSessionIfMatches(current);
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
         if (this.presenceRefreshTimer) clearInterval(this.presenceRefreshTimer);
         this.showLoginView();
@@ -4552,12 +4596,15 @@ updateMessengerWindowTyping(workerName) {
           const menu = document.getElementById(menuId);
           if (!select || !menu) return;
           const selected = select.options[select.selectedIndex];
-          if (label) label.textContent = select.value === 'ALL' ? fallbackLabel : (selected?.textContent || fallbackLabel).trim();
+          if (label) {
+            label.textContent = select.value === 'ALL' ? fallbackLabel : (selected?.textContent || fallbackLabel).trim();
+            label.classList.toggle('order-filter-label--free', select.value === 'LIBRE');
+          }
           menu.replaceChildren();
           Array.from(select.options).forEach(option => {
             const item = document.createElement('button');
             item.type = 'button';
-            item.className = 'order-filter-option';
+            item.className = `order-filter-option${option.value === 'LIBRE' ? ' order-filter-option--free' : ''}`;
             item.setAttribute('role', 'option');
             item.setAttribute('aria-selected', String(option.value === select.value));
             item.textContent = option.textContent.trim();
@@ -4580,10 +4627,10 @@ updateMessengerWindowTyping(workerName) {
         const opts = this.workers.map(u => `<option value="${u.fullName || u.username}">${u.fullName || u.username}</option>`).join('');
         if (taskAssignedSelect) {
           const hiddenOption = this.currentUser?.role === 'admin' ? '<option value="NO_VISIBLE_WORKERS">🔒 No visible para trabajadores</option>' : '';
-          taskAssignedSelect.innerHTML = `<option value="LIBRE">🟠 LIBRE</option>${hiddenOption}${opts}`;
+          taskAssignedSelect.innerHTML = `<option value="LIBRE">🟢 LIBRE</option>${hiddenOption}${opts}`;
           if ([...taskAssignedSelect.options].some(option => option.value === previousAssigned)) taskAssignedSelect.value = previousAssigned;
         }
-        if (filterTechSelect) filterTechSelect.innerHTML = `<option value="ALL">Todos los Técnicos</option><option value="LIBRE">🟠 LIBRE</option>` + opts;
+        if (filterTechSelect) filterTechSelect.innerHTML = `<option value="ALL">Todos los Técnicos</option><option value="LIBRE">🟢 LIBRE</option>` + opts;
         this.renderTaskTechnicianMenu();
         this.renderOrderFilterMenus();
       }
@@ -4595,11 +4642,12 @@ updateMessengerWindowTyping(workerName) {
         if (!select || !menu || !label) return;
         const selected = select.options[select.selectedIndex];
         label.textContent = selected?.textContent.trim() || 'Selecciona un técnico';
+        label.classList.toggle('task-technician-label--free', selected?.value === 'LIBRE');
         menu.replaceChildren();
         Array.from(select.options).forEach(option => {
           const item = document.createElement('button');
           item.type = 'button';
-          item.className = 'task-technician-option';
+          item.className = `task-technician-option${option.value === 'LIBRE' ? ' task-technician-option--free' : ''}`;
           item.setAttribute('role', 'option');
           item.setAttribute('aria-selected', String(option.value === select.value));
           item.textContent = option.textContent.trim();
@@ -5012,7 +5060,7 @@ updateMessengerWindowTyping(workerName) {
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <span class="text-xs font-mono font-black text-slate-500">${t.id}</span>
-                  <div class="flex flex-col items-end justify-center gap-1">${t.urgent === true ? '<span class="order-urgent-badge" aria-label="Orden urgente">🚨 URGENTE</span>' : ''}${statusBadge}${t.status === 'EN_PROCESO' ? '<span class="order-work-started-indicator" role="status">🟡 En Curso</span>' : ''}</div>
+                  <div class="flex flex-col items-end justify-center gap-1">${t.urgent === true ? '<span class="order-urgent-badge" aria-label="Orden urgente">🚨 URGENTE</span>' : ''}${statusBadge}${t.status === 'EN_PROCESO' && (t.workStarted === true || t.workStartedAt || t.startedAt) ? '<span class="order-work-started-indicator" role="status">🟡 En Curso</span>' : ''}</div>
                 </div>
 
                 <h3 class="font-extrabold text-slate-900 text-sm sm:text-base leading-snug break-words">${this.escapeHtml(t.client || 'Cliente')}</h3>
@@ -5043,7 +5091,7 @@ updateMessengerWindowTyping(workerName) {
                   ${taskIsHiddenFromWorkers
                     ? '<span class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-700">🔒 No visible para trabajadores</span>'
                     : taskIsFree
-                    ? '<span class="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] font-black text-orange-700">🟠 LIBRE · Disponible</span>'
+                    ? '<span class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-700">🟢 LIBRE · Disponible</span>'
                     : `<div class="flex items-center gap-2"><div onclick="app.zoomWorkerPhoto('${techPhoto}', '${t.assignedTo}')" class="seasonal-worker-avatar cursor-pointer w-9 h-9 rounded-full overflow-hidden bg-slate-200 shrink-0 flex items-center justify-center border-2 border-brand-lime" title="Ampliar foto">${techPhoto ? `<img src="${this.escapeHtml(techPhoto)}" alt="Foto de ${this.escapeHtml(t.assignedTo)}" class="w-full h-full object-cover">` : `<span class="text-xs font-bold">${this.escapeHtml(String(t.assignedTo || '?').charAt(0).toUpperCase())}</span>`}</div><div class="min-w-0"><div class="font-bold text-slate-800 text-[11px]">${this.escapeHtml(t.assignedTo)}</div><span class="presence-label is-${techPresenceStatus}">${techPresenceLabel}</span>${techDetails.length ? `<div class="mt-0.5 flex flex-wrap gap-x-2 text-[10px] text-slate-500">${techDetails.map(detail => `<span>${detail}</span>`).join('')}</div>` : ''}</div></div>`}
                 </div>
 
@@ -5051,7 +5099,7 @@ updateMessengerWindowTyping(workerName) {
               </div>
 
               <div class="order-card-actions mt-3 pt-2 border-t flex items-center justify-between gap-1">
-                <button type="button" onclick="app.viewOrderDetails('${this.escapeHtml(t.id)}')" class="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-brand-dark hover:border-brand-lime flex items-center justify-center" title="Ver orden" aria-label="Ver orden"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                <div class="flex items-center gap-2"><button type="button" onclick="app.viewOrderDetails('${this.escapeHtml(t.id)}')" class="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-brand-dark hover:border-brand-lime flex items-center justify-center" title="Ver orden" aria-label="Ver orden"><i data-lucide="eye" class="w-4 h-4"></i></button>${!isAdmin && isWorker && taskIsFree ? '<span class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-extrabold tracking-wide text-emerald-700">🟢 LIBRE</span>' : ''}</div>
 
                 <div class="flex items-center gap-1">
                   ${isWorker ? `<button type="button" class="worker-order-expand" onclick="event.stopPropagation(); app.toggleWorkerOrderCard(this)" aria-expanded="false"><i data-lucide="chevron-down" aria-hidden="true"></i><span>Ver detalles</span></button>` : ''}
@@ -5994,11 +6042,24 @@ updateMessengerWindowTyping(workerName) {
           return false;
         }
         const previousStatus = task.status;
+        const previousWorkStarted = {
+          workStarted: task.workStarted,
+          workStartedAt: task.workStartedAt,
+          workStartedBy: task.workStartedBy,
+          workStartedByName: task.workStartedByName
+        };
         task.status = 'EN_PROCESO';
+        task.workStarted = true;
+        task.workStartedAt = new Date().toISOString();
+        task.workStartedBy = String(this.currentUser?.id || '');
+        task.workStartedByName = workerName;
         if (button) { button.disabled = true; button.textContent = 'Guardando…'; }
         const saved = await this.saveTasks(true);
         if (!saved?.ok) {
           task.status = previousStatus;
+          for (const [field, value] of Object.entries(previousWorkStarted)) {
+            if (value === undefined) delete task[field]; else task[field] = value;
+          }
           SafeStorage.setItem('portonpro_tasks_v4', JSON.stringify(this.tasks));
           if (button) { button.disabled = false; button.textContent = '✅ Iniciar'; }
           return false;

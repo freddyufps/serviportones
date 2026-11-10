@@ -180,6 +180,8 @@ body.theme-dark #task-client-saved-panel,body.theme-dark .task-form-content #tas
 .task-technician-option:hover{background:#f1f7fa;color:#0e5264}
 .task-technician-option[aria-selected=true]{background:#eaf7f9;color:#0c697e;font-weight:750}
 .task-technician-option[aria-selected=true]::after{content:'✓';margin-left:auto;font-weight:800}
+.task-technician-label--free,.task-technician-option--free,.order-filter-label--free,.order-filter-option--free{color:#15803d!important;font-weight:800!important}
+.task-technician-option--free:hover,.task-technician-option--free[aria-selected=true],.order-filter-option--free:hover,.order-filter-option--free[aria-selected=true]{background:#ecfdf5!important;color:#15803d!important}
 body.theme-dark .task-client-search,body.theme-dark .task-date-input,body.theme-dark .task-technician-trigger,body.theme-dark .task-technician-menu{background:#fff!important;color:#17283b!important;border-color:#d6e0ea!important}
 body.theme-dark .task-technician-option{color:#334155}
 body.theme-dark .task-technician-option:hover{background:#f1f7fa;color:#0e5264}
