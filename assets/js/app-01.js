@@ -13,7 +13,6 @@
       let savedSession = null;
       try {
         savedSession = sessionStorage.getItem(sessionKey);
-        if (!savedSession && !localStorage.getItem(activeSessionKey)) savedSession = localStorage.getItem(sessionKey);
       } catch (error) {}
       if (savedSession) {
         try {
@@ -33,6 +32,10 @@
           document.getElementById('view-login')?.classList.remove('hidden');
           document.getElementById('view-dashboard')?.classList.add('hidden');
         }, 18000);
+      } else {
+        // Clear pre-tab-scoped state so an old administrator identity cannot
+        // be restored into a worker tab after the session upgrade.
+        try { localStorage.removeItem(sessionKey); } catch (error) {}
       }
     })();
   

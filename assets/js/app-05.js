@@ -52,21 +52,13 @@
           }
         }
 
-        // Migrate a legacy shared session only once. New sessions are tab-scoped,
-        // so another open tab cannot overwrite this user's identity on refresh.
+        // Never restore the legacy shared localStorage identity: it may belong to
+        // a different role in another tab. Require a fresh login, then store it
+        // in this tab's sessionStorage.
         try {
-          if (localStorage.getItem(this.activeKey)) return null;
-          raw = localStorage.getItem(this.key);
-          if (!raw) return null;
-          const user = JSON.parse(raw);
-          if (!user?.id) return null;
-          if (!user.authSessionId) user.authSessionId = `auth_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
-          raw = JSON.stringify(user);
-          sessionStorage.setItem(this.key, raw);
-          localStorage.setItem(this.activeKey, String(user.authSessionId));
           localStorage.removeItem(this.key);
-          return raw;
         } catch (_) { return null; }
+        return null;
       },
       setItem(value) {
         try {
