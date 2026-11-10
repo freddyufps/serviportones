@@ -1108,6 +1108,11 @@
         document.documentElement.classList.remove('auth-session-pending');
         document.body.classList.add('seasonal-login-visible');
         document.getElementById('view-login').classList.remove('hidden');
+        const loginButton = document.getElementById('btn-submit-login');
+        const loginButtonText = document.getElementById('btn-submit-text');
+        if (loginButton) loginButton.disabled = false;
+        if (loginButtonText) loginButtonText.textContent = 'Iniciar Sesión';
+        document.getElementById('login-error-alert')?.classList.add('hidden');
         window.resumeLoginBrandVideo?.();
         document.getElementById('view-dashboard').classList.add('hidden');
         this.updateSeasonalEffects(this.seasonalTheme);
