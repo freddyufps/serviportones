@@ -8,7 +8,20 @@
         }
       } catch (error) {}
       // Show the branded restore screen only when a saved session needs validation.
-      const savedSession = localStorage.getItem('portonpro_session_v4');
+      const sessionKey = 'portonpro_session_v4';
+      const activeSessionKey = 'portonpro_active_auth_session_v1';
+      let savedSession = null;
+      try {
+        savedSession = sessionStorage.getItem(sessionKey);
+        if (!savedSession && !localStorage.getItem(activeSessionKey)) savedSession = localStorage.getItem(sessionKey);
+      } catch (error) {}
+      if (savedSession) {
+        try {
+          const user = JSON.parse(savedSession);
+          const activeId = localStorage.getItem(activeSessionKey);
+          if (activeId && activeId !== String(user?.authSessionId || '')) savedSession = null;
+        } catch (error) { savedSession = null; }
+      }
       if (savedSession) {
         const root = document.documentElement;
         root.classList.add('auth-session-pending');

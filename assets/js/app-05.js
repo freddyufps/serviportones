@@ -30,6 +30,81 @@
       }
     };
 
+    const AuthSessionStore = {
+      key: 'portonpro_session_v4',
+      activeKey: 'portonpro_active_auth_session_v1',
+      getItem() {
+        let raw = null;
+        try { raw = sessionStorage.getItem(this.key); } catch (_) {}
+        if (raw) {
+          try {
+            const user = JSON.parse(raw);
+            const activeId = localStorage.getItem(this.activeKey);
+            if (activeId && activeId !== String(user?.authSessionId || '')) {
+              sessionStorage.removeItem(this.key);
+              return null;
+            }
+            if (user?.authSessionId && !activeId) localStorage.setItem(this.activeKey, String(user.authSessionId));
+            return raw;
+          } catch (_) {
+            try { sessionStorage.removeItem(this.key); } catch (_) {}
+            return null;
+          }
+        }
+
+        // Migrate a legacy shared session only once. New sessions are tab-scoped,
+        // so another open tab cannot overwrite this user's identity on refresh.
+        try {
+          if (localStorage.getItem(this.activeKey)) return null;
+          raw = localStorage.getItem(this.key);
+          if (!raw) return null;
+          const user = JSON.parse(raw);
+          if (!user?.id) return null;
+          if (!user.authSessionId) user.authSessionId = `auth_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
+          raw = JSON.stringify(user);
+          sessionStorage.setItem(this.key, raw);
+          localStorage.setItem(this.activeKey, String(user.authSessionId));
+          localStorage.removeItem(this.key);
+          return raw;
+        } catch (_) { return null; }
+      },
+      setItem(value) {
+        try {
+          const user = JSON.parse(value);
+          if (!user?.authSessionId) return;
+          sessionStorage.setItem(this.key, value);
+          try { localStorage.setItem(this.activeKey, String(user.authSessionId)); } catch (_) {}
+          // The shared user object is obsolete; never leave another tab's identity here.
+          try { localStorage.removeItem(this.key); } catch (_) {}
+        } catch (_) {}
+      },
+      removeIfMatches(expected) {
+        let removed = false;
+        const matches = raw => {
+          if (typeof expected === 'string') return raw === expected;
+          try {
+            const stored = JSON.parse(raw);
+            if (expected?.authSessionId) return String(stored.authSessionId || '') === String(expected.authSessionId);
+            return String(stored.id || '') === String(expected?.id || '')
+              && String(stored.username || '').trim().toLowerCase() === String(expected?.username || '').trim().toLowerCase();
+          } catch (_) { return false; }
+        };
+        try {
+          const tabRaw = sessionStorage.getItem(this.key);
+          if (tabRaw && matches(tabRaw)) { sessionStorage.removeItem(this.key); removed = true; }
+        } catch (_) {}
+        try {
+          const legacyRaw = localStorage.getItem(this.key);
+          if (legacyRaw && matches(legacyRaw)) { localStorage.removeItem(this.key); removed = true; }
+        } catch (_) {}
+        return removed;
+      },
+      clearActiveIfMatches(sessionId) {
+        if (!sessionId) return;
+        try { if (localStorage.getItem(this.activeKey) === String(sessionId)) localStorage.setItem(this.activeKey, `signed_out_${Date.now().toString(36)}`); } catch (_) {}
+      }
+    };
+
     const SoundEngine = {
       ctx: null,
       pendingWorkerConnectedSound: false,
@@ -337,15 +412,10 @@
         window.addEventListener('pagehide', () => this.releasePresenceSession());
         window.addEventListener('pageshow', () => { if (this.currentUser) this.sendHeartbeat(); });
         window.addEventListener('storage', event => {
-          if (event.key !== 'portonpro_session_v4' || !this.currentUser) return;
-          let sharedSession = null;
-          try { sharedSession = event.newValue ? JSON.parse(event.newValue) : null; } catch (_) {}
-          if (sharedSession?.authSessionId && sharedSession.authSessionId === this.currentUser.authSessionId) return;
-          const previousUser = this.currentUser;
+          if (event.key !== AuthSessionStore.activeKey || !this.currentUser) return;
+          if (event.newValue && event.newValue === this.currentUser.authSessionId) return;
           this.logout({ preserveSharedSession: true });
-          if (sharedSession && String(sharedSession.id) !== String(previousUser.id)) {
-            this.showToast('La sesión se cambió en otra pestaña. Inicia sesión nuevamente para continuar.', 'info');
-          }
+          this.showToast('La sesión se cambió en otra pestaña. Inicia sesión nuevamente para continuar.', 'info');
         });
         this.users = [];
         this.workers = [];
@@ -882,7 +952,7 @@
           }
         });
 
-        const savedSession = SafeStorage.getItem('portonpro_session_v4');
+        const savedSession = AuthSessionStore.getItem();
         if (savedSession) {
           try {
             const user = JSON.parse(savedSession);
@@ -922,30 +992,7 @@
       }
 
       clearStoredSessionIfMatches(expected) {
-        const key = 'portonpro_session_v4';
-        const storedRaw = SafeStorage.getItem(key);
-        if (!storedRaw) return false;
-        if (typeof expected === 'string') {
-          if (storedRaw !== expected) return false;
-          SafeStorage.removeItem(key);
-          return true;
-        }
-        if (!expected || typeof expected !== 'object') return false;
-        try {
-          const stored = JSON.parse(storedRaw);
-          if (expected.authSessionId) {
-            if (String(stored.authSessionId || '') !== String(expected.authSessionId)) return false;
-          } else {
-            if (stored.authSessionId) return false;
-            if (String(stored.id || '') !== String(expected.id || '')) return false;
-            if (String(stored.username || '').trim().toLowerCase() !== String(expected.username || '').trim().toLowerCase()) return false;
-            if (this.getChatRole(stored.role) !== this.getChatRole(expected.role)) return false;
-          }
-          SafeStorage.removeItem(key);
-          return true;
-        } catch (_) {
-          return false;
-        }
+        return AuthSessionStore.removeIfMatches(expected);
       }
 
       async validateStoredSession(user) {
@@ -1320,7 +1367,7 @@
           }
         }
         this.applySharedSeasonalTheme();
-        SafeStorage.setItem('portonpro_session_v4', JSON.stringify(user));
+        AuthSessionStore.setItem(JSON.stringify(user));
 
         window.stopLoginBrandVideo?.();
         document.getElementById('view-login').classList.add('hidden');
@@ -1374,7 +1421,10 @@
         this.currentUser = null;
         this.sessionRestoreToken += 1;
         this.applyDarkMode();
-        if (current && !preserveSharedSession) this.clearStoredSessionIfMatches(current);
+        if (current) {
+          this.clearStoredSessionIfMatches(current);
+          if (!preserveSharedSession) AuthSessionStore.clearActiveIfMatches(current.authSessionId);
+        }
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
         if (this.presenceRefreshTimer) clearInterval(this.presenceRefreshTimer);
         this.showLoginView();
@@ -1563,7 +1613,7 @@
         this.currentUser.fullName = fullName;
         this.currentUser.photo = photo;
         if (profile.id) this.currentUser.id = profile.id;
-        SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
+        AuthSessionStore.setItem(JSON.stringify(this.currentUser));
         [this.users, this.workers].forEach(list => {
           if (!Array.isArray(list)) return;
           list.forEach(user => {
@@ -1586,7 +1636,7 @@
         if (Array.isArray(record.adminIdentityNames) && record.adminIdentityNames.length === 2) { const names = record.adminIdentityNames.map(name => String(name || '').trim()); if (names.every(Boolean)) this.adminIdentityNames = names; }
         if (record.adminIdentityPhotos && typeof record.adminIdentityPhotos === 'object') this.adminIdentityPhotos = { ...record.adminIdentityPhotos };
         if (record.activeAdminName) this.activeAdminName = String(record.activeAdminName);
-        if (this.currentUser?.role === 'admin' && record.activeAdminName) { this.currentUser.activeAdminName = this.activeAdminName; SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser)); }
+        if (this.currentUser?.role === 'admin' && record.activeAdminName) { this.currentUser.activeAdminName = this.activeAdminName; AuthSessionStore.setItem(JSON.stringify(this.currentUser)); }
         if (this.activeAdminName) SafeStorage.setItem('portonpro_admin_identity_cache_v1', JSON.stringify({ names: this.adminIdentityNames, photos: this.adminIdentityPhotos, activeName: this.activeAdminName }));
       }
 
@@ -1679,7 +1729,7 @@
         this.adminIdentityPhotos = { ...photos };
         this.activeAdminName = activeName || '';
         this.currentUser.activeAdminName = this.activeAdminName;
-        SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
+        AuthSessionStore.setItem(JSON.stringify(this.currentUser));
         SafeStorage.setItem('portonpro_admin_identity_cache_v1', JSON.stringify({ names, photos: this.adminIdentityPhotos, activeName: this.activeAdminName }));
         this.presenceRecords[username] = { ...(this.presenceRecords[username] || {}), adminIdentityNames: names, adminIdentityPhotos: { ...photos }, activeAdminName: activeName || '', fullName: activeName || this.currentUser.fullName || this.currentUser.username, photo: this.currentUser.photo || '' };
         this.setupDashboardUI();
@@ -4271,7 +4321,7 @@ updateMessengerWindowTyping(workerName) {
         reader.onload = (event) => {
           const base64Data = event.target.result;
           this.currentUser.photo = base64Data;
-          SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
+          AuthSessionStore.setItem(JSON.stringify(this.currentUser));
 
           if (window.db && this.currentUser.id) {
             db.collection('users').doc(this.currentUser.id).update({ photo: base64Data }).catch(e => console.error(e));
@@ -4289,7 +4339,7 @@ updateMessengerWindowTyping(workerName) {
 
       removeOwnPhoto() {
         this.currentUser.photo = '';
-        SafeStorage.setItem('portonpro_session_v4', JSON.stringify(this.currentUser));
+        AuthSessionStore.setItem(JSON.stringify(this.currentUser));
 
         if (window.db && this.currentUser.id) {
           db.collection('users').doc(this.currentUser.id).update({ photo: '' }).catch(e => console.error(e));
