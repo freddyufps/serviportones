@@ -125,8 +125,36 @@
       if (toggleStatus) {
         if (toggleStatus.disabled) return;
         toggleStatus.disabled = true;
-        const saved = await this.saveOrderPaymentStatus(toggleStatus.closest('.payment-status-editor')?.dataset.taskId, toggleStatus.dataset.nextStatus);
-        if (!saved && toggleStatus.isConnected) toggleStatus.disabled = false;
+        let saved = false;
+        try {
+          const taskId = toggleStatus.closest('.payment-status-editor')?.dataset.taskId;
+          const nextStatus = toggleStatus.dataset.nextStatus;
+          const task = (this.tasks || []).find(item => String(item.id) === String(taskId));
+          const currentStatus = task ? statusOf(task) : null;
+          const markingAsPaid = currentStatus === 'PENDIENTE' && nextStatus === 'PAGADA';
+          const reopeningPaidAccount = currentStatus === 'PAGADA' && nextStatus === 'PENDIENTE';
+          if (markingAsPaid || reopeningPaidAccount) {
+            if (typeof this.showSystemConfirm !== 'function') {
+              this.showToast('No se pudo abrir la confirmación. Inténtalo nuevamente.', 'error');
+              return;
+            }
+            const confirmed = await this.showSystemConfirm(
+              markingAsPaid
+                ? 'Está a punto de marcar esta cuenta como PAGADA. El saldo pendiente pasará automáticamente a $0. ¿Desea continuar?'
+                : 'Esta cuenta se encuentra marcada como PAGADA. Está a punto de reactivar una deuda pendiente. ¿Está seguro de continuar?',
+              markingAsPaid
+                ? { title: 'Confirmar pago', confirmText: 'Confirmar pago', cancelText: 'Cancelar', icon: 'success', variant: 'success' }
+                : { title: 'Confirmar reapertura', confirmText: 'Volver a Pendiente', cancelText: 'Cancelar', icon: 'warning', variant: 'danger' }
+            );
+            if (!confirmed) return;
+          }
+          saved = await this.saveOrderPaymentStatus(taskId, nextStatus);
+        } catch (error) {
+          console.warn('[CONSOLIDADO] No se pudo cambiar el estado de pago', error);
+          this.showToast('No se pudo cambiar el estado de pago. Inténtalo nuevamente.', 'error');
+        } finally {
+          if (!saved && toggleStatus.isConnected) toggleStatus.disabled = false;
+        }
         return;
       }
       if (event.target.closest('[data-payment-back]')) {

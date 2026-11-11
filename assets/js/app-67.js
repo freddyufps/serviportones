@@ -7,6 +7,8 @@
   let showing = false;
   const iconSvg = kind => kind === 'trash'
     ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg>'
+    : kind === 'success'
+      ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.1V12a8 8 0 1 1-4.7-7.3"/><path d="m8.8 11.5 3 3L21 5.5"/></svg>'
     : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5m0 3h.01"/></svg>';
 
   function presentNext(){
@@ -16,10 +18,11 @@
     const opts = item.options || {};
     const isPrompt = item.kind === 'prompt';
     const isAlert = item.kind === 'alert';
+    const variantClass = opts.variant === 'success' ? 'is-success' : opts.variant === 'danger' ? 'is-danger' : '';
     const overlay = document.createElement('div');
     overlay.className = 'spem-dialog-backdrop';
-    overlay.innerHTML = `<section class="spem-dialog ${opts.icon === 'trash' ? 'is-danger' : ''}" role="alertdialog" aria-modal="true" aria-labelledby="spem-dialog-title" aria-describedby="spem-dialog-message">
-      <div class="spem-dialog-icon ${opts.icon === 'trash' ? 'is-danger' : ''}">${iconSvg(opts.icon)}</div>
+    overlay.innerHTML = `<section class="spem-dialog ${opts.icon === 'trash' ? 'is-danger' : ''} ${variantClass}" role="alertdialog" aria-modal="true" aria-labelledby="spem-dialog-title" aria-describedby="spem-dialog-message">
+      <div class="spem-dialog-icon ${opts.icon === 'trash' ? 'is-danger' : ''} ${variantClass}">${iconSvg(opts.icon)}</div>
       <div class="spem-dialog-copy"><h2 id="spem-dialog-title"></h2><p id="spem-dialog-message"></p>${isPrompt ? '<input class="spem-dialog-input" type="text">' : ''}</div>
       <div class="spem-dialog-actions">${isAlert ? '' : '<button type="button" class="spem-dialog-cancel"></button>'}<button type="button" class="spem-dialog-confirm"></button></div>
     </section>`;

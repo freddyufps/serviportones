@@ -20,3 +20,5 @@
 .spem-dialog.is-danger .spem-dialog-confirm:hover{border-color:#a82c28;background:#a82c28}
 .spem-dialog-actions button:focus-visible{outline:3px solid rgba(112,168,55,.35);outline-offset:2px}
 @media(max-width:480px){.spem-dialog-backdrop{padding:16px}.spem-dialog{grid-template-columns:40px minmax(0,1fr);gap:12px;padding:20px;border-radius:16px}.spem-dialog-icon{width:40px;height:40px;border-radius:12px}.spem-dialog-copy h2{font-size:16px}.spem-dialog-copy p{font-size:13px}.spem-dialog-actions{gap:8px}.spem-dialog-actions button{flex:1;padding:0 12px}}
+.spem-dialog.is-success{border-top:4px solid #65a832}.spem-dialog-icon.is-success{background:#eaf6e4;color:#4f9228}.spem-dialog.is-success .spem-dialog-copy h2{color:#4f9228}.spem-dialog.is-success .spem-dialog-confirm{border-color:#5b9d30;background:#65a832;color:#fff}.spem-dialog.is-success .spem-dialog-confirm:hover{border-color:#4d8728;background:#57952c}
+.spem-dialog.is-danger{border-top:4px solid #c13b35}.spem-dialog-icon.is-danger{background:#fff0ef;color:#c13b35}.spem-dialog.is-danger .spem-dialog-copy h2{color:#b6322e}
