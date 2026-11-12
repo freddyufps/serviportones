@@ -402,7 +402,9 @@
         this.presenceSessionId = `tab_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
         this.ownAvailabilityStatus = 'available';
         window.addEventListener('pagehide', () => this.releasePresenceSession());
-        window.addEventListener('pageshow', () => { if (this.currentUser) this.sendHeartbeat(); });
+        window.addEventListener('pageshow', () => { if (this.currentUser) this.markPresenceConnected(); });
+        window.addEventListener('online', () => { if (this.currentUser) this.markPresenceConnected(); });
+        window.addEventListener('offline', () => { if (this.currentUser) this.releasePresenceSession(); });
         window.addEventListener('storage', event => {
           if (event.key !== AuthSessionStore.activeKey || !this.currentUser) return;
           if (event.newValue && event.newValue === this.currentUser.authSessionId) return;
@@ -420,13 +422,12 @@
         this.selectedTask = null;
         this.activeReportStatus = null;
         this.activeReportUrgent = false;
-        this.heartbeatTimer = null;
+        this.presenceIsConnected = false;
         this.usersUnsubscribe = null;
         this.ordersUnsubscribe = null;
         this.presenceUnsubscribe = null;
         this.presenceListenerTarget = null;
         this.presenceRecords = {};
-        this.presenceRefreshTimer = null;
         this.adminIdentityNames = ['Lisbeth', 'Gabriela'];
         this.adminIdentityPhotos = {};
         this.activeAdminName = '';
@@ -794,13 +795,30 @@
                 incomingTasks.forEach(task => {
                   const taskId = String(task?.id || '');
                   const previousTask = previousTasksById.get(taskId);
-                  if (!taskId || task?.status !== 'REALIZADA' || previousTask === 'REALIZADA' || task?.archivedAt) return;
-
-
-
-                  console.info('[ORDER] Orden pasó a REALIZADA', { taskId, previousStatus: previousTask || 'sin estado anterior' });
-                  if (this.prefs.sound) SoundEngine.playOrderCompletedSound();
-                  else console.info('[ORDER] Sonido omitido: la preferencia está desactivada');
+                  if (!taskId || !previousTask || previousTask === task?.status || task?.archivedAt) return;
+                  if (task.status === 'REALIZADA') {
+                    console.info('[ORDER] Orden pasó a REALIZADA', { taskId, previousStatus: previousTask });
+                    if (this.prefs.sound) SoundEngine.playOrderCompletedSound();
+                    this.showPopupNotification({
+                      title: '✅ Orden realizada',
+                      subtitle: `${taskId} · ${task.client || 'Cliente'}`,
+                      details: 'El trabajador registró la orden como realizada.',
+                      type: 'order',
+                      icon: '✅',
+                      onClick: () => this.viewOrderDetails(task.id)
+                    });
+                  } else if (task.status === 'EN_PROCESO') {
+                    console.info('[ORDER] Orden pasó a EN_PROCESO', { taskId, previousStatus: previousTask });
+                    if (this.prefs.sound) SoundEngine.playGeneralNotificationSound();
+                    this.showPopupNotification({
+                      title: '🛠️ Trabajo iniciado',
+                      subtitle: `${taskId} · ${task.client || 'Cliente'}`,
+                      details: 'El trabajador inició labores en esta orden.',
+                      type: 'order',
+                      icon: '🛠️',
+                      onClick: () => this.viewOrderDetails(task.id)
+                    });
+                  }
                 });
               }
               if (!this.isTasksInitialLoad && incomingTasks.length > this.tasks.length) {
@@ -845,18 +863,16 @@
         if (!window.db || !this.currentUser) return;
         const role = String(this.currentUser.role || '').toLowerCase();
         const isAdmin = role === 'admin';
-        let reference;
-        if (isAdmin) {
-          if (this.presenceUnsubscribe || this.presenceListenerTarget === 'all') return;
-          reference = window.db.collection('presencia');
-          this.presenceListenerTarget = 'all';
-        } else {
-          const admin = (this.users || []).find(user => String(user.role || '').toLowerCase() === 'admin');
-          const adminUsername = String(admin?.username || '').trim().toLowerCase();
-          if (!adminUsername || (this.presenceListenerTarget === `admin:${adminUsername}` && this.presenceUnsubscribe)) return;
-          this.presenceListenerTarget = `admin:${adminUsername}`;
-          reference = window.db.collection('presencia').doc(adminUsername);
+        if (!isAdmin) {
+          // El trabajador no necesita ni consulta la presencia del administrador.
+          this.stopPresenceRealtimeListener();
+          this.presenceRecords = {};
+          this.presenceSnapshotInitialized = false;
+          return;
         }
+        if (this.presenceUnsubscribe || this.presenceListenerTarget === 'all') return;
+        const reference = window.db.collection('presencia');
+        this.presenceListenerTarget = 'all';
         const sessionId = this.currentUser.authSessionId;
         const isActiveSession = () => !!this.currentUser && this.currentUser.authSessionId === sessionId;
         const applyPresenceRecords = records => {
@@ -885,9 +901,16 @@
                 this.applyWorkerProfileUpdate({ ...data, username: data.username || this.currentUser.username });
               }
               const becameAvailable = this.getPresenceStatus(presenceUser) === 'available';
-              if (CHAT_FEATURE_ENABLED && this.presenceSnapshotInitialized && this.currentUser?.role === 'admin' && isWorkerPresence && previousStatus !== 'available' && becameAvailable && this.prefs?.sound !== false) {
+              if (this.presenceSnapshotInitialized && this.currentUser?.role === 'admin' && isWorkerPresence && previousStatus !== 'available' && becameAvailable) {
                 console.info('[PRESENCE] Transición de trabajador a disponible', { username: presenceId });
-                SoundEngine.playWorkerConnectedSound();
+                if (this.prefs?.sound !== false) SoundEngine.playWorkerConnectedSound();
+                this.showPopupNotification({
+                  title: '🟢 Trabajador conectado',
+                  subtitle: presenceUser.fullName || presenceUser.username || 'Trabajador',
+                  details: 'El trabajador aparece disponible en el panel.',
+                  type: 'presence',
+                  icon: '🟢'
+                });
               }
           });
             this.presenceSnapshotInitialized = true;
@@ -901,8 +924,7 @@
               this.renderConversationsSidebar();
             }
         };
-        // Workers only need the administrator's status card. Their reference
-        // is one document; only admins subscribe to the full presence feed.
+        // Only administrators subscribe to the team presence feed.
         this.presenceUnsubscribe = reference.onSnapshot(snapshot => {
           if (!isActiveSession()) return;
           const records = Array.isArray(snapshot.docs)
@@ -991,12 +1013,6 @@
         // Los chats se minimizan o cierran solo desde sus controles individuales.
 
 
-
-        document.addEventListener('visibilitychange', () => {
-          if (!document.hidden && this.currentUser) {
-            this.sendHeartbeat();
-          }
-        });
 
         const savedSession = AuthSessionStore.getItem();
         if (savedSession) {
@@ -1180,10 +1196,6 @@
         document.getElementById('chat-floating-button-container').classList.add('hidden');
         document.getElementById('chat-window-modal').classList.add('hidden');
         document.getElementById('chat-desktop-windows')?.classList.add('hidden');
-        if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
-        this.heartbeatTimer = null;
-        if (this.presenceRefreshTimer) clearInterval(this.presenceRefreshTimer);
-        this.presenceRefreshTimer = null;
         if (this.ownPresenceUnsubscribe) { this.ownPresenceUnsubscribe(); this.ownPresenceUnsubscribe = null; }
         if (this.chatUnsubscribe) { this.chatUnsubscribe(); this.chatUnsubscribe = null; }
         if (this.chatThreadUnsubscribe) { this.chatThreadUnsubscribe(); this.chatThreadUnsubscribe = null; }
@@ -1339,20 +1351,6 @@
           errorAlert.classList.add('hidden');
           if (rememberChecked) SafeStorage.setItem('portonpro_remembered', JSON.stringify({ u: userVal, p: passVal }));
           else SafeStorage.removeItem('portonpro_remembered');
-          const now = new Date();
-          const formattedTime = this.formatTime(now);
-
-          if (window.db) {
-            db.collection('presencia').doc(authenticatedUser.username.toLowerCase()).set({
-              username: authenticatedUser.username,
-              fullName: authenticatedUser.fullName,
-              lastHeartbeat: Date.now(),
-              photo: authenticatedUser.photo || '',
-              lastLogin: `${formattedTime} (En línea)`,
-              availabilityStatus: 'available'
-            }, { merge: true }).catch(e => console.error(e));
-          }
-
           try {
             await this.loginSuccess(authenticatedUser, true);
           } catch (loginError) {
@@ -1400,29 +1398,10 @@
         if (String(user.role || '').toLowerCase() === 'admin' && !this.activeAdminName) this.activeAdminName = String(user.activeAdminName || '');
         user.activeAdminName = this.activeAdminName || user.activeAdminName || '';
 
-        // Toda sesión válida del administrador vuelve a mostrarse disponible,
-        // incluso al restaurar la sesión guardada después de una recarga.
+        // Registrar una sola conexión por inicio de sesión. La presencia se
+        // cierra en logout/pagehide; no requiere escrituras periódicas.
         if (String(user.role || '').toLowerCase() === 'admin') {
-          const adminUsername = String(user.username || '').toLowerCase();
-          const heartbeat = Date.now();
-          const activePresence = {
-            username: user.username,
-            fullName: this.getCurrentDisplayName(),
-            role: 'admin',
-            photo: this.getCurrentDisplayPhoto() || user.photo || '',
-            lastHeartbeat: heartbeat,
-            lastLogin: `${this.formatTime(new Date())} (En línea)`,
-            availabilityStatus: 'available',
-            sessions: { [this.presenceSessionId]: { lastHeartbeat: heartbeat, availabilityStatus: 'available' } }
-          };
-          this.presenceRecords[adminUsername] = { ...(this.presenceRecords[adminUsername] || {}), ...activePresence };
-          if (window.db) {
-            try {
-              window.db.collection('presencia').doc(adminUsername).set(activePresence, { merge: true }).catch(error => console.warn('[PRESENCE] No se pudo restablecer el estado al iniciar sesión:', error?.message || error));
-            } catch (error) {
-              console.warn('[PRESENCE] No se pudo restablecer el estado al iniciar sesión:', error?.message || error);
-            }
-          }
+          this.ownAvailabilityStatus = 'available';
         }
         this.applySharedSeasonalTheme();
         AuthSessionStore.setItem(JSON.stringify(user));
@@ -1441,17 +1420,7 @@
           this.disableChatRuntime();
         }
 
-        this.sendHeartbeat();
-        if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
-        this.heartbeatTimer = setInterval(() => this.sendHeartbeat(), 30000);
-        if (this.presenceRefreshTimer) clearInterval(this.presenceRefreshTimer);
-        this.presenceRefreshTimer = setInterval(() => {
-          this.renderAdminPresence();
-          if (this.currentUser?.role === 'admin') {
-            this.renderTechniciansMonitor();
-            this.renderConversationsSidebar();
-          }
-        }, 4000);
+        this.markPresenceConnected();
 
         this.setupDashboardUI();
         this.renderTechOptionsInSelects();
@@ -1482,13 +1451,11 @@
           this.clearStoredSessionIfMatches(current);
           if (!preserveSharedSession) AuthSessionStore.clearActiveIfMatches(current.authSessionId);
         }
-        if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
-        if (this.presenceRefreshTimer) clearInterval(this.presenceRefreshTimer);
         this.showLoginView();
       }
 
-      sendHeartbeat() {
-        if (!this.currentUser) return;
+      markPresenceConnected() {
+        if (!this.currentUser || this.presenceIsConnected) return;
         const now = Date.now();
         if (window.db) {
           const username = String(this.currentUser.username || '').trim().toLowerCase();
@@ -1502,27 +1469,34 @@
             ...(role === 'admin' ? { photo: this.currentUser.photo || '' } : {}),
             role,
             availabilityStatus: sessionStatus,
-            sessions: { [this.presenceSessionId]: { lastHeartbeat: now, availabilityStatus: sessionStatus } },
+            connected: true,
+            connectedAt: now,
+            sessions: { [this.presenceSessionId]: { connected: true, connectedAt: now, lastHeartbeat: now, availabilityStatus: sessionStatus } },
             lastLogin: sessionStatus === 'disconnected' ? `${this.formatTime(new Date(now))} (Desconectado)` : `${this.formatTime(new Date(now))} (En línea)`
           };
           this.presenceRecords = this.presenceRecords || {};
           this.presenceRecords[username] = { ...currentRecord, ...heartbeatData };
           db.collection('presencia').doc(username).set(heartbeatData, { merge: true }).catch(e => {
-            console.error('[PRESENCE] No se pudo actualizar el estado en línea:', e);
+            this.presenceIsConnected = false;
+            console.error('[PRESENCE] No se pudo registrar la conexión:', e);
             this.showToast?.('No se pudo sincronizar tu estado de conexión.', 'error');
           });
+          this.presenceIsConnected = true;
         }
         if (this.currentUser.role === 'admin') this.renderTechniciansMonitor();
       }
 
       releasePresenceSession() {
-        if (!this.currentUser || !window.db) return Promise.resolve(false);
+        if (!this.currentUser || !window.db || !this.presenceIsConnected) return Promise.resolve(false);
         const username = String(this.currentUser.username || '').trim().toLowerCase();
         const record = this.presenceRecords?.[username] || {};
         const sessions = record.sessions && typeof record.sessions === 'object' ? record.sessions : {};
         const now = Date.now();
         const otherLiveSessions = Object.entries(sessions)
-          .filter(([id, session]) => id !== this.presenceSessionId && now - Number(session?.lastHeartbeat || 0) < 45000)
+          .filter(([id, session]) => id !== this.presenceSessionId && (
+            session?.connected === true
+            || (session?.connected !== false && now - Number(session?.lastHeartbeat || 0) < 45000)
+          ))
           .map(([, session]) => session);
         const latestHeartbeat = otherLiveSessions.reduce((latest, session) => Math.max(latest, Number(session.lastHeartbeat || 0)), 0);
         const nextStatus = otherLiveSessions.some(session => session.availabilityStatus === 'available')
@@ -1531,11 +1505,19 @@
         const payload = {
           [`sessions.${this.presenceSessionId}`]: firebase.firestore.FieldValue.delete(),
           lastHeartbeat: latestHeartbeat,
+          connected: otherLiveSessions.length > 0,
           availabilityStatus: nextStatus,
           ...(latestHeartbeat ? {} : { lastLogin: `${this.formatTime(new Date())} (Desconectado)` })
         };
+        this.presenceIsConnected = false;
+        this.presenceRecords[username] = {
+          ...record,
+          lastHeartbeat: latestHeartbeat,
+          connected: otherLiveSessions.length > 0,
+          availabilityStatus: nextStatus
+        };
         return db.collection('presencia').doc(username).update(payload).then(() => true).catch(error => {
-          console.warn('[PRESENCE] No se pudo cerrar la sesión de presencia de inmediato; vencerá por tiempo de espera:', error?.message || error);
+          console.warn('[PRESENCE] No se pudo registrar la desconexión:', error?.message || error);
           return false;
         });
       }
@@ -1885,6 +1867,8 @@
         if (Object.prototype.hasOwnProperty.call(record, 'sessions')) {
           const now = Date.now();
           const liveSessions = Object.values(record.sessions || {}).filter(session => {
+            if (session?.connected === true) return true;
+            if (session?.connected === false) return false;
             const heartbeat = toHeartbeatMs(session?.lastHeartbeat);
             return heartbeat > 0 && now - heartbeat >= 0 && now - heartbeat < 45000;
           });
@@ -1897,6 +1881,10 @@
         const heartbeat = toHeartbeatMs(rawHeartbeat);
         const savedStatus = String(record.availabilityStatus || '').trim().toLowerCase();
         const isAdminUser = this.getChatRole(user.role || record.role) === 'admin';
+        if (record.connected === true) {
+          if (isAdminUser && savedStatus === 'absent') return 'absent';
+          return savedStatus === 'disconnected' ? 'disconnected' : 'available';
+        }
         const heartbeatFresh = heartbeat > 0 && Date.now() - heartbeat >= 0 && Date.now() - heartbeat < 45000;
         if (isAdminUser) {
           if (heartbeatFresh && savedStatus === 'absent') return 'absent';
@@ -1921,7 +1909,8 @@
         const username = String(adminUser?.username || presenceAdminEntry?.[0] || '').toLowerCase();
         const record = username ? (this.presenceRecords[username] || {}) : {};
         const presenceUser = adminUser || (username ? { username, ...record } : null);
-        const status = this.getPresenceStatus(presenceUser);
+        // El estado de presencia del administrador es privado del panel admin.
+        const status = isAdminSession ? this.getPresenceStatus(presenceUser) : 'disconnected';
         return {
           name: record.activeAdminName || adminUser?.activeAdminName || this.activeAdminName || adminUser?.fullName || record.fullName || 'Administrador',
           photo: record.adminIdentityPhotos?.[record.activeAdminName || this.activeAdminName] || this.adminIdentityPhotos[record.activeAdminName || this.activeAdminName] || record.photo || adminUser?.photo || '',
@@ -1963,8 +1952,8 @@
 
         const dashboard = document.getElementById('worker-admin-presence-dashboard');
         if (dashboard) {
-          dashboard.style.display = info.identityReady ? '' : 'none';
-          dashboard.innerHTML = `<div id="worker-admin-presence-card" class="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-2.5 py-1.5 ${info.status === 'available' ? 'presence-card-connected' : info.status === 'absent' ? 'presence-card-absent' : ''}"><div class="seasonal-worker-avatar relative w-8 h-8 rounded-full border border-white/40 bg-slate-700 overflow-hidden flex items-center justify-center text-xs font-bold">${info.photo ? `<img src="${this.escapeHtml(info.photo)}" alt="Foto del Administrador" class="w-full h-full object-cover">` : this.escapeHtml(info.name.charAt(0))}</div><div class="leading-tight"><p class="text-[10px] font-bold text-white">${this.escapeHtml(info.name)}</p><p class="text-[8px] uppercase tracking-wide text-slate-300">Administrador</p><span class="${stateClass}">${label}</span></div></div>`;
+          dashboard.replaceChildren();
+          dashboard.style.display = 'none';
         }
 
         if (this.currentUser?.role === 'worker') {
@@ -1973,17 +1962,8 @@
         }
         const chatCard = document.getElementById('chat-admin-presence');
         if (chatCard) {
-          const shouldShow = this.currentUser?.role === 'worker';
-          chatCard.classList.toggle('hidden', !shouldShow || !info.identityReady);
-          chatCard.classList.toggle('flex', shouldShow && info.identityReady);
-          const avatar = document.getElementById('chat-admin-presence-avatar');
-          if (avatar) avatar.innerHTML = info.photo ? `<img src="${this.escapeHtml(info.photo)}" alt="Foto del Administrador" class="w-full h-full object-cover">` : this.escapeHtml(info.name.charAt(0));
-          const chatName = document.getElementById('chat-admin-presence-name');
-          if (chatName) chatName.textContent = info.name;
-          const chatRole = document.getElementById('chat-admin-presence-role');
-          if (chatRole) chatRole.textContent = 'Administrador';
-          const chatLabel = document.getElementById('chat-admin-presence-label');
-          if (chatLabel) { chatLabel.textContent = label; chatLabel.className = `${stateClass} text-[9px]`; }
+          chatCard.classList.add('hidden');
+          chatCard.classList.remove('flex');
         }
         this.renderActiveChatHeader();
       }
@@ -2022,10 +2002,10 @@
         if (!window.db) return this.showToast('No hay conexión para guardar tu estado', 'error');
         const username = String(this.currentUser.username || '').toLowerCase();
         const previousRecord = { ...(this.presenceRecords[username] || {}) };
-        const lastHeartbeat = Date.now();
+        const connectedAt = Date.now();
         this.ownAvailabilityStatus = status;
-        const sessions = { ...(previousRecord.sessions || {}), [this.presenceSessionId]: { lastHeartbeat, availabilityStatus: status } };
-        this.presenceRecords[username] = { ...previousRecord, username: this.currentUser.username, fullName: this.getCurrentDisplayName(), role: 'admin', photo: this.currentUser.photo || '', lastHeartbeat, availabilityStatus: status, sessions };
+        const sessions = { ...(previousRecord.sessions || {}), [this.presenceSessionId]: { connected: true, connectedAt, lastHeartbeat: connectedAt, availabilityStatus: status } };
+        this.presenceRecords[username] = { ...previousRecord, username: this.currentUser.username, fullName: this.getCurrentDisplayName(), role: 'admin', photo: this.currentUser.photo || '', lastHeartbeat: connectedAt, connected: true, availabilityStatus: status, sessions };
         this.renderAdminPresence();
         try {
           await db.collection('presencia').doc(username).set({
@@ -2033,9 +2013,10 @@
             fullName: this.getCurrentDisplayName(),
             role: 'admin',
             photo: this.currentUser.photo || '',
-            lastHeartbeat,
+            lastHeartbeat: connectedAt,
+            connected: true,
             availabilityStatus: status,
-            sessions: { [this.presenceSessionId]: { lastHeartbeat, availabilityStatus: status } }
+            sessions: { [this.presenceSessionId]: { connected: true, connectedAt, lastHeartbeat: connectedAt, availabilityStatus: status } }
           }, { merge: true });
           console.info('[PRESENCE] Estado del administrador guardado', { username, status });
           this.showToast('Estado actualizado: ' + this.getPresenceLabel(status), 'success');
@@ -3862,6 +3843,23 @@ updateMessengerWindowTyping(workerName) {
         }).join('');
 
         counter.textContent = `${onlineCount} En Línea`;
+        if (window.lucide) lucide.createIcons();
+      }
+
+      toggleTechniciansMonitor() {
+        if (this.currentUser?.role !== 'admin') return;
+        const grid = document.getElementById('technicians-status-grid');
+        const button = document.getElementById('btn-toggle-technicians-monitor');
+        const label = document.getElementById('technicians-monitor-toggle-label');
+        if (!grid || !button) return;
+        const collapsed = !grid.classList.contains('hidden');
+        grid.classList.toggle('hidden', collapsed);
+        button.setAttribute('aria-expanded', String(!collapsed));
+        button.setAttribute('aria-label', collapsed ? 'Mostrar técnicos' : 'Ocultar técnicos');
+        button.title = collapsed ? 'Mostrar técnicos' : 'Ocultar técnicos';
+        if (label) label.textContent = collapsed ? 'Mostrar' : 'Ocultar';
+        const icon = button.querySelector('[data-lucide]');
+        if (icon) icon.setAttribute('data-lucide', collapsed ? 'chevron-down' : 'chevron-up');
         if (window.lucide) lucide.createIcons();
       }
 

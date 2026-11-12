@@ -249,9 +249,15 @@
                 Monitor del Personal: Estado de Conexión
               </h2>
             </div>
-            <span id="techs-online-counter" class="text-[11px] font-bold px-2 py-0.5 bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder rounded-lg">
-              0 En Línea
-            </span>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <span id="techs-online-counter" class="text-[11px] font-bold px-2 py-0.5 bg-brand-limeLight text-brand-limeHover border border-brand-limeBorder rounded-lg">
+                0 En Línea
+              </span>
+              <button id="btn-toggle-technicians-monitor" type="button" onclick="app.toggleTechniciansMonitor()" aria-controls="technicians-status-grid" aria-expanded="true" aria-label="Ocultar técnicos" title="Ocultar técnicos" class="inline-flex min-h-8 min-w-8 items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-slate-600 shadow-sm transition hover:border-brand-limeBorder hover:bg-brand-limeLight hover:text-brand-limeHover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-lime">
+                <i data-lucide="chevron-up" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                <span id="technicians-monitor-toggle-label" class="hidden text-[10px] font-bold sm:inline">Ocultar</span>
+              </button>
+            </div>
           </div>
           <div id="technicians-status-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3"></div>
         </div>
