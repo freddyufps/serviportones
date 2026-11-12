@@ -206,11 +206,6 @@
 
           <button id="btn-dark-mode" type="button" onclick="app.toggleDarkMode()" class="dark-mode-toggle" data-tooltip="Activar modo oscuro" aria-label="Activar modo oscuro" aria-pressed="false"><span id="dark-mode-glyph" aria-hidden="true">☾</span></button>
 
-          <button id="btn-nav-settings" onclick="app.openSettingsModal()" class="p-1.5 sm:p-2 sm:px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl transition flex items-center gap-1.5 shadow-sm" data-tooltip="Configuración" aria-label="Configuración">
-            <i data-lucide="settings" class="w-4 h-4 text-brand-lime"></i>
-            <span class="hidden md:inline text-xs font-semibold">Configuración</span>
-          </button>
-
           <div id="header-presence-profile" class="presence-profile-indicator flex items-center gap-1.5 sm:gap-2 bg-slate-800/90 pl-1 pr-2 sm:pr-3 py-1 rounded-xl border border-slate-700">
             <div onclick="app.zoomWorkerPhoto(app.getCurrentDisplayPhoto(), app.getCurrentDisplayName())" class="seasonal-worker-avatar cursor-pointer relative w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border-2 border-brand-lime bg-slate-700 flex items-center justify-center shrink-0">
               <img id="header-user-photo" alt="Foto" class="w-full h-full object-cover hidden">
@@ -236,6 +231,10 @@
 
           <button onclick="app.logout()" class="p-1.5 sm:p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition" data-tooltip="Cerrar sesión" aria-label="Cerrar sesión">
             <i data-lucide="log-out" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+          </button>
+
+          <button id="btn-nav-settings" onclick="app.openSettingsModal()" class="p-1.5 sm:p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl transition flex items-center justify-center shadow-sm" data-tooltip="Configuración" aria-label="Configuración" title="Configuración">
+            <i data-lucide="settings" class="w-4 h-4 text-brand-lime"></i>
           </button>
         </div>
       </div>
@@ -1192,6 +1191,8 @@
 <link rel="stylesheet" href="assets/css/app-78.css?v=20261107-quote-a4-preview-12" id="quote-fixed-a4-preview-style">
 <script id="quote-fixed-a4-preview" src="assets/js/app-78.js?v=20261107-quote-a4-preview-2"></script>
 <link rel="stylesheet" href="assets/css/app-79.css?v=20261109-urgent-order-priority-2" id="order-status-card-tints-style">
+<link rel="stylesheet" href="assets/css/app-81.css?v=20261112-standalone-business-credits-1" id="standalone-business-credits-style">
+<script id="standalone-business-credits" src="assets/js/app-81.js?v=20261112-standalone-business-credits-1"></script>
 </body>
 </html>
 

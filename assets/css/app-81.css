@@ -1,0 +1,116 @@
+.credits-admin-entry{display:flex;align-items:center;gap:7px;padding-left:10px;margin-left:2px;border-left:1px solid rgba(148,163,184,.32)}
+.credits-admin-entry[hidden],.credits-reminder-bar[hidden],.credits-module-root[hidden],.credits-child-modal[hidden]{display:none!important}
+.credits-admin-entry-label{font-size:8px;line-height:1.1;font-weight:900;letter-spacing:.11em;color:#aebdd0;white-space:nowrap}
+.credits-nav-button{min-height:36px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 11px;border:1px solid rgba(113,168,50,.48);border-radius:11px;background:linear-gradient(135deg,rgba(113,168,50,.18),rgba(113,168,50,.08));color:#f4f8ee;font:inherit;font-size:11px;font-weight:700;line-height:1;cursor:pointer;transition:background .16s,border-color .16s,transform .16s,box-shadow .16s}
+.credits-nav-button:hover{background:rgba(113,168,50,.3);border-color:#8bc34a;box-shadow:0 5px 16px rgba(84,130,40,.2);transform:translateY(-1px)}
+.credits-nav-button i{width:16px;height:16px;color:#a5d46c}
+.credits-reminder-bar{position:relative;z-index:30;display:flex;align-items:center;gap:12px;min-height:44px;padding:5px max(12px,calc((100% - 1152px)/2));overflow:hidden;background:#fff;border-bottom:1px solid #dce7d2;box-shadow:0 3px 10px rgba(29,52,76,.06);font-family:inherit}
+.credits-reminder-label{display:flex;align-items:center;gap:6px;flex:none;color:#557b31;font-size:9px;font-weight:900;letter-spacing:.11em}
+.credits-reminder-label i{width:16px;height:16px;color:#6ba735}
+.credits-reminder-viewport{min-width:0;flex:1;overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent)}
+.credits-reminder-track{width:max-content;display:flex;align-items:center;gap:12px;animation:credits-marquee 38s linear infinite}
+.credits-reminder-viewport:hover .credits-reminder-track{animation-play-state:paused}
+.credits-reminder-duplicate{display:flex;align-items:center;gap:12px}
+.credits-reminder-item{display:inline-flex;align-items:center;gap:8px;flex:none;min-height:31px;padding:3px 8px;border:1px solid #dce9d1;border-radius:10px;background:#f4f9ef;color:#496d2a;font-size:9px;white-space:nowrap}
+.credits-reminder-item>i{width:15px;height:15px;flex:none}
+.credits-reminder-item>span{display:grid;grid-template-columns:auto auto auto;align-items:center;gap:8px}
+.credits-reminder-item b{font-size:8px;letter-spacing:.06em}
+.credits-reminder-item strong{font-size:10px;color:#24364b}
+.credits-reminder-item small{font-size:9px;color:#536b83}
+.credits-reminder-item.is-danger{border-color:#f0c3c0;background:#fff1f0;color:#b9312c}
+.credits-reminder-item.is-danger strong{color:#7d211e}
+.credits-reminder-item.is-soon{border-color:#eed99c;background:#fff8e4;color:#9a6a06}
+.credits-reminder-item.is-soon strong{color:#685019}
+.credits-reminder-item.is-paid{border-color:#cfe4c1;background:#edf7e7;color:#4d802e}
+.credits-reminder-item button{min-height:23px;padding:0 8px;border:1px solid currentColor;border-radius:7px;background:rgba(255,255,255,.75);color:inherit;font:inherit;font-size:9px;font-weight:700;line-height:1;cursor:pointer}
+.credits-reminder-item button:hover{background:#fff}
+.credits-reminder-open{flex:none;min-height:28px;padding:0 9px;border:1px solid #d8e3ce;border-radius:8px;background:#fff;color:#4e712f;font:inherit;font-size:9px;font-weight:700;line-height:1;cursor:pointer}
+@keyframes credits-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+.credits-module-root{position:fixed;z-index:2147482000;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;font-family:inherit;color:#172d45}
+.credits-module-backdrop{position:absolute;inset:0;background:rgba(10,22,36,.62);backdrop-filter:blur(5px)}
+.credits-module-window{position:relative;z-index:1;width:min(1160px,100%);height:min(900px,calc(100dvh - 36px));display:flex;flex-direction:column;overflow:hidden;border:1px solid #d7e1ec;border-radius:22px;background:#f5f8fb;box-shadow:0 28px 90px rgba(5,20,38,.38);animation:credits-window-in .18s ease-out}
+@keyframes credits-window-in{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+.credits-module-header{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:83px;padding:14px 20px;background:linear-gradient(110deg,#102139,#1c3654);color:#fff;border-bottom:3px solid #78b63d}
+.credits-module-brand{display:flex;align-items:center;gap:12px;min-width:0}
+.credits-module-icon{width:44px;height:44px;display:grid;place-items:center;border:1px solid rgba(157,205,105,.55);border-radius:14px;background:rgba(113,168,50,.18);color:#b3de80;flex:none}
+.credits-module-icon i{width:22px;height:22px}
+.credits-module-kicker{display:block;margin-bottom:3px;color:#b4d891;font-size:8px;font-weight:900;letter-spacing:.14em}
+.credits-module-header h1{margin:0;color:#fff;font-size:22px;line-height:1.15;font-weight:850}
+.credits-module-header p{margin:4px 0 0;color:#c1cedd;font-size:11px}
+.credits-close-button{width:38px;height:38px;border:1px solid rgba(206,220,236,.3);border-radius:11px;background:rgba(255,255,255,.07);color:#eaf0f7;font-size:24px;line-height:1;cursor:pointer}
+.credits-close-button:hover{background:rgba(255,255,255,.16)}
+.credits-module-body{flex:1;min-height:0;overflow:auto;padding:20px 22px 24px;background:linear-gradient(145deg,#f7f9fc,#edf2f7)}
+.credits-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.credits-tabs{display:flex;align-items:center;gap:4px;padding:4px;border:1px solid #dbe4ed;border-radius:12px;background:#fff}
+.credits-tabs button{min-height:34px;padding:0 13px;border:0;border-radius:9px;background:transparent;color:#64788e;font:inherit;font-size:11px;font-weight:700;line-height:1;cursor:pointer}
+.credits-tabs button.is-active{background:#eaf3e2;color:#4f7d2d;box-shadow:inset 0 0 0 1px #d1e4c3}
+.credits-toolbar-actions{display:flex;align-items:center;gap:8px}
+.credits-primary-button,.credits-secondary-button{min-height:36px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 12px;border:1px solid #d1dce7;border-radius:10px;background:#fff;color:#334a62;font:inherit;font-size:10px;font-weight:700;line-height:1;white-space:nowrap;cursor:pointer;transition:transform .15s,box-shadow .15s,background .15s}
+.credits-primary-button{border-color:#619d31;background:#6da936;color:#fff;box-shadow:0 3px 8px rgba(85,138,42,.15)}
+.credits-primary-button:hover{background:#5f982e;box-shadow:0 5px 14px rgba(85,138,42,.22);transform:translateY(-1px)}
+.credits-secondary-button:hover{background:#f3f7fa;border-color:#b9c9d8}
+.credits-primary-button i,.credits-secondary-button i{width:14px;height:14px}
+.credits-primary-button:disabled,.credits-secondary-button:disabled{opacity:.55;cursor:wait;transform:none}
+.credits-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:15px}
+.credits-summary article{display:grid;gap:4px;min-height:67px;padding:11px 13px;border:1px solid #dce4ed;border-radius:13px;background:#fff;box-shadow:0 3px 8px rgba(26,49,72,.035)}
+.credits-summary article span{color:#708198;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.045em}
+.credits-summary article strong{color:#1f344c;font-size:20px;line-height:1;font-weight:850}
+.credits-summary article.is-overdue strong{color:#bd3631}.credits-summary article.is-due strong{color:#c14735}.credits-summary article.is-soon strong{color:#aa7609}
+.credits-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.credits-card{min-width:0;display:flex;justify-content:space-between;gap:14px;padding:15px;border:1px solid #d9e2eb;border-left:4px solid #7cb348;border-radius:15px;background:#fff;box-shadow:0 5px 14px rgba(27,48,69,.045)}
+.credits-card.status-overdue,.credits-card.status-today{border-left-color:#cc4941;background:linear-gradient(110deg,#fff8f7,#fff 52%)}
+.credits-card.status-soon{border-left-color:#d5a12b;background:linear-gradient(110deg,#fffcf2,#fff 52%)}
+.credits-card.status-paid{border-left-color:#66a43b;background:linear-gradient(110deg,#f4faef,#fff 58%)}
+.credits-card-main{min-width:0;flex:1}
+.credits-card-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
+.credits-due-day{color:#73849a;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.credits-state-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border:1px solid #d5e4cc;border-radius:999px;background:#f1f8ec;color:#568333;font-size:8px;font-weight:850;white-space:nowrap}
+.credits-state-badge i{width:12px;height:12px}
+.credits-state-badge.status-overdue,.credits-state-badge.status-today{border-color:#f0c8c4;background:#fff0ee;color:#b93c35}
+.credits-state-badge.status-soon{border-color:#efdfa9;background:#fff8e3;color:#9a6d0b}
+.credits-state-badge.status-paid{border-color:#c9e2ba;background:#e9f5e2;color:#4c842b}
+.credits-card h3{margin:0;color:#1c3149;font-size:15px;line-height:1.3;font-weight:820;overflow-wrap:anywhere}
+.credits-card-financial{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;margin-top:6px}
+.credits-card-financial strong{color:#263f59;font-size:17px;font-weight:850}.credits-card-financial>span{color:#71839a;font-size:9px}
+.credits-card-financial .credits-next-date{flex-basis:100%;color:#5b7188;font-size:10px}
+.credits-card-notes{margin:9px 0 0;padding-top:8px;border-top:1px solid #e9eef3;color:#63788e;font-size:10px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.credits-card-actions{display:flex;align-items:flex-end;justify-content:flex-end;gap:5px;flex-wrap:wrap;align-self:stretch;max-width:190px}
+.credits-paid-button{min-height:32px;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:0 9px;border:1px solid #cfe2c2;border-radius:9px;background:#f1f8ec;color:#4f7c2f;font:inherit;font-size:9px;font-weight:750;line-height:1;white-space:nowrap;cursor:pointer}
+.credits-paid-button:hover{background:#e4f1da;border-color:#a9cd91}
+.credits-paid-button i{width:13px;height:13px}
+.credits-paid-this-month{display:inline-flex;align-items:center;gap:4px;padding:8px;color:#4d842e;font-size:9px;font-weight:800;white-space:nowrap}
+.credits-paid-this-month i{width:14px;height:14px}
+.credits-icon-button{width:31px;height:31px;display:grid;place-items:center;border:1px solid #d9e2eb;border-radius:9px;background:#fff;color:#5e7188;cursor:pointer}
+.credits-icon-button:hover{background:#edf4e8;border-color:#bed7ac;color:#568233}
+.credits-icon-button.is-delete:hover{background:#fff1f0;border-color:#ecc3bf;color:#b93631}
+.credits-icon-button i{width:14px;height:14px}
+.credits-empty{grid-column:1/-1;min-height:230px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:25px;border:1px dashed #cdd9e5;border-radius:17px;background:rgba(255,255,255,.75);text-align:center}
+.credits-empty>span{width:44px;height:44px;display:grid;place-items:center;margin-bottom:10px;border-radius:14px;background:#edf5e8;color:#62963d}.credits-empty>span i{width:22px;height:22px}
+.credits-empty h3{margin:0;color:#263d56;font-size:14px;font-weight:800}.credits-empty p{margin:5px 0 13px;color:#71839a;font-size:10px}
+.credits-history-table-wrap{overflow:auto;border:1px solid #dbe4ed;border-radius:14px;background:#fff}
+.credits-history-table{width:100%;border-collapse:collapse;text-align:left;font-size:10px}
+.credits-history-table th{padding:11px 13px;background:#edf2f7;color:#677b91;font-size:8px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.credits-history-table td{padding:12px 13px;border-top:1px solid #e8edf2;color:#526981;vertical-align:top}
+.credits-history-table td strong{color:#243a52}.credits-history-amount{font-weight:850;color:#345f27!important;white-space:nowrap}
+.credits-data-note{min-height:16px;margin:11px 2px 0;color:#71839a;font-size:10px}.credits-data-note.is-error{color:#b83d36}
+.credits-child-modal{position:absolute;z-index:3;inset:0;display:grid;place-items:center;padding:16px}
+.credits-child-scrim{position:absolute;inset:0;background:rgba(11,25,40,.52);backdrop-filter:blur(3px)}
+.credits-child-card{position:relative;width:min(490px,100%);max-height:calc(100% - 8px);overflow:auto;padding:20px;border:1px solid #dce5ed;border-radius:18px;background:#fff;box-shadow:0 20px 60px rgba(11,29,48,.28)}
+.credits-child-card>header{display:flex;align-items:center;gap:11px;margin:-2px 0 17px;padding-bottom:14px;border-bottom:1px solid #e7edf2}
+.credits-child-card>header>div{min-width:0;flex:1}.credits-child-card h2{margin:0;color:#20374f;font-size:16px;font-weight:850}.credits-child-card>header p{margin:3px 0 0;color:#75869a;font-size:10px}
+.credits-child-card>header>button{width:30px;height:30px;border:0;border-radius:8px;background:#f2f5f8;color:#64768a;font-size:21px;cursor:pointer}
+.credits-child-icon{width:39px;height:39px;display:grid;place-items:center;border-radius:12px;background:#eef5e9;color:#5c9135;flex:none}.credits-child-icon i{width:19px;height:19px}.credits-child-icon.is-green{background:#e8f6e5;color:#4d9b36}
+.credits-child-card form{display:grid;gap:12px}
+.credits-child-card label{display:grid;gap:5px;color:#52677d;font-size:10px;font-weight:800}
+.credits-child-card label span{color:#8795a6;font-weight:500}
+.credits-child-card input,.credits-child-card textarea{box-sizing:border-box;width:100%;min-height:39px;padding:9px 11px;border:1px solid #cfdae5;border-radius:9px;background:#fff;color:#243a52;font:inherit;font-size:12px;font-weight:500;line-height:1.4;outline:0}
+.credits-child-card textarea{min-height:76px;resize:vertical}.credits-child-card input:focus,.credits-child-card textarea:focus{border-color:#77ad49;box-shadow:0 0 0 3px rgba(113,168,50,.14)}
+.credits-form-row{display:grid;grid-template-columns:.75fr 1.25fr;gap:10px}
+.credits-child-card form footer{display:flex;justify-content:flex-end;gap:8px;margin-top:4px;padding-top:12px;border-top:1px solid #e8edf2}
+.credits-payment-amount{padding:13px;border-radius:11px;background:#f2f8ee;color:#4d7d2f;font-size:21px;font-weight:900;text-align:center}
+.credits-payment-period{margin:0;color:#71839a;font-size:10px}
+body.theme-dark .credits-module-body{background:#111c2a}body.theme-dark .credits-module-window{border-color:#34465c;background:#111c2a;color:#e5edf5}body.theme-dark .credits-summary article,body.theme-dark .credits-card,body.theme-dark .credits-history-table-wrap,body.theme-dark .credits-child-card{background:#1a293a;border-color:#35485e}body.theme-dark .credits-card h3,body.theme-dark .credits-summary article strong,body.theme-dark .credits-history-table td strong,body.theme-dark .credits-child-card h2{color:#edf3f9}body.theme-dark .credits-card-financial strong{color:#dce8f4}body.theme-dark .credits-card-notes,body.theme-dark .credits-card-financial .credits-next-date,body.theme-dark .credits-history-table td{color:#aebdd0}body.theme-dark .credits-history-table th{background:#23344a;color:#bdc9d7}body.theme-dark .credits-child-card input,body.theme-dark .credits-child-card textarea{background:#111c2a;color:#e5edf5;border-color:#43566b}body.theme-dark .credits-tabs,body.theme-dark .credits-secondary-button,body.theme-dark .credits-icon-button{background:#1a293a;border-color:#40536a;color:#dce6f0}body.theme-dark .credits-tabs button.is-active{background:#304b30;color:#c0e2a1}body.theme-dark .credits-state-badge.status-paid{background:#23452b;color:#b7df9f}
+@media(max-width:760px){.credits-admin-entry{gap:0;padding-left:6px}.credits-admin-entry-label{display:none}.credits-nav-button{width:36px;min-height:34px;padding:0}.credits-nav-button span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}.credits-reminder-bar{gap:7px;padding:5px 8px}.credits-reminder-label span{display:none}.credits-reminder-item>span{grid-template-columns:auto auto;gap:3px 7px}.credits-reminder-item small{grid-column:2}.credits-reminder-item button{font-size:8px;padding:0 6px}.credits-reminder-open{font-size:8px;padding:0 7px}.credits-module-root{padding:0}.credits-module-window{width:100%;height:100dvh;max-height:100dvh;border-radius:0;border:0}.credits-module-header{min-height:72px;padding:12px 14px}.credits-module-body{padding:13px 12px 20px}.credits-toolbar{align-items:flex-start;flex-direction:column}.credits-toolbar-actions{width:100%;justify-content:flex-end}.credits-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.credits-summary article{min-height:58px;padding:9px}.credits-list{grid-template-columns:minmax(0,1fr);gap:8px}.credits-card{padding:12px;gap:7px}.credits-card-actions{max-width:145px}.credits-card h3{font-size:14px}.credits-card-financial strong{font-size:15px}.credits-child-modal{padding:10px}.credits-child-card{padding:16px}.credits-history-table{min-width:620px}}
+@media(max-width:390px){.credits-state-badge{font-size:7px;padding:3px 5px}.credits-card-actions{max-width:112px}.credits-paid-button{min-height:29px;padding:0 6px;font-size:8px}.credits-icon-button{width:28px;height:28px}.credits-toolbar-actions .credits-secondary-button{font-size:9px;padding:0 9px}}
+@media(prefers-reduced-motion:reduce){.credits-reminder-track{animation:none}.credits-module-window{animation:none;transition:none}}
