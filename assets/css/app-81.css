@@ -27,6 +27,52 @@
 .credits-reminder-open{flex:none;min-height:28px;padding:0 9px;border:1px solid #d8e3ce;border-radius:8px;background:#fff;color:#4e712f;font:inherit;font-size:9px;font-weight:700;line-height:1;cursor:pointer}
 @keyframes credits-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
+/* Franja compacta: aparece solo mientras exista una obligación que atender. */
+#credits-reminder-bar{box-sizing:border-box;width:calc(100% - 28px);max-width:1480px;min-height:52px;margin:10px auto 12px;padding:6px 10px;gap:10px;border:1px solid #d9e3ed;border-left:3px solid #d5a12b;border-radius:13px;background:linear-gradient(100deg,#fffdf7,#fff 45%,#f9fbfd);box-shadow:0 4px 14px rgba(29,52,76,.055)}
+#credits-reminder-bar[hidden]{display:none!important}
+#credits-reminder-bar .credits-reminder-label{gap:6px;color:#62758b;font-size:8px;letter-spacing:.08em}
+#credits-reminder-bar .credits-reminder-label i{color:#c18a18}
+#credits-reminder-bar .credits-reminder-viewport{overflow-x:auto;overflow-y:hidden;mask-image:none;scrollbar-width:none}
+#credits-reminder-bar .credits-reminder-viewport::-webkit-scrollbar{display:none}
+#credits-reminder-bar .credits-reminder-track{width:max-content;min-width:100%;gap:7px;animation:none}
+.credits-alert-item{box-sizing:border-box;display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;min-width:164px;min-height:37px;padding:4px 9px;border:1px solid #ead89d;border-radius:10px;background:#fff9e8;color:#946b16;white-space:nowrap}
+.credits-alert-item>i{width:15px;height:15px;flex:none;color:#ba8618}
+.credits-alert-item>span{display:grid;gap:2px;min-width:0}
+.credits-alert-item strong{overflow:hidden;color:#293b50;font-size:9px;font-weight:800;text-overflow:ellipsis}
+.credits-alert-item small{color:#8c6b22;font-size:8px;font-weight:650}
+.credits-alert-item small b{padding:0 2px;color:#a8b2bf}
+.credits-alert-item.is-today{border-color:#f0c7c1;background:#fff2f0;color:#b83e35}
+.credits-alert-item.is-today>i,.credits-alert-item.is-today small{color:#bd4138}
+.credits-alert-item.is-danger{border-color:#edc3c0;background:#fff1f0;color:#b4312b}
+.credits-alert-item.is-danger>i,.credits-alert-item.is-danger small{color:#ae302a}
+#credits-reminder-bar .credits-reminder-open{min-height:28px;padding:0 9px;border-color:#d4dee8;color:#536b82;font-size:8px}
+@media(max-width:639px){#credits-reminder-bar{width:calc(100% - 20px);min-height:48px;margin:8px auto 10px;padding:5px 7px;gap:7px;border-radius:11px}#credits-reminder-bar .credits-reminder-label{font-size:7px}#credits-reminder-bar .credits-reminder-label span{max-width:48px;white-space:normal;line-height:1.1}.credits-alert-item{min-width:148px;min-height:35px;padding:4px 7px}#credits-reminder-bar .credits-reminder-open{padding:0 7px;font-size:7px}}
+
+/* Presentación premium compacta de la alerta financiera. */
+#credits-reminder-bar{width:calc(100% - 28px);max-width:1480px;min-height:52px;margin:9px auto 11px;padding:6px 10px;gap:10px;border:1px solid #e4b5b2;border-left:4px solid #c73731;border-radius:12px;background:linear-gradient(100deg,#fff5f4 0%,#fff 48%,#fffafa 100%);box-shadow:0 4px 14px rgba(24,43,65,.08);animation:credits-alert-enter .28s cubic-bezier(.2,.75,.25,1) both}
+#credits-reminder-bar[data-alert-level="overdue"]{border-color:#e18a85;border-left-color:#bd2924;background:linear-gradient(100deg,#fff1f0 0%,#fff 48%,#fff8f7 100%);animation:credits-alert-enter .28s cubic-bezier(.2,.75,.25,1) both,credits-alert-bar-glow 3.4s ease-in-out .35s infinite}
+#credits-reminder-bar[data-alert-level="today"]{border-color:#e8a09a;border-left-color:#c43a32;background:linear-gradient(100deg,#fff4f2 0%,#fff 48%,#fff9f8 100%);animation:credits-alert-enter .28s cubic-bezier(.2,.75,.25,1) both,credits-alert-bar-glow 3.8s ease-in-out .35s infinite}
+#credits-reminder-bar .credits-reminder-label{gap:5px;font-size:7px;letter-spacing:.07em}
+#credits-reminder-bar .credits-reminder-label i{width:16px;height:16px;animation:credits-alert-icon-glow 2.8s ease-in-out infinite}
+#credits-reminder-bar[data-alert-level="overdue"] .credits-reminder-label i,#credits-reminder-bar[data-alert-level="today"] .credits-reminder-label i{color:#bd3e37}
+#credits-reminder-bar[data-alert-level="overdue"] .credits-reminder-label i,#credits-reminder-bar[data-alert-level="today"] .credits-reminder-label i{animation:credits-alert-red-icon 2.8s ease-in-out infinite}
+#credits-reminder-bar .credits-reminder-viewport{align-self:stretch;display:flex;align-items:center;flex:1 1 auto;max-width:none;min-width:0;overflow:hidden}
+#credits-reminder-bar .credits-reminder-track{width:max-content;min-width:0;gap:0;animation:credits-alert-marquee var(--credits-scroll-duration,30s) linear infinite;will-change:transform}
+.credits-reminder-group{box-sizing:border-box;display:flex;align-items:center;gap:9px;flex:0 0 auto;padding-right:24px}
+.credits-alert-message{display:inline-flex;align-items:center;gap:8px;padding:0 4px;color:#61201d;font-size:10px;line-height:1;white-space:nowrap}
+.credits-alert-message>i{width:16px;height:16px;flex:none;color:#c92922;filter:drop-shadow(0 0 3px rgba(210,35,30,.35))}
+.credits-alert-message>strong{color:#68211e;font-size:10px;font-weight:850}
+.credits-alert-message>b{color:#c42721;font-size:9px;font-weight:950;letter-spacing:.045em}
+.credits-alert-separator{padding:0 16px;color:#d33c35;font-size:13px;font-weight:900;opacity:.72}
+#credits-reminder-bar .credits-reminder-open{min-height:28px;padding:0 9px;border-radius:8px;font-size:8px}
+@keyframes credits-alert-enter{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+@keyframes credits-alert-icon-glow{0%,100%{transform:scale(1);filter:drop-shadow(0 0 0 rgba(193,138,24,0))}50%{transform:scale(1.08);filter:drop-shadow(0 0 3px rgba(193,138,24,.42))}}
+@keyframes credits-alert-red-icon{0%,100%{transform:scale(1);filter:drop-shadow(0 0 0 rgba(191,47,42,0))}50%{transform:scale(1.1);filter:drop-shadow(0 0 4px rgba(191,47,42,.48))}}
+@keyframes credits-alert-bar-glow{0%,100%{box-shadow:0 4px 13px rgba(142,36,32,.16),0 0 11px rgba(200,50,43,.19)}50%{box-shadow:0 5px 18px rgba(151,31,27,.25),0 0 23px rgba(207,45,38,.34)}}
+@keyframes credits-alert-marquee{from{transform:translateX(var(--credits-scroll-start,100%))}to{transform:translateX(calc(0px - var(--credits-scroll-end,200px)))}}
+@media(max-width:639px){#credits-reminder-bar{width:calc(100% - 20px);max-width:none;min-height:48px;margin:8px auto 10px;padding:5px 7px;gap:7px;border-radius:11px}#credits-reminder-bar .credits-reminder-label{font-size:7px}#credits-reminder-bar .credits-reminder-label span{max-width:none;white-space:nowrap}.credits-alert-message{gap:6px;font-size:8px}.credits-alert-message>strong{font-size:8px}.credits-alert-message>b{font-size:7px}.credits-alert-separator{padding:0 10px}#credits-reminder-bar .credits-reminder-open{min-height:26px;padding:0 7px;font-size:7px}}
+@media(prefers-reduced-motion:reduce){#credits-reminder-bar,#credits-reminder-bar[data-alert-level="overdue"],#credits-reminder-bar[data-alert-level="today"]{animation:none}#credits-reminder-bar .credits-reminder-label i{animation:none}}
+
 .credits-module-root{position:fixed;z-index:2147482000;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;font-family:inherit;color:#172d45}
 .credits-module-backdrop{position:absolute;inset:0;background:rgba(10,22,36,.62);backdrop-filter:blur(5px)}
 .credits-module-window{position:relative;z-index:1;width:min(1160px,100%);height:min(900px,calc(100dvh - 36px));display:flex;flex-direction:column;overflow:hidden;border:1px solid #d7e1ec;border-radius:22px;background:#f5f8fb;box-shadow:0 28px 90px rgba(5,20,38,.38);animation:credits-window-in .18s ease-out}
@@ -114,3 +160,76 @@ body.theme-dark .credits-module-body{background:#111c2a}body.theme-dark .credits
 @media(max-width:760px){.credits-admin-entry{gap:0;padding-left:6px}.credits-admin-entry-label{display:none}.credits-nav-button{width:36px;min-height:34px;padding:0}.credits-nav-button span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}.credits-reminder-bar{gap:7px;padding:5px 8px}.credits-reminder-label span{display:none}.credits-reminder-item>span{grid-template-columns:auto auto;gap:3px 7px}.credits-reminder-item small{grid-column:2}.credits-reminder-item button{font-size:8px;padding:0 6px}.credits-reminder-open{font-size:8px;padding:0 7px}.credits-module-root{padding:0}.credits-module-window{width:100%;height:100dvh;max-height:100dvh;border-radius:0;border:0}.credits-module-header{min-height:72px;padding:12px 14px}.credits-module-body{padding:13px 12px 20px}.credits-toolbar{align-items:flex-start;flex-direction:column}.credits-toolbar-actions{width:100%;justify-content:flex-end}.credits-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.credits-summary article{min-height:58px;padding:9px}.credits-list{grid-template-columns:minmax(0,1fr);gap:8px}.credits-card{padding:12px;gap:7px}.credits-card-actions{max-width:145px}.credits-card h3{font-size:14px}.credits-card-financial strong{font-size:15px}.credits-child-modal{padding:10px}.credits-child-card{padding:16px}.credits-history-table{min-width:620px}}
 @media(max-width:390px){.credits-state-badge{font-size:7px;padding:3px 5px}.credits-card-actions{max-width:112px}.credits-paid-button{min-height:29px;padding:0 6px;font-size:8px}.credits-icon-button{width:28px;height:28px}.credits-toolbar-actions .credits-secondary-button{font-size:9px;padding:0 9px}}
 @media(prefers-reduced-motion:reduce){.credits-reminder-track{animation:none}.credits-module-window{animation:none;transition:none}}
+
+/* Panel de obligaciones: más registros visibles sin sacrificar acciones ni datos. */
+.credits-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.credits-card{display:grid;grid-template-columns:minmax(0,1fr);align-content:start;gap:7px;padding:10px 11px;border-radius:12px;box-shadow:0 3px 10px rgba(27,48,69,.04)}
+.credits-card-heading{margin-bottom:4px}
+.credits-card h3{font-size:14px;line-height:1.2}
+.credits-card-financial{gap:5px;margin-top:4px}
+.credits-card-financial strong{font-size:15px}
+.credits-card-financial>span{font-size:9px}
+.credits-card-financial .credits-next-date{flex:0 1 auto;font-size:9px}
+.credits-card-notes{margin:5px 0 0;padding-top:5px;font-size:9px;line-height:1.4}
+.credits-card-actions{box-sizing:border-box;width:100%;max-width:none;min-width:0;align-self:auto;align-items:center;justify-content:flex-end;gap:5px;margin-top:2px;padding-top:7px;border-top:1px solid #e9eef3}
+.credits-paid-button{min-height:30px;padding:0 8px;font-size:9px}
+.credits-paid-this-month{padding:6px;font-size:9px}
+body.theme-dark .credits-card-actions{border-top-color:#35485e}
+@media(max-width:1000px){.credits-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.credits-list{grid-template-columns:minmax(0,1fr)}}
+
+/* Listado financiero compacto: conserva columnas y acciones en escritorio y móvil. */
+.credits-list{display:block;width:100%;min-width:0}
+.credits-table-wrap{width:100%;overflow:auto;border:1px solid #d8e2ec;border-radius:14px;background:#fff;box-shadow:0 5px 16px rgba(27,48,69,.045);overscroll-behavior-x:contain}
+.credits-table{width:100%;min-width:890px;table-layout:auto;border-collapse:separate;border-spacing:0;text-align:left;font-size:11px}
+.credits-table thead th{position:sticky;top:0;z-index:1;padding:11px 12px;background:#edf2f7;color:#667b92;font-size:8px;font-weight:900;letter-spacing:.065em;text-transform:uppercase;white-space:nowrap}
+.credits-table thead th:first-child{padding-left:15px}
+.credits-table tbody td{padding:9px 12px;border-top:1px solid #e8edf2;color:#526981;vertical-align:middle}
+.credits-table tbody tr:first-child td{border-top:0}
+.credits-table-row{transition:background-color .15s ease}
+.credits-table-row:hover{background:#f8fafc}
+.credits-table-row.status-overdue,.credits-table-row.status-today{background:#fff8f7}
+.credits-table-row.status-overdue:hover,.credits-table-row.status-today:hover{background:#fff1ef}
+.credits-table-row.status-soon{background:#fff9ed}
+.credits-table-row.status-soon:hover{background:#fff3d9}
+.credits-table-row.status-ontime{background:#fffaf2}
+.credits-table-row.status-ontime:hover{background:#fff3df}
+.credits-table-row.status-paid{background:#f7fbf4}
+.credits-table-row.status-paid:hover{background:#eef7e9}
+.credits-table-day .status-overdue,.credits-table-day .status-today{border-color:#f0c8c4;background:#fff0ee;color:#b93c35}
+.credits-table-day .status-soon,.credits-table-day .status-ontime{border-color:#efdfa9;background:#fff5d9;color:#9a6d0b}
+.credits-table-day .status-paid{border-color:#c9e2ba;background:#e9f5e2;color:#4c842b}
+.credits-table .credits-state-badge.status-ontime{border-color:#efdfa9;background:#fff5d9;color:#9a6d0b}
+.credits-table-day{width:62px;padding-left:15px!important}
+.credits-table-day span{display:inline-grid;min-width:29px;height:29px;place-items:center;padding:0 5px;border:1px solid #d9e8ce;border-radius:9px;background:#f1f7ec;color:#4f7b31;font-size:11px;font-weight:850}
+.credits-table-name{min-width:185px}
+.credits-table-name strong{display:block;color:#243a52;font-size:11px;font-weight:800;line-height:1.35}
+.credits-table-name small{display:block;max-width:290px;margin-top:3px;color:#79899b;font-size:9px;line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere}
+.credits-table-amount{color:#263f59!important;font-weight:850;white-space:nowrap}
+.credits-table-date{white-space:nowrap;font-variant-numeric:tabular-nums}
+.credits-table-late{width:85px;color:#8592a1!important;white-space:nowrap}
+.credits-table-late.is-late{color:#b93631!important;font-weight:850}
+.credits-table-actions{display:flex;align-items:center;justify-content:flex-end;gap:5px;white-space:nowrap}
+.credits-table-actions .credits-paid-button{min-height:29px;padding:0 8px;font-size:8px}
+.credits-table-actions .credits-paid-this-month{padding:6px;font-size:8px}
+.credits-table-actions .credits-icon-button{width:29px;height:29px;flex:none}
+body.theme-dark .credits-table-wrap{border-color:#35485e;background:#1a293a}
+body.theme-dark .credits-table thead th{background:#23344a;color:#bdc9d7}
+body.theme-dark .credits-table tbody td{border-top-color:#35485e;color:#aebdd0}
+body.theme-dark .credits-table-name strong,body.theme-dark .credits-table-amount{color:#e3edf7!important}
+body.theme-dark .credits-table-name small{color:#aebdd0}
+body.theme-dark .credits-table-row:hover{background:#203147}
+body.theme-dark .credits-table-row.status-overdue,body.theme-dark .credits-table-row.status-today{background:#382629}
+body.theme-dark .credits-table-row.status-overdue:hover,body.theme-dark .credits-table-row.status-today:hover{background:#472b2d}
+body.theme-dark .credits-table-row.status-soon{background:#3a3323}
+body.theme-dark .credits-table-row.status-soon:hover{background:#48402a}
+body.theme-dark .credits-table-row.status-ontime{background:#352f24}
+body.theme-dark .credits-table-row.status-ontime:hover{background:#443a29}
+body.theme-dark .credits-table-row.status-paid{background:#203528}
+body.theme-dark .credits-table-row.status-paid:hover{background:#29432f}
+body.theme-dark .credits-table-day span{border-color:#49633b;background:#2a3d2c;color:#c4e4aa}
+body.theme-dark .credits-table-day .status-overdue,body.theme-dark .credits-table-day .status-today{border-color:#75413f;background:#472b2d;color:#ffb3aa}
+body.theme-dark .credits-table-day .status-soon,body.theme-dark .credits-table-day .status-ontime{border-color:#69562f;background:#48402a;color:#f1d38b}
+body.theme-dark .credits-table-day .status-paid{border-color:#49633b;background:#2a3d2c;color:#c4e4aa}
+body.theme-dark .credits-table .credits-state-badge.status-ontime{border-color:#69562f;background:#48402a;color:#f1d38b}
+@media(prefers-reduced-motion:reduce){.credits-table-row{transition:none}}

@@ -12,25 +12,26 @@
 
   function refreshAnnouncement(app) {
     const banner = document.getElementById('dashboard-banner');
-    if (!banner || !app.currentUser) return;
+    if (!app.currentUser) return;
     const text = String(activeAdminRecord(app).announcementMessage || '').trim();
     let display = document.getElementById('dashboard-announcement-display');
     if (!text) { display?.remove(); return; }
-    if (!display || !banner.contains(display)) {
+    if (!display) {
       display = document.createElement('div');
       display.id = 'dashboard-announcement-display';
       display.className = 'dashboard-announcement-display';
       const track = document.createElement('div');
       track.className = 'dashboard-announcement-track';
-      const label = document.createElement('span');
-      label.className = 'dashboard-announcement-label';
-      label.textContent = 'Aviso';
       const message = document.createElement('span');
       message.className = 'dashboard-announcement-text';
-      track.append(label, message);
+      track.append(message);
       display.appendChild(track);
-      const content = banner.querySelector(':scope > div:first-child') || banner;
-      content.appendChild(display);
+    }
+    const toolbar = document.getElementById('orders-toolbar');
+    if (toolbar?.parentElement && display.parentElement !== toolbar.parentElement) {
+      toolbar.parentElement.insertBefore(display, toolbar);
+    } else if (!display.isConnected && toolbar?.parentElement) {
+      toolbar.parentElement.insertBefore(display, toolbar);
     }
     const message = display.querySelector('.dashboard-announcement-text');
     if (message && message.textContent !== text) message.textContent = text;

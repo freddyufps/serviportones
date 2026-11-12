@@ -473,15 +473,6 @@
         this.dedicatedWorkerUnsubscribes = {};
         this.dedicatedWorkerRetryTimers = {};
 
-        // Estado del GPS
-        this.gpsWatchId = null;
-        this.gpsConnectedAt = null;
-        this.isGpsSharing = false;
-        this.adminMap = null;
-        this.adminMapMarkers = {};
-        this.gpsLocationsUnsubscribe = null;
-        this.locationsData = {};
-
         // Estado WebRTC (Llamadas de Voz)
         this.peerConnection = null;
         this.localStream = null;
@@ -1616,38 +1607,7 @@
 
         this.renderOrderFilterMenus();
         const banner = document.getElementById('dashboard-banner');
-        if (isAdmin) {
-          banner.className = 'mb-4 sm:mb-5 p-3.5 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm bg-gradient-to-r from-slate-950 via-brand-dark to-slate-900 text-white border-brand-lime/40';
-          banner.innerHTML = `
-            <div>
-              <h3 class="font-extrabold text-xs sm:text-sm text-white">Panel Central de Operaciones</h3>
-              <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5">Asigna órdenes, supervisa técnicos en mapa GPS <span id="dashboard-chat-caption">y comunícate por chat y voz.</span></p>
-            </div>
-            <div class="mt-2 sm:mt-0 flex items-center justify-center sm:justify-end gap-2 self-center sm:self-auto">
-              <button type="button" aria-label="Ver mapa GPS" title="Ver mapa GPS" onclick="app.openAdminGpsModal()" class="group shrink-0 cursor-pointer rounded-2xl border-0 bg-transparent p-0 shadow-none transition-transform hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400">
-                <img src="assets/media/boton-ver-mapa-gps.png" alt="Ver mapa GPS" class="gps-dashboard-shortcut block h-20 w-20 object-contain sm:h-24 sm:w-24 md:h-28 md:w-28">
-              </button>
-            </div>
-          `;
-        } else {
-          banner.className = 'mb-4 sm:mb-5 p-3.5 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border shadow-sm bg-gradient-to-r from-slate-900 via-brand-dark to-slate-950 text-white border-brand-lime/40';
-          banner.innerHTML = `
-            <div>
-              <h3 class="font-extrabold text-xs sm:text-sm text-white">Bienvenido, ${this.getCurrentDisplayName()}</h3>
-              <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5">Revisa tus visitas asignadas, comparte posición o llama al administrador.</p>
-              <div id="worker-admin-presence-dashboard" class="mt-2"></div>
-            </div>
-            <div class="mt-2 sm:mt-0 flex items-center gap-2">
-              <button onclick="app.startVoiceCall()" class="text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1 shadow transition active:scale-95">
-                <i data-lucide="phone" class="w-3.5 h-3.5"></i> Llamar Admin
-              </button>
-              <button id="btn-worker-toggle-gps" onclick="app.toggleWorkerGps()" class="text-xs font-bold px-3 py-1.5 rounded-xl border flex items-center gap-1.5 shadow transition active:scale-95 bg-slate-800 text-slate-200 border-slate-700 hover:border-cyan-400">
-                <span class="w-2 h-2 rounded-full bg-slate-400" id="worker-gps-dot"></span>
-                <span id="worker-gps-label">📍 Activar GPS</span>
-              </button>
-            </div>
-          `;
-        }
+        if (banner) { banner.replaceChildren(); banner.classList.add('hidden'); banner.setAttribute('aria-hidden', 'true'); }
 
         this.renderAdminPresence();
         if (window.lucide) lucide.createIcons();
@@ -2112,237 +2072,21 @@
         document.getElementById('modal-photo-zoom').classList.add('hidden');
       }
 
-      toggleWorkerGps() {
-        if (this.isGpsSharing) {
-          this.stopGpsSharing();
-        } else {
-          this.startGpsSharing();
-        }
-      }
-
-      startGpsSharing() {
-        if (!navigator.geolocation) {
-          this.showToast("Tu navegador no soporta geolocalización", "error");
-          return;
-        }
-
-        const myName = this.getCurrentDisplayName();
-        this.gpsConnectedAt = Date.now();
-        const btnLabel = document.getElementById('worker-gps-label');
-        const btnDot = document.getElementById('worker-gps-dot');
-
-        this.gpsWatchId = navigator.geolocation.watchPosition(
-          pos => {
-            const coords = {
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude,
-              workerName: myName,
-              active: true,
-              updatedAt: this.formatTime(new Date()),
-              timestamp: Date.now(),
-              connectedAt: this.gpsConnectedAt || Date.now()
-            };
-
-            if (window.db) {
-              db.collection('gps_locations').doc(myName).set(coords, { merge: true }).catch(() => {});
-            }
-
-            this.isGpsSharing = true;
-            if (btnLabel) btnLabel.textContent = "📍 Desactivar GPS";
-            if (btnDot) btnDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
-          },
-          err => {
-            console.warn("Error GPS:", err);
-            this.showToast("Permiso de GPS denegado", "error");
-            this.stopGpsSharing();
-          },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-        );
-
-        this.showToast("GPS Activado: compartiendo posición", "success");
-      }
-
-      stopGpsSharing(silent = false) {
-        if (this.gpsWatchId !== null) {
-          navigator.geolocation.clearWatch(this.gpsWatchId);
-          this.gpsWatchId = null;
-        }
+      stopGpsSharing() {
+        if (Number.isInteger(this.gpsWatchId) && navigator.geolocation) navigator.geolocation.clearWatch(this.gpsWatchId);
+        this.gpsWatchId = null;
         this.isGpsSharing = false;
         this.gpsConnectedAt = null;
-
-        const myName = this.getCurrentDisplayName();
-        if (window.db && myName) {
-          db.collection('gps_locations').doc(myName).set({
-            active: false,
-            timestamp: Date.now(),
-            updatedAt: this.formatTime(new Date())
-          }, { merge: true }).catch(() => {});
-        }
-
-        const btnLabel = document.getElementById('worker-gps-label');
-        const btnDot = document.getElementById('worker-gps-dot');
-        if (btnLabel) btnLabel.textContent = "📍 Activar GPS";
-        if (btnDot) btnDot.className = "w-2 h-2 rounded-full bg-slate-400";
-
-        if (!silent) this.showToast("GPS Desactivado", "info");
-      }
-
-      openAdminGpsModal() {
-        document.getElementById('modal-admin-gps').classList.remove('hidden');
-        if (!this.adminMap) {
-          setTimeout(() => this.initAdminMap(), 150);
-        } else {
-          setTimeout(() => this.adminMap.invalidateSize(), 200);
-        }
-        this.subscribeGpsLocations();
       }
 
       closeAdminGpsModal() {
-        document.getElementById('modal-admin-gps')?.classList.add('hidden');
-        if (this.gpsLocationsUnsubscribe) { this.gpsLocationsUnsubscribe(); this.gpsLocationsUnsubscribe = null; }
+        if (typeof this.gpsLocationsUnsubscribe === 'function') this.gpsLocationsUnsubscribe();
+        this.gpsLocationsUnsubscribe = null;
+        if (this.adminMap && typeof this.adminMap.remove === 'function') this.adminMap.remove();
+        this.adminMap = null;
+        this.adminMapMarkers = {};
         this.locationsData = {};
-        Object.entries(this.adminMapMarkers || {}).forEach(([name, marker]) => {
-          if (this.adminMap && marker) this.adminMap.removeLayer(marker);
-          delete this.adminMapMarkers[name];
-        });
-        const workersList = document.getElementById('gps-workers-list');
-        if (workersList) workersList.innerHTML = '';
-        const activeCount = document.getElementById('gps-active-count');
-        if (activeCount) activeCount.textContent = '0 Activos';
       }
-
-      initAdminMap() {
-        const mapContainer = document.getElementById('gps-map-container');
-        if (!mapContainer || this.adminMap) return;
-
-        this.adminMap = L.map('gps-map-container').setView([4.6097, -74.0817], 12);
-
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          referrerPolicy: 'strict-origin-when-cross-origin',
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>'
-        }).addTo(this.adminMap);
-      }
-
-      subscribeGpsLocations() {
-        if (!window.db || this.gpsLocationsUnsubscribe || document.getElementById('modal-admin-gps')?.classList.contains('hidden')) return;
-
-        this.gpsLocationsUnsubscribe = db.collection('gps_locations').onSnapshot(snap => {
-          const locs = {};
-          let activeCount = 0;
-
-          snap.forEach(doc => {
-            const data = doc.data();
-            locs[doc.id] = data;
-            const lastSignal = Number(data.timestamp || 0);
-            if (data.active && lastSignal && Date.now() - lastSignal < 180000) activeCount++;
-          });
-
-          this.locationsData = locs;
-          document.getElementById('gps-active-count').textContent = `${activeCount} Activos`;
-          this.renderGpsWorkersList();
-          this.updateGpsMarkersOnMap();
-        }, e => console.error("Snapshot GPS:", e));
-      }
-
-      renderGpsWorkersList() {
-        const listElem = document.getElementById('gps-workers-list');
-        if (!listElem) return;
-
-        const workers = this.workers;
-        if (workers.length === 0) {
-          listElem.innerHTML = `<p class="text-center py-4 text-slate-400 italic">No hay trabajadores registrados.</p>`;
-          return;
-        }
-
-        const now = Date.now();
-        const orderedWorkers = workers.map((worker, index) => {
-          const name = worker.fullName || worker.username;
-          const location = this.locationsData[name];
-          const timestamp = Number(location?.timestamp || 0);
-          const isGpsActive = Boolean(location?.active && timestamp && now - timestamp < 180000);
-          return { worker, index, name, location, isGpsActive };
-        }).sort((a, b) => {
-          if (a.isGpsActive !== b.isGpsActive) return Number(b.isGpsActive) - Number(a.isGpsActive);
-          if (a.isGpsActive) {
-            const aConnectedAt = Number(a.location.connectedAt || a.location.timestamp || 0);
-            const bConnectedAt = Number(b.location.connectedAt || b.location.timestamp || 0);
-            if (aConnectedAt !== bConnectedAt) return bConnectedAt - aConnectedAt;
-          }
-          return a.index - b.index;
-        });
-
-        listElem.innerHTML = orderedWorkers.map(({ worker: w, name: wName, location: loc, isGpsActive }) => {
-          const safeName = this.escapeHtml(wName);
-          const photo = w.photo ? this.escapeHtml(w.photo) : '';
-          const avatar = photo
-            ? `<img src="${photo}" alt="Foto de ${safeName}" loading="lazy">`
-            : `<span>${this.escapeHtml(String(wName).charAt(0).toUpperCase())}</span>`;
-          const lastUpdate = this.escapeHtml(loc?.updatedAt || 'Sin señal');
-
-          return `
-            <article class="gps-worker-card ${isGpsActive ? 'is-active' : ''}">
-              <div class="gps-worker-card-main">
-                <span class="gps-worker-avatar seasonal-worker-avatar" aria-hidden="true"><span class="gps-worker-photo-crop">${avatar}</span></span>
-                <span class="gps-worker-card-identity">
-                  <span class="gps-worker-card-name"><span class="gps-worker-state-dot ${isGpsActive ? 'is-active' : ''}"></span>${safeName}</span>
-                  <span class="gps-worker-card-status ${isGpsActive ? 'is-active' : ''}">${isGpsActive ? 'Transmitiendo GPS' : 'GPS inactivo'}</span>
-                </span>
-                <span class="gps-worker-card-time">${lastUpdate}</span>
-              </div>
-              ${isGpsActive ? `
-                <div class="gps-worker-card-actions">
-                  <button type="button" onclick="app.focusWorkerOnMap('${encodeURIComponent(wName)}')" class="gps-worker-action">📍 Ver en mapa</button>
-                  <button type="button" onclick="app.openExternalRoute(${loc.latitude}, ${loc.longitude})" class="gps-worker-action is-route">🧭 Trazar ruta</button>
-                </div>
-              ` : ''}
-            </article>
-          `;
-        }).join('');
-      }
-
-      updateGpsMarkersOnMap() {
-        if (!this.adminMap) return;
-
-        Object.keys(this.locationsData).forEach(wName => {
-          const loc = this.locationsData[wName];
-          if (loc.active && loc.latitude && loc.longitude) {
-            const popupHtml = `
-              <div class="p-1 text-xs">
-                <b class="text-slate-900 block">${wName}</b>
-                <span class="text-slate-500 text-[10px] block">Actualizado: ${loc.updatedAt}</span>
-                <div class="flex gap-1 mt-2">
-                  <a href="https://waze.com/ul?ll=${loc.latitude},${loc.longitude}&navigate=yes" target="_blank" class="px-2 py-0.5 bg-cyan-600 text-white rounded text-[10px] font-bold inline-flex items-center gap-1"><img src="assets/media/media-1.png" alt="" aria-hidden="true" class="w-4 h-4 object-contain">Waze</a>
-                  <a href="https://www.google.com/maps/dir/?api=1&destination=${loc.latitude},${loc.longitude}" target="_blank" class="px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px] font-bold inline-flex items-center gap-1"><img src="assets/media/media-2.png" alt="" aria-hidden="true" class="w-4 h-4 object-contain">Maps</a>
-                </div>
-              </div>
-            `;
-
-            if (this.adminMapMarkers[wName]) {
-              this.adminMapMarkers[wName].setLatLng([loc.latitude, loc.longitude]).bindPopup(popupHtml);
-            } else {
-              const marker = L.marker([loc.latitude, loc.longitude]).addTo(this.adminMap).bindPopup(popupHtml);
-              this.adminMapMarkers[wName] = marker;
-            }
-          } else if (this.adminMapMarkers[wName]) {
-            this.adminMap.removeLayer(this.adminMapMarkers[wName]);
-            delete this.adminMapMarkers[wName];
-          }
-        });
-      }
-
-      focusWorkerOnMap(wName) {
-        const marker = this.adminMapMarkers[wName];
-        if (marker && this.adminMap) {
-          this.adminMap.setView(marker.getLatLng(), 15);
-          marker.openPopup();
-        }
-      }
-
-      openExternalRoute(lat, lng) {
-        window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
-      }
-
       async startVoiceCall() {
         if (!CHAT_FEATURE_ENABLED) return;
         const targetWorker = this.currentUser.role === 'admin' ? this.activeChatWorker : (this.getCurrentDisplayName());
@@ -4882,15 +4626,7 @@ updateMessengerWindowTyping(workerName) {
         return task?.hiddenFromWorkers === true || String(task?.assignedTo || '').trim().toUpperCase() === 'NO_VISIBLE_WORKERS';
       }
 
-      updateStats() {
-        const isAdmin = this.currentUser.role === 'admin';
-        const myName = this.getCurrentDisplayName();
-        const relevantTasks = (isAdmin ? this.tasks : this.tasks.filter(t => !this.isTaskHiddenFromWorkers(t) && (this.isTaskFree(t) || t.assignedTo === myName))).filter(t => !t.archivedAt && t.invoiceInConsolidated !== true);
-        document.getElementById('stat-total').textContent = relevantTasks.length;
-        document.getElementById('stat-pending').textContent = relevantTasks.filter(t => t.status === 'PENDIENTE' || t.status === 'EN_PROCESO').length;
-        document.getElementById('stat-done').textContent = relevantTasks.filter(t => t.status === 'REALIZADA').length;
-        document.getElementById('stat-failed').textContent = relevantTasks.filter(t => t.status === 'NO_REALIZADA').length;
-      }
+      updateStats() {}
 
       resetFilters() {
         document.getElementById('filter-search').value = '';

@@ -35,6 +35,9 @@
     return Math.round((Date.UTC(a.year, a.month - 1, a.day) - Date.UTC(b.year, b.month - 1, b.day)) / 86400000);
   }
   function dateLabel(date) { return new Intl.DateTimeFormat('es-CO', { day:'2-digit', month:'long', year:'numeric' }).format(date); }
+  function sortCreditRecords() {
+    creditRecords.sort((a, b) => Number(a.dueDay || 0) - Number(b.dueDay || 0) || String(a.name || '').localeCompare(String(b.name || ''), 'es', { numeric:true, sensitivity:'base' }));
+  }
 
   function creditState(credit, today = now()) {
     const period = currentPeriod(today);
@@ -71,7 +74,7 @@
       ticker.className = 'credits-reminder-bar';
       ticker.hidden = true;
       ticker.setAttribute('aria-label', 'Recordatorios de créditos');
-      ticker.innerHTML = '<div class="credits-reminder-label"><i data-lucide="bell-ring" aria-hidden="true"></i><span>FINANZAS</span></div><div class="credits-reminder-viewport"><div class="credits-reminder-track" data-credits-reminder-track></div></div><button type="button" class="credits-reminder-open" data-credits-open aria-label="Abrir créditos">Ver créditos</button>';
+      ticker.innerHTML = '<div class="credits-reminder-label"><i data-lucide="bell-ring" aria-hidden="true"></i><span>ALERTAS DE PAGO</span></div><div class="credits-reminder-viewport"><div class="credits-reminder-track" data-credits-reminder-track></div></div><button type="button" class="credits-reminder-open" data-credits-open aria-label="Abrir créditos">Ver créditos</button>';
       header.insertAdjacentElement('afterend', ticker);
       ticker.querySelector('[data-credits-open]')?.addEventListener('click', openModule);
     }
@@ -130,7 +133,8 @@
       try {
         const snapshot = await window.db.collection(CREDITS).get();
         if (!roleIsAdmin() || String(window.app?.currentUser?.authSessionId || 'admin') !== sessionId) return false;
-        creditRecords = snapshot.docs.map(doc => ({ id:doc.id, ...doc.data() })).sort((a, b) => Number(a.dueDay || 0) - Number(b.dueDay || 0) || String(a.name || '').localeCompare(String(b.name || ''), 'es'));
+        creditRecords = snapshot.docs.map(doc => ({ id:doc.id, ...doc.data() }));
+        sortCreditRecords();
         lastReadAt = Date.now();
         renderModule();
         renderReminderBar();
@@ -190,12 +194,23 @@
       host.innerHTML = '<div class="credits-empty"><span><i data-lucide="wallet-cards"></i></span><h3>Aún no hay créditos</h3><p>Agrega una obligación mensual para empezar el seguimiento.</p><button type="button" class="credits-primary-button" data-credits-new><i data-lucide="plus"></i><span>Agregar primer crédito</span></button></div>';
       return;
     }
-    host.innerHTML = creditRecords.map(credit => {
+    const statusInfo = state => ({
+      overdue:['overdue','Atrasado','triangle-alert'],
+      today:['today','Vence hoy','calendar-clock'],
+      soon:['soon','Próximo a vencer','clock-3'],
+      paid:['paid','Pagado este mes','circle-check'],
+      ontime:['ontime','Al día','check']
+    }[state.key] || ['ontime',state.label,'check']);
+    const sortedCredits = [...creditRecords].sort((a, b) => Number(a.dueDay || 0) - Number(b.dueDay || 0) || String(a.name || '').localeCompare(String(b.name || ''), 'es', { numeric:true, sensitivity:'base' }));
+    host.innerHTML = `<div class="credits-table-wrap"><table class="credits-table"><thead><tr><th scope="col">Día</th><th scope="col">Crédito</th><th scope="col">Valor mensual</th><th scope="col">Estado</th><th scope="col">Vencimiento</th><th scope="col">Atraso</th><th scope="col">Acciones</th></tr></thead><tbody>${sortedCredits.map(credit => {
       const state = creditState(credit);
       const paid = state.key === 'paid';
       const notes = String(credit.notes || '').trim();
-      return `<article class="credits-card status-${state.key}"><div class="credits-card-main"><div class="credits-card-heading"><span class="credits-due-day">Día ${esc(credit.dueDay)}</span><span class="credits-state-badge status-${state.key}">${state.key === 'overdue' ? '<i data-lucide="triangle-alert"></i>' : state.key === 'today' ? '<i data-lucide="calendar-clock"></i>' : state.key === 'soon' ? '<i data-lucide="clock-3"></i>' : state.key === 'paid' ? '<i data-lucide="circle-check"></i>' : '<i data-lucide="check"></i>'}${esc(state.label)}</span></div><h3>${esc(credit.name || 'Crédito')}</h3><div class="credits-card-financial"><strong>${money(credit.amount)}</strong><span>mensual</span><span class="credits-next-date">${paid ? 'Pago registrado' : `Vencimiento: ${dateLabel(state.dueDate)}`}</span></div>${notes ? `<p class="credits-card-notes">${esc(notes)}</p>` : ''}</div><div class="credits-card-actions">${!paid ? `<button type="button" class="credits-paid-button" data-credit-pay="${esc(credit.id)}"><i data-lucide="check"></i><span>Ya se pagó</span></button>` : `<span class="credits-paid-this-month"><i data-lucide="circle-check"></i> Pagado este mes</span>`}<button type="button" class="credits-icon-button" data-credit-edit="${esc(credit.id)}" aria-label="Editar ${esc(credit.name)}" title="Editar"><i data-lucide="pencil"></i></button><button type="button" class="credits-icon-button is-delete" data-credit-delete="${esc(credit.id)}" aria-label="Eliminar ${esc(credit.name)}" title="Eliminar"><i data-lucide="trash-2"></i></button></div></article>`;
-    }).join('');
+      const [statusClass, statusLabel, statusIcon] = statusInfo(state);
+      const lateDays = state.key === 'overdue' ? `${Math.abs(state.daysUntil)} ${Math.abs(state.daysUntil) === 1 ? 'día' : 'días'}` : '—';
+      const dueDate = state.dueDate ? new Intl.DateTimeFormat('es-CO', { day:'numeric', month:'short', year:'numeric' }).format(state.dueDate) : `Día ${credit.dueDay}`;
+      return `<tr class="credits-table-row status-${esc(statusClass)}"><td class="credits-table-day"><span class="status-${esc(statusClass)}">${esc(credit.dueDay)}</span></td><td class="credits-table-name"><strong>${esc(credit.name || 'Crédito')}</strong>${notes ? `<small>${esc(notes)}</small>` : ''}</td><td class="credits-table-amount">${money(credit.amount)}</td><td><span class="credits-state-badge status-${esc(statusClass)}"><i data-lucide="${statusIcon}"></i>${esc(statusLabel)}</span></td><td class="credits-table-date">${esc(dueDate)}</td><td class="credits-table-late ${state.key === 'overdue' ? 'is-late' : ''}">${esc(lateDays)}</td><td><div class="credits-table-actions">${!paid ? `<button type="button" class="credits-paid-button" data-credit-pay="${esc(credit.id)}"><i data-lucide="check"></i><span>Ya se pagó</span></button>` : `<span class="credits-paid-this-month"><i data-lucide="circle-check"></i> Pagado</span>`}<button type="button" class="credits-icon-button" data-credit-edit="${esc(credit.id)}" aria-label="Editar ${esc(credit.name)}" title="Editar"><i data-lucide="pencil"></i></button><button type="button" class="credits-icon-button is-delete" data-credit-delete="${esc(credit.id)}" aria-label="Eliminar ${esc(credit.name)}" title="Eliminar"><i data-lucide="trash-2"></i></button></div></td></tr>`;
+    }).join('')}</tbody></table></div>`;
   }
 
   function renderHistory() {
@@ -230,25 +245,29 @@
     const bar = document.getElementById('credits-reminder-bar');
     const track = bar?.querySelector('[data-credits-reminder-track]');
     if (!bar || !track) return;
-    bar.hidden = !roleIsAdmin() || !creditRecords.length;
-    if (!creditRecords.length) {
-      track.innerHTML = '<span class="credits-reminder-item is-ontime"><i data-lucide="circle-check"></i><span>Sin créditos registrados · usa <b>Créditos</b> para agregar obligaciones mensuales</span></span>';
-      if (window.lucide) window.lucide.createIcons();
-      return;
-    }
-    const items = creditRecords.map(credit => ({ credit, state:creditState(credit) })).filter(item => item.state.key !== 'paid');
-    if (!items.length) {
-      track.innerHTML = '<span class="credits-reminder-item is-paid"><i data-lucide="circle-check"></i><span>Todos los pagos de este mes están al día</span></span>';
-      if (window.lucide) window.lucide.createIcons();
-      return;
-    }
+    const items = creditRecords
+      .map(credit => ({ credit, state:creditState(credit) }))
+      .filter(item => ['overdue', 'today'].includes(item.state.key));
+    bar.hidden = !roleIsAdmin() || items.length === 0;
+    if (!bar.hidden) bar.dataset.alertLevel = items.some(item => item.state.key === 'overdue') ? 'overdue' : 'today';
+    else delete bar.dataset.alertLevel;
+    track.replaceChildren();
+    if (bar.hidden) return;
     const renderItem = ({ credit, state }) => {
-      const tone = state.key === 'overdue' || state.key === 'today' ? 'is-danger' : state.key === 'soon' ? 'is-soon' : 'is-ontime';
-      const headline = state.key === 'overdue' ? `ATRASADO · ${state.label}` : state.key === 'today' ? 'VENCE HOY' : state.key === 'soon' ? 'PRÓXIMO A VENCER' : 'AL DÍA';
-      return `<span class="credits-reminder-item ${tone}"><i data-lucide="${state.key === 'overdue' ? 'triangle-alert' : state.key === 'today' ? 'calendar-clock' : state.key === 'soon' ? 'clock-3' : 'circle-check'}"></i><span><b>${headline}</b><strong>${esc(credit.name)}</strong><small>${money(credit.amount)} · ${state.key === 'overdue' ? state.label : state.key === 'today' ? dateLabel(state.dueDate) : state.key === 'soon' ? state.label : `Vence ${dateLabel(state.dueDate)}`}</small></span></span>`;
+      const tone = state.key === 'overdue' ? 'is-danger' : 'is-today';
+      const icon = state.key === 'overdue' ? 'triangle-alert' : 'calendar-clock';
+      const label = state.key === 'overdue' ? `ATRASADO ${Math.abs(state.daysUntil)} ${Math.abs(state.daysUntil) === 1 ? 'DÍA' : 'DÍAS'}` : 'VENCE HOY';
+      return `<span class="credits-alert-message ${tone}"><i data-lucide="${icon}" aria-hidden="true"></i><strong>${esc(credit.name || 'Crédito')}</strong><b>${label}</b><strong>${money(credit.amount)}</strong></span>`;
     };
-    const markup = items.map(renderItem).join('');
-    track.innerHTML = markup + `<span class="credits-reminder-duplicate" aria-hidden="true">${markup}</span>`;
+    const groupMarkup = `<div class="credits-reminder-group">${items.map((item, index) => `${index ? '<span class="credits-alert-separator" aria-hidden="true">•</span>' : ''}${renderItem(item)}`).join('')}</div>`;
+    track.innerHTML = groupMarkup;
+    const group = track.firstElementChild;
+    const viewport = bar.querySelector('.credits-reminder-viewport');
+    const groupWidth = Math.max(1, Math.ceil(group?.getBoundingClientRect().width || 1));
+    const viewportWidth = Math.max(1, viewport?.clientWidth || 1);
+    track.style.setProperty('--credits-scroll-start', `${viewportWidth}px`);
+    track.style.setProperty('--credits-scroll-end', `${groupWidth}px`);
+    track.style.setProperty('--credits-scroll-duration', `${Math.max(24, Math.min(70, (viewportWidth + groupWidth) / 30))}s`);
     if (window.lucide) window.lucide.createIcons();
   }
 
@@ -345,13 +364,14 @@
       if (id) {
         await window.db.collection(CREDITS).doc(id).set(payload, { merge:true });
         creditRecords = creditRecords.map(credit => credit.id === id ? { ...credit, ...payload } : credit);
+        sortCreditRecords();
         toast('Crédito actualizado.');
       } else {
         payload.createdAt = Date.now();
         payload.lastPaidPeriod = '';
         const reference = await window.db.collection(CREDITS).add(payload);
         creditRecords.push({ id:reference.id, ...payload });
-        creditRecords.sort((a, b) => Number(a.dueDay) - Number(b.dueDay));
+        sortCreditRecords();
         toast('Crédito agregado.');
       }
       lastReadAt = Date.now();
@@ -448,7 +468,8 @@
     const entry = document.getElementById('admin-finance-entry');
     const bar = document.getElementById('credits-reminder-bar');
     if (entry) entry.hidden = !admin;
-    if (bar) bar.hidden = !admin || !creditRecords.length;
+    // Mantener la alerta oculta mientras se valida el estado real de los pagos.
+    if (bar) bar.hidden = true;
     if (!admin) {
       dataLoadedForSession = '';
       window.clearTimeout(reminderRefreshTimer);
@@ -461,7 +482,7 @@
     if (dataLoadedForSession !== sessionId) {
       dataLoadedForSession = sessionId;
       readCredits();
-    }
+    } else renderReminderBar();
   }
 
   function install() {
