@@ -403,7 +403,14 @@
         this.ownAvailabilityStatus = 'available';
         window.addEventListener('pagehide', () => this.releasePresenceSession());
         window.addEventListener('pageshow', () => { if (this.currentUser) this.markPresenceConnected(); });
-        window.addEventListener('online', () => { if (this.currentUser) this.markPresenceConnected(); });
+        document.addEventListener('visibilitychange', () => {
+          if (!this.currentUser) return;
+          if (document.visibilityState === 'hidden') this.releasePresenceSession();
+          else this.markPresenceConnected();
+        });
+        window.addEventListener('online', () => {
+          if (this.currentUser && document.visibilityState !== 'hidden') this.markPresenceConnected();
+        });
         window.addEventListener('offline', () => { if (this.currentUser) this.releasePresenceSession(); });
         window.addEventListener('storage', event => {
           if (event.key !== AuthSessionStore.activeKey || !this.currentUser) return;
@@ -1455,7 +1462,7 @@
       }
 
       markPresenceConnected() {
-        if (!this.currentUser || this.presenceIsConnected) return;
+        if (!this.currentUser || document.visibilityState === 'hidden' || this.presenceIsConnected) return;
         const now = Date.now();
         if (window.db) {
           const username = String(this.currentUser.username || '').trim().toLowerCase();
@@ -1476,7 +1483,9 @@
           };
           this.presenceRecords = this.presenceRecords || {};
           this.presenceRecords[username] = { ...currentRecord, ...heartbeatData };
-          db.collection('presencia').doc(username).set(heartbeatData, { merge: true }).catch(e => {
+          // La app admite una sola sesión activa por cuenta; sustituir la lista
+          // elimina sesiones antiguas que quedaron conectadas tras un cierre forzado.
+          db.collection('presencia').doc(username).set(heartbeatData, { mergeFields: Object.keys(heartbeatData) }).catch(e => {
             this.presenceIsConnected = false;
             console.error('[PRESENCE] No se pudo registrar la conexión:', e);
             this.showToast?.('No se pudo sincronizar tu estado de conexión.', 'error');
@@ -1490,31 +1499,22 @@
         if (!this.currentUser || !window.db || !this.presenceIsConnected) return Promise.resolve(false);
         const username = String(this.currentUser.username || '').trim().toLowerCase();
         const record = this.presenceRecords?.[username] || {};
-        const sessions = record.sessions && typeof record.sessions === 'object' ? record.sessions : {};
         const now = Date.now();
-        const otherLiveSessions = Object.entries(sessions)
-          .filter(([id, session]) => id !== this.presenceSessionId && (
-            session?.connected === true
-            || (session?.connected !== false && now - Number(session?.lastHeartbeat || 0) < 45000)
-          ))
-          .map(([, session]) => session);
-        const latestHeartbeat = otherLiveSessions.reduce((latest, session) => Math.max(latest, Number(session.lastHeartbeat || 0)), 0);
-        const nextStatus = otherLiveSessions.some(session => session.availabilityStatus === 'available')
-          ? 'available'
-          : otherLiveSessions.some(session => session.availabilityStatus === 'absent') ? 'absent' : 'disconnected';
         const payload = {
-          [`sessions.${this.presenceSessionId}`]: firebase.firestore.FieldValue.delete(),
-          lastHeartbeat: latestHeartbeat,
-          connected: otherLiveSessions.length > 0,
-          availabilityStatus: nextStatus,
-          ...(latestHeartbeat ? {} : { lastLogin: `${this.formatTime(new Date())} (Desconectado)` })
+          sessions: {},
+          lastHeartbeat: now,
+          connected: false,
+          availabilityStatus: 'disconnected',
+          lastLogin: `${this.formatTime(new Date(now))} (Desconectado)`
         };
         this.presenceIsConnected = false;
         this.presenceRecords[username] = {
           ...record,
-          lastHeartbeat: latestHeartbeat,
-          connected: otherLiveSessions.length > 0,
-          availabilityStatus: nextStatus
+          sessions: {},
+          lastHeartbeat: now,
+          connected: false,
+          availabilityStatus: 'disconnected',
+          lastLogin: payload.lastLogin
         };
         return db.collection('presencia').doc(username).update(payload).then(() => true).catch(error => {
           console.warn('[PRESENCE] No se pudo registrar la desconexión:', error?.message || error);
