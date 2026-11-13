@@ -68,6 +68,25 @@ body.theme-dark .quote-form-toolbar h3,body.theme-dark .quote-section-heading h4
 .quote-directory-actions button:last-child{background:#fff;color:#53687e;border-color:#dbe4ee}
 @media(max-width:520px){.quote-directory-row{align-items:flex-start;flex-direction:column}.quote-directory-actions{width:100%}.quote-directory-actions button{flex:1}}
 
+/* Anexo fotográfico: cada hoja queda centrada y alineada al A4 de la cotización. */
+.quote-item-expand-toggle{display:flex!important;align-items:flex-start;justify-content:center;gap:5px;margin:5px auto 0;color:#536b80;font-size:9px;line-height:1.25;text-align:left;cursor:pointer}
+.quote-item-expand-toggle input{width:13px;height:13px;flex:0 0 13px;margin:0;accent-color:#648525}
+.quote-item-expand-toggle input:disabled{cursor:not-allowed}
+.quote-items-table th,.quote-doc-products th{background:#edf3e5;color:#648525}
+.quote-expanded-image-page{position:relative;box-sizing:border-box;display:flex;flex:0 0 1123px;flex-direction:column;width:calc(100% + 80px);height:1123px;min-height:1123px;margin:0 0 0 -40px;padding:34px 40px 24px;background:#fff;break-before:page;page-break-before:always;break-inside:avoid;page-break-inside:avoid}
+.quote-expanded-image-page .quote-doc-header.quote-doc-report-header{flex:none}
+.quote-expanded-image-page .quote-company-line{flex:none}
+.quote-expanded-image-grid{display:grid;flex:1;grid-template-rows:repeat(2,minmax(0,1fr));gap:18px;min-height:0;padding:12px 0}
+.quote-expanded-image{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:0;margin:0;padding:10px;border:1px solid #e1e6dc;border-radius:13px;background:#fff;break-inside:avoid;page-break-inside:avoid}
+.quote-expanded-image img{display:block;width:100%;height:100%;min-height:0;object-fit:contain}
+.quote-expanded-image figcaption{flex:none;max-width:100%;color:#3f464b;font-size:11px;line-height:1.45;text-align:center;white-space:pre-wrap}
+.quote-expanded-image-grid:has(.quote-expanded-image:only-child){grid-template-rows:minmax(0,1fr)}
+.quote-expanded-image-grid:has(.quote-expanded-image:only-child) .quote-expanded-image img{max-height:900px}
+.quote-expanded-image-page .quote-doc-thanks{flex:none;margin:8px 0 6px}
+.quote-expanded-image-page .quote-doc-footer{flex:none;padding:10px 0 0}
+@media(max-width:700px){.quote-item-expand-toggle{font-size:8px}}
+@media print{.quote-expanded-image-page{break-before:page;page-break-before:always;break-inside:avoid;page-break-inside:avoid}.quote-expanded-image{break-inside:avoid;page-break-inside:avoid}}
+
 .quote-doc-tax-note{margin:14px 0 16px;padding:10px 0;border-top:1px solid #dbe4ee;border-bottom:1px solid #dbe4ee;color:#53687e;break-inside:avoid}.quote-doc-tax-note h3{margin:0 0 4px;color:#314a62;font-size:9px;font-weight:800;letter-spacing:.08em}.quote-doc-tax-note p{margin:0;font-size:10px;line-height:1.55}
 .quote-document{position:relative;isolation:isolate}
 .quote-document::before{content:"";position:absolute;z-index:-1;top:49%;left:50%;width:46%;aspect-ratio:2.96;transform:translate(-50%,-50%);background:url("../media/invoice-pdf-company-logo.png") center/contain no-repeat;filter:grayscale(1);opacity:.07;mix-blend-mode:multiply;pointer-events:none}

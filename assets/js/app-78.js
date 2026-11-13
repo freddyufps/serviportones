@@ -10,33 +10,35 @@
   // Reutiliza el mismo trazado de canvas que usa el encabezado de Informes.
   // Así la diagonal queda idéntica en la vista previa y en la captura del PDF.
   function drawQuoteBanner(documentNode) {
-    const banner = documentNode?.querySelector('.quote-report-black-banner');
-    if (!banner) return;
-    let shape = banner.querySelector('.quote-report-black-banner-shape');
-    if (!shape) {
-      shape = document.createElement('canvas');
-      shape.className = 'quote-report-black-banner-shape';
-      shape.setAttribute('aria-hidden', 'true');
-      banner.prepend(shape);
-    }
-    const width = banner.clientWidth;
-    const height = banner.clientHeight;
-    if (!width || !height) return;
-    const ratio = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
-    shape.width = Math.round(width * ratio);
-    shape.height = Math.round(height * ratio);
-    const context = shape.getContext('2d');
-    if (!context) return;
-    context.setTransform(ratio, 0, 0, ratio, 0, 0);
-    context.clearRect(0, 0, width, height);
-    context.fillStyle = '#050505';
-    context.beginPath();
-    context.moveTo(0, 0);
-    context.lineTo(width, 0);
-    context.lineTo(width, height);
-    context.lineTo(width * 0.17, height);
-    context.closePath();
-    context.fill();
+    const banners = documentNode?.querySelectorAll('.quote-report-black-banner');
+    if (!banners?.length) return;
+    banners.forEach(banner => {
+      let shape = banner.querySelector('.quote-report-black-banner-shape');
+      if (!shape) {
+        shape = document.createElement('canvas');
+        shape.className = 'quote-report-black-banner-shape';
+        shape.setAttribute('aria-hidden', 'true');
+        banner.prepend(shape);
+      }
+      const width = banner.clientWidth;
+      const height = banner.clientHeight;
+      if (!width || !height) return;
+      const ratio = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+      shape.width = Math.round(width * ratio);
+      shape.height = Math.round(height * ratio);
+      const context = shape.getContext('2d');
+      if (!context) return;
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      context.clearRect(0, 0, width, height);
+      context.fillStyle = '#050505';
+      context.beginPath();
+      context.moveTo(0, 0);
+      context.lineTo(width, 0);
+      context.lineTo(width, height);
+      context.lineTo(width * 0.17, height);
+      context.closePath();
+      context.fill();
+    });
   }
 
   function queueLayout() {

@@ -154,6 +154,11 @@
   min-width: 72px !important;
 }
 
+#quote-preview-shell .quote-a4-frame .quote-doc-products th {
+  background: #edf3e5 !important;
+  color: #648525 !important;
+}
+
 #quote-preview-shell .quote-a4-frame .quote-doc-products th:nth-child(2),
 #quote-preview-shell .quote-a4-frame .quote-doc-products td:nth-child(2) {
   width: auto !important;
@@ -191,6 +196,16 @@
   padding: 10px 0 0 !important;
   border-top: 2px solid #648525 !important;
   border-bottom: 0 !important;
+}
+
+#quote-preview-shell .quote-a4-frame .quote-expanded-image-page {
+  position: relative !important;
+  width: 794px !important;
+  height: 1123px !important;
+  min-height: 1123px !important;
+  flex: 0 0 1123px !important;
+  margin-left: -40px !important;
+  box-shadow: 0 8px 28px rgba(20, 38, 62, .14) !important;
 }
 
 @media print {
