@@ -113,6 +113,7 @@
     #chat-window-contact-avatar img { width:100%;height:100%;object-fit:cover; }
     .presence-label { display:block;font-size:9px;font-weight:800;line-height:1.2;white-space:nowrap; }
     .presence-label.is-available { color:#059669;animation:technicianPresencePulse 1.8s ease-in-out infinite; }
+    .presence-label.is-inactive { color:#b45309;animation:none; }
     .presence-label.is-absent { color:#d97706; }
     .presence-label.is-disconnected { color:#64748b; }
     .completed-order-alert { animation:completedOrderGlow 1.9s ease-in-out infinite; }
@@ -125,10 +126,12 @@
     .presence-card-connected::after { background:conic-gradient(from var(--presence-angle),transparent 0deg,rgba(5,150,105,.18) 45deg,rgba(5,150,105,.5) 175deg,#059669 265deg,#10b981 315deg,#d9f99d 342deg,rgba(217,249,157,.25) 360deg);filter:drop-shadow(0 0 4px rgba(16,185,129,.72));animation:presenceBorderSweep 2.7s linear infinite; }
     .presence-card-absent::before { background:#d97706;opacity:.52;filter:drop-shadow(0 0 2px rgba(217,119,6,.45)); }
     .presence-card-absent::after { background:conic-gradient(from var(--presence-angle),transparent 0deg,rgba(217,119,6,.18) 45deg,rgba(217,119,6,.5) 175deg,#d97706 265deg,#f97316 315deg,#fed7aa 342deg,rgba(254,215,170,.25) 360deg);filter:drop-shadow(0 0 4px rgba(249,115,22,.72));animation:presenceBorderSweep 2.7s linear infinite; }
+    .presence-card-inactive { background:#fffbeb;border-color:#fde68a; }
     @keyframes presenceBorderSweep { to { --presence-angle:360deg; } }
     @media (prefers-reduced-motion:reduce) { .presence-card-connected::after,.presence-card-absent::after { animation:none; } }
     .chat-contact-name-status { display:flex;flex-direction:column;align-items:flex-start;min-width:0;line-height:1.2; }
     .messenger-window-activity.presence-label.is-available { color:#059669 !important; }
+    .messenger-window-activity.presence-label.is-inactive { color:#b45309 !important;animation:none; }
     .messenger-window-activity.presence-label.is-absent { color:#d97706 !important;animation:none; }
     .messenger-window-activity.presence-label.is-disconnected { color:#64748b !important;animation:none; }
     @keyframes technicianPresencePulse { 0%,100% { opacity:1;text-shadow:0 0 5px rgba(5,150,105,.28); } 50% { opacity:.48;text-shadow:0 0 1px rgba(5,150,105,.08); } }

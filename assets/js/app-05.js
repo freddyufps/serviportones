@@ -2,6 +2,9 @@
     // El indicador global de index.html es el interruptor reversible del módulo.
     const CHAT_FEATURE_ENABLED = window.SPEM_CHAT_ENABLED !== false;
     window.SPEM_CHAT_ENABLED = CHAT_FEATURE_ENABLED;
+    const PRESENCE_AVAILABLE_WINDOW_MS = 5 * 60 * 1000;
+    const PRESENCE_DISCONNECTED_WINDOW_MS = 15 * 60 * 1000;
+    const PRESENCE_ACTIVITY_WRITE_INTERVAL_MS = 90 * 1000;
 
     const SafeStorage = {
       memStore: {},
@@ -401,17 +404,45 @@
         this.sessionInvalidating = false;
         this.presenceSessionId = `tab_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
         this.ownAvailabilityStatus = 'available';
+        this.presenceLastActivityAt = 0;
+        this.presenceLastActivityWriteAt = 0;
+        this.presenceLastActivityAttemptAt = 0;
+        this.presenceExpiryTimer = null;
+        this.presenceBlurTimer = null;
+        this.presenceSessionConnectedAt = 0;
+        this.presenceLastSyncErrorToastAt = 0;
         window.addEventListener('pagehide', () => this.releasePresenceSession());
-        window.addEventListener('pageshow', () => { if (this.currentUser) this.markPresenceConnected(); });
+        window.addEventListener('pageshow', () => { if (this.currentUser && document.visibilityState !== 'hidden') this.markPresenceConnected(); });
         document.addEventListener('visibilitychange', () => {
           if (!this.currentUser) return;
-          if (document.visibilityState === 'hidden') this.releasePresenceSession();
+          if (document.visibilityState === 'hidden') {
+            clearTimeout(this.presenceExpiryTimer);
+            this.presenceExpiryTimer = null;
+            this.releasePresenceSession();
+          }
           else this.markPresenceConnected();
         });
+        window.addEventListener('blur', () => {
+          clearTimeout(this.presenceBlurTimer);
+          this.presenceBlurTimer = setTimeout(() => {
+            if (this.currentUser?.role === 'worker' && document.visibilityState !== 'hidden' && !document.hasFocus()) this.releasePresenceSession();
+          }, 1500);
+        });
+        window.addEventListener('focus', () => {
+          clearTimeout(this.presenceBlurTimer);
+          if (this.currentUser && document.visibilityState !== 'hidden' && !this.presenceIsConnected) this.markPresenceConnected();
+        });
         window.addEventListener('online', () => {
-          if (this.currentUser && document.visibilityState !== 'hidden') this.markPresenceConnected();
+          if (!this.currentUser || document.visibilityState === 'hidden') return;
+          const isWorker = this.getChatRole(this.currentUser.role) !== 'admin';
+          const recentActivity = this.presenceLastActivityAt && Date.now() - this.presenceLastActivityAt < PRESENCE_AVAILABLE_WINDOW_MS;
+          if (!isWorker || recentActivity) this.markPresenceConnected();
         });
         window.addEventListener('offline', () => { if (this.currentUser) this.releasePresenceSession(); });
+        const presenceActivityEvent = () => this.recordPresenceActivity();
+        ['pointerdown', 'touchstart', 'keydown', 'input', 'change', 'click', 'submit', 'wheel', 'scroll'].forEach(type => {
+          document.addEventListener(type, presenceActivityEvent, { passive: type !== 'submit', capture: type === 'scroll' });
+        });
         window.addEventListener('storage', event => {
           if (event.key !== AuthSessionStore.activeKey || !this.currentUser) return;
           if (event.newValue && event.newValue === this.currentUser.authSessionId) return;
@@ -946,6 +977,8 @@
           try { this[key]?.(); } catch (error) { console.warn('[FIRESTORE] No se pudo cerrar un listener:', key, error); }
           this[key] = null;
         });
+        clearTimeout(this.presenceExpiryTimer);
+        this.presenceExpiryTimer = null;
         this.presenceListenerTarget = null;
         this.presenceSnapshotInitialized = false;
         this.presenceRecords = {};
@@ -957,6 +990,8 @@
         if (!this.presenceUnsubscribe) return;
         try { this.presenceUnsubscribe?.(); } catch (error) { console.warn('[PRESENCE] No se pudo cerrar la escucha:', error); }
         this.presenceUnsubscribe = null;
+        clearTimeout(this.presenceExpiryTimer);
+        this.presenceExpiryTimer = null;
         this.presenceListenerTarget = null;
         this.presenceSnapshotInitialized = false;
       }
@@ -1385,6 +1420,14 @@
         user.role = this.getChatRole(user.role);
         user.sessionVersion = Math.max(1, Number(user.sessionVersion) || 1);
         if (!user.authSessionId) user.authSessionId = `auth_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
+        // La conexión anterior no puede convertir al nuevo usuario en una
+        // presencia local ya abierta ni heredar su límite de sincronización.
+        this.presenceIsConnected = false;
+        this.presenceSessionConnectedAt = 0;
+        this.presenceLastActivityAt = 0;
+        this.presenceLastActivityWriteAt = 0;
+        this.presenceLastActivityAttemptAt = 0;
+        this.presenceLastSyncErrorToastAt = 0;
         this.currentUser = user;
         this.startCoreFirestoreListeners();
         const loginAuthSessionId = user.authSessionId;
@@ -1461,38 +1504,108 @@
         this.showLoginView();
       }
 
-      markPresenceConnected() {
-        if (!this.currentUser || document.visibilityState === 'hidden' || this.presenceIsConnected) return;
-        const now = Date.now();
-        if (window.db) {
-          const username = String(this.currentUser.username || '').trim().toLowerCase();
-          const currentRecord = this.presenceRecords?.[username] || {};
-          const role = String(this.currentUser.role || '').toLowerCase() === 'admin' ? 'admin' : 'worker';
-          const sessionStatus = role === 'worker' ? 'available' : (this.ownAvailabilityStatus || 'available');
-          const heartbeatData = {
-            username: this.currentUser.username,
-            fullName: this.getCurrentDisplayName(),
-            lastHeartbeat: now,
-            ...(role === 'admin' ? { photo: this.currentUser.photo || '' } : {}),
-            role,
-            availabilityStatus: sessionStatus,
-            connected: true,
-            connectedAt: now,
-            sessions: { [this.presenceSessionId]: { connected: true, connectedAt: now, lastHeartbeat: now, availabilityStatus: sessionStatus } },
-            lastLogin: sessionStatus === 'disconnected' ? `${this.formatTime(new Date(now))} (Desconectado)` : `${this.formatTime(new Date(now))} (En línea)`
-          };
-          this.presenceRecords = this.presenceRecords || {};
-          this.presenceRecords[username] = { ...currentRecord, ...heartbeatData };
-          // La app admite una sola sesión activa por cuenta; sustituir la lista
-          // elimina sesiones antiguas que quedaron conectadas tras un cierre forzado.
-          db.collection('presencia').doc(username).set(heartbeatData, { mergeFields: Object.keys(heartbeatData) }).catch(e => {
+      writePresenceActivity(now, connectionTransition = false) {
+        if (!this.currentUser || !window.db || document.visibilityState === 'hidden') return Promise.resolve(false);
+        const activeAuthSessionId = this.currentUser.authSessionId;
+        const username = String(this.currentUser.username || '').trim().toLowerCase();
+        if (!username) return Promise.resolve(false);
+        const currentRecord = this.presenceRecords?.[username] || {};
+        const role = String(this.currentUser.role || '').toLowerCase() === 'admin' ? 'admin' : 'worker';
+        const sessionStatus = role === 'worker' ? 'available' : (this.ownAvailabilityStatus || 'available');
+        if (!this.presenceIsConnected || !this.presenceSessionConnectedAt) this.presenceSessionConnectedAt = now;
+        const connectedAt = this.presenceSessionConnectedAt;
+        const session = { connected: true, connectedAt, lastHeartbeat: now, lastActivityAt: now, availabilityStatus: sessionStatus, visibilityState: 'visible' };
+        const presenceData = {
+          username: this.currentUser.username,
+          fullName: this.getCurrentDisplayName(),
+          lastActivityAt: now,
+          lastHeartbeat: now,
+          ...(role === 'admin' ? { photo: this.currentUser.photo || '' } : {}),
+          role,
+          availabilityStatus: sessionStatus,
+          connected: true,
+          connectedAt,
+          sessions: { [this.presenceSessionId]: session },
+          ...(connectionTransition ? { lastLogin: `${this.formatTime(new Date(now))} (En línea)` } : {})
+        };
+        this.presenceRecords = this.presenceRecords || {};
+        this.presenceRecords[username] = { ...currentRecord, ...presenceData };
+        this.presenceIsConnected = true;
+        this.presenceLastActivityAt = now;
+        this.presenceLastActivityAttemptAt = now;
+        const save = window.db.collection('presencia').doc(username).set(presenceData, { mergeFields: Object.keys(presenceData) }).then(() => {
+          if (this.currentUser?.authSessionId === activeAuthSessionId) this.presenceLastActivityWriteAt = now;
+          if (connectionTransition) console.info('[PRESENCE] Actividad inicial sincronizada', { username, role, lastActivityAt: now });
+          return true;
+        }).catch(error => {
+          const errorCode = String(error?.code || 'sin código');
+          console.warn('[PRESENCE] No se pudo sincronizar la actividad:', { code: errorCode, message: error?.message || String(error) });
+          if (this.currentUser?.authSessionId === activeAuthSessionId) {
             this.presenceIsConnected = false;
-            console.error('[PRESENCE] No se pudo registrar la conexión:', e);
-            this.showToast?.('No se pudo sincronizar tu estado de conexión.', 'error');
-          });
-          this.presenceIsConnected = true;
-        }
+            const latestRecord = this.presenceRecords?.[username] || {};
+            this.presenceRecords[username] = { ...latestRecord, sessions: {}, connected: false, availabilityStatus: 'disconnected' };
+            if (this.currentUser?.role === 'admin') this.renderTechniciansMonitor();
+            if (connectionTransition && now - this.presenceLastSyncErrorToastAt > 60 * 1000) {
+              this.presenceLastSyncErrorToastAt = now;
+              this.showToast(`No se pudo sincronizar la presencia (${errorCode}). Revisa la conexión o la cuota de Firestore.`, 'error');
+            }
+          }
+          return false;
+        });
         if (this.currentUser.role === 'admin') this.renderTechniciansMonitor();
+        return save;
+      }
+
+      markPresenceConnected() {
+        if (!this.currentUser || document.visibilityState === 'hidden') return;
+        const now = Date.now();
+        if (this.presenceIsConnected && this.presenceLastActivityAt && now - this.presenceLastActivityAt < 1500) return;
+        return this.writePresenceActivity(now, !this.presenceIsConnected);
+      }
+
+      recordPresenceActivity() {
+        if (!this.currentUser || this.getChatRole(this.currentUser.role) !== 'worker' || document.visibilityState === 'hidden') return;
+        const now = Date.now();
+        const username = String(this.currentUser.username || '').trim().toLowerCase();
+        if (!username) return;
+        const previousStatus = this.getPresenceStatus(this.currentUser);
+        const currentRecord = this.presenceRecords?.[username] || {};
+        const previousSession = currentRecord.sessions?.[this.presenceSessionId] || {};
+        const connectedAt = this.presenceSessionConnectedAt || previousSession.connectedAt || now;
+        this.presenceSessionConnectedAt = connectedAt;
+        const session = { ...previousSession, connected: true, connectedAt, lastHeartbeat: now, lastActivityAt: now, availabilityStatus: 'available', visibilityState: 'visible' };
+        this.presenceRecords[username] = { ...currentRecord, username: this.currentUser.username, role: 'worker', lastActivityAt: now, lastHeartbeat: now, connected: true, availabilityStatus: 'available', sessions: { [this.presenceSessionId]: session } };
+        this.presenceLastActivityAt = now;
+        const timeSinceLastAttempt = now - (this.presenceLastActivityAttemptAt || this.presenceLastActivityWriteAt || 0);
+        const needsWrite = this.presenceIsConnected
+          ? previousStatus !== 'available' || timeSinceLastAttempt >= PRESENCE_ACTIVITY_WRITE_INTERVAL_MS
+          : timeSinceLastAttempt >= 20 * 1000;
+        if (needsWrite) this.writePresenceActivity(now, !this.presenceIsConnected);
+      }
+
+      getPresenceActivityTimestamp(user) {
+        if (!user) return 0;
+        const username = String(user.username || user.id || '').trim().toLowerCase();
+        const record = this.presenceRecords?.[username]
+          || Object.values(this.presenceRecords || {}).find(item => String(item?.username || '').trim().toLowerCase() === username)
+          || {};
+        const toMillis = value => {
+          if (typeof value?.toMillis === 'function') return value.toMillis();
+          if (value instanceof Date) return value.getTime();
+          if (typeof value === 'number' && Number.isFinite(value)) return value;
+          if (typeof value === 'string' && value.trim()) {
+            const numeric = Number(value);
+            if (Number.isFinite(numeric) && numeric > 0) return numeric;
+            const parsed = Date.parse(value);
+            return Number.isFinite(parsed) ? parsed : 0;
+          }
+          return 0;
+        };
+        const sessionTimes = Object.values(record.sessions || {})
+          .filter(session => session?.connected !== false && session?.visibilityState !== 'hidden')
+          .map(session => toMillis(session?.lastActivityAt))
+          .filter(timestamp => timestamp > 0);
+        return Math.max(toMillis(record.lastActivityAt), toMillis(user.lastActivityAt), ...sessionTimes, 0);
       }
 
       releasePresenceSession() {
@@ -1508,6 +1621,7 @@
           lastLogin: `${this.formatTime(new Date(now))} (Desconectado)`
         };
         this.presenceIsConnected = false;
+        this.presenceSessionConnectedAt = 0;
         this.presenceRecords[username] = {
           ...record,
           sessions: {},
@@ -1863,42 +1977,86 @@
         const record = this.presenceRecords[username]
           || Object.values(this.presenceRecords || {}).find(item => String(item?.username || '').trim().toLowerCase() === username)
           || {};
-        const toHeartbeatMs = value => typeof value?.toMillis === 'function' ? value.toMillis() : Number(value || 0);
-        if (Object.prototype.hasOwnProperty.call(record, 'sessions')) {
-          const now = Date.now();
-          const liveSessions = Object.values(record.sessions || {}).filter(session => {
-            if (session?.connected === true) return true;
-            if (session?.connected === false) return false;
-            const heartbeat = toHeartbeatMs(session?.lastHeartbeat);
-            return heartbeat > 0 && now - heartbeat >= 0 && now - heartbeat < 45000;
-          });
-          if (!liveSessions.length) return 'disconnected';
-          if (liveSessions.some(session => String(session.availabilityStatus || '').toLowerCase() === 'available')) return 'available';
-          if (liveSessions.some(session => String(session.availabilityStatus || '').toLowerCase() === 'absent')) return 'absent';
-          return 'disconnected';
-        }
-        const rawHeartbeat = record.lastHeartbeat ?? user.lastHeartbeat ?? 0;
-        const heartbeat = toHeartbeatMs(rawHeartbeat);
         const savedStatus = String(record.availabilityStatus || '').trim().toLowerCase();
         const isAdminUser = this.getChatRole(user.role || record.role) === 'admin';
-        if (record.connected === true) {
-          if (isAdminUser && savedStatus === 'absent') return 'absent';
-          return savedStatus === 'disconnected' ? 'disconnected' : 'available';
-        }
-        const heartbeatFresh = heartbeat > 0 && Date.now() - heartbeat >= 0 && Date.now() - heartbeat < 45000;
         if (isAdminUser) {
+          const toMillis = value => typeof value?.toMillis === 'function' ? value.toMillis() : Number(value || 0);
+          const heartbeat = toMillis(record.lastHeartbeat ?? user.lastHeartbeat ?? 0);
+          if (Object.prototype.hasOwnProperty.call(record, 'sessions')) {
+            const liveSessions = Object.values(record.sessions || {}).filter(session => {
+              if (session?.connected === true) return true;
+              if (session?.connected === false) return false;
+              const sessionHeartbeat = toMillis(session?.lastHeartbeat);
+              return sessionHeartbeat > 0 && Date.now() - sessionHeartbeat >= 0 && Date.now() - sessionHeartbeat < 45000;
+            });
+            if (!liveSessions.length) return 'disconnected';
+            if (liveSessions.some(session => String(session.availabilityStatus || '').toLowerCase() === 'available')) return 'available';
+            if (liveSessions.some(session => String(session.availabilityStatus || '').toLowerCase() === 'absent')) return 'absent';
+            return 'disconnected';
+          }
+          if (record.connected === true) {
+            if (savedStatus === 'absent') return 'absent';
+            return savedStatus === 'disconnected' ? 'disconnected' : 'available';
+          }
+          const heartbeatFresh = heartbeat > 0 && Date.now() - heartbeat >= 0 && Date.now() - heartbeat < 45000;
           if (heartbeatFresh && savedStatus === 'absent') return 'absent';
           if (heartbeatFresh) return 'available';
           return 'disconnected';
         }
-        // Para trabajadores, una sesión con heartbeat fresco significa "En línea".
-        // Los estados viejos guardados no deben ocultar una conexión actual.
-        if (heartbeatFresh) return 'available';
+
+        const isCurrentWorker = this.getChatRole(this.currentUser?.role) === 'worker'
+          && String(this.currentUser?.username || '').trim().toLowerCase() === username;
+        if (isCurrentWorker && this.presenceIsConnected && document.visibilityState !== 'hidden' && this.presenceLastActivityAt) {
+          const localAge = Math.max(0, Date.now() - this.presenceLastActivityAt);
+          if (localAge < PRESENCE_AVAILABLE_WINDOW_MS) return 'available';
+          if (localAge < PRESENCE_DISCONNECTED_WINDOW_MS) return 'inactive';
+          return 'disconnected';
+        }
+
+        // En trabajadores, `connected` solo confirma que hubo una sesión; la
+        // actividad reciente y la visibilidad determinan el estado actual.
+        if (record.connected === false || savedStatus === 'disconnected') return 'disconnected';
+        const sessions = Object.values(record.sessions || {});
+        if (Object.prototype.hasOwnProperty.call(record, 'sessions') && !sessions.length) return 'disconnected';
+        const eligibleSessions = sessions.filter(session => session?.connected !== false && session?.visibilityState !== 'hidden');
+        if (Object.prototype.hasOwnProperty.call(record, 'sessions') && !eligibleSessions.length) return 'disconnected';
+        const lastActivity = this.getPresenceActivityTimestamp(user);
+        if (!lastActivity) return 'disconnected';
+        const age = Math.max(0, Date.now() - lastActivity);
+        if (age < PRESENCE_AVAILABLE_WINDOW_MS) return 'available';
+        if (age < PRESENCE_DISCONNECTED_WINDOW_MS) return 'inactive';
         return 'disconnected';
       }
 
       getPresenceLabel(status) {
-        return ({ available: 'Disponible', absent: 'Ausente', disconnected: 'Desconectado' })[status] || 'Desconectado';
+        return ({ available: 'Disponible', inactive: 'Inactivo', absent: 'Ausente', disconnected: 'Desconectado' })[status] || 'Desconectado';
+      }
+
+      schedulePresenceExpiryRender() {
+        clearTimeout(this.presenceExpiryTimer);
+        this.presenceExpiryTimer = null;
+        if (String(this.currentUser?.role || '').toLowerCase() !== 'admin' || document.visibilityState === 'hidden') return;
+        const workers = [
+          ...(Array.isArray(this.workers) ? this.workers : []),
+          ...(Array.isArray(this.users) ? this.users.filter(user => ['worker', 'trabajador', 'tecnico', 'técnico'].includes(String(user.role || '').toLowerCase().trim())) : [])
+        ];
+        const uniqueWorkers = new Map(workers.map(user => [String(user.username || user.id || user.fullName || '').trim().toLowerCase(), user]));
+        const now = Date.now();
+        let nextExpiry = Infinity;
+        for (const worker of uniqueWorkers.values()) {
+          const status = this.getPresenceStatus(worker);
+          if (status === 'disconnected') continue;
+          const lastActivity = this.getPresenceActivityTimestamp(worker);
+          if (!lastActivity) continue;
+          const boundaries = [lastActivity + PRESENCE_AVAILABLE_WINDOW_MS, lastActivity + PRESENCE_DISCONNECTED_WINDOW_MS];
+          for (const boundary of boundaries) if (boundary > now && boundary < nextExpiry) nextExpiry = boundary;
+        }
+        if (!Number.isFinite(nextExpiry)) return;
+        this.presenceExpiryTimer = setTimeout(() => {
+          this.presenceExpiryTimer = null;
+          if (this.currentUser?.role !== 'admin' || document.visibilityState === 'hidden') return;
+          this.renderTechniciansMonitor();
+        }, Math.max(50, nextExpiry - now + 50));
       }
 
       getAdminPresenceInfo() {
@@ -3798,6 +3956,7 @@ updateMessengerWindowTyping(workerName) {
         if (!monitorWorkers.length) {
           grid.innerHTML = '<p class="col-span-full py-3 text-center text-xs text-slate-500">No hay empleados disponibles para mostrar.</p>';
           if (counter) counter.textContent = '0 En Línea';
+          this.schedulePresenceExpiryRender();
           return;
         }
 
@@ -3806,10 +3965,14 @@ updateMessengerWindowTyping(workerName) {
           const isOnline = presenceStatus === 'available';
           const presenceCardClass = presenceStatus === 'available'
             ? 'bg-brand-limeLight border-brand-limeBorder shadow-sm presence-card-connected'
-            : presenceStatus === 'absent'
-              ? 'bg-amber-50 border-amber-200 shadow-sm presence-card-absent'
-              : 'bg-slate-50 border-slate-200';
+            : presenceStatus === 'inactive'
+              ? 'presence-card-inactive border shadow-sm'
+              : presenceStatus === 'absent'
+                ? 'bg-amber-50 border-amber-200 shadow-sm presence-card-absent'
+                : 'bg-slate-50 border-slate-200';
           const presenceLabel = this.getPresenceLabel(presenceStatus);
+          const lastActivity = this.getPresenceActivityTimestamp(u);
+          const lastActivityLabel = lastActivity ? this.formatFullDateTime(new Date(lastActivity)) : 'Sin actividad registrada';
           if (isOnline) onlineCount++;
 
           const uName = u.fullName || u.username;
@@ -3835,7 +3998,7 @@ updateMessengerWindowTyping(workerName) {
               <div class="bg-white/80 rounded-xl p-2 border border-slate-200/70 text-[10px] space-y-0.5">
                 <div class="flex items-center justify-between">
                   <span class="text-slate-500">Última Actividad:</span>
-                  <span class="font-bold ${presenceStatus === 'available' ? 'text-emerald-600' : presenceStatus === 'absent' ? 'text-amber-600' : 'text-slate-700'}">${this.escapeHtml(u.lastLogin || 'No registrado')}</span>
+                    <span class="font-bold ${presenceStatus === 'available' ? 'text-emerald-600' : presenceStatus === 'inactive' || presenceStatus === 'absent' ? 'text-amber-600' : 'text-slate-700'}">${this.escapeHtml(lastActivityLabel)}</span>
                 </div>
               </div>
             </div>
@@ -3844,6 +4007,7 @@ updateMessengerWindowTyping(workerName) {
 
         counter.textContent = `${onlineCount} En Línea`;
         if (window.lucide) lucide.createIcons();
+        this.schedulePresenceExpiryRender();
       }
 
       toggleTechniciansMonitor() {
