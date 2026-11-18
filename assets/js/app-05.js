@@ -5070,6 +5070,15 @@ updateMessengerWindowTyping(workerName) {
           const orderObservations = String(t.observations || '').trim();
           const techObj = taskIsFree ? null : this.getTaskTechnician(t);
           const techPhoto = techObj && techObj.photo ? techObj.photo : '';
+          const workerOwnsOrder = isWorker && !taskIsFree && (
+            (myWorkerId && String(t.assignedWorkerId || '') === myWorkerId)
+            || normalizeWorkerName(t.assignedTo) === normalizeWorkerName(myName)
+          );
+          const workerProfileName = this.getCurrentDisplayName() || this.currentUser?.username || 'Trabajador';
+          const workerProfilePhoto = workerOwnsOrder ? String(this.currentUser?.photo || '') : '';
+          const workerOrderAvatar = workerOwnsOrder
+            ? `<span class="order-worker-profile-avatar ml-1 inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-brand-lime bg-slate-100 text-xs font-bold text-slate-700" title="Orden asignada a ${this.escapeHtml(workerProfileName)}" aria-label="Perfil del trabajador asignado: ${this.escapeHtml(workerProfileName)}">${workerProfilePhoto ? `<img src="${this.escapeHtml(workerProfilePhoto)}" alt="" class="h-full w-full rounded-full object-cover">` : this.escapeHtml(String(workerProfileName).charAt(0).toUpperCase())}</span>`
+            : '';
           const techPresenceStatus = this.getPresenceStatus(techObj);
           const techPresenceLabel = this.getPresenceLabel(techPresenceStatus);
           const techIsOnline = techPresenceStatus === 'available';
@@ -5123,7 +5132,7 @@ updateMessengerWindowTyping(workerName) {
               </div>
 
               <div class="order-card-actions mt-3 pt-2 border-t flex items-center justify-between gap-1">
-                <div class="flex items-center gap-2"><button type="button" onclick="app.viewOrderDetails('${this.escapeHtml(t.id)}')" class="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-brand-dark hover:border-brand-lime flex items-center justify-center" title="Ver orden" aria-label="Ver orden"><i data-lucide="eye" class="w-4 h-4"></i></button>${!isAdmin && isWorker && taskIsFree ? '<span class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-extrabold tracking-wide text-emerald-700">🟢 LIBRE</span>' : ''}</div>
+                <div class="flex items-center gap-2"><button type="button" onclick="app.viewOrderDetails('${this.escapeHtml(t.id)}')" class="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-brand-dark hover:border-brand-lime flex items-center justify-center" title="Ver orden" aria-label="Ver orden"><i data-lucide="eye" class="w-4 h-4"></i></button>${workerOrderAvatar}${!isAdmin && isWorker && taskIsFree ? '<span class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-extrabold tracking-wide text-emerald-700">🟢 LIBRE</span>' : ''}</div>
 
                 <div class="flex items-center gap-1">
                   ${isWorker ? `<button type="button" class="worker-order-expand" onclick="event.stopPropagation(); app.toggleWorkerOrderCard(this)" aria-expanded="false"><i data-lucide="chevron-down" aria-hidden="true"></i><span>Ver detalles</span></button>` : ''}
