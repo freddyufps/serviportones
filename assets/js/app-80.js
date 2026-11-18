@@ -17,7 +17,9 @@
   const resetFreeTaskState = (app, task) => {
     if (!app.isTaskFree?.(task)) return task;
     const staleFields = ['assignedWorkerId', 'assignedAt', 'claimedFromFree', 'claimedByWorkerId', 'claimedByWorkerName', 'workStarted', 'workStartedAt', 'workStartedBy', 'workStartedByName', 'startedAt', 'startedBy', 'startedByName'];
-    const needsReset = task.status !== 'PENDIENTE' || staleFields.some(field => Object.prototype.hasOwnProperty.call(task, field) && Boolean(task[field]));
+    // A free order may intentionally be set to EN_PROCESO by an administrator.
+    // Normalize only leftover assignment/work-start metadata from a released claim.
+    const needsReset = staleFields.some(field => Object.prototype.hasOwnProperty.call(task, field) && Boolean(task[field]));
     if (!needsReset) return task;
     const reset = { ...task, assignedTo: 'LIBRE', assignedWorkerId: '', status: 'PENDIENTE' };
     staleFields.forEach(field => { delete reset[field]; });
@@ -236,14 +238,16 @@
     const reportModal = document.getElementById('modal-report');
     const observations = document.getElementById('rep-observations');
     if (!reportModal || !observations) return null;
+    const observationsBlock = observations.closest('div');
     let section = document.getElementById('report-materials-section');
     if (!section) {
       section = document.createElement('section');
       section.id = 'report-materials-section';
       section.className = 'order-materials-editor';
       section.innerHTML = `<header><div><h3>Materiales utilizados</h3><p>Registra los materiales empleados en esta orden.</p></div><button type="button" data-material-add>＋ Agregar material</button></header><div class="order-material-columns" aria-hidden="true"><span>Material</span><span>Cantidad</span><span>Precio unitario</span><span></span></div><div id="report-materials-list" class="order-materials-list"></div><footer><span>Total materiales</span><strong id="report-materials-total">$ 0</strong></footer>`;
-      observations.closest('div')?.after(section);
+      observationsBlock?.after(section);
     }
+    if (observationsBlock && section.parentElement === observationsBlock.parentElement && section.nextElementSibling !== observationsBlock) section.after(observationsBlock);
     return section;
   }
 

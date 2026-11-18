@@ -34,6 +34,9 @@
       const quotes=Array.isArray(this.quotes)?this.quotes:[];
       const tasks=Array.isArray(this.tasks)?this.tasks:[];
       document.querySelectorAll('#tasks-container [data-task-id]').forEach(card=>{
+        // Remove the old count-only chip; it duplicated the exact source quote
+        // link and was appended outside the card action row, making the card taller.
+        card.querySelectorAll('.order-quotes-link:not([data-quote-id])').forEach(button=>button.remove());
         const taskId=String(card.dataset.taskId||'');
         const task=tasks.find(item=>String(item?.id||'')===taskId);
         let quoteId='',quote=null;

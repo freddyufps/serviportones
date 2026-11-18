@@ -5070,6 +5070,15 @@ updateMessengerWindowTyping(workerName) {
           const orderObservations = String(t.observations || '').trim();
           const techObj = taskIsFree ? null : this.getTaskTechnician(t);
           const techPhoto = techObj && techObj.photo ? techObj.photo : '';
+          const adminTechnicianName = isAdmin && !taskIsFree
+            ? String(techObj?.fullName || techObj?.name || techObj?.username || t.assignedTo || '').trim()
+            : '';
+          const adminHiddenWorkerInline = isAdmin && taskIsHiddenFromWorkers
+            ? '<span class="admin-order-hidden-worker-label" title="Orden no visible para trabajadores" aria-label="Orden no visible para trabajadores"><i data-lucide="eye-off" aria-hidden="true"></i><span>No visible</span></span>'
+            : '';
+          const adminTechnicianInline = adminTechnicianName
+            ? `<span class="admin-order-technician-inline" title="Técnico asignado"><span class="admin-order-technician-avatar">${techPhoto ? `<img src="${this.escapeHtml(techPhoto)}" alt="">` : this.escapeHtml(String(adminTechnicianName).charAt(0).toUpperCase())}</span><span class="admin-order-technician-copy"><strong>${this.escapeHtml(adminTechnicianName)}</strong><span class="presence-label is-${this.getPresenceStatus(techObj)}">${this.escapeHtml(this.getPresenceLabel(this.getPresenceStatus(techObj)))}</span></span></span>`
+            : '';
           const workerOwnsOrder = isWorker && !taskIsFree && (
             (myWorkerId && String(t.assignedWorkerId || '') === myWorkerId)
             || normalizeWorkerName(t.assignedTo) === normalizeWorkerName(myName)
@@ -5119,7 +5128,7 @@ updateMessengerWindowTyping(workerName) {
                   <span class="block mb-0.5 font-bold not-italic text-emerald-800">Realizado</span><span class="order-observations-text line-clamp-3 whitespace-pre-line">${this.escapeHtml(orderObservations || 'Pendiente de registrar.')}</span>
                 </div>
 
-                <div class="order-tech-section worker-order-extra mt-2.5 pt-2 border-t text-xs">
+                <div class="order-tech-section worker-order-extra mt-2.5 pt-2 border-t text-xs ${isAdmin && !this.showArchivedTasks ? 'admin-order-tech-hidden' : ''}">
                   <span class="text-slate-500 text-[11px] block mb-1.5">Técnico:</span>
                   ${taskIsHiddenFromWorkers
                     ? '<span class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-700">🔒 No visible para trabajadores</span>'
@@ -5132,7 +5141,7 @@ updateMessengerWindowTyping(workerName) {
               </div>
 
               <div class="order-card-actions mt-3 pt-2 border-t flex items-center justify-between gap-1">
-                <div class="flex items-center gap-2"><button type="button" onclick="app.viewOrderDetails('${this.escapeHtml(t.id)}')" class="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-brand-dark hover:border-brand-lime flex items-center justify-center" title="Ver orden" aria-label="Ver orden"><i data-lucide="eye" class="w-4 h-4"></i></button>${workerOrderAvatar}${!isAdmin && isWorker && taskIsFree ? '<span class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-extrabold tracking-wide text-emerald-700">🟢 LIBRE</span>' : ''}</div>
+                <div class="order-card-identity-actions flex items-center gap-2"><button type="button" onclick="app.viewOrderDetails('${this.escapeHtml(t.id)}')" class="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-brand-dark hover:border-brand-lime flex items-center justify-center" title="Ver orden" aria-label="Ver orden"><i data-lucide="eye" class="w-4 h-4"></i></button>${workerOrderAvatar}${isAdmin && taskIsHiddenFromWorkers ? adminHiddenWorkerInline : ''}${isAdmin && !taskIsHiddenFromWorkers ? adminTechnicianInline : ''}${isAdmin && taskIsFree && !taskIsHiddenFromWorkers ? '<span class="admin-order-free-label">🟢 Libre · Disponible</span>' : ''}${!isAdmin && isWorker && taskIsFree ? '<span class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-extrabold tracking-wide text-emerald-700">🟢 LIBRE</span>' : ''}</div>
 
                 <div class="flex items-center gap-1">
                   ${isWorker ? `<button type="button" class="worker-order-expand" onclick="event.stopPropagation(); app.toggleWorkerOrderCard(this)" aria-expanded="false"><i data-lucide="chevron-down" aria-hidden="true"></i><span>Ver detalles</span></button>` : ''}
