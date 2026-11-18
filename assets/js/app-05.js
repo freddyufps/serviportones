@@ -5014,16 +5014,17 @@ updateMessengerWindowTyping(workerName) {
           return matchText && matchStatus && matchTech;
         });
 
-        const statusPriority = { REALIZADA: 0, EN_PROCESO: 1, PENDIENTE: 2, NO_REALIZADA: 3 };
+        const statusPriority = { EN_PROCESO: 0, PENDIENTE: 1, NO_REALIZADA: 2, REALIZADA: 3 };
         const currentOrder = new Map(filtered.map((task, index) => [String(task.id), index]));
         filtered.sort((a, b) => {
           const urgency = Number(b.urgent === true) - Number(a.urgent === true);
           if (urgency) return urgency;
           if (a.urgent === true && b.urgent === true) return currentOrder.get(String(a.id)) - currentOrder.get(String(b.id));
+          const statusOrder = (statusPriority[a.status] ?? 4) - (statusPriority[b.status] ?? 4);
+          if (statusOrder) return statusOrder;
           const freeOrder = Number(this.isTaskFree(a)) - Number(this.isTaskFree(b));
           if (freeOrder) return freeOrder;
-          if (this.isTaskFree(a) && this.isTaskFree(b)) return currentOrder.get(String(a.id)) - currentOrder.get(String(b.id));
-          return (statusPriority[a.status] ?? 4) - (statusPriority[b.status] ?? 4);
+          return currentOrder.get(String(a.id)) - currentOrder.get(String(b.id));
         });
 
         countTag.textContent = filtered.length;
