@@ -5014,9 +5014,13 @@ updateMessengerWindowTyping(workerName) {
           return matchText && matchStatus && matchTech;
         });
 
-        const statusPriority = { EN_PROCESO: 0, PENDIENTE: 1, NO_REALIZADA: 2, REALIZADA: 3 };
+        const statusPriority = { REALIZADA: 0, EN_PROCESO: 1, PENDIENTE: 2, NO_REALIZADA: 3 };
         const currentOrder = new Map(filtered.map((task, index) => [String(task.id), index]));
         filtered.sort((a, b) => {
+          if (a.status === 'REALIZADA' || b.status === 'REALIZADA') {
+            if (a.status !== b.status) return a.status === 'REALIZADA' ? -1 : 1;
+            return currentOrder.get(String(a.id)) - currentOrder.get(String(b.id));
+          }
           const urgency = Number(b.urgent === true) - Number(a.urgent === true);
           if (urgency) return urgency;
           if (a.urgent === true && b.urgent === true) return currentOrder.get(String(a.id)) - currentOrder.get(String(b.id));
