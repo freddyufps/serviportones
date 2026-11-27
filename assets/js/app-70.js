@@ -158,7 +158,11 @@
           const footerHeight = canvas.height - footerStart;
           const bodyHeight = footerStart - headerHeight;
           const pageBodyHeight = sourcePageHeight - headerHeight - footerHeight;
-          const repeatedPageCount = pageBodyHeight > 0 ? Math.max(1, Math.ceil(bodyHeight / pageBodyHeight)) : 0;
+          const overflowTolerancePx = Math.max(0, Number(repeatedChrome.singlePageOverflowTolerancePx) || 0);
+          const roundoffFitsOnePage = bodyHeight > pageBodyHeight && bodyHeight - pageBodyHeight <= overflowTolerancePx;
+          const repeatedPageCount = pageBodyHeight > 0
+            ? roundoffFitsOnePage ? 1 : Math.max(1, Math.ceil(bodyHeight / pageBodyHeight))
+            : 0;
 
           // Solo las piezas largas usan marco repetido. Los documentos de una
           // página conservan exactamente la captura que ya tenían.
@@ -176,7 +180,8 @@
               const sourceY = headerHeight + page * pageBodyHeight;
               const bodySliceHeight = Math.max(0, Math.min(pageBodyHeight, footerStart - sourceY));
               if (bodySliceHeight) {
-                context.drawImage(canvas, 0, sourceY, canvas.width, bodySliceHeight, 0, headerHeight, canvas.width, bodySliceHeight);
+                const targetBodyHeight = roundoffFitsOnePage ? pageBodyHeight : bodySliceHeight;
+                context.drawImage(canvas, 0, sourceY, canvas.width, bodySliceHeight, 0, headerHeight, canvas.width, targetBodyHeight);
               }
               if (footerHeight) {
                 context.drawImage(canvas, 0, footerStart, canvas.width, footerHeight, 0, sourcePageHeight - footerHeight, canvas.width, footerHeight);
@@ -715,7 +720,7 @@
         if (typeof window.spemCreatePreviewPdfBlob !== 'function') throw new Error('No está disponible la generación del PDF.');
         // El informe ya está maquetado a 210 mm. Capturarlo a ancho A4 completo
         // conserva su escala; el generador añade páginas solo si supera una hoja.
-        const blob = await window.spemCreatePreviewPdfBlob(documentNode, { format: 'a4', marginMm: 0, repeatChrome: { headerEndSelector: '.technical-report-document-body', footerStartSelectors: ['.technical-report-document-footer'], headerDivider: true } });
+        const blob = await window.spemCreatePreviewPdfBlob(documentNode, { format: 'a4', marginMm: 0, repeatChrome: { headerEndSelector: '.technical-report-document-body', footerStartSelectors: ['.technical-report-document-footer'], headerDivider: true, singlePageOverflowTolerancePx: 2 } });
         if (!blob?.size) throw new Error('El PDF generado está vacío.');
         if (fileHandle) {
           const writable = await fileHandle.createWritable();

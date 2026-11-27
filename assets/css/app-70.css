@@ -73,7 +73,7 @@
 .technical-report-general p{margin:1.5mm 0}
 .technical-report-document-text{white-space:pre-wrap;overflow-wrap:anywhere;text-align:justify;line-height:1.65}
 .technical-report-signature-block{display:grid;justify-items:center;gap:3px;width:max-content;max-width:100%;margin:30mm auto 0;break-inside:avoid;page-break-inside:avoid;color:#555;text-align:center;font-size:10.5pt}
-.technical-report-signature-block img{width:56mm;height:25mm;margin-bottom:2mm;object-fit:contain}
+.technical-report-signature-block img{width:56mm;height:25mm;margin-bottom:2mm;object-fit:contain;transform:translate(2mm,9mm)}
 .technical-report-document-footer{position:absolute;right:0;bottom:3mm;left:0;display:grid;grid-template-columns:1.25fr 1fr 1fr;align-items:center;gap:5mm;min-height:22mm;padding:2mm 18mm 8mm;color:#8cc63e;font-size:9pt;line-height:1.25;text-align:center}
 .technical-report-footer-accent{position:absolute;z-index:0;bottom:0;left:0;width:62%;height:14mm;overflow:visible;pointer-events:none}
 .technical-report-document-footer span{position:relative;z-index:1;transform:translateY(-4mm);color:#8cc63e;overflow-wrap:anywhere}
