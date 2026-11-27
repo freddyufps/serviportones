@@ -16,7 +16,7 @@
     };
     const allCardsMarkup = function () {
       const clients = (this.clientDirectory || []).slice().sort((a,b) => String(a.name || '').localeCompare(String(b.name || ''), 'es'));
-      return clients.map((c,index) => '<article class="client-card" data-client-search="'+esc([c.name,c.condo,c.documentNumber,c.address,c.email,c.phone,c.administrator].filter(Boolean).join(' '))+'"><small class="client-index">Cliente '+(index+1)+'</small><b>'+esc(c.name)+'</b>'+(c.condo?'<span>Condominio: '+esc(c.condo)+'</span>':'')+(c.documentNumber?'<span>Documento: '+esc(c.documentNumber)+'</span>':'')+(c.address?'<span>Dirección: '+esc(c.address)+'</span>':'')+(c.phone?'<span>Teléfono: '+esc(c.phone)+'</span>':'')+(c.email?'<span>Correo: '+esc(c.email)+'</span>':'')+'<button type="button" onclick="app.showClientEditor('+JSON.stringify(c.id)+')">Editar</button></article>').join('') || '<div class="clients-empty">No hay clientes. Agrega un contacto o importa el Excel.</div>';
+      return clients.map((c,index) => '<article class="client-card" data-client-search="'+esc([c.name,c.condo,c.documentNumber,c.address,c.email,c.phone,c.administrator].filter(Boolean).join(' '))+'"><small class="client-index">Cliente '+(index+1)+'</small><b>'+esc(c.name)+'</b>'+(c.condo?'<span>Condominio: '+esc(c.condo)+'</span>':'')+(c.documentNumber?'<span>Documento: '+esc(c.documentNumber)+'</span>':'')+(c.address?'<span>Dirección: '+esc(c.address)+'</span>':'')+(c.phone?'<span>Teléfono: '+esc(c.phone)+'</span>':'')+(c.email?'<span>Correo: '+esc(c.email)+'</span>':'')+'<div class="client-card-actions"><button type="button" data-client-edit="'+esc(c.id)+'"><i data-lucide="pencil"></i><span>Editar</span></button><button type="button" data-client-delete="'+esc(c.id)+'" aria-label="Eliminar '+esc(c.name)+'"><i data-lucide="trash-2"></i><span>Eliminar</span></button></div></article>').join('') || '<div class="clients-empty">No hay clientes. Agrega un contacto o importa el Excel.</div>';
     };
     const applySearch = function (root) {
       if (!root) return;
@@ -71,6 +71,7 @@
       if (title) title.textContent = 'Clientes';
       document.getElementById('section-admin-audit-log')?.classList.add('hidden');
       this.ensureClientsNav?.();
+      if (window.lucide) window.lucide.createIcons({ root });
       applySearch.call(this, root);
     };
 

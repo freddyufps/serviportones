@@ -14,10 +14,15 @@
   }, true);
 
   prototype.showArchivedOrdersView = function () {
+    // El espacio que antes abría órdenes archivadas ahora es el archivo de
+    // informes. Mantener este nombre como alias evita que manejadores viejos
+    // vuelvan a mostrar la pantalla retirada.
     if (this.currentUser?.role !== 'admin') return;
-    this.showArchivedTasks = true;
-    this.showDocumentControl = false;
-    this.renderTasks();
+    return this.openTechnicalReportsArchive?.();
+  };
+  prototype.toggleArchivedOrders = function () {
+    if (this.currentUser?.role !== 'admin') return;
+    return this.openTechnicalReportsArchive?.();
   };
   prototype.showActiveOrdersView = function () {
     this.showArchivedTasks = false;
@@ -61,7 +66,7 @@
       nav.id = 'orders-view-navigation';
       nav.setAttribute('aria-label', 'Navegación de órdenes');
       nav.innerHTML = '<button type="button" data-order-view="active" onclick="app.showActiveOrdersView()" aria-current="false"><i data-lucide="clipboard-list"></i><span>Órdenes</span></button>' +
-        '<button type="button" data-order-view="archived" onclick="app.showArchivedOrdersView()" aria-current="false"><i data-lucide="archive"></i><span>Órdenes archivadas</span><b id="orders-nav-archive-count">0</b></button>' +
+        '<button type="button" data-order-view="reports" onclick="app.openTechnicalReportsArchive()" aria-current="false" aria-label="Informes realizados" title="Informes Realizados"><i data-lucide="file-check-2"></i><span class="orders-nav-label">Informes Realizados</span></button>' +
         '<button id="btn-archived-quotes" type="button" class="quote-archive-button" aria-label="Cotizaciones archivadas" title="Cotizaciones archivadas"><span aria-hidden="true">▣</span><span>Cotizaciones archivadas</span><span id="quotes-archive-count" class="quote-archive-count">0</span></button>' +
         '<button type="button" data-order-view="invoices" onclick="app.openDocumentControl()" aria-current="false"><i data-lucide="receipt-text"></i><span>Consolidado</span></button>' +
         '<button type="button" data-order-view="clients" onclick="app.openClientsDirectory()" aria-current="false"><i data-lucide="users-round"></i><span>Clientes</span></button>';
@@ -80,7 +85,7 @@
       const archivedCount = (app.tasks || []).filter(task => !!task.archivedAt).length;
       const counter = nav.querySelector('#orders-nav-archive-count');
       if (counter) counter.textContent = String(archivedCount);
-      const view = app.showDocumentControl ? 'invoices' : app.clientsDirectoryOpen ? 'clients' : app.quoteArchiveInlineOpen ? 'quotes' : app.showArchivedTasks ? 'archived' : 'active';
+      const view = app.technicalReportsArchiveOpen ? 'reports' : app.showDocumentControl ? 'invoices' : app.clientsDirectoryOpen ? 'clients' : app.quoteArchiveInlineOpen ? 'quotes' : app.showArchivedTasks ? 'archived' : 'active';
       nav.querySelectorAll('[data-order-view]').forEach(button => {
         const key = button.dataset.orderView;
         button.setAttribute('aria-current', String(key === view));
@@ -93,13 +98,13 @@
     }
     const title = document.getElementById('orders-view-title');
     const count = document.getElementById('filtered-count');
-    const view = app.showDocumentControl ? 'invoices' : app.clientsDirectoryOpen ? 'clients' : app.quoteArchiveInlineOpen ? 'quotes' : app.showArchivedTasks ? 'archived' : 'active';
-    if (title) title.textContent = view === 'invoices' ? 'Consolidado' : view === 'archived' ? 'Órdenes archivadas' : 'Órdenes de trabajo';
+    const view = app.technicalReportsArchiveOpen ? 'reports' : app.showDocumentControl ? 'invoices' : app.clientsDirectoryOpen ? 'clients' : app.quoteArchiveInlineOpen ? 'quotes' : app.showArchivedTasks ? 'archived' : 'active';
+    if (title) title.textContent = view === 'reports' ? 'Informes realizados' : view === 'invoices' ? 'Consolidado' : view === 'archived' ? 'Órdenes archivadas' : 'Órdenes de trabajo';
     if (count) {
       count.textContent = view === 'archived'
         ? String((app.tasks || []).filter(task => !!task.archivedAt).length)
         : String(app.filteredTasks?.length ?? count.textContent);
-      count.classList.toggle('hidden', view === 'invoices' || view === 'quotes');
+      count.classList.toggle('hidden', view === 'invoices' || view === 'quotes' || view === 'reports');
     }
     ['btn-toggle-archived-orders', 'btn-archived-document-control'].forEach(id => {
       const legacy = document.getElementById(id);

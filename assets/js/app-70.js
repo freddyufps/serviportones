@@ -604,6 +604,14 @@
       if (!button) button = reportsNavButton;
       if (!button) return;
       button.dataset.orderView = 'reports';
+      // El botón se crea originalmente para Órdenes archivadas y trae un
+      // onclick inline heredado. Reemplazarlo evita que una variación en el
+      // listener delegado vuelva a abrir la vista antigua.
+      button.removeAttribute('onclick');
+      button.onclick = event => {
+        event.preventDefault();
+        this.openTechnicalReportsArchive();
+      };
       button.setAttribute('aria-label', 'Informes realizados');
       button.title = 'Informes Realizados';
       const label = button.querySelector('.orders-nav-label') || button.querySelector('span:not([id])');

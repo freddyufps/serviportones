@@ -3,6 +3,73 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const clean = v => String(v || '').trim();
   const norm = v => clean(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase();
+  const normalizeDirectoryClient = raw => ({
+    ...raw,
+    name: clean(raw?.name || raw?.client || raw?.clientName || raw?.razonSocial || raw?.nombre || raw?.condo),
+    condo: clean(raw?.condo || raw?.conjunto || raw?.condominio), documentNumber: clean(raw?.documentNumber || raw?.document || raw?.nit || raw?.identificacion),
+    address: clean(raw?.address || raw?.direccion), email: clean(raw?.email || raw?.correo), phone: clean(raw?.phone || raw?.telefono || raw?.celular),
+    administrator: clean(raw?.administrator || raw?.contact || raw?.contacto)
+  });
+  const areDuplicateClientRecords = (a, b) => {
+    const aDoc = a.documentNumber.replace(/\D/g, ''), bDoc = b.documentNumber.replace(/\D/g, '');
+    if (aDoc && bDoc) return aDoc === bDoc;
+    if (norm(a.name) !== norm(b.name)) return false;
+    const aPlace = norm(a.address || a.condo), bPlace = norm(b.address || b.condo);
+    if ((aPlace || bPlace) && (!aPlace || aPlace !== bPlace)) return false;
+    // With no document or location, merge only indistinguishable copies;
+    // keep same-name clients separate when any available contact data differs.
+    return ['documentNumber', 'condo', 'address', 'phone', 'email', 'administrator'].every(key => !a[key] || !b[key] || norm(a[key]) === norm(b[key]));
+  };
+  const mergeDirectoryRecords = source => {
+    const records = [];
+    source.map(normalizeDirectoryClient).filter(client => client.name).forEach(client => {
+      const match = records.find(item => areDuplicateClientRecords(item, client));
+      if (!match) { records.push({ ...client, _sourceIds: client.id ? [String(client.id)] : [] }); return; }
+      const sourceIds = [...new Set([...(match._sourceIds || []), ...(client.id ? [String(client.id)] : []), ...(client._sourceIds || [])])];
+      Object.keys(client).forEach(key => {
+        if ((!match[key] || key === 'name') && client[key]) match[key] = client[key];
+      });
+      match._sourceIds = sourceIds;
+    });
+    return records.sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+  };
+  const collectClientDirectoryRecords = (app, serverRecords = []) => {
+    // Once Firestore has responded, its documents are the directory of record.
+    // Merge duplicate representations for display without deleting Firestore docs.
+    if (app?.clientDirectoryServerLoaded) {
+      return mergeDirectoryRecords(Array.isArray(serverRecords) ? serverRecords : []);
+    }
+    const sources = [];
+    try {
+      const legacy = JSON.parse(localStorage.getItem('spem_clients_v1') || '[]');
+      if (Array.isArray(legacy)) sources.push(...legacy);
+    } catch {}
+    if (Array.isArray(app?.clientDirectory)) sources.push(...app.clientDirectory);
+    try { sources.push(...(app?.getRegisteredTaskClients?.() || [])); } catch {}
+    (Array.isArray(app?.quotes) ? app.quotes : []).forEach(quote => sources.push({
+      name: quote?.client || quote?.condo,
+      condo: quote?.condo,
+      address: quote?.address,
+      documentNumber: quote?.documentNumber,
+      phone: quote?.phone,
+      email: quote?.email,
+      administrator: quote?.administrator || quote?.contact
+    }));
+    if (Array.isArray(serverRecords)) sources.push(...serverRecords);
+
+    const records = new Map();
+    sources.forEach(raw => {
+      const client = normalizeDirectoryClient(raw);
+      if (!client.name) return;
+      const document = client.documentNumber.replace(/\D/g, '');
+      const key = document ? `document:${document}` : `identity:${app?.clientRecordId?.(client) || norm(client.name)}`;
+      const previous = records.get(key) || {};
+      const merged = { ...previous, ...client, id: client.id || previous.id || app?.clientRecordId?.(client) };
+      Object.keys(client).forEach(field => { if (!client[field] && previous[field]) merged[field] = previous[field]; });
+      records.set(key, merged);
+    });
+    return [...records.values()].sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+  };
   const style = document.createElement('style');
   style.textContent = `
 @media(max-width:639px){#chat-floating-button-container{position:fixed!important;right:12px!important;bottom:calc(env(safe-area-inset-bottom,0px) + 12px)!important;z-index:2147483001!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important;transform:none!important}#chat-floating-button-container button{position:relative!important;z-index:2147483001!important;box-shadow:0 6px 22px #14273b55!important}#chat-window-modal:not(.hidden){z-index:2147483004!important;padding-bottom:0!important}body.mobile-keyboard-open #chat-floating-button-container{bottom:calc(var(--app-mobile-keyboard-height,0px) + env(safe-area-inset-bottom,0px) + 10px)!important}body.mobile-keyboard-open #chat-window-modal:not(.hidden){height:calc(var(--app-visual-viewport-height,100dvh) - 82px)!important;max-height:calc(var(--app-visual-viewport-height,100dvh) - 82px)!important;top:var(--app-visual-viewport-offset-top,0px)!important;bottom:auto!important}#chat-messages-container{overscroll-behavior:contain!important;scroll-behavior:auto!important}}
@@ -68,23 +135,33 @@ body.theme-dark #clients-directory,body.theme-halloween #clients-directory{backg
     @media(max-width:600px){#client-editor .client-editor-section-grid,#client-editor .client-editor-section[data-section="contact"] .client-editor-section-grid{grid-template-columns:minmax(0,1fr)}#client-editor .client-editor-section[data-section="contact"] .client-editor-section-grid label:nth-child(3){grid-column:auto}#client-editor .client-editor-form .clients-actions button{min-width:0;flex:1}}
   `;
   document.head.appendChild(clientEditorCompactStyle);
+  const clientActionsStyle = document.createElement('style');
+  clientActionsStyle.textContent = '#clients-directory .client-card-actions{display:flex;align-items:center;gap:8px;margin-top:10px}#clients-directory .client-card-actions button{display:inline-flex;align-items:center;justify-content:center;gap:6px;margin:0;padding:7px 10px}#clients-directory .client-card-actions button svg{width:15px;height:15px}#clients-directory .client-card-actions button[data-client-delete]{border-color:#f1c8cc;background:#fff7f7;color:#b42332}#clients-directory .client-card-actions button[data-client-delete]:hover{border-color:#eaa3aa;background:#fff0f1}';
+  document.head.appendChild(clientActionsStyle);
   const patch = {
     clientDirectory: [], clientDirectoryUnsubscribe: null, clientsDirectoryOpen: false, clientDirectoryLoading: false, clientDirectoryLoadError: '', clientDirectoryServerLoaded: false, clientDirectoryServerCount: 0, clientDirectorySnapshotVersion: 0,
     clientRecordId(c){ const identity=clean(c.documentNumber||c.document).replace(/\D/g,'');const s=identity?'document|'+identity:norm(c.name||c.client||c.clientName)+'|'+norm(c.address||c.condo);let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return 'client_'+(h>>>0).toString(36); },
     async migrateLegacyClientsToFirestore(serverRecords=[]){
-      if(!window.db?.collection||!navigator.onLine||localStorage.getItem('spem_clients_firestore_migration_v1')==='done')return 0;
+      if(!window.db?.collection||!navigator.onLine)return [];
       if(this.clientLegacyMigrationPromise)return this.clientLegacyMigrationPromise;
       this.clientLegacyMigrationPromise=(async()=>{
         const candidates=[];
         try{const saved=JSON.parse(localStorage.getItem('spem_clients_v1')||'[]');if(Array.isArray(saved))candidates.push(...saved)}catch{}
-        const cleanRecord=c=>({name:clean(c?.name||c?.client||c?.clientName||c?.condo),condo:clean(c?.condo),documentNumber:clean(c?.documentNumber||c?.document),address:clean(c?.address),email:clean(c?.email),phone:clean(c?.phone),administrator:clean(c?.administrator||c?.contact)});
-        const same=(a,b)=>{const ad=clean(a.documentNumber).replace(/\D/g,''),bd=clean(b.documentNumber).replace(/\D/g,'');if(ad&&bd)return ad===bd;const an=norm(a.name),bn=norm(b.name),al=norm(a.address||a.condo),bl=norm(b.address||b.condo);return !!an&&an===bn&&(!al||!bl||al===bl)};
-        const known=serverRecords.map(cleanRecord), pending=[];
-        for(const raw of candidates){const c=cleanRecord(raw);if(!c.name||known.some(x=>same(x,c))||pending.some(x=>same(x,c)))continue;pending.push(c)}
-        for(let offset=0;offset<pending.length;offset+=400){const batch=window.db.batch();pending.slice(offset,offset+400).forEach(c=>batch.set(window.db.collection('clientes').doc(this.clientRecordId(c)),{...c,updatedAt:Date.now(),migratedAt:Date.now()},{merge:true}));await batch.commit()}
-        localStorage.setItem('spem_clients_firestore_migration_v1','done');
-        if(pending.length)
-        return pending.length;
+        (Array.isArray(this.tasks)?this.tasks:[]).forEach(task=>candidates.push({name:task?.client||task?.clientName,condo:task?.condo,documentNumber:task?.documentNumber||task?.document,address:task?.address,email:task?.email,phone:task?.phone,administrator:task?.administrator||task?.contact}));
+        (Array.isArray(this.quotes)?this.quotes:[]).forEach(quote=>candidates.push({name:quote?.client||quote?.clientName||quote?.condo,condo:quote?.condo,documentNumber:quote?.documentNumber||quote?.document,address:quote?.address,email:quote?.email,phone:quote?.phone,administrator:quote?.administrator||quote?.contact}));
+        if(Array.isArray(this.clientDirectory))candidates.push(...this.clientDirectory);
+        const normalize=c=>({name:clean(c?.name||c?.client||c?.clientName||c?.razonSocial||c?.nombre||c?.condo),condo:clean(c?.condo||c?.conjunto||c?.condominio),documentNumber:clean(c?.documentNumber||c?.document||c?.nit||c?.identificacion),address:clean(c?.address||c?.direccion),email:clean(c?.email||c?.correo),phone:clean(c?.phone||c?.telefono||c?.celular),administrator:clean(c?.administrator||c?.contact||c?.contacto)});
+        const same=(a,b)=>areDuplicateClientRecords(normalizeDirectoryClient(a),normalizeDirectoryClient(b));
+        const sourceKeys=[...new Set(candidates.map(normalize).filter(c=>c.name).map(c=>this.clientRecordId(c)))].sort();
+        let fingerprint=2166136261;for(const key of sourceKeys){for(let i=0;i<key.length;i++){fingerprint^=key.charCodeAt(i);fingerprint=Math.imul(fingerprint,16777619)}}
+        const sourceFingerprint=(fingerprint>>>0).toString(36);
+        if(localStorage.getItem('spem_clients_firestore_migration_v2')===sourceFingerprint)return [];
+        const known=serverRecords.map(normalize), pending=[];
+        for(const raw of candidates){const c=normalize(raw);if(!c.name||known.some(x=>same(x,c))||pending.some(x=>same(x,c)))continue;pending.push(c)}
+        const persisted=[];
+        for(let offset=0;offset<pending.length;offset+=400){const batch=window.db.batch();pending.slice(offset,offset+400).forEach(c=>{const id=this.clientRecordId(c);const record={...c,id,updatedAt:Date.now(),migratedAt:Date.now()};persisted.push(record);batch.set(window.db.collection('clientes').doc(id),record,{merge:true})});await batch.commit()}
+        localStorage.setItem('spem_clients_firestore_migration_v2',sourceFingerprint);
+        return persisted;
       })().finally(()=>{this.clientLegacyMigrationPromise=null});
       return this.clientLegacyMigrationPromise;
     },
@@ -93,26 +170,36 @@ body.theme-dark #clients-directory,body.theme-halloween #clients-directory{backg
       if(!c.name)return false;
       if(!window.db?.collection||!navigator.onLine){this.clientDirectoryLoadError='No se pudo conectar con Firestore. El cliente no se guardó; vuelve a intentarlo cuando tengas conexión.';return false}
       try{
-        const snapshot=await window.db.collection('clientes').get({source:'server'});
+        if(!this.clientDirectoryServerLoaded&&this.clientLegacyMigrationPromise)await this.clientLegacyMigrationPromise;
         const docNumber=clean(c.documentNumber).replace(/\D/g,'');
-        const currentRecords=snapshot.docs.map(d=>({id:d.id,...d.data()}));
-        const found=currentRecords.find(x=>docNumber&&clean(x.documentNumber||x.document).replace(/\D/g,'')===docNumber)
-          ||currentRecords.find(x=>norm(x.name||x.client)===norm(c.name)&&(!norm(x.address||x.condo)||!norm(c.address||c.condo)||norm(x.address||x.condo)===norm(c.address||c.condo)));
+        let currentRecords=Array.isArray(this.clientDirectoryServerRecords)?this.clientDirectoryServerRecords:[];
+        if(!this.clientDirectoryServerLoaded){const snapshot=await window.db.collection('clientes').get({source:'server'});currentRecords=snapshot.docs.map(d=>({id:d.id,...d.data()}))}
+        const requestedId=clean(record.id);
+        const found=currentRecords.find(x=>requestedId&&String(x.id)===requestedId)
+          ||currentRecords.find(x=>docNumber&&clean(x.documentNumber||x.document).replace(/\D/g,'')===docNumber)
+          ||currentRecords.find(x=>areDuplicateClientRecords(normalizeDirectoryClient(x),normalizeDirectoryClient(c)));
         const id=found?.id||this.clientRecordId(c), merged={...(found||{}),...Object.fromEntries(Object.entries(c).filter(([,v])=>v!=='')),id};
-        await window.db.collection('clientes').doc(id).set(merged,{merge:true});
+        let relatedIds=Array.isArray(record._sourceIds)?record._sourceIds:[];
+        if(typeof record.sourceIds==='string'){try{const parsed=JSON.parse(record.sourceIds);if(Array.isArray(parsed))relatedIds=parsed}catch{}}
+        relatedIds=[...new Set([String(id),...relatedIds.map(String)])];
+        const batch=window.db.batch();relatedIds.forEach(docId=>batch.set(window.db.collection('clientes').doc(docId),{...merged,id:docId},{merge:true}));await batch.commit();
         this.upsertClientDirectoryRecord(merged);return true
       }catch(e){console.warn('[CLIENTES] No se pudo guardar el contacto en Firestore.',e);return false}
     },
-    upsertClientDirectoryRecord(client){this.clientDirectorySnapshotVersion++;const list=Array.isArray(this.clientDirectory)?this.clientDirectory:[];const index=list.findIndex(item=>item.id===client.id||norm(item.name)===norm(client.name)&&(!client.address||!item.address||norm(item.address)===norm(client.address)));if(index<0)list.unshift(client);else list[index]={...list[index],...client};this.clientDirectory=list;this.refreshClientDirectoryUI();},
+    upsertClientDirectoryRecord(client){this.clientDirectorySnapshotVersion++;const list=Array.isArray(this.clientDirectoryServerRecords)?[...this.clientDirectoryServerRecords]:(Array.isArray(this.clientDirectory)?[...this.clientDirectory]:[]);const index=list.findIndex(item=>String(item.id)===String(client.id)||areDuplicateClientRecords(normalizeDirectoryClient(item),normalizeDirectoryClient(client)));if(index<0)list.unshift(client);else list[index]={...list[index],...client};this.clientDirectoryServerRecords=list;this.clientDirectory=collectClientDirectoryRecords(this,list);this.refreshClientDirectoryUI();},
     refreshClientDirectoryUI(){this.addClientAutocomplete?.();this.renderSavedTaskClients?.();if(this.clientsDirectoryOpen)this.renderClientsDirectory?.();},
     applyClientDirectoryServerRecords(records,version=this.clientDirectorySnapshotVersion){
       if(version!==this.clientDirectorySnapshotVersion)return;
-      this.clientDirectory=records;this.clientDirectoryServerLoaded=true;this.clientDirectoryServerCount=records.length;this.clientDirectorySourceProject=window.firebase?.apps?.[0]?.options?.projectId||'';this.clientDirectoryLoading=false;this.clientDirectoryLoadError='';this.refreshClientDirectoryUI();
+      this.clientDirectoryServerRecords=records;this.clientDirectoryServerLoaded=true;this.clientDirectory=collectClientDirectoryRecords(this,records);this.clientDirectoryServerCount=records.length;this.clientDirectorySourceProject=window.firebase?.apps?.[0]?.options?.projectId||'';this.clientDirectoryLoading=false;this.clientDirectoryLoadError='';this.refreshClientDirectoryUI();
     },
     async acceptClientDirectoryServerSnapshot(records){
       const version=++this.clientDirectorySnapshotVersion;
-      const knownCount=Math.max(Number(this.clientDirectoryServerCount)||0,Array.isArray(this.clientDirectory)?this.clientDirectory.length:0);
-      if(records.length>=knownCount||!knownCount){this.applyClientDirectoryServerRecords(records,version);return}
+      const knownCount=Number(this.clientDirectoryServerCount)||0;
+      if(records.length>=knownCount||!knownCount){
+        try{const migrated=await this.migrateLegacyClientsToFirestore(records);if(version!==this.clientDirectorySnapshotVersion)return;this.applyClientDirectoryServerRecords([...records,...migrated],version)}
+        catch(error){if(version!==this.clientDirectorySnapshotVersion)return;this.applyClientDirectoryServerRecords(records,version);this.clientDirectoryLoadError='Algunos clientes históricos aún no se pudieron sincronizar. Se volverá a intentar al actualizar el directorio.';console.warn('[CLIENTES] Migración histórica pendiente.',error);this.showToast?.(this.clientDirectoryLoadError,'info')}
+        return;
+      }
       // A listener snapshot that suddenly contains fewer documents can be a
       // partial/stale response. Confirm any shrink from Firestore before it is
       // allowed to replace the last complete server-confirmed directory.
@@ -134,6 +221,7 @@ body.theme-dark #clients-directory,body.theme-halloween #clients-directory{backg
     startClientDirectorySync(){
       if(this.currentUser?.role!=='admin')return;
       if(!this.clientDirectory)this.clientDirectory=[];
+      this.clientDirectory=collectClientDirectoryRecords(this,this.clientDirectoryServerRecords||this.clientDirectory);
       if(!this.clientDirectoryUnsubscribe&&window.db?.collection){try{this.clientDirectoryUnsubscribe=window.db.collection('clientes').onSnapshot(s=>{const records=s.docs.map(d=>({id:d.id,...d.data()}));if(s.metadata?.fromCache){this.clientDirectoryLoadError='Esperando confirmación del servidor para actualizar los clientes.';if(this.clientsDirectoryOpen)this.renderClientsDirectory?.();return}this.acceptClientDirectoryServerSnapshot(records)},e=>{this.clientDirectoryLoading=false;this.clientDirectoryLoadError='No se pudo conectar con el directorio de clientes. Revisa la conexión e inténtalo nuevamente.';console.warn('[CLIENTES] Directorio no disponible.',e);this.showToast?.(this.clientDirectoryLoadError,'error');if(this.clientsDirectoryOpen)this.renderClientsDirectory?.()})}catch(e){this.clientDirectoryLoading=false;this.clientDirectoryLoadError='No se pudo conectar con el directorio de clientes. Revisa la conexión e inténtalo nuevamente.';console.warn(e)}}
       else if(!window.db?.collection){this.clientDirectoryLoading=false;this.clientDirectoryServerLoaded=false;this.clientDirectoryLoadError='Firestore no está disponible. El directorio no se cargó desde el servidor.';if(this.clientsDirectoryOpen)this.renderClientsDirectory?.()}
     },
@@ -146,18 +234,41 @@ body.theme-dark #clients-directory,body.theme-halloween #clients-directory{backg
       const qf=document.getElementById('quote-form');if(qf){[['q-clients','name'],['q-condos','condo'],['q-addresses','address']].forEach(([id,key])=>{const dl=qf.querySelector('#'+id);if(dl)(this.clientDirectory||[]).forEach(c=>{const v=clean(c[key]);if(v&&!Array.from(dl.options).some(o=>norm(o.value)===norm(v))){const op=document.createElement('option');op.value=v;dl.appendChild(op)}})});}if(qf&&!qf.dataset.directoryBound){qf.dataset.directoryBound='1';const apply=()=>{const v=qf.elements.namedItem('client')?.value||qf.elements.namedItem('condo')?.value;const c=this.findDirectoryClient(v);if(c)this.applyDirectoryClient(c,document)};['client','condo'].forEach(k=>{const e=qf.elements.namedItem(k);e?.addEventListener('input',apply);e?.addEventListener('change',apply)})}
     },
     ensureClientsNav(){const nav=document.getElementById('orders-view-navigation');if(!nav||nav.querySelector('[data-order-view=clients]'))return;const b=document.createElement('button');b.type='button';b.dataset.orderView='clients';b.innerHTML='<i data-lucide="users-round"></i><span>Clientes</span>';b.onclick=()=>this.openClientsDirectory();nav.appendChild(b);if(window.lucide)lucide.createIcons()},
-    openClientsDirectory(){if(this.currentUser?.role!=='admin')return;this.quoteArchiveInlineOpen=false;this.technicalReportsArchiveOpen=false;this.showArchivedTasks=false;this.showDocumentControl=false;this.clientsDirectoryOpen=true;document.getElementById('tasks-container')?.classList.add('hidden');document.getElementById('quotes-view-container')?.classList.add('hidden');document.getElementById('reports-view-container')?.classList.add('hidden');document.getElementById('clients-view-container')?.classList.remove('hidden');this.renderClientsDirectory()},
+    ensureClientDirectoryActions(){const host=document.getElementById('clients-view-container');if(!host||host.dataset.clientActionsBound==='1')return;host.dataset.clientActionsBound='1';host.addEventListener('click',event=>{const edit=event.target.closest('[data-client-edit]');if(edit){event.preventDefault();this.showClientEditor(edit.dataset.clientEdit);return}const remove=event.target.closest('[data-client-delete]');if(remove){event.preventDefault();this.deleteClientRecord(remove.dataset.clientDelete)}})},
+    async deleteClientRecord(id){
+      if(this.currentUser?.role!=='admin')return this.showToast?.('Solo el administrador puede eliminar clientes.','error');
+      const client=(this.clientDirectory||[]).find(item=>String(item.id)===String(id));
+      if(!client)return this.showToast?.('No se encontró el cliente seleccionado.','error');
+      if(!this.clientDirectoryServerLoaded)return this.showToast?.('Espera a que el directorio termine de sincronizarse antes de eliminar.','info');
+      if(!window.db?.collection||!navigator.onLine)return this.showToast?.('No hay conexión con la base de datos. El cliente no se eliminó.','error');
+      const sourceIds=[...new Set([String(id),...(client._sourceIds||[]).map(String)])];
+      const duplicateNote=sourceIds.length>1?` Se encontraron ${sourceIds.length} registros repetidos y se eliminarán del directorio.`:'';
+      const confirmed=await this.showSystemConfirm(`¿Deseas eliminar a ${client.name} del directorio de clientes?${duplicateNote} Las órdenes y cotizaciones existentes conservarán sus datos.`,{title:'Eliminar cliente',confirmText:'Eliminar cliente',icon:'trash'});
+      if(!confirmed)return;
+      try{
+        const batch=window.db.batch();sourceIds.forEach(docId=>batch.delete(window.db.collection('clientes').doc(docId)));await batch.commit();
+        this.clientDirectorySnapshotVersion++;
+        this.clientDirectoryServerRecords=(this.clientDirectoryServerRecords||[]).filter(item=>!sourceIds.includes(String(item.id)));
+        this.clientDirectoryServerCount=this.clientDirectoryServerRecords.length;
+        this.clientDirectory=collectClientDirectoryRecords(this,this.clientDirectoryServerRecords);
+        try{const legacy=JSON.parse(localStorage.getItem('spem_clients_v1')||'[]');if(Array.isArray(legacy)){const remaining=legacy.filter(item=>String(item.id||'')!==String(id)&&norm(item.name||item.client||item.clientName)!==norm(client.name));localStorage.setItem('spem_clients_v1',JSON.stringify(remaining))}}catch{}
+        this.refreshClientDirectoryUI();
+        this.showToast?.('Cliente eliminado del directorio.','success');
+      }catch(error){console.warn('[CLIENTES] No se pudo eliminar el cliente.',error);this.showToast?.('No se pudo eliminar el cliente. Inténtalo nuevamente.','error')}
+    },
+    openClientsDirectory(){if(this.currentUser?.role!=='admin')return;this.quoteArchiveInlineOpen=false;this.technicalReportsArchiveOpen=false;this.showArchivedTasks=false;this.showDocumentControl=false;this.clientsDirectoryOpen=true;document.getElementById('tasks-container')?.classList.add('hidden');document.getElementById('quotes-view-container')?.classList.add('hidden');document.getElementById('reports-view-container')?.classList.add('hidden');document.getElementById('clients-view-container')?.classList.remove('hidden');this.ensureClientDirectoryActions();this.renderClientsDirectory();this.retryClientDirectoryMigration()},
     closeClientsDirectory(){this.clientsDirectoryOpen=false;document.getElementById('clients-view-container')?.classList.add('hidden');document.getElementById('tasks-container')?.classList.remove('hidden');this.renderTasks()},
     renderClientsDirectory(){
-      if(!this.clientsDirectoryOpen)return;const host=document.getElementById('clients-view-container');if(!host)return;host.classList.remove('hidden');if(this.clientDirectoryLoading&&!this.clientDirectoryServerLoaded){host.innerHTML='<section class="clients-loading-state"><div class="clients-empty">Cargando directorio completo desde el servidor…</div></section>';document.getElementById('orders-view-title')&&(document.getElementById('orders-view-title').textContent='Clientes');this.ensureClientsNav();document.getElementById('section-admin-audit-log')?.classList.add('hidden');return}const searchEl=document.getElementById('clients-search'),searchValue=searchEl?.value||'',restoreSearch=!!searchEl&&document.activeElement===searchEl,searchCaret=restoreSearch?searchEl.selectionStart:null;const term=norm(searchValue);const records=Array.isArray(this.clientDirectory)?this.clientDirectory:[];const list=records.filter(c=>!term||[c.name,c.condo,c.documentNumber,c.address,c.email,c.phone].some(v=>norm(v).includes(term))).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'es'));const loadError=!this.clientDirectoryServerLoaded&&this.clientDirectoryLoadError&&!records.length;
+      if(!this.clientsDirectoryOpen)return;const host=document.getElementById('clients-view-container');if(!host)return;host.classList.remove('hidden');this.ensureClientDirectoryActions();this.clientDirectory=collectClientDirectoryRecords(this,this.clientDirectoryServerRecords||this.clientDirectory);if(this.clientDirectoryLoading&&!this.clientDirectoryServerLoaded&&!(this.clientDirectory||[]).length){host.innerHTML='<section class="clients-loading-state"><div class="clients-empty">Cargando directorio completo desde el servidor…</div></section>';document.getElementById('orders-view-title')&&(document.getElementById('orders-view-title').textContent='Clientes');this.ensureClientsNav();document.getElementById('section-admin-audit-log')?.classList.add('hidden');return}const searchEl=document.getElementById('clients-search'),searchValue=searchEl?.value||'',restoreSearch=!!searchEl&&document.activeElement===searchEl,searchCaret=restoreSearch?searchEl.selectionStart:null;const term=norm(searchValue);const records=Array.isArray(this.clientDirectory)?this.clientDirectory:[];const list=records.filter(c=>!term||[c.name,c.condo,c.documentNumber,c.address,c.email,c.phone].some(v=>norm(v).includes(term))).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'es'));const loadError=!this.clientDirectoryServerLoaded&&this.clientDirectoryLoadError&&!records.length;
       const emptyMessage=this.clientDirectoryServerLoaded&&records.length===0?'El servidor confirmó 0 clientes. Si acabas de importar el Excel, revisa el resultado de importación y vuelve a verificar.':'No hay clientes con esos datos. Agrega un contacto o importa el Excel.';
-       host.innerHTML='<section id="clients-directory"><div class="clients-head"><div><h3>Directorio de clientes</h3><p>Contactos centralizados para órdenes y cotizaciones.</p></div><div class="clients-actions clients-header-actions"><button type="button" onclick="app.exportClientsDirectory()">Exportar CSV</button><button class="primary" type="button" onclick="app.showClientEditor()">＋ Agregar cliente</button></div></div><div class="clients-tools"><input id="clients-search" type="search" name="client-directory-search-query" role="searchbox" aria-autocomplete="none" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="search" data-form-type="other" data-lpignore="true" data-1p-ignore="true" placeholder="Buscar por nombre, documento, condominio o contacto…" value="'+esc(searchValue)+'"><button type="button" onclick="app.pickClientsImport()">Importar Excel</button></div><div class="clients-count">'+(loadError?'No se pudo confirmar la carga del servidor':list.length+' de '+records.length+' clientes')+'</div><div class="clients-list">'+(loadError?'<div class="clients-empty">'+esc(this.clientDirectoryLoadError)+' Los datos solo se muestran después de confirmarlos en el servidor.</div>':list.length?list.map((c,index)=>'<article class="client-card" data-client-search="'+esc([c.name,c.condo,c.documentNumber,c.address,c.email,c.phone,c.administrator].filter(Boolean).join(' '))+'"><small class="client-index">Cliente '+(index+1)+'</small><b>'+esc(c.name)+'</b>'+(c.condo?'<span>Condominio: '+esc(c.condo)+'</span>':'')+(c.documentNumber?'<span>Documento: '+esc(c.documentNumber)+'</span>':'')+(c.address?'<span>Dirección: '+esc(c.address)+'</span>':'')+(c.phone?'<span>Teléfono: '+esc(c.phone)+'</span>':'')+(c.email?'<span>Correo: '+esc(c.email)+'</span>':'')+'<button type="button" onclick="app.showClientEditor('+JSON.stringify(c.id)+')">Editar</button></article>').join(''):'<div class="clients-empty">'+emptyMessage+'</div>')+'</div></section>';
+       host.innerHTML='<section id="clients-directory"><div class="clients-head"><div><h3>Directorio de clientes</h3><p>Contactos centralizados para órdenes y cotizaciones.</p></div><div class="clients-actions clients-header-actions"><button type="button" onclick="app.exportClientsDirectory()">Exportar CSV</button><button class="primary" type="button" onclick="app.showClientEditor()">＋ Agregar cliente</button></div></div><div class="clients-tools"><input id="clients-search" type="search" name="client-directory-search-query" role="searchbox" aria-autocomplete="none" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="search" data-form-type="other" data-lpignore="true" data-1p-ignore="true" placeholder="Buscar por nombre, documento, condominio o contacto…" value="'+esc(searchValue)+'"><button type="button" onclick="app.pickClientsImport()">Importar Excel</button></div><div class="clients-count">'+(loadError?'No se pudo confirmar la carga del servidor':list.length+' de '+records.length+' clientes')+'</div><div class="clients-list">'+(loadError?'<div class="clients-empty">'+esc(this.clientDirectoryLoadError)+' Los datos solo se muestran después de confirmarlos en el servidor.</div>':list.length?list.map((c,index)=>'<article class="client-card" data-client-search="'+esc([c.name,c.condo,c.documentNumber,c.address,c.email,c.phone,c.administrator].filter(Boolean).join(' '))+'"><small class="client-index">Cliente '+(index+1)+'</small><b>'+esc(c.name)+'</b>'+(c.condo?'<span>Condominio: '+esc(c.condo)+'</span>':'')+(c.documentNumber?'<span>Documento: '+esc(c.documentNumber)+'</span>':'')+(c.address?'<span>Dirección: '+esc(c.address)+'</span>':'')+(c.phone?'<span>Teléfono: '+esc(c.phone)+'</span>':'')+(c.email?'<span>Correo: '+esc(c.email)+'</span>':'')+'<div class="client-card-actions"><button type="button" data-client-edit="'+esc(c.id)+'"><i data-lucide="pencil"></i><span>Editar</span></button><button type="button" data-client-delete="'+esc(c.id)+'" aria-label="Eliminar '+esc(c.name)+'"><i data-lucide="trash-2"></i><span>Eliminar</span></button></div></article>').join(''):'<div class="clients-empty">'+emptyMessage+'</div>')+'</div></section>';
       document.getElementById('orders-view-title')&&(document.getElementById('orders-view-title').textContent='Clientes');document.getElementById('filtered-count')&&(document.getElementById('filtered-count').textContent=String((this.clientDirectory||[]).length));this.ensureClientsNav();document.getElementById('section-admin-audit-log')?.classList.add('hidden');if(restoreSearch){const next=document.getElementById('clients-search');next?.focus({preventScroll:true});if(searchCaret!==null)next?.setSelectionRange(searchCaret,searchCaret)}
     },
     filterClientDirectory(){const input=document.getElementById('clients-search'),term=norm(input?.value||'');let shown=0;document.querySelectorAll('#clients-directory .client-card[data-client-search]').forEach(card=>{const visible=!term||norm(card.dataset.clientSearch||'').includes(term);card.hidden=!visible;if(visible)shown++});const root=document.getElementById('clients-directory'),total=(this.clientDirectory||[]).length,count=root?.querySelector('.clients-count');if(count)count.textContent=shown+' de '+total+' clientes';if(root){root.dataset.clientSourceCount=String(total);root.dataset.clientRenderedCount=String(shown)}let empty=document.getElementById('clients-search-empty');const list=document.querySelector('#clients-directory .clients-list');if(list){if(term&&shown===0){if(!empty){empty=document.createElement('div');empty.id='clients-search-empty';empty.className='clients-empty';empty.textContent='No se encontraron clientes con esa búsqueda.';list.appendChild(empty)}empty.hidden=false}else if(empty)empty.hidden=true}},
-    showClientEditor(id){const c=(this.clientDirectory||[]).find(x=>x.id===id)||{};let box=document.getElementById('client-editor');if(!box){box=document.createElement('div');box.id='client-editor';document.body.appendChild(box)}document.body.appendChild(box);box.className='client-editor-overlay';const placeholders={name:'Nombre o razón social',condo:'Nombre del conjunto o proyecto',documentNumber:'NIT o documento',address:'Dirección principal',phone:'Número de contacto',email:'correo@empresa.com',administrator:'Nombre del contacto'};box.innerHTML='<section class="client-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="client-editor-heading"><div class="client-editor-title task-modal-header bg-brand-dark text-white px-4 sm:px-5 py-3 flex items-center justify-between border-b-2 border-brand-lime shrink-0"><div class="client-editor-heading flex items-center gap-2"><img src="assets/media/spem-logo.png" class="app-modal-brand" alt="" aria-hidden="true"><h3 id="client-editor-heading">'+(id?'Editar cliente':'Agregar Cliente')+'</h3></div><button type="button" class="text-slate-400 hover:text-white p-1" aria-label="Cerrar" onclick="app.closeClientEditor()"><i data-lucide="x" class="w-5 h-5"></i></button></div><form class="client-card client-editor-form" onsubmit="app.saveClientForm(event)"><div class="clients-fields">'+[['name','Razón social'],['condo','Condominio'],['documentNumber','Documento'],['address','Dirección'],['phone','Teléfono'],['email','Correo'],['administrator','Contacto / administrador']].map(([k,l])=>'<label><span>'+l+'</span><input name="'+k+'" placeholder="'+placeholders[k]+'" value="'+esc(c[k]||'')+'" '+(k==='name'?'required':'')+'></label>').join('')+'</div><input type="hidden" name="id" value="'+esc(id||'')+'"><div class="clients-actions"><button type="button" onclick="app.closeClientEditor()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 font-semibold text-xs">Cancelar</button><button class="primary px-5 py-2 bg-brand-dark hover:bg-black text-white rounded-xl font-bold flex items-center gap-2 shadow text-xs" type="submit"><i data-lucide="save" class="w-4 h-4 text-brand-lime"></i> Guardar Cliente</button></div></form></section>';box.onclick=e=>{if(e.target===box)this.closeClientEditor()};box.classList.remove('hidden');if(window.lucide)window.lucide.createIcons();box.querySelector('input[name=name]')?.focus({preventScroll:true})},
+    showClientEditor(id){const c=(this.clientDirectory||[]).find(x=>String(x.id)===String(id))||{};let box=document.getElementById('client-editor');if(!box){box=document.createElement('div');box.id='client-editor';document.body.appendChild(box)}document.body.appendChild(box);box.className='client-editor-overlay';const placeholders={name:'Nombre o razón social',condo:'Nombre del conjunto o proyecto',documentNumber:'NIT o documento',address:'Dirección principal',phone:'Número de contacto',email:'correo@empresa.com',administrator:'Nombre del contacto'};box.innerHTML='<section class="client-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="client-editor-heading"><div class="client-editor-title task-modal-header bg-brand-dark text-white px-4 sm:px-5 py-3 flex items-center justify-between border-b-2 border-brand-lime shrink-0"><div class="client-editor-heading flex items-center gap-2"><img src="assets/media/spem-logo.png" class="app-modal-brand" alt="" aria-hidden="true"><h3 id="client-editor-heading">'+(id?'Editar cliente':'Agregar Cliente')+'</h3></div><button type="button" class="text-slate-400 hover:text-white p-1" aria-label="Cerrar" onclick="app.closeClientEditor()"><i data-lucide="x" class="w-5 h-5"></i></button></div><form class="client-card client-editor-form" onsubmit="app.saveClientForm(event)"><div class="clients-fields">'+[['name','Razón social'],['condo','Condominio'],['documentNumber','Documento'],['address','Dirección'],['phone','Teléfono'],['email','Correo'],['administrator','Contacto / administrador']].map(([k,l])=>'<label><span>'+l+'</span><input name="'+k+'" placeholder="'+placeholders[k]+'" value="'+esc(c[k]||'')+'" '+(k==='name'?'required':'')+'></label>').join('')+'</div><input type="hidden" name="id" value="'+esc(id||'')+'"><input type="hidden" name="sourceIds" value="'+esc(JSON.stringify(c._sourceIds||[id].filter(Boolean)))+'"><div class="clients-actions"><button type="button" onclick="app.closeClientEditor()" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 font-semibold text-xs">Cancelar</button><button class="primary px-5 py-2 bg-brand-dark hover:bg-black text-white rounded-xl font-bold flex items-center gap-2 shadow text-xs" type="submit"><i data-lucide="save" class="w-4 h-4 text-brand-lime"></i> Guardar Cliente</button></div></form></section>';box.onclick=e=>{if(e.target===box)this.closeClientEditor()};box.classList.remove('hidden');if(window.lucide)window.lucide.createIcons();box.querySelector('input[name=name]')?.focus({preventScroll:true})},
     closeClientEditor(){const box=document.getElementById('client-editor');if(box){box.classList.add('hidden');box.replaceChildren()}},
     async saveClientForm(e){e.preventDefault();const f=e.currentTarget,o=Object.fromEntries(new FormData(f));const ok=await this.saveClientRecord(o);if(ok){this.closeClientEditor();this.showToast('Cliente guardado en el directorio.','success');this.startClientDirectorySync();if(!window.db)this.renderClientsDirectory()}else this.showToast('No se pudo guardar el cliente. Inténtalo nuevamente.','error')},
+    async retryClientDirectoryMigration(){if(!this.clientDirectoryServerLoaded||!navigator.onLine)return;try{const base=this.clientDirectoryServerRecords||[],migrated=await this.migrateLegacyClientsToFirestore(base);if(!migrated.length)return;this.clientDirectorySnapshotVersion++;this.applyClientDirectoryServerRecords([...base,...migrated],this.clientDirectorySnapshotVersion);this.showToast('Se sincronizaron '+migrated.length+' clientes históricos con la base de datos.','success')}catch(error){console.warn('[CLIENTES] No se completó la sincronización histórica.',error);this.showToast('Aún no se pudieron sincronizar los clientes históricos. Inténtalo de nuevo cuando haya conexión.','error')}},
     async pickClientsImport(){let i=document.getElementById('clients-import-file');if(!i){i=document.createElement('input');i.id='clients-import-file';i.type='file';i.accept='.xlsx,.xls,.csv';i.hidden=true;document.body.appendChild(i);i.addEventListener('change',()=>this.importClientsFile(i.files?.[0]))}i.value='';i.click()},
     async importClientsFile(file){
       if(!file)return;
@@ -175,17 +286,17 @@ body.theme-dark #clients-directory,body.theme-halloween #clients-directory{backg
         const nameKey=c=>norm(c.name),locationKey=c=>nameKey(c)+'|'+norm(c.address||c.condo);
         if(!window.db?.collection||!navigator.onLine)throw new Error('Firestore no está disponible. La importación no se guardó.');
         const snap=await window.db.collection('clientes').get({source:'server'}),existing=snap.docs.map(d=>({id:d.id,...d.data()}));
-        const sameClient=(a,b)=>{const adoc=docKey(a),bdoc=docKey(b);if(adoc&&bdoc)return adoc===bdoc;const aname=nameKey(a),bname=nameKey(b);if(!aname||aname!==bname)return false;const alocation=norm(a.address||a.condo),blocation=norm(b.address||b.condo);return !alocation||!blocation||alocation===blocation};
+        const sameClient=(a,b)=>areDuplicateClientRecords(normalizeDirectoryClient(a),normalizeDirectoryClient(b));
         const fresh=[];
         for(const c of mapped){if(existing.some(item=>sameClient(item,c))||fresh.some(item=>sameClient(item,c)))continue;fresh.push(c)}
-        if(!fresh.length){this.clientDirectorySnapshotVersion++;this.clientDirectory=existing;this.clientDirectoryServerLoaded=true;this.clientDirectoryServerCount=existing.length;this.clientDirectoryLoading=false;this.clientDirectoryLoadError='';if(this.clientsDirectoryOpen)this.renderClientsDirectory();this.showToast('Firestore confirmó '+existing.length+' clientes; no había registros nuevos para agregar.','info');return}
+        if(!fresh.length){this.clientDirectorySnapshotVersion++;this.clientDirectoryServerRecords=existing;this.clientDirectoryServerLoaded=true;this.clientDirectory=collectClientDirectoryRecords(this,existing);this.clientDirectoryServerCount=existing.length;this.clientDirectoryLoading=false;this.clientDirectoryLoadError='';if(this.clientsDirectoryOpen)this.renderClientsDirectory();this.showToast('Firestore confirmó '+existing.length+' clientes; no había registros nuevos para agregar.','info');return}
         for(let offset=0;offset<fresh.length;offset+=400){const batch=window.db.batch();fresh.slice(offset,offset+400).forEach(c=>batch.set(window.db.collection('clientes').doc(this.clientRecordId(c)),{...c,updatedAt:Date.now(),importedAt:Date.now()},{merge:true}));await batch.commit()}
         const confirmedSnapshot=await window.db.collection('clientes').get({source:'server'});
         const confirmedRecords=confirmedSnapshot.docs.map(d=>({id:d.id,...d.data()}));
         const confirmedIds=new Set(confirmedRecords.map(client=>String(client.id)));
         const missing=fresh.filter(client=>!confirmedIds.has(this.clientRecordId(client)));
         if(missing.length)throw new Error('Firestore no confirmó '+missing.length+' registros importados.');
-        this.clientDirectorySnapshotVersion++;this.clientDirectory=confirmedRecords;this.clientDirectoryServerLoaded=true;this.clientDirectoryServerCount=confirmedRecords.length;this.clientDirectoryLoading=false;this.clientDirectoryLoadError='';
+        this.clientDirectorySnapshotVersion++;this.clientDirectoryServerRecords=confirmedRecords;this.clientDirectoryServerLoaded=true;this.clientDirectory=collectClientDirectoryRecords(this,confirmedRecords);this.clientDirectoryServerCount=confirmedRecords.length;this.clientDirectoryLoading=false;this.clientDirectoryLoadError='';
         this.startClientDirectorySync();if(this.clientsDirectoryOpen)this.renderClientsDirectory();this.showToast('Firestore confirmó '+confirmedRecords.length+' clientes; se agregaron '+fresh.length+' nuevos y '+(mapped.length-fresh.length)+' repetidos se omitieron.','success')
       }catch(e){console.error('[CLIENTES] Importación fallida.',e);this.showToast('No se pudo importar el archivo. Revisa tu conexión y que el archivo tenga el formato esperado.','error')}
       finally{if(button){button.disabled=false;button.textContent=oldLabel||'Importar Excel'}}
@@ -215,12 +326,12 @@ body.theme-dark #clients-directory,body.theme-halloween #clients-directory{backg
     if(getTaskClients&&!getTaskClients.__directoryClients47){const merged=function(...args){const clients=new Map();for(const client of getTaskClients.apply(this,args)||[]){const name=clean(client?.name);if(name)clients.set(norm(name),{...client,name})}for(const client of this.clientDirectory||[]){const name=clean(client?.name);if(name){const key=norm(name),existing=clients.get(key)||{};clients.set(key,{...existing,...client,name,phone:client.phone||existing.phone||'',address:client.address||existing.address||'',administrator:client.administrator||existing.administrator||''})}}return [...clients.values()].sort((a,b)=>a.name.localeCompare(b.name,'es',{sensitivity:'base'}))};merged.__directoryClients47=true;p.getRegisteredTaskClients=merged}
     const login=p.handleLogin;if(login)p.handleLogin=async function(...a){const r=await login.apply(this,a);if(!this.currentUser||document.getElementById('view-dashboard')?.classList.contains('hidden'))return r;for(const hook of ['startClientDirectorySync','initMobileChatFix','addClientAutocomplete']){try{this[hook]?.()}catch(error){console.warn('[LOGIN] Se omitió una inicialización secundaria:',hook,error)}}return r};
     const show=p.showDashboardView;if(show)p.showDashboardView=function(...a){const r=show.apply(this,a);this.startClientDirectorySync();this.initMobileChatFix();return r};
-    const save=p.handleSaveTask;if(save)p.handleSaveTask=async function(...a){const c={name:document.getElementById('task-client')?.value,address:document.getElementById('task-address')?.value,phone:document.getElementById('task-phone')?.value,administrator:document.getElementById('task-administrator')?.value};const before=(this.tasks||[]).map(t=>t.id).join('|');const r=await save.apply(this,a);if(c.name&&((this.tasks||[]).some(t=>!before.includes(t.id)&&norm(t.client||t.clientName)===norm(c.name))||(this.tasks||[]).some(t=>norm(t.client||t.clientName)===norm(c.name)&&norm(t.address)===norm(c.address))))await this.saveClientRecord(c);return r};
+    const save=p.handleSaveTask;if(save)p.handleSaveTask=async function(...a){const c={name:document.getElementById('task-client')?.value,address:document.getElementById('task-address')?.value,phone:document.getElementById('task-phone')?.value,administrator:document.getElementById('task-administrator')?.value};const before=new Map((this.tasks||[]).map(t=>[String(t.id),JSON.stringify([t.client||t.clientName,t.address,t.phone,t.administrator])]));const r=await save.apply(this,a);if(r===false)return r;const changed=(this.tasks||[]).some(t=>{if(norm(t.client||t.clientName)!==norm(c.name)||norm(t.address)!==norm(c.address))return false;return !before.has(String(t.id))||before.get(String(t.id))!==JSON.stringify([t.client||t.clientName,t.address,t.phone,t.administrator])});if(c.name&&changed&&!(await this.saveClientRecord(c)))this.showToast?.('La orden se guardó, pero no se pudo guardar el cliente en el directorio. Verifica la conexión y vuelve a intentarlo.','error');return r};
     ['showArchivedOrdersView','showActiveOrdersView'].forEach(k=>{const fn=p[k];if(fn)p[k]=function(...a){this.clientsDirectoryOpen=false;return fn.apply(this,a)}});
     const openDocs=p.openDocumentControl;if(openDocs)p.openDocumentControl=function(...a){this.clientsDirectoryOpen=false;this.quoteArchiveInlineOpen=false;this.showArchivedTasks=false;return openDocs.apply(this,a)};
     const openQuotes=p.openQuotesArchive;if(openQuotes)p.openQuotesArchive=function(...a){this.clientsDirectoryOpen=false;this.showDocumentControl=false;this.showArchivedTasks=false;return openQuotes.apply(this,a)};
     const openClients=p.openClientsDirectory;if(openClients)p.openClientsDirectory=function(...a){this.showDocumentControl=false;this.quoteArchiveInlineOpen=false;this.showArchivedTasks=false;return openClients.apply(this,a)};
-    const qsave=p.saveQuote;if(qsave)p.saveQuote=async function(...a){const f=document.getElementById('quote-form'),q=f?Object.fromEntries(new FormData(f)):null;const r=await qsave.apply(this,a);if(r===false)return false;if(q?.client&&(this.quotes||[]).some(x=>x.number===q.number&&norm(x.client)===norm(q.client)))await this.saveClientRecord({name:q.client,condo:q.condo,address:q.address,email:q.email,phone:q.phone});return r};
+    // The quote module already persists its client through saveClientRecord.
     const qopen=p.openQuoteForm;if(qopen)p.openQuoteForm=function(...a){const r=qopen.apply(this,a);this.addClientAutocomplete();return r};
 
     window.app.startClientDirectorySync();window.app.initMobileChatFix();window.app.addClientAutocomplete();
