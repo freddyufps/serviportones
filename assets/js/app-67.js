@@ -18,7 +18,7 @@
     const opts = item.options || {};
     const isPrompt = item.kind === 'prompt';
     const isAlert = item.kind === 'alert';
-    const variantClass = opts.variant === 'success' ? 'is-success' : opts.variant === 'danger' ? 'is-danger' : '';
+    const variantClass = opts.variant === 'success' ? 'is-success' : opts.variant === 'danger' ? 'is-danger' : opts.variant === 'info' ? 'is-info' : '';
     const overlay = document.createElement('div');
     overlay.className = 'spem-dialog-backdrop';
     overlay.innerHTML = `<section class="spem-dialog ${opts.icon === 'trash' ? 'is-danger' : ''} ${variantClass}" role="alertdialog" aria-modal="true" aria-labelledby="spem-dialog-title" aria-describedby="spem-dialog-message">

@@ -1,0 +1,29 @@
+.maintenance-reminder-bar{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;width:calc(100% - 32px);max-width:1500px;min-height:48px;margin:10px auto 0;padding:8px 13px;overflow:hidden;border:1px solid #4b91df;border-radius:13px;background:linear-gradient(105deg,#eff7ff,#fff 55%,#edf5ff);box-shadow:0 5px 20px rgba(30,104,188,.16);color:#164a7d}
+.maintenance-reminder-bar[hidden]{display:none!important}
+.maintenance-reminder-label{display:flex;align-items:center;gap:7px;white-space:nowrap;color:#1b65ad;font-size:10px;font-weight:900;letter-spacing:.08em}
+.maintenance-reminder-label svg{width:17px;height:17px}
+.maintenance-reminder-viewport{min-width:0;overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)}
+.maintenance-reminder-track{width:max-content}
+.maintenance-reminder-group{display:flex;align-items:center;gap:20px;width:max-content;animation:maintenanceReminderMove var(--maintenance-scroll-duration,36s) linear infinite}
+.maintenance-alert-message{display:inline-flex;align-items:center;gap:9px;white-space:nowrap;color:#164a7d;font-size:12px}
+.maintenance-alert-message>svg{width:16px;height:16px;color:#1675cb}
+.maintenance-alert-message strong{font-weight:850}
+.maintenance-alert-message>b{padding:3px 7px;border:1px solid #b9d8f8;border-radius:999px;background:#deefff;color:#1262ab;font-size:9px;letter-spacing:.04em}
+.maintenance-alert-message>span{color:#345b7e}
+.maintenance-alert-message small{font-size:10px;color:#6b8298}
+.maintenance-alert-silence{display:inline-flex;align-items:center;justify-content:center;flex:none;min-height:28px;margin-left:3px;padding:4px 8px;border:1px solid #9fc6eb;border-radius:8px;background:#fff;color:#1766ac;font:inherit;font-size:10px;font-weight:800;white-space:nowrap;cursor:pointer}
+.maintenance-alert-silence:hover{border-color:#2789e8;background:#e6f4ff;color:#075da9}
+.maintenance-alert-silence:focus-visible{outline:2px solid #1687f5;outline-offset:2px}
+.maintenance-alert-separator{color:#4590d6;font-weight:900}
+.maintenance-reminder-open{min-height:30px;padding:5px 9px;border:1px solid #aacff3;border-radius:9px;background:#fff;color:#1b65ad;font-size:10px;font-weight:800;white-space:nowrap;cursor:pointer}
+.maintenance-reminder-open:hover{background:#e5f2ff}
+@keyframes maintenanceReminderMove{from{transform:translateX(var(--maintenance-scroll-start,100vw))}to{transform:translateX(calc(-1 * var(--maintenance-scroll-end,100%)))}}
+
+.maintenance-reminder-action-wrap{position:relative;display:inline-flex;flex:0 0 auto}
+.maintenance-reminder-action{display:inline-grid;place-items:center;flex:0 0 34px;width:34px;height:34px;min-height:34px;padding:0;border:1px solid #cbd7e4;border-radius:9px;background:#fff;color:#526b84;cursor:pointer}
+.maintenance-reminder-action svg{width:16px;height:16px}
+.maintenance-reminder-action:hover{border-color:#63aaf2;background:#f1f8ff;color:#0876df}
+.maintenance-reminder-action.is-scheduled{border-color:#1687f5;background:#e6f4ff;color:#0075ed;box-shadow:0 0 0 1px #7dc4ff,0 0 9px 2px rgba(0,132,255,.38),inset 0 0 0 1px rgba(255,255,255,.8)}
+.payment-order-actions,.payment-order-actions-mobile{flex-wrap:wrap;align-items:center}
+@media(max-width:760px){.maintenance-reminder-bar{grid-template-columns:1fr auto;gap:6px 10px;width:calc(100% - 18px);padding:8px 10px}.maintenance-reminder-label{grid-column:1/-1;font-size:9px}.maintenance-reminder-open{grid-column:2;grid-row:2}.maintenance-reminder-viewport{grid-column:1;grid-row:2}.maintenance-alert-message{font-size:11px}.maintenance-alert-silence{min-height:26px;padding:3px 6px;font-size:9px}.maintenance-reminder-action{flex-basis:32px;width:32px;height:32px;min-height:32px}}
+@media(prefers-reduced-motion:reduce){.maintenance-reminder-group{animation:none;transform:none!important;margin:auto}}

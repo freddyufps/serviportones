@@ -160,14 +160,60 @@
           const pageBodyHeight = sourcePageHeight - headerHeight - footerHeight;
           const overflowTolerancePx = Math.max(0, Number(repeatedChrome.singlePageOverflowTolerancePx) || 0);
           const roundoffFitsOnePage = bodyHeight > pageBodyHeight && bodyHeight - pageBodyHeight <= overflowTolerancePx;
-          const repeatedPageCount = pageBodyHeight > 0
-            ? roundoffFitsOnePage ? 1 : Math.max(1, Math.ceil(bodyHeight / pageBodyHeight))
-            : 0;
+          const keepTogether = (repeatedChrome.keepTogetherSelectors || [])
+            .flatMap(selector => [...node.querySelectorAll(selector)])
+            .map(element => ({
+              top: Math.max(headerHeight, Math.round((element.getBoundingClientRect().top - nodeRect.top) * rasterScale)),
+              bottom: Math.min(footerStart, Math.round((element.getBoundingClientRect().bottom - nodeRect.top + Math.max(0, Number(repeatedChrome.keepTogetherBottomPaddingMm) || 0) * 96 / 25.4) * rasterScale))
+            }))
+            .filter(block => block.bottom > block.top);
+          const pageRanges = [];
+          if (pageBodyHeight > 0) {
+            if (roundoffFitsOnePage || bodyHeight <= pageBodyHeight) {
+              pageRanges.push({ start:headerHeight, end:footerStart, fit:roundoffFitsOnePage });
+            } else {
+              let sourceStart = headerHeight;
+              while (sourceStart < footerStart && pageRanges.length < 100) {
+                let sourceEnd = Math.min(footerStart, sourceStart + pageBodyHeight);
+                const crossingBlock = keepTogether.find(block => block.top >= sourceStart && block.top < sourceEnd && block.bottom > sourceEnd && block.bottom - block.top <= pageBodyHeight);
+                if (crossingBlock && crossingBlock.top > sourceStart) sourceEnd = crossingBlock.top;
+                if (sourceEnd <= sourceStart) sourceEnd = Math.min(footerStart, sourceStart + pageBodyHeight);
+                pageRanges.push({ start:sourceStart, end:sourceEnd, fit:false });
+                sourceStart = sourceEnd;
+              }
+            }
+          }
 
           // Solo las piezas largas usan marco repetido. Los documentos de una
           // página conservan exactamente la captura que ya tenían.
-          if (repeatedPageCount > 1) {
-            for (let page = 0; page < repeatedPageCount; page += 1) {
+          if (repeatedChrome.normalizeSinglePage && pageRanges.length === 1) {
+            const range = pageRanges[0];
+            const pageCanvas = document.createElement('canvas');
+            pageCanvas.width = canvas.width;
+            pageCanvas.height = sourcePageHeight;
+            const context = pageCanvas.getContext('2d');
+            if (!context) throw new Error('No fue posible preparar la página del informe.');
+            context.fillStyle = '#ffffff';
+            context.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+            context.drawImage(canvas, 0, 0, canvas.width, headerHeight, 0, 0, canvas.width, headerHeight);
+            const bodySliceHeight = Math.max(0, range.end - range.start);
+            const targetBodyHeight = range.fit ? pageBodyHeight : Math.min(pageBodyHeight, bodySliceHeight);
+            if (bodySliceHeight) context.drawImage(canvas, 0, range.start, canvas.width, bodySliceHeight, 0, headerHeight, canvas.width, targetBodyHeight);
+            if (footerHeight) context.drawImage(canvas, 0, footerStart, canvas.width, footerHeight, 0, sourcePageHeight - footerHeight, canvas.width, footerHeight);
+            if (repeatedChrome.headerDivider) {
+              const inset = 18 * 96 / 25.4 * rasterScale;
+              context.strokeStyle = '#dbe4ee';
+              context.lineWidth = Math.max(1, rasterScale);
+              context.beginPath();
+              context.moveTo(inset, headerHeight - context.lineWidth / 2);
+              context.lineTo(canvas.width - inset, headerHeight - context.lineWidth / 2);
+              context.stroke();
+            }
+            pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.98), 'JPEG', marginMm, marginMm, contentWidthMm, contentHeightMm, 'document-page-1', 'FAST');
+            return pdf.output('blob');
+          }
+          if (pageRanges.length > 1) {
+            for (let page = 0; page < pageRanges.length; page += 1) {
               if (page) pdf.addPage('a4', 'portrait');
               const pageCanvas = document.createElement('canvas');
               pageCanvas.width = canvas.width;
@@ -177,10 +223,11 @@
               context.fillStyle = '#ffffff';
               context.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
               context.drawImage(canvas, 0, 0, canvas.width, headerHeight, 0, 0, canvas.width, headerHeight);
-              const sourceY = headerHeight + page * pageBodyHeight;
-              const bodySliceHeight = Math.max(0, Math.min(pageBodyHeight, footerStart - sourceY));
+              const range = pageRanges[page];
+              const sourceY = range.start;
+              const bodySliceHeight = Math.max(0, range.end - range.start);
               if (bodySliceHeight) {
-                const targetBodyHeight = roundoffFitsOnePage ? pageBodyHeight : bodySliceHeight;
+                const targetBodyHeight = range.fit ? pageBodyHeight : bodySliceHeight;
                 context.drawImage(canvas, 0, sourceY, canvas.width, bodySliceHeight, 0, headerHeight, canvas.width, targetBodyHeight);
               }
               if (footerHeight) {
@@ -728,7 +775,7 @@
         if (typeof window.spemCreatePreviewPdfBlob !== 'function') throw new Error('No está disponible la generación del PDF.');
         // El informe ya está maquetado a 210 mm. Capturarlo a ancho A4 completo
         // conserva su escala; el generador añade páginas solo si supera una hoja.
-        const blob = await window.spemCreatePreviewPdfBlob(documentNode, { format: 'a4', marginMm: 0, repeatChrome: { headerEndSelector: '.technical-report-document-body', footerStartSelectors: ['.technical-report-document-footer'], headerDivider: true, singlePageOverflowTolerancePx: 2 } });
+        const blob = await window.spemCreatePreviewPdfBlob(documentNode, { format: 'a4', marginMm: 0, repeatChrome: { headerEndSelector: '.technical-report-document-body', footerStartSelectors: ['.technical-report-document-footer'], keepTogetherSelectors: ['.technical-report-signature-block'], keepTogetherBottomPaddingMm: 10, normalizeSinglePage: true, headerDivider: true, singlePageOverflowTolerancePx: 28 } });
         if (!blob?.size) throw new Error('El PDF generado está vacío.');
         if (fileHandle) {
           const writable = await fileHandle.createWritable();
