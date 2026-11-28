@@ -93,7 +93,13 @@
       bar.innerHTML = '<div class="maintenance-reminder-label"><i data-lucide="bell-ring" aria-hidden="true"></i><span>MANTENIMIENTOS</span></div><div class="maintenance-reminder-viewport"><div class="maintenance-reminder-track"></div></div><button type="button" class="maintenance-reminder-open">Ver órdenes</button>';
       const creditsBar = document.getElementById('credits-reminder-bar');
       (creditsBar || header).insertAdjacentElement('afterend', bar);
-      bar.querySelector('.maintenance-reminder-open')?.addEventListener('click', () => window.app?.openDocumentControl?.());
+      bar.querySelector('.maintenance-reminder-open')?.addEventListener('click', event => {
+        const app = window.app;
+        const taskId = event.currentTarget.dataset.maintenanceOrder;
+        if (!taskId) return app?.showToast?.('No hay una orden vinculada a esta alerta.', 'error');
+        if (typeof app?.viewOrderDetails === 'function') return app.viewOrderDetails(taskId);
+        return app?.openPaymentOrderPreview?.(taskId);
+      });
     }
     if (bar.dataset.maintenanceActionsReady !== 'true') {
       bar.dataset.maintenanceActionsReady = 'true';
@@ -122,6 +128,13 @@
     const dueItems = (app?.tasks || [])
       .filter(task => task?.status === 'REALIZADA' && task?.maintenanceReminder?.enabled !== false && Number(task?.maintenanceReminder?.dueAt) > 0 && Number(task.maintenanceReminder.dueAt) <= now)
       .sort((a, b) => Number(a.maintenanceReminder.dueAt) - Number(b.maintenanceReminder.dueAt));
+    const openOrderButton = bar.querySelector('.maintenance-reminder-open');
+    const nextTask = dueItems[0];
+    if (openOrderButton) {
+      openOrderButton.dataset.maintenanceOrder = nextTask ? String(nextTask.id) : '';
+      openOrderButton.textContent = dueItems.length > 1 ? 'Ver próxima orden' : 'Ver orden';
+      openOrderButton.title = nextTask ? `Abrir el detalle de ${nextTask.id}${dueItems.length > 1 ? ' (la alerta vencida hace más tiempo)' : ''}` : 'Abrir el detalle de la orden vinculada';
+    }
     bar.hidden = !isAdmin(app) || dueItems.length === 0;
     track.replaceChildren();
     if (bar.hidden) return;
